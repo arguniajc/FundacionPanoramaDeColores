@@ -1,4 +1,4 @@
-// JavaScript para Fundación Panorama de Colores
+// JavaScript para Fundación Panorama de Colores - Versión con slider cada 3 segundos
 
 // Esperar a que el DOM esté completamente cargado
 document.addEventListener('DOMContentLoaded', function() {
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // ========== SLIDER PRINCIPAL ==========
+    // ========== SLIDER PRINCIPAL (CAMBIA CADA 3 SEGUNDOS) ==========
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.dot');
     const prevBtn = document.querySelector('.slider-prev');
@@ -65,20 +65,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Event listeners para los controles del slider
-    if (nextBtn) nextBtn.addEventListener('click', nextSlide);
-    if (prevBtn) prevBtn.addEventListener('click', prevSlide);
+    if (nextBtn) nextBtn.addEventListener('click', function() {
+        nextSlide();
+        resetSlideInterval(); // Reiniciar el intervalo después de cambio manual
+    });
+    
+    if (prevBtn) prevBtn.addEventListener('click', function() {
+        prevSlide();
+        resetSlideInterval(); // Reiniciar el intervalo después de cambio manual
+    });
     
     // Event listeners para los dots
     dots.forEach((dot, index) => {
         dot.addEventListener('click', () => {
             showSlide(index);
-            resetSlideInterval();
+            resetSlideInterval(); // Reiniciar el intervalo después de cambio manual
         });
     });
     
-    // Iniciar autoplay del slider
+    // Iniciar autoplay del slider (CADA 3000ms = 3 SEGUNDOS)
     function startSlideInterval() {
-        slideInterval = setInterval(nextSlide, 5000);
+        slideInterval = setInterval(nextSlide, 3000); // Cambiado a 3000ms
     }
     
     // Reiniciar intervalo del slider
@@ -87,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startSlideInterval();
     }
     
-    // Iniciar el slider
+    // Iniciar el slider con autoplay cada 3 segundos
     if (slides.length > 0) {
         startSlideInterval();
         
@@ -253,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const parallaxElements = document.querySelectorAll('.slide');
         
         parallaxElements.forEach(element => {
-            const rate = scrolled * 0.5;
+            const rate = scrolled * 0.1;
             element.style.transform = `translateY(${rate}px)`;
         });
     });

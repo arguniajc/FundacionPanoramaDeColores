@@ -1,519 +1,272 @@
-/**
- * Slider Moderno para Hero Section
- * Código optimizado y con buenas prácticas
- */
+// JavaScript para Fundación Panorama de Colores
 
-class ModernSlider {
-    constructor(config = {}) {
-        // Configuración por defecto
-        this.config = {
-            autoplay: true,
-            autoplaySpeed: 5000,
-            pauseOnHover: true,
-            transitionSpeed: 500,
-            infinite: true,
-            ...config
-        };
-        
-        // Elementos del DOM
-        this.slider = document.querySelector('.hero-slider');
-        this.slides = document.querySelectorAll('.slide');
-        this.prevBtn = document.querySelector('.prev-btn');
-        this.nextBtn = document.querySelector('.next-btn');
-        this.paginationDots = document.querySelectorAll('.pagination-dot');
-        
-        // Estado
-        this.currentIndex = 0;
-        this.totalSlides = this.slides.length;
-        this.isAnimating = false;
-        this.autoplayInterval = null;
-        this.isHovering = false;
-        
-        // Inicialización
-        this.init();
-    }
+// Esperar a que el DOM esté completamente cargado
+document.addEventListener('DOMContentLoaded', function() {
     
-    /**
-     * Inicializar slider
-     */
-    init() {
-        if (!this.slider || this.totalSlides === 0) {
-            console.warn('Slider: No se encontraron slides');
-            return;
-        }
-        
-        // Configurar slides iniciales
-        this.slides.forEach((slide, index) => {
-            slide.style.zIndex = this.totalSlides - index;
-            
-            // Precargar imágenes de fondo
-            this.preloadSlideImage(slide);
-        });
-        
-        // Mostrar primer slide
-        this.showSlide(0);
-        
-        // Configurar controles
-        this.setupControls();
-        
-        // Iniciar autoplay si está configurado
-        if (this.config.autoplay) {
-            this.startAutoplay();
-        }
-        
-        // Pausar autoplay al hacer hover
-        if (this.config.pauseOnHover) {
-            this.setupHoverPause();
-        }
-        
-        // Configurar Intersection Observer para pausar cuando no es visible
-        this.setupVisibilityObserver();
-        
-        // Configurar teclado
-        this.setupKeyboardControls();
-        
-        console.log(`✅ Slider inicializado con ${this.totalSlides} slides`);
-    }
+    // ========== MENÚ RESPONSIVE ==========
+    const menuToggle = document.getElementById('menuToggle');
+    const navMenu = document.getElementById('navMenu');
+    const navLinks = document.querySelectorAll('.nav-link');
     
-    /**
-     * Precargar imagen de slide
-     * @param {HTMLElement} slide - Elemento del slide
-     */
-    preloadSlideImage(slide) {
-        const bgElement = slide.querySelector('.slide-background');
-        if (!bgElement) return;
-        
-        const bgImage = bgElement.style.backgroundImage;
-        const imageUrl = bgImage.replace(/url\(['"]?(.*?)['"]?\)/i, '$1');
-        
-        if (imageUrl) {
-            const img = new Image();
-            img.src = imageUrl;
-            
-            img.onload = () => {
-                slide.classList.add('image-loaded');
-            };
-            
-            img.onerror = () => {
-                console.warn(`No se pudo cargar la imagen: ${imageUrl}`);
-            };
-        }
-    }
-    
-    /**
-     * Configurar controles del slider
-     */
-    setupControls() {
-        // Botón anterior
-        if (this.prevBtn) {
-            this.prevBtn.addEventListener('click', () => this.prevSlide());
-        }
-        
-        // Botón siguiente
-        if (this.nextBtn) {
-            this.nextBtn.addEventListener('click', () => this.nextSlide());
-        }
-        
-        // Paginación
-        this.paginationDots.forEach((dot, index) => {
-            dot.addEventListener('click', () => this.goToSlide(index));
-        });
-        
-        // Swipe para móviles
-        this.setupSwipeGestures();
-    }
-    
-    /**
-     * Configurar gestos swipe para móviles
-     */
-    setupSwipeGestures() {
-        if (!this.slider) return;
-        
-        let touchStartX = 0;
-        let touchEndX = 0;
-        const swipeThreshold = 50;
-        
-        this.slider.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-        }, { passive: true });
-        
-        this.slider.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            this.handleSwipe(touchStartX, touchEndX, swipeThreshold);
-        }, { passive: true });
-        
-        // Mouse drag para desktop
-        let mouseDownX = 0;
-        let mouseUpX = 0;
-        
-        this.slider.addEventListener('mousedown', (e) => {
-            mouseDownX = e.clientX;
-        });
-        
-        this.slider.addEventListener('mouseup', (e) => {
-            mouseUpX = e.clientX;
-            this.handleSwipe(mouseDownX, mouseUpX, swipeThreshold);
-        });
-    }
-    
-    /**
-     * Manejar gesto swipe
-     * @param {number} startX - Posición X inicial
-     * @param {number} endX - Posición X final
-     * @param {number} threshold - Umbral para considerar swipe
-     */
-    handleSwipe(startX, endX, threshold) {
-        const diff = startX - endX;
-        
-        if (Math.abs(diff) > threshold) {
-            if (diff > 0) {
-                this.nextSlide();
-            } else {
-                this.prevSlide();
-            }
-        }
-    }
-    
-    /**
-     * Configurar pausa al hacer hover
-     */
-    setupHoverPause() {
-        this.slider.addEventListener('mouseenter', () => {
-            this.isHovering = true;
-            this.pauseAutoplay();
-        });
-        
-        this.slider.addEventListener('mouseleave', () => {
-            this.isHovering = false;
-            if (this.config.autoplay && !this.isAnimating) {
-                this.startAutoplay();
-            }
-        });
-    }
-    
-    /**
-     * Configurar observador de visibilidad
-     */
-    setupVisibilityObserver() {
-        if (!('IntersectionObserver' in window)) return;
-        
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    // Slider es visible, reanudar autoplay
-                    if (this.config.autoplay && !this.isHovering) {
-                        this.startAutoplay();
-                    }
-                } else {
-                    // Slider no es visible, pausar autoplay
-                    this.pauseAutoplay();
-                }
-            });
-        }, {
-            threshold: 0.5
-        });
-        
-        observer.observe(this.slider);
-    }
-    
-    /**
-     * Configurar controles de teclado
-     */
-    setupKeyboardControls() {
-        document.addEventListener('keydown', (e) => {
-            // Solo responder si el slider está visible
-            const sliderRect = this.slider.getBoundingClientRect();
-            const isSliderVisible = (
-                sliderRect.top < window.innerHeight &&
-                sliderRect.bottom > 0
-            );
-            
-            if (!isSliderVisible) return;
-            
-            switch (e.key) {
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    this.prevSlide();
-                    break;
-                    
-                case 'ArrowRight':
-                    e.preventDefault();
-                    this.nextSlide();
-                    break;
-                    
-                case 'Home':
-                    e.preventDefault();
-                    this.goToSlide(0);
-                    break;
-                    
-                case 'End':
-                    e.preventDefault();
-                    this.goToSlide(this.totalSlides - 1);
-                    break;
-                    
-                case ' ':
-                case 'Spacebar':
-                    e.preventDefault();
-                    this.toggleAutoplay();
-                    break;
-            }
-        });
-    }
-    
-    /**
-     * Mostrar slide específico
-     * @param {number} index - Índice del slide a mostrar
-     */
-    showSlide(index) {
-        if (this.isAnimating || index === this.currentIndex) return;
-        
-        this.isAnimating = true;
-        
-        // Calcular índice real (para infinite scroll)
-        let targetIndex = index;
-        if (this.config.infinite) {
-            if (index < 0) targetIndex = this.totalSlides - 1;
-            if (index >= this.totalSlides) targetIndex = 0;
-        } else {
-            targetIndex = Math.max(0, Math.min(index, this.totalSlides - 1));
-        }
-        
-        // Ocultar slide actual
-        const currentSlide = this.slides[this.currentIndex];
-        if (currentSlide) {
-            currentSlide.classList.remove('active');
-            currentSlide.style.zIndex = this.totalSlides - this.currentIndex;
-        }
-        
-        // Mostrar nuevo slide
-        const nextSlide = this.slides[targetIndex];
-        if (nextSlide) {
-            nextSlide.classList.add('active');
-            nextSlide.style.zIndex = this.totalSlides + 1;
-            
-            // Animar entrada
-            nextSlide.style.animation = `fadeIn ${this.config.transitionSpeed}ms ease`;
-            
-            // Actualizar paginación
-            this.updatePagination(targetIndex);
-            
-            // Actualizar índice actual
-            this.currentIndex = targetIndex;
-            
-            // Disparar evento personalizado
-            this.dispatchSlideChangeEvent(targetIndex);
-        }
-        
-        // Restablecer animación
-        setTimeout(() => {
-            if (nextSlide) {
-                nextSlide.style.animation = '';
-            }
-            this.isAnimating = false;
-        }, this.config.transitionSpeed);
-    }
-    
-    /**
-     * Slide siguiente
-     */
-    nextSlide() {
-        this.showSlide(this.currentIndex + 1);
-        
-        // Reiniciar autoplay
-        if (this.config.autoplay) {
-            this.restartAutoplay();
-        }
-    }
-    
-    /**
-     * Slide anterior
-     */
-    prevSlide() {
-        this.showSlide(this.currentIndex - 1);
-        
-        // Reiniciar autoplay
-        if (this.config.autoplay) {
-            this.restartAutoplay();
-        }
-    }
-    
-    /**
-     * Ir a slide específico
-     * @param {number} index - Índice del slide
-     */
-    goToSlide(index) {
-        if (index >= 0 && index < this.totalSlides) {
-            this.showSlide(index);
-            
-            // Reiniciar autoplay
-            if (this.config.autoplay) {
-                this.restartAutoplay();
-            }
-        }
-    }
-    
-    /**
-     * Actualizar paginación
-     * @param {number} activeIndex - Índice activo
-     */
-    updatePagination(activeIndex) {
-        this.paginationDots.forEach((dot, index) => {
-            dot.classList.toggle('active', index === activeIndex);
-            dot.setAttribute('aria-current', index === activeIndex ? 'true' : 'false');
-        });
-    }
-    
-    /**
-     * Iniciar autoplay
-     */
-    startAutoplay() {
-        if (this.autoplayInterval || !this.config.autoplay) return;
-        
-        this.autoplayInterval = setInterval(() => {
-            this.nextSlide();
-        }, this.config.autoplaySpeed);
-        
-        // Añadir atributo para estilos
-        this.slider?.setAttribute('data-autoplay', 'active');
-    }
-    
-    /**
-     * Pausar autoplay
-     */
-    pauseAutoplay() {
-        if (this.autoplayInterval) {
-            clearInterval(this.autoplayInterval);
-            this.autoplayInterval = null;
-            
-            // Actualizar atributo
-            this.slider?.setAttribute('data-autoplay', 'paused');
-        }
-    }
-    
-    /**
-     * Reiniciar autoplay
-     */
-    restartAutoplay() {
-        this.pauseAutoplay();
-        if (!this.isHovering) {
-            this.startAutoplay();
-        }
-    }
-    
-    /**
-     * Alternar autoplay
-     */
-    toggleAutoplay() {
-        if (this.autoplayInterval) {
-            this.pauseAutoplay();
-            this.showNotification('Autoplay pausado', 'info');
-        } else {
-            this.startAutoplay();
-            this.showNotification('Autoplay activado', 'success');
-        }
-    }
-    
-    /**
-     * Disparar evento de cambio de slide
-     * @param {number} slideIndex - Índice del slide
-     */
-    dispatchSlideChangeEvent(slideIndex) {
-        const event = new CustomEvent('slideChange', {
-            detail: {
-                index: slideIndex,
-                total: this.totalSlides,
-                slide: this.slides[slideIndex]
-            }
-        });
-        
-        this.slider.dispatchEvent(event);
-    }
-    
-    /**
-     * Mostrar notificación
-     * @param {string} message - Mensaje
-     * @param {string} type - Tipo (success, info, warning, error)
-     */
-    showNotification(message, type = 'info') {
-        // Reutilizar la función del script principal si está disponible
-        if (typeof window.showNotification === 'function') {
-            window.showNotification(message, type);
-        } else {
-            console.log(`Slider ${type}: ${message}`);
-        }
-    }
-    
-    /**
-     * Destruir slider (limpieza)
-     */
-    destroy() {
-        this.pauseAutoplay();
-        
-        // Remover event listeners
-        if (this.prevBtn) {
-            this.prevBtn.replaceWith(this.prevBtn.cloneNode(true));
-        }
-        
-        if (this.nextBtn) {
-            this.nextBtn.replaceWith(this.nextBtn.cloneNode(true));
-        }
-        
-        this.paginationDots.forEach(dot => {
-            dot.replaceWith(dot.cloneNode(true));
-        });
-        
-        console.log('🗑️ Slider destruido');
-    }
-    
-    /**
-     * Actualizar configuración
-     * @param {Object} newConfig - Nueva configuración
-     */
-    updateConfig(newConfig) {
-        this.config = { ...this.config, ...newConfig };
-        
-        // Aplicar cambios en tiempo real
-        if (this.config.autoplay && !this.autoplayInterval && !this.isHovering) {
-            this.startAutoplay();
-        } else if (!this.config.autoplay) {
-            this.pauseAutoplay();
-        }
-    }
-    
-    /**
-     * Obtener información del slide actual
-     * @returns {Object} - Información del slide
-     */
-    getCurrentSlideInfo() {
-        return {
-            index: this.currentIndex,
-            total: this.totalSlides,
-            element: this.slides[this.currentIndex],
-            isFirst: this.currentIndex === 0,
-            isLast: this.currentIndex === this.totalSlides - 1
-        };
-    }
-}
-
-// Inicializar slider cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    const slider = new ModernSlider({
-        autoplay: true,
-        autoplaySpeed: 5000,
-        pauseOnHover: true,
-        transitionSpeed: 500,
-        infinite: true
+    // Toggle del menú en móviles
+    menuToggle.addEventListener('click', function() {
+        navMenu.classList.toggle('active');
+        menuToggle.innerHTML = navMenu.classList.contains('active') 
+            ? '<i class="fas fa-times"></i>' 
+            : '<i class="fas fa-bars"></i>';
     });
     
-    // Exponer slider globalmente para controles personalizados
-    window.fundacionSlider = slider;
+    // Cerrar menú al hacer click en un enlace
+    navLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            navMenu.classList.remove('active');
+            menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+        });
+    });
     
-    // Ejemplo de controles personalizados:
-    // window.fundacionSlider.nextSlide();
-    // window.fundacionSlider.pauseAutoplay();
+    // ========== SLIDER PRINCIPAL ==========
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.dot');
+    const prevBtn = document.querySelector('.slider-prev');
+    const nextBtn = document.querySelector('.slider-next');
+    let currentSlide = 0;
+    let slideInterval;
+    
+    // Función para mostrar un slide específico
+    function showSlide(index) {
+        // Asegurarse de que el índice esté dentro del rango
+        if (index >= slides.length) currentSlide = 0;
+        else if (index < 0) currentSlide = slides.length - 1;
+        else currentSlide = index;
+        
+        // Ocultar todos los slides
+        slides.forEach(slide => {
+            slide.classList.remove('active');
+        });
+        
+        // Quitar clase active de todos los dots
+        dots.forEach(dot => {
+            dot.classList.remove('active');
+        });
+        
+        // Mostrar slide actual
+        slides[currentSlide].classList.add('active');
+        dots[currentSlide].classList.add('active');
+    }
+    
+    // Función para ir al siguiente slide
+    function nextSlide() {
+        showSlide(currentSlide + 1);
+    }
+    
+    // Función para ir al slide anterior
+    function prevSlide() {
+        showSlide(currentSlide - 1);
+    }
+    
+    // Event listeners para los controles del slider
+    if (nextBtn) nextBtn.addEventListener('click', nextSlide);
+    if (prevBtn) prevBtn.addEventListener('click', prevSlide);
+    
+    // Event listeners para los dots
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            showSlide(index);
+            resetSlideInterval();
+        });
+    });
+    
+    // Iniciar autoplay del slider
+    function startSlideInterval() {
+        slideInterval = setInterval(nextSlide, 5000);
+    }
+    
+    // Reiniciar intervalo del slider
+    function resetSlideInterval() {
+        clearInterval(slideInterval);
+        startSlideInterval();
+    }
+    
+    // Iniciar el slider
+    if (slides.length > 0) {
+        startSlideInterval();
+        
+        // Pausar autoplay al hacer hover sobre el slider
+        const sliderContainer = document.querySelector('.slider-container');
+        sliderContainer.addEventListener('mouseenter', () => {
+            clearInterval(slideInterval);
+        });
+        
+        sliderContainer.addEventListener('mouseleave', () => {
+            startSlideInterval();
+        });
+    }
+    
+    // ========== ANIMACIÓN DE CONTADORES ==========
+    const counters = document.querySelectorAll('.impact-number');
+    const speed = 200; // Velocidad de la animación
+    
+    function animateCounters() {
+        counters.forEach(counter => {
+            const target = +counter.getAttribute('data-count');
+            const count = +counter.innerText;
+            const increment = target / speed;
+            
+            if (count < target) {
+                counter.innerText = Math.ceil(count + increment);
+                setTimeout(() => animateCounters(), 1);
+            } else {
+                counter.innerText = target;
+            }
+        });
+    }
+    
+    // Observador de intersección para animar contadores cuando son visibles
+    const observerOptions = {
+        threshold: 0.5
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounters();
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+    
+    // Observar la sección de impacto
+    const impactoSection = document.getElementById('impacto');
+    if (impactoSection) {
+        observer.observe(impactoSection);
+    }
+    
+    // ========== GALERÍA DE IMÁGENES ==========
+    const galleryItems = document.querySelectorAll('.gallery-item');
+    const modal = document.querySelector('.gallery-modal');
+    const modalImage = document.querySelector('.modal-image');
+    const modalCaption = document.querySelector('.modal-caption');
+    const modalClose = document.querySelector('.modal-close');
+    
+    // Abrir modal de galería
+    galleryItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const imgSrc = this.querySelector('img').src;
+            const imgAlt = this.querySelector('img').alt;
+            
+            modal.style.display = 'flex';
+            modalImage.src = imgSrc;
+            modalCaption.textContent = imgAlt;
+            
+            // Prevenir scroll del body
+            document.body.style.overflow = 'hidden';
+        });
+    });
+    
+    // Cerrar modal de galería
+    if (modalClose) {
+        modalClose.addEventListener('click', function() {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+    }
+    
+    // Cerrar modal al hacer click fuera de la imagen
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
+    
+    // ========== FORMULARIO DE CONTACTO ==========
+    const contactForm = document.getElementById('contactForm');
+    
+    if (contactForm) {
+        contactForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validación simple
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const message = document.getElementById('message').value;
+            
+            if (name && email && message) {
+                // Aquí normalmente se enviaría el formulario a un servidor
+                // Por ahora, solo mostraremos un mensaje de éxito
+                alert('¡Gracias por tu mensaje! Nos pondremos en contacto contigo pronto.');
+                contactForm.reset();
+            } else {
+                alert('Por favor, completa todos los campos obligatorios.');
+            }
+        });
+    }
+    
+    // ========== ANIMACIÓN AL SCROLL ==========
+    // Agregar clase de animación a elementos cuando son visibles
+    const animatedElements = document.querySelectorAll('.program-card, .about-card, .impact-card, .alliance-item, .donation-card');
+    
+    const scrollObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animated');
+            }
+        });
+    }, {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    });
+    
+    animatedElements.forEach(element => {
+        scrollObserver.observe(element);
+    });
+    
+    // ========== NAVEGACIÓN SUAVE ==========
+    // Esta funcionalidad ya está implementada con el atributo scroll-behavior: smooth en el CSS
+    // Pero agregamos un pequeño offset para el header fijo
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const targetId = this.getAttribute('href');
+            
+            if (targetId === '#') return;
+            
+            const targetElement = document.querySelector(targetId);
+            
+            if (targetElement) {
+                e.preventDefault();
+                
+                // Calcular posición con offset para el header
+                const headerHeight = document.querySelector('.navbar').offsetHeight;
+                const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+                
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+    
+    // ========== EFECTO PARALLAX EN SLIDER ==========
+    window.addEventListener('scroll', function() {
+        const scrolled = window.pageYOffset;
+        const parallaxElements = document.querySelectorAll('.slide');
+        
+        parallaxElements.forEach(element => {
+            const rate = scrolled * 0.5;
+            element.style.transform = `translateY(${rate}px)`;
+        });
+    });
+    
+    // ========== CAMBIO DE COLOR DEL HEADER AL SCROLL ==========
+    window.addEventListener('scroll', function() {
+        const navbar = document.querySelector('.navbar');
+        if (window.scrollY > 100) {
+            navbar.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+            navbar.style.backdropFilter = 'blur(10px)';
+        } else {
+            navbar.style.backgroundColor = 'var(--neutral-white)';
+            navbar.style.backdropFilter = 'none';
+        }
+    });
 });
-
-// Exportar clase si se usa con módulos
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ModernSlider;
-}

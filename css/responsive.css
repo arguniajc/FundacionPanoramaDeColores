@@ -1,6 +1,8 @@
 /* CSS Responsive - Fundación Panorama de Colores */
 
-/* Tablets y dispositivos medianos */
+/* ========== LOGO RESPONSIVE 1024×1024px ========== */
+
+/* Tablets y dispositivos medianos (1024px y menos) */
 @media screen and (max-width: 1024px) {
     .section {
         padding: 4rem 0;
@@ -21,9 +23,27 @@
     .contact-container {
         gap: 2rem;
     }
+    
+    /* Logo en tablet grande */
+    .logo img {
+        height: 70px;
+        width: 70px;
+    }
+    
+    .navbar {
+        min-height: 80px;
+    }
+    
+    .nav-container {
+        padding: 0.7rem 1.5rem;
+    }
+    
+    .nav-menu {
+        gap: 1.8rem;
+    }
 }
 
-/* Tablets pequeñas */
+/* Tablets pequeñas (768px y menos) */
 @media screen and (max-width: 768px) {
     .section-title {
         font-size: 2rem;
@@ -36,6 +56,7 @@
     .slider-section {
         height: 70vh;
         min-height: 450px;
+        margin-top: 75px; /* Ajustar por navbar más alto */
     }
     
     .slide-title {
@@ -46,13 +67,15 @@
         font-size: 1.1rem;
     }
     
+    /* Menú responsive */
     .menu-toggle {
         display: block;
+        font-size: 1.6rem;
     }
     
     .nav-menu {
         position: fixed;
-        top: 70px;
+        top: 75px;
         left: 0;
         width: 100%;
         background-color: var(--neutral-white);
@@ -84,9 +107,27 @@
     .impact-number {
         font-size: 3.5rem;
     }
+    
+    /* Logo en tablet pequeña */
+    .logo img {
+        height: 60px;
+        width: 60px;
+    }
+    
+    .logo-container {
+        min-width: 140px;
+    }
+    
+    .navbar {
+        min-height: 75px;
+    }
+    
+    .nav-container {
+        padding: 0.6rem 1.2rem;
+    }
 }
 
-/* Dispositivos móviles */
+/* Dispositivos móviles (576px y menos) */
 @media screen and (max-width: 576px) {
     .container {
         padding: 0 1rem;
@@ -103,7 +144,7 @@
     .slider-section {
         height: 60vh;
         min-height: 400px;
-        margin-top: 60px;
+        margin-top: 70px;
     }
     
     .slide {
@@ -125,12 +166,28 @@
         font-size: 0.9rem;
     }
     
-    .nav-container {
-        padding: 0.8rem 1rem;
+    /* Logo en móviles */
+    .logo img {
+        height: 52px;
+        width: 52px;
     }
     
-    .logo {
-        font-size: 1.1rem;
+    .logo-container {
+        min-width: 120px;
+    }
+    
+    .navbar {
+        min-height: 70px;
+    }
+    
+    .nav-container {
+        padding: 0.5rem 1rem;
+    }
+    
+    .nav-menu {
+        top: 70px;
+        padding: 1.8rem 0;
+        gap: 1.3rem;
     }
     
     .impact-number {
@@ -170,7 +227,7 @@
     }
 }
 
-/* Dispositivos móviles muy pequeños */
+/* Dispositivos móviles muy pequeños (400px y menos) */
 @media screen and (max-width: 400px) {
     .slide-title {
         font-size: 1.6rem;
@@ -178,6 +235,35 @@
     
     .section-title {
         font-size: 1.6rem;
+    }
+    
+    /* Logo en móviles pequeños */
+    .logo img {
+        height: 46px;
+        width: 46px;
+    }
+    
+    .logo-container {
+        min-width: 110px;
+    }
+    
+    .navbar {
+        min-height: 65px;
+    }
+    
+    .nav-container {
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .nav-menu {
+        top: 65px;
+        padding: 1.5rem 0;
+        gap: 1.2rem;
+    }
+    
+    .slider-section {
+        margin-top: 65px;
+        height: 55vh;
     }
     
     .impact-grid, .alliances-grid {
@@ -190,5 +276,29 @@
     
     .contact-form {
         padding: 1.5rem;
+    }
+}
+
+/* Dispositivos muy pequeños (350px y menos) */
+@media screen and (max-width: 350px) {
+    .logo img {
+        height: 42px;
+        width: 42px;
+    }
+    
+    .logo-container {
+        min-width: 100px;
+    }
+    
+    .navbar {
+        min-height: 60px;
+    }
+    
+    .nav-menu {
+        top: 60px;
+    }
+    
+    .slider-section {
+        margin-top: 60px;
     }
 }

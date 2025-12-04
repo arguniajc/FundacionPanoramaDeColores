@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="es" class="no-js">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Fundación Panorama de Colores - Transformamos vidas a través del arte, el deporte y la conciencia ambiental">
+    <meta name="keywords" content="fundación, arte, deporte, medio ambiente, transformación social, ONG">
+    <meta name="author" content="Fundación Panorama de Colores">
+    <meta name="theme-color" content="#4F2698">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://panoramadecolores.org">
+    <meta property="og:title" content="Fundación Panorama de Colores">
+    <meta property="og:description" content="Transformamos vidas a través del arte, el deporte y la conciencia ambiental">
+    <meta property="og:image" content="assets/images/og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://panoramadecolores.org">
+    <meta property="twitter:title" content="Fundación Panorama de Colores">
+    <meta property="twitter:description" content="Transformamos vidas a través del arte, el deporte y la conciencia ambiental">
+    <meta property="twitter:image" content="assets/images/og-image.jpg">
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+    <link rel="manifest" href="assets/icons/site.webmanifest">
+    
+    <title>Panorama de Colores | Transformando Vidas</title>
+    
+    <!-- Preload crítico -->
+    <link rel="preload" href="css/main.css" as="style">
+    <link rel="preload" href="js/main.js" as="script">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    
+    <!-- Fuentes optimizadas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome minimal -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Skip to content para accesibilidad -->
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+    
+    <!-- Header Minimalista -->
+    <header class="header">
+        <div class="container header-container">
+            <!-- Logo Compacto -->
+            <a href="/" class="logo" aria-label="Fundación Panorama de Colores - Inicio">
+                <div class="logo-mark">
+                    <span class="logo-circle"></span>
+                    <span class="logo-circle"></span>
+                    <span class="logo-circle"></span>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-primary">PANORAMA</span>
+                    <span class="logo-secondary">de colores</span>
+                </div>
+            </a>
+            
+            <!-- Navegación Compacta -->
+            <nav class="nav" aria-label="Navegación principal">
+                <button class="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
+                    <span class="nav-toggle-line"></span>
+                    <span class="nav-toggle-line"></span>
+                    <span class="nav-toggle-line"></span>
+                </button>
+                
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="#inicio" class="nav-link active" data-nav="inicio">
+                            <i class="fas fa-home nav-icon"></i>
+                            <span class="nav-text">Inicio</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#nosotros" class="nav-link" data-nav="nosotros">
+                            <i class="fas fa-users nav-icon"></i>
+                            <span class="nav-text">Nosotros</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#programas" class="nav-link" data-nav="programas">
+                            <i class="fas fa-heart nav-icon"></i>
+                            <span class="nav-text">Programas</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#galeria" class="nav-link" data-nav="galeria">
+                            <i class="fas fa-images nav-icon"></i>
+                            <span class="nav-text">Galería</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#impacto" class="nav-link" data-nav="impacto">
+                            <i class="fas fa-chart-line nav-icon"></i>
+                            <span class="nav-text">Impacto</span>
+                        </a>
+                    </li>
+                    <li class="nav-item nav-item-cta">
+                        <a href="#donar" class="nav-link nav-link-cta" data-nav="donar">
+                            <i class="fas fa-hands-helping nav-icon"></i>
+                            <span class="nav-text">Donar</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- Botón donar móvil -->
+                <a href="#donar" class="donate-btn-mobile" aria-label="Hacer una donación">
+                    <i class="fas fa-heart"></i>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main id="main-content">
+        <!-- Hero Slider Moderno -->
+        <section class="hero-section" id="inicio" aria-label="Slider principal">
+            <div class="hero-slider">
+                <!-- Slide 1 -->
+                <div class="slide active" data-slide="1">
+                    <div class="slide-background" style="background-image: url('https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')"></div>
+                    <div class="slide-overlay"></div>
+                    <div class="slide-content">
+                        <div class="slide-badge">Transformando Vidas</div>
+                        <h1 class="slide-title">Arte que <span class="highlight">inspira</span> cambio</h1>
+                        <p class="slide-description">Talleres creativos que transforman realidades y construyen futuros llenos de color.</p>
+                        <a href="#programas" class="btn-slide">
+                            <span>Explorar Programas</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Slide 2 -->
+                <div class="slide" data-slide="2">
+                    <div class="slide-background" style="background-image: url('https://images.unsplash.com/photo-1546519638-68e109498ffc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')"></div>
+                    <div class="slide-overlay"></div>
+                    <div class="slide-content">
+                        <div class="slide-badge">Deporte & Comunidad</div>
+                        <h1 class="slide-title">Movimiento que <span class="highlight">une</span> corazones</h1>
+                        <p class="slide-description">Desarrollo integral a través del deporte en comunidades vulnerables.</p>
+                        <a href="#galeria" class="btn-slide">
+                            <span>Ver Proyectos</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Slide 3 -->
+                <div class="slide" data-slide="3">
+                    <div class="slide-background" style="background-image: url('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')"></div>
+                    <div class="slide-overlay"></div>
+                    <div class="slide-content">
+                        <div class="slide-badge">Conciencia Ambiental</div>
+                        <h1 class="slide-title">Planeta que <span class="highlight">respira</span> esperanza</h1>
+                        <p class="slide-description">Educación ambiental y proyectos sostenibles para un futuro mejor.</p>
+                        <a href="#impacto" class="btn-slide">
+                            <span>Conocer Impacto</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Controles del Slider -->
+            <div class="slider-controls">
+                <button class="slider-btn prev-btn" aria-label="Slide anterior">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="slider-pagination">
+                    <button class="pagination-dot active" aria-label="Ir al slide 1" data-slide="0"></button>
+                    <button class="pagination-dot" aria-label="Ir al slide 2" data-slide="1"></button>
+                    <button class="pagination-dot" aria-label="Ir al slide 3" data-slide="2"></button>
+                </div>
+                <button class="slider-btn next-btn" aria-label="Siguiente slide">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            
+            <!-- Scroll Indicator -->
+            <div class="scroll-indicator" aria-hidden="true">
+                <span class="scroll-text">Scroll</span>
+                <div class="scroll-line"></div>
+            </div>
+        </section>
+
+        <!-- Sección Misión (Muy Compacta) -->
+        <section class="mission-section" id="nosotros">
+            <div class="container mission-container">
+                <div class="mission-card">
+                    <div class="mission-icon">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <h2 class="mission-title">Nuestra Visión</h2>
+                    <p class="mission-text">Ser el referente en transformación social mediante programas integrales que pintan un panorama lleno de esperanza.</p>
+                </div>
+                
+                <div class="mission-card">
+                    <div class="mission-icon">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <h2 class="mission-title">Nuestra Misión</h2>
+                    <p class="mission-text">Transformar vidas y entornos a través del arte, deporte y conciencia ambiental en comunidades vulnerables.</p>
+                </div>
+                
+                <div class="mission-card">
+                    <div class="mission-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h2 class="mission-title">Nuestros Valores</h2>
+                    <p class="mission-text">Solidaridad, creatividad, sostenibilidad e inclusión como pilares de cada acción.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Programas Moderna -->
+        <section class="programs-section" id="programas">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-label">Lo Que Hacemos</span>
+                    <h2 class="section-title">Programas de <span class="highlight">Transformación</span></h2>
+                    <p class="section-subtitle">Iniciativas diseñadas para crear impacto real y duradero</p>
+                </div>
+                
+                <div class="programs-grid">
+                    <!-- Programa 1 -->
+                    <article class="program-card">
+                        <div class="program-icon">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                        <div class="program-content">
+                            <h3 class="program-title">Arte & Creatividad</h3>
+                            <p class="program-description">Talleres de pintura, música y expresión artística para el desarrollo emocional y cognitivo.</p>
+                            <ul class="program-features">
+                                <li><i class="fas fa-check"></i> Talleres semanales</li>
+                                <li><i class="fas fa-check"></i> Materiales incluidos</li>
+                                <li><i class="fas fa-check"></i> Exhibiciones comunitarias</li>
+                            </ul>
+                        </div>
+                        <a href="#" class="program-link" aria-label="Más información sobre Arte & Creatividad">
+                            <span>Explorar</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </article>
+                    
+                    <!-- Programa 2 -->
+                    <article class="program-card">
+                        <div class="program-icon">
+                            <i class="fas fa-futbol"></i>
+                        </div>
+                        <div class="program-content">
+                            <h3 class="program-title">Deporte & Valores</h3>
+                            <p class="program-description">Escuelas deportivas que promueven trabajo en equipo, disciplina y salud integral.</p>
+                            <ul class="program-features">
+                                <li><i class="fas fa-check"></i> Entrenamientos profesionales</li>
+                                <li><i class="fas fa-check"></i> Torneos comunitarios</li>
+                                <li><i class="fas fa-check"></i> Seguimiento psicológico</li>
+                            </ul>
+                        </div>
+                        <a href="#" class="program-link" aria-label="Más información sobre Deporte & Valores">
+                            <span>Explorar</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </article>
+                    
+                    <!-- Programa 3 -->
+                    <article class="program-card">
+                        <div class="program-icon">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <div class="program-content">
+                            <h3 class="program-title">Eco & Sostenibilidad</h3>
+                            <p class="program-description">Proyectos ambientales que enseñan y aplican prácticas sostenibles en la comunidad.</p>
+                            <ul class="program-features">
+                                <li><i class="fas fa-check"></i> Huertas comunitarias</li>
+                                <li><i class="fas fa-check"></i> Talleres de reciclaje</li>
+                                <li><i class="fas fa-check"></i> Reforestación urbana</li>
+                            </ul>
+                        </div>
+                        <a href="#" class="program-link" aria-label="Más información sobre Eco & Sostenibilidad">
+                            <span>Explorar</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Galería Moderna -->
+        <section class="gallery-section" id="galeria">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-label">Nuestro Impacto Visual</span>
+                    <h2 class="section-title">Galería de <span class="highlight">Momentos</span></h2>
+                    <p class="section-subtitle">Capturas que reflejan la transformación que generamos</p>
+                </div>
+                
+                <div class="gallery-grid">
+                    <figure class="gallery-item">
+                        <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Niños en taller de pintura" loading="lazy">
+                        <figcaption class="gallery-caption">
+                            <h3>Taller de Arte Infantil</h3>
+                            <p>Expresión creativa en acción</p>
+                        </figcaption>
+                    </figure>
+                    
+                    <figure class="gallery-item">
+                        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Torneo deportivo comunitario" loading="lazy">
+                        <figcaption class="gallery-caption">
+                            <h3>Torneo Comunitario</h3>
+                            <p>Deporte que une generaciones</p>
+                        </figcaption>
+                    </figure>
+                    
+                    <figure class="gallery-item">
+                        <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Taller de reciclaje" loading="lazy">
+                        <figcaption class="gallery-caption">
+                            <h3>Taller de Reciclaje</h3>
+                            <p>Transformando materiales, transformando mentes</p>
+                        </figcaption>
+                    </figure>
+                </div>
+                
+                <div class="text-center">
+                    <button class="btn-load-more" id="loadMoreGallery">
+                        <span>Cargar Más</span>
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Impacto (Estadísticas) -->
+        <section class="impact-section" id="impacto">
+            <div class="container">
+                <div class="impact-grid">
+                    <div class="impact-content">
+                        <span class="section-label">Nuestros Logros</span>
+                        <h2 class="section-title">Impacto que <span class="highlight">Cuenta</span></h2>
+                        <p class="section-subtitle">Cada número representa una vida transformada, una comunidad fortalecida.</p>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" data-count="1500">0</div>
+                            <div class="stat-label">Participantes</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-number" data-count="85">0</div>
+                            <div class="stat-label">Talleres Realizados</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-number" data-count="12">0</div>
+                            <div class="stat-label">Comunidades</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-number" data-count="3">0</div>
+                            <div class="stat-label">Años Transformando</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Donaciones Moderno -->
+        <section class="donate-section" id="donar">
+            <div class="container donate-container">
+                <div class="donate-content">
+                    <h2 class="donate-title">Sé Parte del <span class="highlight">Cambio</span></h2>
+                    <p class="donate-description">Tu apoyo hace posible que sigamos pintando un panorama más colorido para quienes más lo necesitan.</p>
+                    
+                    <div class="donate-options">
+                        <button class="donate-option" data-amount="25">
+                            <span>$25</span>
+                            <small>Alimenta creatividad</small>
+                        </button>
+                        <button class="donate-option active" data-amount="50">
+                            <span>$50</span>
+                            <small>Equipa un taller</small>
+                        </button>
+                        <button class="donate-option" data-amount="100">
+                            <span>$100</span>
+                            <small>Transforma una vida</small>
+                        </button>
+                        <div class="donate-custom">
+                            <input type="number" placeholder="Otra cantidad" min="1" aria-label="Cantidad personalizada de donación">
+                            <span class="currency">$</span>
+                        </div>
+                    </div>
+                    
+                    <form class="donate-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" placeholder="Nombre completo" required aria-label="Nombre para la donación">
+                            </div>
+                            <div class="form-group">
+                                <input type="email" placeholder="Correo electrónico" required aria-label="Email para la donación">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn-donate">
+                                <i class="fas fa-lock"></i>
+                                <span>Donar de Forma Segura</span>
+                            </button>
+                        </div>
+                        
+                        <p class="form-note">
+                            <i class="fas fa-shield-alt"></i>
+                            Transacción 100% segura. Los datos están protegidos.
+                        </p>
+                    </form>
+                </div>
+                
+                <div class="donate-visual">
+                    <div class="visual-circle">
+                        <i class="fas fa-hands-heart"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contacto Compacto -->
+        <section class="contact-section">
+            <div class="container contact-container">
+                <div class="contact-info">
+                    <h2 class="contact-title">Conectemos</h2>
+                    <p class="contact-subtitle">¿Listo para sumar colores al panorama?</p>
+                    
+                    <div class="contact-methods">
+                        <a href="mailto:info@panoramadecolores.org" class="contact-method">
+                            <i class="fas fa-envelope"></i>
+                            <div>
+                                <h3>Email</h3>
+                                <p>info@panoramadecolores.org</p>
+                            </div>
+                        </a>
+                        
+                        <a href="tel:+12345678900" class="contact-method">
+                            <i class="fas fa-phone"></i>
+                            <div>
+                                <h3>Teléfono</h3>
+                                <p>+1 (234) 567-8900</p>
+                            </div>
+                        </a>
+                        
+                        <div class="contact-method">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>
+                                <h3>Oficina</h3>
+                                <p>Calle Color 123, Ciudad Esperanza</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="contact-form">
+                    <form id="contactForm" aria-label="Formulario de contacto">
+                        <div class="form-group">
+                            <input type="text" placeholder="Tu nombre" required aria-label="Nombre">
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="email" placeholder="Tu email" required aria-label="Correo electrónico">
+                        </div>
+                        
+                        <div class="form-group">
+                            <textarea placeholder="Tu mensaje" rows="4" required aria-label="Mensaje"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn-contact">
+                            <span>Enviar Mensaje</span>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer Minimalista -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <a href="/" class="footer-logo" aria-label="Fundación Panorama de Colores">
+                        <div class="logo-mark">
+                            <span class="logo-circle"></span>
+                            <span class="logo-circle"></span>
+                            <span class="logo-circle"></span>
+                        </div>
+                        <div class="logo-text">
+                            <span class="logo-primary">PANORAMA</span>
+                            <span class="logo-secondary">de colores</span>
+                        </div>
+                    </a>
+                    <p class="footer-tagline">Transformando vidas desde 2025</p>
+                </div>
+                
+                <div class="footer-links">
+                    <div class="link-group">
+                        <h3>Navegación</h3>
+                        <ul>
+                            <li><a href="#inicio">Inicio</a></li>
+                            <li><a href="#nosotros">Nosotros</a></li>
+                            <li><a href="#programas">Programas</a></li>
+                            <li><a href="#galeria">Galería</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="link-group">
+                        <h3>Recursos</h3>
+                        <ul>
+                            <li><a href="#">Transparencia</a></li>
+                            <li><a href="#">Reportes Anuales</a></li>
+                            <li><a href="#">Voluntariado</a></li>
+                            <li><a href="#">Alianzas</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="link-group">
+                        <h3>Legal</h3>
+                        <ul>
+                            <li><a href="#">Privacidad</a></li>
+                            <li><a href="#">Términos</a></li>
+                            <li><a href="#">Cookies</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <div class="social-links">
+                    <a href="#" aria-label="Facebook">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="#" aria-label="Instagram">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="#" aria-label="Twitter">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" aria-label="YouTube">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                </div>
+                
+                <p class="copyright">
+                    &copy; 2025 Fundación Panorama de Colores. Todos los derechos reservados.
+                    <span class="registration">Reg. ONG #12345-2025</span>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top -->
+    <button class="back-to-top" aria-label="Volver arriba">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <!-- Scripts -->
+    <script src="js/slider.js" defer></script>
+    <script src="js/main.js" defer></script>
+    
+    <!-- Seguridad y Analytics (ejemplo) -->
+    <script>
+        // CSP Nonce (Content Security Policy)
+        const nonce = Date.now().toString(36) + Math.random().toString(36).substr(2);
+        document.querySelector('script[nonce]')?.setAttribute('nonce', nonce);
+        
+        // Feature detection
+        if ('loading' in HTMLImageElement.prototype) {
+            console.log('Lazy loading nativo soportado');
+        }
+        
+        // Service Worker para PWA (opcional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

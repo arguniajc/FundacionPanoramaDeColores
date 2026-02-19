@@ -450,7 +450,7 @@ a {
 }
 
 .program-card:nth-child(4) {
-    border-top-color: var(--secondary-cyan);
+    border-top-color: red ;
 }
 
 .program-card:hover {
@@ -473,7 +473,7 @@ a {
 }
 
 .program-card:nth-child(4) .program-icon {
-    color: var(--secondary-cyan);
+    color: red ;
 }
 
 .program-title {

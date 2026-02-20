@@ -26,75 +26,109 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ══════════════════════════════════════════════
-    // 2. VALIDACIÓN DOCUMENTO DUPLICADO (en tiempo real)
-    // Consulta Supabase cuando el usuario termina de escribir
+    // 2. VALIDACIÓN DOCUMENTO DUPLICADO (tiempo real)
     // ══════════════════════════════════════════════
     const inputDoc    = document.getElementById('numero_documento');
     const selectTipo  = document.getElementById('tipo_documento');
     const docFeedback = document.getElementById('doc-feedback');
     let   docTimer    = null;
-    let   docValido   = true; // bandera global para el submit
+    let   docValido   = true; // true = puede continuar, false = bloquear envío
+    let   docYaVerificado = false; // evita re-verificar innecesariamente
+
+    /**
+     * Decide si el valor del campo debe validarse contra la BD.
+     * Retorna false si está vacío o es "sin documento".
+     */
+    function debeVerificar(valor) {
+        if (!valor) return false;
+        if (valor.toLowerCase() === 'sin documento') return false;
+        return true;
+    }
 
     async function verificarDocumento() {
         const num  = inputDoc.value.trim();
         const tipo = selectTipo.value;
 
-        // No validar si está vacío o es "Sin documento"
-        if (!num || num.toLowerCase() === 'sin documento' || !tipo) {
+        // Limpiar estado si no hay qué verificar
+        if (!debeVerificar(num) || !tipo) {
             docFeedback.textContent = '';
             docFeedback.className   = 'doc-feedback';
+            inputDoc.classList.remove('input-error');
             docValido = true;
+            docYaVerificado = false;
             return;
         }
+
+        // Si ya verificamos este mismo par (tipo, num) y era válido, no repetir
+        if (docYaVerificado) return;
 
         docFeedback.textContent = '⏳ Verificando...';
         docFeedback.className   = 'doc-feedback checking';
 
         try {
-            const url = `${SUPABASE_URL}/rest/v1/inscripciones?tipo_documento=eq.${encodeURIComponent(tipo)}&numero_documento=eq.${encodeURIComponent(num)}&select=id`;
+            const url = `${SUPABASE_URL}/rest/v1/inscripciones`
+                + `?tipo_documento=eq.${encodeURIComponent(tipo)}`
+                + `&numero_documento=eq.${encodeURIComponent(num)}`
+                + `&select=id&limit=1`;
+
             const res = await fetch(url, {
                 headers: {
                     'apikey':        SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
                 }
             });
+
+            if (!res.ok) throw new Error('Error de red');
+
             const data = await res.json();
 
-            if (data.length > 0) {
-                // Ya existe
+            if (Array.isArray(data) && data.length > 0) {
+                // ── YA EXISTE ──
                 docFeedback.textContent = '❌ Este documento ya está inscrito. Comunícate con la Fundación si es un error.';
                 docFeedback.className   = 'doc-feedback error';
                 inputDoc.classList.add('input-error');
                 docValido = false;
+                docYaVerificado = false; // permitir re-verificar si cambia algo
             } else {
+                // ── DISPONIBLE ──
                 docFeedback.textContent = '✅ Documento disponible';
                 docFeedback.className   = 'doc-feedback ok';
                 inputDoc.classList.remove('input-error');
                 docValido = true;
+                docYaVerificado = true;
             }
         } catch (e) {
-            // Si falla la consulta, permitir continuar (se valida igual en el servidor)
+            // Si falla la consulta, no bloqueamos (se valida igual en submit)
+            console.warn('Error verificando doc:', e);
             docFeedback.textContent = '';
             docFeedback.className   = 'doc-feedback';
             docValido = true;
+            docYaVerificado = false;
         }
     }
 
-    // Verificar al salir del campo o al cambiar tipo de documento
-    inputDoc.addEventListener('blur', () => {
-        clearTimeout(docTimer);
-        verificarDocumento();
-    });
+    // Verificar en tiempo real mientras escribe (con debounce)
     inputDoc.addEventListener('input', () => {
         clearTimeout(docTimer);
         docFeedback.textContent = '';
+        docFeedback.className   = 'doc-feedback';
         inputDoc.classList.remove('input-error');
         docValido = true;
-        // Verificar 800ms después de que el usuario deje de escribir
+        docYaVerificado = false;
         docTimer = setTimeout(verificarDocumento, 800);
     });
+
+    // Verificar al salir del campo
+    inputDoc.addEventListener('blur', () => {
+        clearTimeout(docTimer);
+        docYaVerificado = false;
+        verificarDocumento();
+    });
+
+    // Re-verificar si cambia el tipo de documento
     selectTipo.addEventListener('change', () => {
         clearTimeout(docTimer);
+        docYaVerificado = false;
         docTimer = setTimeout(verificarDocumento, 400);
     });
 
@@ -102,9 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // 3. PREVIEW DE IMÁGENES (subir archivo)
     // ══════════════════════════════════════════════
     function setupPreview(inputId, previewId, uploadAreaId) {
-        const input      = document.getElementById(inputId);
-        const preview    = document.getElementById(previewId);
-        const uploadArea = document.getElementById(uploadAreaId);
+        const input = document.getElementById(inputId);
         if (!input) return;
 
         input.addEventListener('change', function () {
@@ -129,11 +161,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const preview    = document.getElementById(previewId);
         const uploadArea = document.getElementById(uploadAreaId);
         if (preview)    preview.innerHTML = `<img src="${dataUrl}" alt="Vista previa">`;
-        if (uploadArea) uploadArea.classList.add('uploaded');
-        const icon = uploadArea?.querySelector('.upload-icon');
-        const text = uploadArea?.querySelector('.upload-text');
-        if (icon) icon.style.color = '#2D984F';
-        if (text) text.textContent = '✓ Imagen cargada';
+        if (uploadArea) {
+            uploadArea.classList.add('uploaded');
+            const icon = uploadArea.querySelector('.upload-icon');
+            const text = uploadArea.querySelector('.upload-text');
+            if (icon) icon.style.color = '#2D984F';
+            if (text) text.textContent = '✓ Imagen cargada';
+        }
     }
 
     setupPreview('foto_menor',     'preview-menor', 'upload-menor');
@@ -141,11 +175,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ══════════════════════════════════════════════
     // 4. CÁMARA INTEGRADA
-    // Permite tomar foto directamente desde el navegador
     // ══════════════════════════════════════════════
-    let streamActivo  = null; // referencia al stream de la cámara
-    let targetPreview = null; // 'menor' o 'doc'
-    let capturedBlobs = { menor: null, doc: null }; // fotos tomadas
+    let streamActivo  = null;
+    let targetPreview = null;
+    let capturedBlobs = { menor: null, doc: null };
 
     const cameraOverlay  = document.getElementById('cameraOverlay');
     const cameraVideo    = document.getElementById('cameraVideo');
@@ -155,13 +188,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnFlip        = document.getElementById('btnFlip');
     let   usandoFrontal  = true;
 
-    // Abrir cámara
     async function abrirCamara(target) {
         targetPreview = target;
         usandoFrontal = true;
 
+        const label = document.getElementById('cameraLabel');
+        if (label) {
+            label.textContent = target === 'menor'
+                ? '📷 Tomando foto del menor'
+                : '📄 Tomando foto del documento';
+        }
+
         try {
-            await iniciarStream();
+            await iniciarStream(true);
             cameraOverlay.classList.add('show');
         } catch (err) {
             alert('No se pudo acceder a la cámara. Por favor sube la foto desde tu galería.');
@@ -184,7 +223,6 @@ document.addEventListener('DOMContentLoaded', function () {
         cameraVideo.srcObject = streamActivo;
     }
 
-    // Capturar foto
     btnCapturar?.addEventListener('click', () => {
         const ctx = cameraCanvas.getContext('2d');
         cameraCanvas.width  = cameraVideo.videoWidth;
@@ -193,24 +231,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         cameraCanvas.toBlob(blob => {
             if (!blob) return;
-
-            // Guardar blob para el envío
             capturedBlobs[targetPreview] = blob;
-
-            // Mostrar preview
             const previewId    = targetPreview === 'menor' ? 'preview-menor' : 'preview-doc';
             const uploadAreaId = targetPreview === 'menor' ? 'upload-menor'  : 'upload-doc';
             const url          = URL.createObjectURL(blob);
             mostrarPreview(previewId, uploadAreaId, url);
-
             cerrarCamara();
-
-            // Flash de confirmación
             mostrarFlash('📸 ¡Foto tomada correctamente!');
         }, 'image/jpeg', 0.92);
     });
 
-    // Voltear cámara (frontal / trasera)
     btnFlip?.addEventListener('click', async () => {
         usandoFrontal = !usandoFrontal;
         try {
@@ -220,7 +250,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Cerrar cámara
     btnCerrarCam?.addEventListener('click', cerrarCamara);
     cameraOverlay?.addEventListener('click', e => {
         if (e.target === cameraOverlay) cerrarCamara();
@@ -234,12 +263,11 @@ document.addEventListener('DOMContentLoaded', function () {
         cameraOverlay?.classList.remove('show');
     }
 
-    // Botones de abrir cámara en cada sección
     document.getElementById('btnCamaraMenor')?.addEventListener('click', () => abrirCamara('menor'));
     document.getElementById('btnCamaraDoc')?.addEventListener('click',   () => abrirCamara('doc'));
 
     // ══════════════════════════════════════════════
-    // 5. VALIDAR CHECKBOXES
+    // 5. CHECKBOXES DE DECLARACIONES
     // ══════════════════════════════════════════════
     const declaraciones = [
         { check: 'auth_participacion',   bloque: 'decl1' },
@@ -258,10 +286,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ══════════════════════════════════════════════
-    // 6. GENERAR NOMBRE DE ARCHIVO DESCRIPTIVO
+    // 6. NOMBRE DE ARCHIVO DESCRIPTIVO
     // ══════════════════════════════════════════════
     function generarNombreArchivo(tipoDoc, numDoc, nombreMenor, tipo, extension) {
-        const limpiar = txt => txt
+        const limpiar = txt => (txt || '')
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .replace(/[^a-zA-Z0-9]/g, '_')
@@ -273,10 +301,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ══════════════════════════════════════════════
     // 7. SUBIR FOTO A SUPABASE STORAGE
-    // Acepta tanto File (galería) como Blob (cámara)
     // ══════════════════════════════════════════════
     async function subirFoto(inputId, tipoArchivo, tipoDoc, numDoc, nombreMenor, blobOverride = null) {
-        let file = blobOverride; // foto tomada con cámara
+        let file = blobOverride;
 
         if (!file) {
             const input = document.getElementById(inputId);
@@ -320,14 +347,10 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
 
-        // ── Validar documento duplicado ──
-        if (!docValido) {
-            inputDoc.focus();
-            inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
+        const num  = inputDoc.value.trim();
+        const tipo = selectTipo.value;
 
-        // ── Validar checkboxes ──
+        // ── (A) Validar checkboxes primero ──
         let checkOk     = true;
         let primerError = null;
 
@@ -342,6 +365,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
+        // ── (B) Validar campos requeridos HTML ──
         if (!form.checkValidity()) {
             form.reportValidity();
             return;
@@ -352,26 +376,38 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // ── Verificar duplicado UNA VEZ MÁS antes de enviar (doble seguridad) ──
-        const num  = inputDoc.value.trim();
-        const tipo = selectTipo.value;
+        // ── (C) Validar estado de documento ──
+        if (!docValido) {
+            inputDoc.focus();
+            inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
 
-        if (num && num.toLowerCase() !== 'sin documento') {
+        // ── (D) Doble verificación en el servidor antes de enviar ──
+        if (debeVerificar(num) && tipo) {
             btnSubmit.disabled = true;
             btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Verificando...</span>';
 
             try {
-                const checkUrl = `${SUPABASE_URL}/rest/v1/inscripciones?tipo_documento=eq.${encodeURIComponent(tipo)}&numero_documento=eq.${encodeURIComponent(num)}&select=id`;
-                const checkRes = await fetch(checkUrl, {
-                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                const checkUrl = `${SUPABASE_URL}/rest/v1/inscripciones`
+                    + `?tipo_documento=eq.${encodeURIComponent(tipo)}`
+                    + `&numero_documento=eq.${encodeURIComponent(num)}`
+                    + `&select=id&limit=1`;
+
+                const checkRes  = await fetch(checkUrl, {
+                    headers: {
+                        'apikey':        SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
                 });
                 const checkData = await checkRes.json();
 
-                if (checkData.length > 0) {
+                if (Array.isArray(checkData) && checkData.length > 0) {
                     docFeedback.textContent = '❌ Este documento ya está inscrito. No es posible duplicar la inscripción.';
                     docFeedback.className   = 'doc-feedback error';
                     inputDoc.classList.add('input-error');
                     inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    docValido = false;
                     btnSubmit.disabled = false;
                     btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> <span>Enviar Inscripción</span>';
                     return;
@@ -381,16 +417,15 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // ── Mostrar loading ──
+        // ── (E) Mostrar loading ──
         btnSubmit.disabled = true;
         btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Enviando...</span>';
 
         try {
-            const tipoDoc     = selectTipo.value;
-            const numDoc      = inputDoc.value.trim();
+            const tipoDoc     = tipo;
+            const numDoc      = num;
             const nombreMenor = document.getElementById('nombre_menor').value.trim();
 
-            // Subir fotos (prioridad: blob de cámara, luego archivo de galería)
             const urlFotoMenor     = await subirFoto('foto_menor',     'foto',      tipoDoc, numDoc, nombreMenor, capturedBlobs.menor || null);
             const urlFotoDocumento = await subirFoto('foto_documento', 'documento', tipoDoc, numDoc, nombreMenor, capturedBlobs.doc   || null);
 
@@ -398,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 nombre_menor:        nombreMenor,
                 fecha_nacimiento:    document.getElementById('fecha_nacimiento').value,
                 tipo_documento:      tipoDoc,
-                numero_documento:    numDoc,
+                numero_documento:    numDoc || null,
                 eps:                 document.getElementById('eps').value.trim(),
                 talla_camisa:        document.getElementById('talla_camisa').value,
                 talla_pantalon:      document.getElementById('talla_pantalon').value,
@@ -426,8 +461,17 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (!respuesta.ok) {
-                const error = await respuesta.text();
-                throw new Error(error);
+                const errorText = await respuesta.text();
+                // Detectar error de clave única (constraint de Supabase/Postgres)
+                if (errorText.includes('23505') || errorText.includes('duplicate') || errorText.includes('unique')) {
+                    docFeedback.textContent = '❌ Este documento ya está inscrito. No se puede duplicar.';
+                    docFeedback.className   = 'doc-feedback error';
+                    inputDoc.classList.add('input-error');
+                    docValido = false;
+                    inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                throw new Error(errorText);
             }
 
             // ── ÉXITO ──
@@ -444,11 +488,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ══════════════════════════════════════════════
-    // 9. LIMPIAR FORMULARIO DESPUÉS DEL ÉXITO
+    // 9. LIMPIAR FORMULARIO
     // ══════════════════════════════════════════════
     function limpiarFormulario() {
         form.reset();
         capturedBlobs = { menor: null, doc: null };
+        docValido = true;
+        docYaVerificado = false;
 
         ['preview-menor', 'preview-doc'].forEach(id => {
             const el = document.getElementById(id);
@@ -476,7 +522,6 @@ document.addEventListener('DOMContentLoaded', function () {
         docFeedback.textContent = '';
         docFeedback.className   = 'doc-feedback';
         inputDoc.classList.remove('input-error');
-        docValido = true;
     }
 
     // ══════════════════════════════════════════════
@@ -496,8 +541,7 @@ document.addEventListener('DOMContentLoaded', function () {
             background:#2D984F; color:white; padding:0.75rem 1.75rem;
             border-radius:50px; font-family:'Nunito',sans-serif; font-weight:700;
             font-size:0.95rem; box-shadow:0 8px 24px rgba(45,152,79,0.4);
-            z-index:9999; animation:slideUp 0.3s ease;
-            white-space:nowrap;
+            z-index:9999; white-space:nowrap;
         `;
         flash.textContent = msg;
         document.body.appendChild(flash);

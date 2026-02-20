@@ -4,10 +4,19 @@
    Solo define estilos propios de la página de inscripción.
    ================================================================ */
 
+/* Reset box-sizing global para esta página */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 /* Fuente adicional para esta página */
 body {
     font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f5f0ff;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 /* ── HEADER DE INSCRIPCIÓN ── */
@@ -17,6 +26,7 @@ body {
     text-align: center;
     position: relative;
     overflow: hidden;
+    width: 100%;
 }
 
 .page-header::before {
@@ -76,7 +86,7 @@ body {
 .page-header h1 {
     font-family: 'Playfair Display', serif;
     font-size: clamp(1.8rem, 5vw, 2.8rem);
-    color: var(--neutral-white);
+    color: #ffffff;
     margin-bottom: 0.75rem;
     position: relative;
     z-index: 1;
@@ -94,19 +104,24 @@ body {
 
 /* ── CONTENEDOR DEL FORMULARIO ── */
 .form-wrapper {
-    max-width: 720px;
+    width: 100%;
+    max-width: 760px;
     margin: -2.5rem auto 3rem;
     padding: 0 1.25rem;
     position: relative;
     z-index: 10;
+    /* Asegura centrado */
+    left: 0;
+    right: 0;
 }
 
 .form-card {
-    background: var(--neutral-white);
+    background: #ffffff;
     border-radius: 24px;
     box-shadow: 0 20px 60px rgba(78,27,149,0.12), 0 4px 16px rgba(0,0,0,0.06);
     overflow: hidden;
     animation: slideUp 0.6s ease both;
+    width: 100%;
 }
 
 @keyframes slideUp {
@@ -118,6 +133,7 @@ body {
 .form-section {
     padding: 2rem 2.25rem;
     border-bottom: 1px solid #f0eaff;
+    width: 100%;
 }
 .form-section:last-of-type { border-bottom: none; }
 
@@ -153,6 +169,7 @@ body {
 .field-grid {
     display: grid;
     gap: 1.1rem;
+    width: 100%;
 }
 .field-grid-2 { grid-template-columns: 1fr 1fr; }
 .talla-grid   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.85rem; }
@@ -161,6 +178,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
+    min-width: 0; /* Evita overflow en grid */
 }
 
 /* ── LABELS Y HINTS ── */
@@ -181,13 +199,13 @@ body {
 }
 
 /* ── INPUTS, SELECTS, TEXTAREAS ── */
-/* Reseteamos los estilos del main.css para los inputs de esta página */
 .form-card input[type="text"],
 .form-card input[type="date"],
 .form-card input[type="tel"],
 .form-card select,
 .form-card textarea {
     width: 100%;
+    min-width: 0;
     padding: 0.75rem 1rem;
     border: 1.5px solid #e2d9f3;
     border-radius: 10px;
@@ -195,11 +213,12 @@ body {
     font-size: 0.93rem;
     color: var(--neutral-black);
     background: #fdfbff;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
     outline: none;
     appearance: none;
     -webkit-appearance: none;
     box-shadow: none;
+    box-sizing: border-box;
 }
 
 .form-card input:focus,
@@ -245,9 +264,10 @@ body {
     border: 1.5px solid #e2d9f3;
     border-radius: 10px;
     padding: 0.65rem 1.1rem;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
     font-size: 0.9rem;
     font-weight: 600;
+    min-width: 0;
 }
 
 .radio-row:hover {
@@ -291,7 +311,9 @@ body {
     text-align: center;
     cursor: pointer;
     background: #fdfbff;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .upload-area:hover {
@@ -325,7 +347,7 @@ body {
     margin-bottom: 0;
 }
 
-.preview-container { margin-top: 0.75rem; }
+.preview-container { margin-top: 0.75rem; width: 100%; }
 
 .preview-container img {
     width: 100%;
@@ -355,10 +377,10 @@ body {
 .declaration-block {
     background: linear-gradient(135deg, #fdf8ff, #f5fbff);
     border: 1.5px solid #e2d9f3;
-    border-radius: var(--border-radius);
+    border-radius: 12px;
     padding: 1.2rem 1.4rem;
     margin-bottom: 1rem;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 .declaration-block:last-child { margin-bottom: 0; }
 
@@ -406,7 +428,7 @@ body {
     background: #f0fff4;
 }
 
-/* ── BOTÓN ENVIAR (nombre distinto para no chocar con .btn-submit del main.css) ── */
+/* ── BOTÓN ENVIAR ── */
 .submit-section {
     padding: 2rem 2.25rem;
     background: linear-gradient(135deg, #fdf8ff, #f0faff);
@@ -427,7 +449,7 @@ body {
     font-size: 1rem;
     font-weight: 800;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
     box-shadow: 0 6px 20px rgba(78,27,149,0.3);
     width: 100%;
     max-width: 400px;
@@ -526,9 +548,167 @@ body {
     font-size: 0.9rem;
     cursor: pointer;
     text-decoration: none;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 .btn-back:hover { background: #3a1470; transform: translateY(-2px); }
+
+/* ── FEEDBACK DOCUMENTO DUPLICADO ── */
+.doc-feedback {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: 0.35rem;
+    min-height: 1.2em;
+    transition: all 0.2s ease;
+}
+.doc-feedback.error    { color: #e53e3e; }
+.doc-feedback.ok       { color: #2D984F; }
+.doc-feedback.checking { color: #6A6A6A; }
+
+.input-error {
+    border-color: #e53e3e !important;
+    box-shadow: 0 0 0 3px rgba(229,62,62,0.12) !important;
+}
+
+/* ── BOTONES DE CÁMARA ── */
+.upload-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.btn-camara {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.75rem;
+    background: rgba(78,27,149,0.08);
+    color: #4E1B95;
+    border: 1.5px solid #c9b8f0;
+    border-radius: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+.btn-camara:hover {
+    background: #4E1B95;
+    color: white;
+    border-color: #4E1B95;
+    transform: translateY(-1px);
+}
+.btn-camara i { font-size: 0.9rem; }
+
+/* ── MODAL DE CÁMARA ── */
+.camera-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+}
+.camera-overlay.show { display: flex; }
+
+.camera-box {
+    background: #111;
+    border-radius: 20px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 540px;
+    position: relative;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+}
+
+.camera-label {
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(78,27,149,0.85);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.3rem 1rem;
+    border-radius: 50px;
+    z-index: 2;
+    white-space: nowrap;
+    backdrop-filter: blur(4px);
+}
+
+#cameraVideo {
+    width: 100%;
+    display: block;
+    max-height: 60vh;
+    object-fit: cover;
+    background: #000;
+}
+
+#cameraCanvas { display: none; }
+
+.camera-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0 0.5rem;
+}
+
+.btn-capturar {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: white;
+    border: 5px solid rgba(78,27,149,0.5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: #4E1B95;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.btn-capturar:hover {
+    transform: scale(1.08);
+    border-color: #4E1B95;
+    box-shadow: 0 6px 24px rgba(78,27,149,0.5);
+}
+.btn-capturar:active { transform: scale(0.95); }
+
+.btn-cam-secondary {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+.btn-cam-secondary:hover {
+    background: rgba(255,255,255,0.25);
+    transform: scale(1.08);
+}
+
+.camera-tip {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.6);
+    text-align: center;
+}
 
 /* ── FOOTER ── */
 .page-footer {
@@ -545,13 +725,121 @@ body {
 }
 .page-footer a:hover { text-decoration: underline; }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 640px) {
-    .form-section    { padding: 1.5rem 1.25rem; }
-    .submit-section  { padding: 1.5rem 1.25rem; }
-    .field-grid-2    { grid-template-columns: 1fr; }
-    .talla-grid      { grid-template-columns: 1fr 1fr; }
-    .page-header     { padding: 2.5rem 1rem 4rem; }
-    .radio-group     { flex-direction: column; gap: 0.6rem; }
-    .success-box     { padding: 2rem 1.5rem; }
+/* ══════════════════════════════════════
+   RESPONSIVE — Móvil (≤ 480px)
+══════════════════════════════════════ */
+@media (max-width: 480px) {
+    .form-wrapper {
+        padding: 0 0.75rem;
+        margin-top: -1.5rem;
+    }
+    .form-card {
+        border-radius: 16px;
+    }
+    .form-section {
+        padding: 1.25rem 1rem;
+    }
+    .submit-section {
+        padding: 1.25rem 1rem;
+    }
+    .field-grid-2 {
+        grid-template-columns: 1fr;
+    }
+    .talla-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .page-header {
+        padding: 2rem 1rem 3.5rem;
+    }
+    .page-header h1 {
+        font-size: 1.6rem;
+    }
+    .radio-group {
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+    .radio-row {
+        width: 100%;
+    }
+    .success-box {
+        padding: 2rem 1.25rem;
+    }
+    .btn-submit-insc {
+        font-size: 0.92rem;
+        padding: 0.9rem 1.5rem;
+    }
+    .section-header h2 {
+        font-size: 0.9rem;
+    }
+    .upload-actions {
+        flex-direction: column;
+    }
+    .btn-camara {
+        flex: unset;
+        width: 100%;
+    }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — Tablet pequeño (481px–640px)
+══════════════════════════════════════ */
+@media (min-width: 481px) and (max-width: 640px) {
+    .form-wrapper {
+        padding: 0 1rem;
+    }
+    .form-section {
+        padding: 1.5rem 1.25rem;
+    }
+    .submit-section {
+        padding: 1.5rem 1.25rem;
+    }
+    .field-grid-2 {
+        grid-template-columns: 1fr;
+    }
+    .talla-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .page-header {
+        padding: 2.5rem 1rem 4rem;
+    }
+    .radio-group {
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+    .success-box {
+        padding: 2rem 1.5rem;
+    }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — Tablet (641px–900px)
+══════════════════════════════════════ */
+@media (min-width: 641px) and (max-width: 900px) {
+    .form-wrapper {
+        padding: 0 1.5rem;
+    }
+    .form-section {
+        padding: 1.75rem 1.75rem;
+    }
+    .talla-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+    .field-grid-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — Desktop (> 900px)
+══════════════════════════════════════ */
+@media (min-width: 901px) {
+    .form-wrapper {
+        padding: 0 1.25rem;
+    }
+    .field-grid-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+    .talla-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
 }

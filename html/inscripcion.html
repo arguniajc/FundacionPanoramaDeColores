@@ -5,17 +5,179 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscripción 2026 | Fundación Panorama de Colores</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Fuentes de la página principal -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <!-- CSS base original del sitio -->
     <link rel="stylesheet" href="../css/main.css">
-    <!-- CSS específico de esta página -->
     <link rel="stylesheet" href="../css/inscripcion.css">
+
+    <style>
+        /* ── FEEDBACK DOCUMENTO DUPLICADO ── */
+        .doc-feedback {
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-top: 0.35rem;
+            min-height: 1.2em;
+            transition: all 0.2s ease;
+        }
+        .doc-feedback.error    { color: #e53e3e; }
+        .doc-feedback.ok       { color: #2D984F; }
+        .doc-feedback.checking { color: #6A6A6A; }
+
+        .input-error {
+            border-color: #e53e3e !important;
+            box-shadow: 0 0 0 3px rgba(229,62,62,0.12) !important;
+        }
+
+        /* ── BOTONES DE CÁMARA ── */
+        .upload-actions {
+            display: flex;
+            gap: 0.6rem;
+            margin-top: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-camara {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.55rem 0.75rem;
+            background: rgba(78,27,149,0.08);
+            color: #4E1B95;
+            border: 1.5px solid #c9b8f0;
+            border-radius: 10px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .btn-camara:hover {
+            background: #4E1B95;
+            color: white;
+            border-color: #4E1B95;
+            transform: translateY(-1px);
+        }
+        .btn-camara i { font-size: 0.9rem; }
+
+        /* ── MODAL DE CÁMARA ── */
+        .camera-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem;
+        }
+        .camera-overlay.show { display: flex; }
+
+        .camera-box {
+            background: #111;
+            border-radius: 20px;
+            overflow: hidden;
+            width: 100%;
+            max-width: 540px;
+            position: relative;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+        }
+
+        .camera-label {
+            position: absolute;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(78,27,149,0.85);
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.3rem 1rem;
+            border-radius: 50px;
+            z-index: 2;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+        }
+
+        #cameraVideo {
+            width: 100%;
+            display: block;
+            max-height: 60vh;
+            object-fit: cover;
+            background: #000;
+        }
+
+        #cameraCanvas { display: none; }
+
+        .camera-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0 0.5rem;
+        }
+
+        .btn-capturar {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background: white;
+            border: 5px solid rgba(78,27,149,0.5);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            color: #4E1B95;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        .btn-capturar:hover {
+            transform: scale(1.08);
+            border-color: #4E1B95;
+            box-shadow: 0 6px 24px rgba(78,27,149,0.5);
+        }
+        .btn-capturar:active { transform: scale(0.95); }
+
+        .btn-cam-secondary {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .btn-cam-secondary:hover {
+            background: rgba(255,255,255,0.25);
+            transform: scale(1.08);
+        }
+
+        .camera-tip {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.6);
+            text-align: center;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+    </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- ── HEADER ── -->
 <header class="page-header">
     <a href="../index.html" class="header-logo">
         <img src="../images/logo.png" alt="Logo Fundación Panorama de Colores">
@@ -26,7 +188,7 @@
     <p>Registro de información institucional, administrativa y de beneficiarios. Garantizamos veracidad, confidencialidad y cumplimiento de la normatividad vigente.</p>
 </header>
 
-<!-- FORMULARIO -->
+<!-- ── FORMULARIO ── -->
 <div class="form-wrapper">
     <div class="form-card">
         <form id="inscripcionForm" novalidate>
@@ -65,9 +227,11 @@
                         </div>
                     </div>
 
+                    <!-- Número de documento con feedback de duplicado -->
                     <div class="field-group">
                         <label for="numero_documento">Número de documento</label>
-                        <input type="text" id="numero_documento" name="numero_documento" placeholder="Ej: 1234567890">
+                        <input type="text" id="numero_documento" name="numero_documento" placeholder="Ej: 1234567890" autocomplete="off">
+                        <div id="doc-feedback" class="doc-feedback"></div>
                         <span class="field-hint">Si no tiene número, escribe "Sin documento"</span>
                     </div>
 
@@ -114,7 +278,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3: SALUD Y ALERGIAS -->
+            <!-- SECCIÓN 3: SALUD -->
             <div class="form-section">
                 <div class="section-header">
                     <div class="section-icon icon-red"><i class="fas fa-heartbeat"></i></div>
@@ -138,18 +302,18 @@
 
                     <div class="field-group campo-condicional" id="campo_alergia">
                         <label for="descripcion_alergia">¿A qué es alérgico/a? <span class="required">*</span></label>
-                        <textarea id="descripcion_alergia" name="descripcion_alergia" placeholder="Describe la alergia. Ej: Polen, mariscos, penicilina... ¿Requiere medicamento especial?"></textarea>
+                        <textarea id="descripcion_alergia" name="descripcion_alergia" placeholder="Describe la alergia. Ej: Polen, mariscos, penicilina..."></textarea>
                     </div>
 
                     <div class="field-group">
                         <label for="observaciones_salud">Observaciones adicionales de salud</label>
-                        <textarea id="observaciones_salud" name="observaciones_salud" placeholder="Condición médica, medicamentos que toma, discapacidad, etc. (opcional)"></textarea>
+                        <textarea id="observaciones_salud" name="observaciones_salud" placeholder="Condición médica, medicamentos, discapacidad, etc. (opcional)"></textarea>
                     </div>
 
                 </div>
             </div>
 
-            <!-- SECCIÓN 4: FOTOGRAFÍAS -->
+            <!-- SECCIÓN 4: FOTOGRAFÍAS CON CÁMARA -->
             <div class="form-section">
                 <div class="section-header">
                     <div class="section-icon icon-green"><i class="fas fa-camera"></i></div>
@@ -157,6 +321,7 @@
                 </div>
                 <div class="field-grid field-grid-2">
 
+                    <!-- Foto del menor -->
                     <div class="field-group">
                         <label>Foto del menor <span class="required">*</span></label>
                         <div class="upload-area" id="upload-menor" onclick="document.getElementById('foto_menor').click()">
@@ -165,9 +330,19 @@
                             <p class="upload-hint">JPG o PNG · Máx. 5MB</p>
                             <input type="file" id="foto_menor" name="foto_menor" accept="image/*" style="display:none">
                         </div>
+                        <!-- Botones: galería + cámara -->
+                        <div class="upload-actions">
+                            <button type="button" class="btn-camara" onclick="document.getElementById('foto_menor').click()">
+                                <i class="fas fa-images"></i> Galería
+                            </button>
+                            <button type="button" class="btn-camara" id="btnCamaraMenor">
+                                <i class="fas fa-camera"></i> Tomar foto
+                            </button>
+                        </div>
                         <div class="preview-container" id="preview-menor"></div>
                     </div>
 
+                    <!-- Foto del documento -->
                     <div class="field-group">
                         <label>Foto del documento <span class="required">*</span></label>
                         <div class="upload-area" id="upload-doc" onclick="document.getElementById('foto_documento').click()">
@@ -175,6 +350,15 @@
                             <p class="upload-text">Clic para subir documento</p>
                             <p class="upload-hint">JPG o PNG · Ambas caras si aplica</p>
                             <input type="file" id="foto_documento" name="foto_documento" accept="image/*" style="display:none">
+                        </div>
+                        <!-- Botones: galería + cámara -->
+                        <div class="upload-actions">
+                            <button type="button" class="btn-camara" onclick="document.getElementById('foto_documento').click()">
+                                <i class="fas fa-images"></i> Galería
+                            </button>
+                            <button type="button" class="btn-camara" id="btnCamaraDoc">
+                                <i class="fas fa-camera"></i> Tomar foto
+                            </button>
                         </div>
                         <div class="preview-container" id="preview-doc"></div>
                     </div>
@@ -300,6 +484,30 @@
             <i class="fas fa-home"></i> Volver al inicio
         </a>
     </div>
+</div>
+
+<!-- ══ MODAL DE CÁMARA ══ -->
+<div class="camera-overlay" id="cameraOverlay">
+    <div class="camera-box">
+        <div class="camera-label" id="cameraLabel">📷 Tomando foto del menor</div>
+        <video id="cameraVideo" autoplay playsinline muted></video>
+        <canvas id="cameraCanvas"></canvas>
+    </div>
+    <div class="camera-controls">
+        <!-- Cerrar -->
+        <button type="button" class="btn-cam-secondary" id="btnCerrarCam" title="Cancelar">
+            <i class="fas fa-times"></i>
+        </button>
+        <!-- Capturar -->
+        <button type="button" class="btn-capturar" id="btnCapturar" title="Tomar foto">
+            <i class="fas fa-camera"></i>
+        </button>
+        <!-- Voltear cámara -->
+        <button type="button" class="btn-cam-secondary" id="btnFlip" title="Cambiar cámara">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+    <p class="camera-tip">Toca el botón blanco para capturar · <i class="fas fa-sync-alt"></i> para voltear la cámara</p>
 </div>
 
 <script src="../js/inscripcion.js"></script>

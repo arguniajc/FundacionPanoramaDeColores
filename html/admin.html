@@ -76,10 +76,10 @@
             <div class="header-actions">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Buscar por nombre o documento...">
+                    <input type="text" id="searchInput" placeholder="Buscar por nombre, doc, acudiente...">
                 </div>
                 <select id="filterCombo" class="filter-combo">
-                    <option value="">Todos</option>
+                    <option value="">Todos los campos</option>
                     <option value="nombre">Por nombre</option>
                     <option value="documento">Por documento</option>
                     <option value="alergia">Con alergia</option>
@@ -96,7 +96,7 @@
                     <i class="fas fa-child"></i>
                     <span id="totalInscritos">0</span> inscritos
                 </div>
-                <div class="stat-item alerta" id="statAlergias">
+                <div class="stat-item alerta">
                     <i class="fas fa-heartbeat"></i>
                     <span id="totalAlergias">0</span> con alergias
                 </div>
@@ -107,6 +107,7 @@
                 <table class="inscripciones-table">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Foto</th>
                             <th>Nombre</th>
                             <th>Documento</th>
@@ -119,13 +120,17 @@
                     </thead>
                     <tbody id="tablaBody">
                         <tr>
-                            <td colspan="8" class="loading-row">
+                            <td colspan="9" class="loading-row">
                                 <i class="fas fa-spinner fa-spin"></i> Cargando inscripciones...
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <!-- PAGINACIÓN -->
+            <div id="paginacionContenedor" class="paginacion-wrap"></div>
+
         </section>
 
         <!-- SECCIÓN ESTADÍSTICAS -->
@@ -157,11 +162,11 @@
     </main>
 </div>
 
-<!-- ══ MODAL VER / EDITAR INSCRIPCIÓN ══ -->
+<!-- ══ MODAL VER DETALLE ══ -->
 <div id="modalDetalle" class="modal-overlay" style="display:none;">
-    <div class="modal-box">
+    <div class="modal-box modal-hv-box">
         <div class="modal-header">
-            <h3 id="modalTitulo">Detalle de Inscripción</h3>
+            <h3 id="modalTitulo">Hoja de Vida</h3>
             <button class="modal-close-btn" id="btnCerrarModal">
                 <i class="fas fa-times"></i>
             </button>
@@ -170,6 +175,9 @@
             <!-- Se llena dinámicamente -->
         </div>
         <div class="modal-footer" id="modalFooter">
+            <button class="btn-pdf" id="btnDescargarPDF">
+                <i class="fas fa-file-pdf"></i> Descargar PDF
+            </button>
             <button class="btn-editar" id="btnEditarModal">
                 <i class="fas fa-edit"></i> Editar
             </button>

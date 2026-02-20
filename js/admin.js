@@ -906,5 +906,19 @@ function calcularEdad(fechaNac) {
     return `${edad} años`;
 }
 
+// Toggle sidebar móvil
+const sidebarToggle = document.getElementById('sidebarToggle');
+const sidebar = document.querySelector('.sidebar');
+const backdrop = document.getElementById('sidebarBackdrop');
+
+sidebarToggle?.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    backdrop.classList.toggle('active');
+});
+backdrop?.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
+});
+
 // ══ ARRANCAR ══
 iniciar();

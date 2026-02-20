@@ -20,7 +20,7 @@ let idParaEliminar         = null;
 const POR_PAGINA = 10;
 let paginaActual = 1;
 
-// ══ DATOS DE PRUEBA ══
+/** // ══ DATOS DE PRUEBA ══
 const USUARIO_PRUEBA = {
     id: 'test-001',
     nombre_menor: 'Juan David Salazar',
@@ -43,6 +43,7 @@ const USUARIO_PRUEBA = {
     created_at: new Date().toISOString()
 };
 
+ */
 // ══════════════════════════════════════════════
 // 1. AUTENTICACIÓN
 // ══════════════════════════════════════════════
@@ -123,7 +124,7 @@ async function cargarInscripciones() {
         return;
     }
 
-    inscripciones          = [USUARIO_PRUEBA, ...(data || [])];
+    inscripciones          = [ ...(data || [])];
     inscripcionesFiltradas = [...inscripciones];
     paginaActual           = 1;
     renderTabla();

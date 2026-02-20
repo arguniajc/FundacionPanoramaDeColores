@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscripción 2026 | Fundación Panorama de Colores</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Fuentes de la página principal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <!-- CSS base original del sitio -->
+    <link rel="stylesheet" href="../css/main.css">
+    <!-- CSS específico de esta página -->
+    <link rel="stylesheet" href="../css/inscripcion.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="page-header">
+    <a href="../index.html" class="header-logo">
+        <img src="../images/logo.png" alt="Logo Fundación Panorama de Colores">
+        <span class="header-logo-text">Fundación<br>Panorama de Colores</span>
+    </a>
+    <div class="header-badge">✦ Inscripciones Abiertas 2026</div>
+    <h1>Formulario de Inscripción</h1>
+    <p>Registro de información institucional, administrativa y de beneficiarios. Garantizamos veracidad, confidencialidad y cumplimiento de la normatividad vigente.</p>
+</header>
+
+<!-- FORMULARIO -->
+<div class="form-wrapper">
+    <div class="form-card">
+        <form id="inscripcionForm" novalidate>
+
+            <!-- SECCIÓN 1: DATOS DEL MENOR -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-icon icon-purple"><i class="fas fa-child"></i></div>
+                    <h2>Datos del Menor</h2>
+                </div>
+                <div class="field-grid">
+
+                    <div class="field-group">
+                        <label for="nombre_menor">Nombre completo <span class="required">*</span></label>
+                        <input type="text" id="nombre_menor" name="nombre_menor" placeholder="Nombres y apellidos completos" required>
+                    </div>
+
+                    <div class="field-grid field-grid-2">
+                        <div class="field-group">
+                            <label for="fecha_nacimiento">Fecha de nacimiento <span class="required">*</span></label>
+                            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+                        </div>
+                        <div class="field-group">
+                            <label for="tipo_documento">Tipo de documento <span class="required">*</span></label>
+                            <select id="tipo_documento" name="tipo_documento" required>
+                                <option value="" disabled selected>Selecciona...</option>
+                                <option value="TI">Tarjeta de Identidad (TI)</option>
+                                <option value="RC">Registro Civil (RC)</option>
+                                <option value="PPT">Permiso por Protección Temporal (PPT)</option>
+                                <option value="Pasaporte">Pasaporte</option>
+                                <option value="RAMV">RAMV</option>
+                                <option value="NUIP">NUIP</option>
+                                <option value="Sin documento">Sin documento</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="numero_documento">Número de documento</label>
+                        <input type="text" id="numero_documento" name="numero_documento" placeholder="Ej: 1234567890">
+                        <span class="field-hint">Si no tiene número, escribe "Sin documento"</span>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="eps">EPS / Entidad de salud <span class="required">*</span></label>
+                        <input type="text" id="eps" name="eps" placeholder="Ej: Sura, Coosalud, Nueva EPS..." required>
+                        <span class="field-hint">Si no tiene, escribe "No tiene"</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SECCIÓN 2: TALLAS -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-icon icon-orange"><i class="fas fa-tshirt"></i></div>
+                    <h2>Tallas</h2>
+                </div>
+                <div class="talla-grid">
+                    <div class="field-group">
+                        <label for="talla_camisa">Camisa <span class="required">*</span></label>
+                        <select id="talla_camisa" name="talla_camisa" required>
+                            <option value="" disabled selected>Talla...</option>
+                            <option>4</option><option>6</option><option>8</option>
+                            <option>10</option><option>12</option><option>14</option><option>16</option>
+                            <option>XS</option><option>S</option><option>M</option>
+                            <option>L</option><option>XL</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label for="talla_pantalon">Pantalón <span class="required">*</span></label>
+                        <select id="talla_pantalon" name="talla_pantalon" required>
+                            <option value="" disabled selected>Talla...</option>
+                            <option>4</option><option>6</option><option>8</option>
+                            <option>10</option><option>12</option><option>14</option><option>16</option>
+                            <option>XS</option><option>S</option><option>M</option>
+                            <option>L</option><option>XL</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label for="talla_zapatos">Zapatos <span class="required">*</span></label>
+                        <input type="text" id="talla_zapatos" name="talla_zapatos" placeholder="Ej: 32, 35..." required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 3: SALUD Y ALERGIAS -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-icon icon-red"><i class="fas fa-heartbeat"></i></div>
+                    <h2>Salud y Alergias</h2>
+                </div>
+                <div class="field-grid">
+
+                    <div class="field-group">
+                        <label>¿El menor tiene alguna alergia? <span class="required">*</span></label>
+                        <div class="radio-group">
+                            <label class="radio-row">
+                                <input type="radio" name="tiene_alergia" value="si" required>
+                                <span>Sí tiene alergia</span>
+                            </label>
+                            <label class="radio-row">
+                                <input type="radio" name="tiene_alergia" value="no">
+                                <span>No tiene alergia</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field-group campo-condicional" id="campo_alergia">
+                        <label for="descripcion_alergia">¿A qué es alérgico/a? <span class="required">*</span></label>
+                        <textarea id="descripcion_alergia" name="descripcion_alergia" placeholder="Describe la alergia. Ej: Polen, mariscos, penicilina... ¿Requiere medicamento especial?"></textarea>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="observaciones_salud">Observaciones adicionales de salud</label>
+                        <textarea id="observaciones_salud" name="observaciones_salud" placeholder="Condición médica, medicamentos que toma, discapacidad, etc. (opcional)"></textarea>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SECCIÓN 4: FOTOGRAFÍAS -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-icon icon-green"><i class="fas fa-camera"></i></div>
+                    <h2>Fotografías</h2>
+                </div>
+                <div class="field-grid field-grid-2">
+
+                    <div class="field-group">
+                        <label>Foto del menor <span class="required">*</span></label>
+                        <div class="upload-area" id="upload-menor" onclick="document.getElementById('foto_menor').click()">
+                            <i class="fas fa-user-circle upload-icon"></i>
+                            <p class="upload-text">Clic para subir foto</p>
+                            <p class="upload-hint">JPG o PNG · Máx. 5MB</p>
+                            <input type="file" id="foto_menor" name="foto_menor" accept="image/*" style="display:none">
+                        </div>
+                        <div class="preview-container" id="preview-menor"></div>
+                    </div>
+
+                    <div class="field-group">
+                        <label>Foto del documento <span class="required">*</span></label>
+                        <div class="upload-area" id="upload-doc" onclick="document.getElementById('foto_documento').click()">
+                            <i class="fas fa-id-card upload-icon"></i>
+                            <p class="upload-text">Clic para subir documento</p>
+                            <p class="upload-hint">JPG o PNG · Ambas caras si aplica</p>
+                            <input type="file" id="foto_documento" name="foto_documento" accept="image/*" style="display:none">
+                        </div>
+                        <div class="preview-container" id="preview-doc"></div>
+                    </div>
+
+                </div>
+                <div class="info-box">
+                    <i class="fas fa-shield-alt"></i>
+                    Las fotos se guardarán de forma segura. Solo el equipo administrativo de la Fundación tendrá acceso.
+                </div>
+            </div>
+
+            <!-- SECCIÓN 5: DATOS DEL ACUDIENTE -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-icon icon-green"><i class="fas fa-user-friends"></i></div>
+                    <h2>Datos del Acudiente</h2>
+                </div>
+                <div class="field-grid">
+
+                    <div class="field-group">
+                        <label for="nombre_acudiente">Nombre completo del acudiente <span class="required">*</span></label>
+                        <input type="text" id="nombre_acudiente" name="nombre_acudiente" placeholder="Nombres y apellidos" required>
+                    </div>
+
+                    <div class="field-grid field-grid-2">
+                        <div class="field-group">
+                            <label for="parentesco">Parentesco <span class="required">*</span></label>
+                            <select id="parentesco" name="parentesco" required>
+                                <option value="" disabled selected>Selecciona...</option>
+                                <option>Madre</option>
+                                <option>Padre</option>
+                                <option>Abuela/o</option>
+                                <option>Tía/o</option>
+                                <option>Hermana/o</option>
+                                <option>Acudiente legal</option>
+                                <option>Otro</option>
+                            </select>
+                        </div>
+                        <div class="field-group">
+                            <label for="whatsapp">Número de WhatsApp <span class="required">*</span></label>
+                            <input type="tel" id="whatsapp" name="whatsapp" placeholder="+57 300 000 0000" required>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="direccion">Dirección de residencia <span class="required">*</span></label>
+                        <input type="text" id="direccion" name="direccion" placeholder="Calle, carrera, barrio, ciudad..." required>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SECCIÓN 6: AUTORIZACIONES -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-icon icon-purple"><i class="fas fa-file-signature"></i></div>
+                    <h2>Autorizaciones y Declaraciones</h2>
+                </div>
+
+                <div class="declaration-block" id="decl1">
+                    <p class="declaration-text">
+                        Yo, en calidad de madre, padre o acudiente legal, <strong>autorizo la participación del menor en actividades lúdicas, educativas, deportivas, culturales y formativas</strong> desarrolladas por la Fundación Panorama de Colores. Declaro que se encuentra en condiciones adecuadas para participar.
+                    </p>
+                    <label class="checkbox-row">
+                        <input type="checkbox" id="auth_participacion" name="auth_participacion" required>
+                        <span class="checkbox-label">Acepto <span class="required">*</span></span>
+                    </label>
+                </div>
+
+                <div class="declaration-block" id="decl2">
+                    <p class="declaration-text">
+                        Comprendo que la Fundación actúa bajo <strong>principios de buena fe y supervisión responsable</strong>, y que no se hace responsable por accidentes o situaciones imprevistas fuera de su control directo.
+                    </p>
+                    <label class="checkbox-row">
+                        <input type="checkbox" id="auth_responsabilidad" name="auth_responsabilidad" required>
+                        <span class="checkbox-label">Acepto <span class="required">*</span></span>
+                    </label>
+                </div>
+
+                <div class="declaration-block" id="decl3">
+                    <p class="declaration-text">
+                        Autorizo la <strong>recolección, almacenamiento y uso de los datos personales</strong> aquí registrados para fines institucionales, administrativos y formativos, conforme a la <strong>Ley 1581 de 2012</strong> (Protección de Datos Personales).
+                    </p>
+                    <label class="checkbox-row">
+                        <input type="checkbox" id="auth_datos" name="auth_datos" required>
+                        <span class="checkbox-label">Acepto <span class="required">*</span></span>
+                    </label>
+                </div>
+
+            </div>
+
+            <!-- BOTÓN ENVIAR -->
+            <div class="submit-section">
+                <button type="submit" class="btn-submit-insc" id="btnSubmit">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Enviar Inscripción</span>
+                </button>
+                <p class="privacy-note">
+                    <i class="fas fa-lock"></i>
+                    Datos protegidos · Ley 1581 de 2012
+                </p>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="page-footer">
+    <p>© 2026 Fundación Panorama de Colores · Barrio Panorama, Yumbo Valle del Cauca</p>
+    <p style="margin-top:0.5rem;">
+        <a href="../index.html"><i class="fas fa-arrow-left"></i> Volver al sitio principal</a>
+    </p>
+</footer>
+
+<!-- OVERLAY ÉXITO -->
+<div class="success-overlay" id="successOverlay">
+    <div class="success-box">
+        <div class="success-icon"><i class="fas fa-check"></i></div>
+        <h2>¡Inscripción Enviada!</h2>
+        <p>Gracias por registrar al menor en la Fundación Panorama de Colores. Pronto nos pondremos en contacto contigo por WhatsApp para confirmar la inscripción.</p>
+        <a href="../index.html" class="btn-back">
+            <i class="fas fa-home"></i> Volver al inicio
+        </a>
+    </div>
+</div>
+
+<script src="../js/inscripcion.js"></script>
+</body>
+</html>

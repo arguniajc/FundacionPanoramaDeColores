@@ -1,0 +1,557 @@
+/* ================================================================
+   inscripcion.css — Fundación Panorama de Colores
+   Este archivo COMPLEMENTA main.css, no lo reemplaza.
+   Solo define estilos propios de la página de inscripción.
+   ================================================================ */
+
+/* Fuente adicional para esta página */
+body {
+    font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f0ff;
+}
+
+/* ── HEADER DE INSCRIPCIÓN ── */
+.page-header {
+    background: linear-gradient(135deg, var(--primary-purple) 0%, #2D0A6E 50%, var(--primary-green) 100%);
+    padding: 3.5rem 1.5rem 5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.page-header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    pointer-events: none;
+}
+.page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: -40px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: rgba(245,157,30,0.12);
+    pointer-events: none;
+}
+
+.header-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    text-decoration: none;
+}
+.header-logo img {
+    height: 60px;
+    width: 60px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+}
+.header-logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.3;
+    text-align: left;
+}
+
+.header-badge {
+    display: inline-block;
+    background: rgba(245,157,30,0.2);
+    border: 1px solid rgba(245,157,30,0.5);
+    color: var(--secondary-orange);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.35rem 1rem;
+    border-radius: 50px;
+    margin-bottom: 1rem;
+}
+
+.page-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    color: var(--neutral-white);
+    margin-bottom: 0.75rem;
+    position: relative;
+    z-index: 1;
+}
+
+.page-header > p {
+    color: rgba(255,255,255,0.8);
+    font-size: 0.93rem;
+    max-width: 580px;
+    margin: 0 auto;
+    line-height: 1.7;
+    position: relative;
+    z-index: 1;
+}
+
+/* ── CONTENEDOR DEL FORMULARIO ── */
+.form-wrapper {
+    max-width: 720px;
+    margin: -2.5rem auto 3rem;
+    padding: 0 1.25rem;
+    position: relative;
+    z-index: 10;
+}
+
+.form-card {
+    background: var(--neutral-white);
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(78,27,149,0.12), 0 4px 16px rgba(0,0,0,0.06);
+    overflow: hidden;
+    animation: slideUp 0.6s ease both;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SECCIONES ── */
+.form-section {
+    padding: 2rem 2.25rem;
+    border-bottom: 1px solid #f0eaff;
+}
+.form-section:last-of-type { border-bottom: none; }
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+}
+
+.section-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.icon-purple { background: rgba(78,27,149,0.1);  color: var(--primary-purple); }
+.icon-green  { background: rgba(45,152,79,0.1);  color: var(--primary-green); }
+.icon-orange { background: rgba(245,157,30,0.1); color: var(--secondary-orange); }
+.icon-red    { background: rgba(229,62,62,0.1);  color: #e53e3e; }
+
+.section-header h2 {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--primary-purple);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 0;
+}
+
+/* ── GRIDS DE CAMPOS ── */
+.field-grid {
+    display: grid;
+    gap: 1.1rem;
+}
+.field-grid-2 { grid-template-columns: 1fr 1fr; }
+.talla-grid   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.85rem; }
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+/* ── LABELS Y HINTS ── */
+.form-section label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--neutral-black);
+    letter-spacing: 0.02em;
+    margin-bottom: 0;
+}
+
+.required { color: #e53e3e; margin-left: 2px; }
+
+.field-hint {
+    font-size: 0.75rem;
+    color: var(--neutral-gray);
+    font-style: italic;
+}
+
+/* ── INPUTS, SELECTS, TEXTAREAS ── */
+/* Reseteamos los estilos del main.css para los inputs de esta página */
+.form-card input[type="text"],
+.form-card input[type="date"],
+.form-card input[type="tel"],
+.form-card select,
+.form-card textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #e2d9f3;
+    border-radius: 10px;
+    font-family: 'Nunito', 'Segoe UI', sans-serif;
+    font-size: 0.93rem;
+    color: var(--neutral-black);
+    background: #fdfbff;
+    transition: all var(--transition-fast);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: none;
+}
+
+.form-card input:focus,
+.form-card select:focus,
+.form-card textarea:focus {
+    border-color: var(--primary-purple);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(78,27,149,0.1);
+}
+
+.form-card input::placeholder,
+.form-card textarea::placeholder {
+    color: #bbb;
+    font-size: 0.88rem;
+}
+
+.form-card select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234E1B95' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+    cursor: pointer;
+}
+
+.form-card textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+/* ── RADIO BUTTONS ── */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.radio-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    background: #fdfbff;
+    border: 1.5px solid #e2d9f3;
+    border-radius: 10px;
+    padding: 0.65rem 1.1rem;
+    transition: all var(--transition-fast);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.radio-row:hover {
+    border-color: var(--primary-purple);
+    background: #f3eeff;
+}
+
+.radio-row input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-purple);
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    appearance: auto;
+    -webkit-appearance: auto;
+}
+
+/* ── CAMPO CONDICIONAL ALERGIA ── */
+.campo-condicional {
+    display: none;
+}
+.campo-condicional.visible {
+    display: flex;
+    animation: fadeDown 0.3s ease;
+}
+
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── ÁREA DE CARGA DE IMÁGENES ── */
+.upload-area {
+    border: 2px dashed #c9b8f0;
+    border-radius: 12px;
+    padding: 1.75rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    background: #fdfbff;
+    transition: all var(--transition-fast);
+}
+
+.upload-area:hover {
+    border-color: var(--primary-purple);
+    background: #f3eeff;
+}
+
+.upload-area.uploaded {
+    border-color: var(--primary-green);
+    border-style: solid;
+    background: #f0fff4;
+}
+
+.upload-icon {
+    font-size: 2.5rem;
+    color: #c9b8f0;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.upload-text {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--primary-purple);
+    margin-bottom: 0.25rem;
+}
+
+.upload-hint {
+    font-size: 0.75rem;
+    color: var(--neutral-gray);
+    margin-bottom: 0;
+}
+
+.preview-container { margin-top: 0.75rem; }
+
+.preview-container img {
+    width: 100%;
+    max-height: 160px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid #c6f6d5;
+}
+
+/* ── CAJA DE INFORMACIÓN ── */
+.info-box {
+    margin-top: 1.25rem;
+    background: linear-gradient(135deg, #e8f5ff, #f0faff);
+    border: 1px solid #b8e0ff;
+    border-radius: 10px;
+    padding: 0.85rem 1.1rem;
+    font-size: 0.82rem;
+    color: #2d6a9f;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    line-height: 1.5;
+}
+.info-box i { margin-top: 2px; flex-shrink: 0; }
+
+/* ── BLOQUES DE DECLARACIÓN ── */
+.declaration-block {
+    background: linear-gradient(135deg, #fdf8ff, #f5fbff);
+    border: 1.5px solid #e2d9f3;
+    border-radius: var(--border-radius);
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1rem;
+    transition: all var(--transition-fast);
+}
+.declaration-block:last-child { margin-bottom: 0; }
+
+.declaration-text {
+    font-size: 0.87rem;
+    color: #444;
+    line-height: 1.65;
+    margin-bottom: 1rem;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.checkbox-row input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary-purple);
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    appearance: auto;
+    -webkit-appearance: auto;
+}
+
+.checkbox-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary-purple);
+    cursor: pointer;
+}
+
+.declaration-block.error {
+    border-color: #e53e3e;
+    background: #fff5f5;
+}
+.declaration-block.ok {
+    border-color: #68d391;
+    background: #f0fff4;
+}
+
+/* ── BOTÓN ENVIAR (nombre distinto para no chocar con .btn-submit del main.css) ── */
+.submit-section {
+    padding: 2rem 2.25rem;
+    background: linear-gradient(135deg, #fdf8ff, #f0faff);
+    text-align: center;
+}
+
+.btn-submit-insc {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem 3rem;
+    background: linear-gradient(135deg, var(--primary-purple), #3a1470);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Nunito', 'Segoe UI', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: 0 6px 20px rgba(78,27,149,0.3);
+    width: 100%;
+    max-width: 400px;
+    letter-spacing: 0.02em;
+}
+
+.btn-submit-insc:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(78,27,149,0.4);
+    background: linear-gradient(135deg, #5e22b0, #2e1058);
+}
+
+.btn-submit-insc:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.privacy-note {
+    margin-top: 1rem;
+    font-size: 0.78rem;
+    color: var(--neutral-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 0;
+}
+.privacy-note i { color: var(--primary-green); }
+
+/* ── OVERLAY DE ÉXITO ── */
+.success-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+.success-overlay.show { display: flex; }
+
+.success-box {
+    background: white;
+    border-radius: 24px;
+    padding: 3rem 2.5rem;
+    text-align: center;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+@keyframes popIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.success-icon {
+    width: 80px; height: 80px;
+    background: linear-gradient(135deg, var(--primary-green), #1e7a38);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.2rem;
+    color: white;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 8px 24px rgba(45,152,79,0.35);
+}
+
+.success-box h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    color: var(--primary-purple);
+    margin-bottom: 0.75rem;
+}
+
+.success-box p {
+    color: var(--neutral-gray);
+    font-size: 0.93rem;
+    line-height: 1.65;
+    margin-bottom: 1.5rem;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 2rem;
+    background: var(--primary-purple);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Nunito', 'Segoe UI', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+.btn-back:hover { background: #3a1470; transform: translateY(-2px); }
+
+/* ── FOOTER ── */
+.page-footer {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--neutral-gray);
+    font-size: 0.82rem;
+    background: transparent;
+}
+.page-footer a {
+    color: var(--primary-purple);
+    text-decoration: none;
+    font-weight: 700;
+}
+.page-footer a:hover { text-decoration: underline; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+    .form-section    { padding: 1.5rem 1.25rem; }
+    .submit-section  { padding: 1.5rem 1.25rem; }
+    .field-grid-2    { grid-template-columns: 1fr; }
+    .talla-grid      { grid-template-columns: 1fr 1fr; }
+    .page-header     { padding: 2.5rem 1rem 4rem; }
+    .radio-group     { flex-direction: column; gap: 0.6rem; }
+    .success-box     { padding: 2rem 1.5rem; }
+}

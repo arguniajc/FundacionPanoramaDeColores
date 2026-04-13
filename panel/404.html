@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Fundación Panorama de Colores — Panel</title>
+  <script>
+    // GitHub Pages SPA: redirige rutas de /panel/* al index de /panel/
+    var path = window.location.pathname.replace(/^\/panel/, '') || '/';
+    var search = window.location.search;
+    var hash = window.location.hash;
+    window.location.replace('/panel/?r=' + encodeURIComponent(path + search + hash));
+  </script>
+</head>
+<body></body>
+</html>

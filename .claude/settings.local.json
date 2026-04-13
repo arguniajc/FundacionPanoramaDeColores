@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l css/*.css js/*.js html/*.html)",
+      "Bash(dotnet --version)",
+      "Bash(npm --version)",
+      "Bash(dotnet nuget:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet list:*)",
+      "Bash(dotnet build:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npx vite:*)"
+    ]
+  }
+}

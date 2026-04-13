@@ -1,0 +1,521 @@
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Box, Typography, Container,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, IconButton, Chip, TextField, InputAdornment, Pagination,
+  CircularProgress, Alert, Dialog, DialogTitle, DialogContent,
+  DialogContentText, DialogActions, Tooltip, Button, Snackbar, Tabs, Tab,
+  Divider,
+} from '@mui/material';
+import SearchIcon           from '@mui/icons-material/Search';
+import DeleteIcon           from '@mui/icons-material/Delete';
+import VisibilityIcon       from '@mui/icons-material/Visibility';
+import EditIcon             from '@mui/icons-material/Edit';
+import DownloadIcon         from '@mui/icons-material/Download';
+import BlockIcon            from '@mui/icons-material/Block';
+import CheckCircleIcon      from '@mui/icons-material/CheckCircle';
+import PeopleIcon           from '@mui/icons-material/People';
+import VerifiedUserIcon     from '@mui/icons-material/VerifiedUser';
+import PersonOffIcon        from '@mui/icons-material/PersonOff';
+import LockIcon             from '@mui/icons-material/Lock';
+import * as XLSX from 'xlsx';
+import api from '../../services/api';
+import DetalleInscripcion from './DetalleInscripcion';
+import EditarInscripcion  from './EditarInscripcion';
+
+const POR_PAGINA = 15;
+
+/* ── Tarjeta de estadística ────────────────────────────────────────────────── */
+function StatCard({ icon, label, value, color }) {
+  return (
+    <Box sx={{
+      display: 'flex', alignItems: 'center', gap: 1.5,
+      bgcolor: 'rgba(255,255,255,0.12)', borderRadius: 2,
+      px: 2.5, py: 1.5, border: '1px solid rgba(255,255,255,0.18)',
+      minWidth: 130,
+    }}>
+      <Box sx={{ color, fontSize: '1.6rem', lineHeight: 1, display: 'flex' }}>{icon}</Box>
+      <Box>
+        <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+          {value}
+        </Typography>
+        <Typography sx={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          {label}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+export default function AdminDashboard() {
+  const [inscripciones, setInscripciones] = useState([]);
+  const [total,         setTotal]         = useState(0);
+  const [pagina,        setPagina]        = useState(1);
+  const [buscar,        setBuscar]        = useState('');
+  const [estado,        setEstado]        = useState('activos');
+  const [cargando,      setCargando]      = useState(false);
+  const [error,         setError]         = useState('');
+  const [toast,         setToast]         = useState('');
+  const [exportando,    setExportando]    = useState(false);
+
+  const [stats,         setStats]         = useState({ activos: 0, baja: 0, total: 0 });
+
+  const [seleccionada,  setSeleccionada]  = useState(null);
+  const [editando,      setEditando]      = useState(null);
+  const [idEliminar,    setIdEliminar]    = useState(null);
+  const [eliminando,    setEliminando]    = useState(false);
+  const [idBaja,        setIdBaja]        = useState(null);
+  const [procesandoBaja, setProcesandoBaja] = useState(false);
+
+  /* ── Cargar stats globales ───────────────────────────────────────────────── */
+  const cargarStats = useCallback(async () => {
+    try {
+      const [{ data: a }, { data: b }] = await Promise.all([
+        api.get('/api/inscripciones', { params: { pagina: 1, porPagina: 1, estado: 'activos' } }),
+        api.get('/api/inscripciones', { params: { pagina: 1, porPagina: 1, estado: 'baja'    } }),
+      ]);
+      setStats({ activos: a.total, baja: b.total, total: a.total + b.total });
+    } catch { /* silencioso */ }
+  }, []);
+
+  /* ── Cargar tabla paginada ───────────────────────────────────────────────── */
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    setError('');
+    try {
+      const { data } = await api.get('/api/inscripciones', {
+        params: { pagina, porPagina: POR_PAGINA, buscar: buscar || undefined, estado },
+      });
+      setInscripciones(data.data);
+      setTotal(data.total);
+    } catch {
+      setError('No se pudieron cargar los beneficiarios.');
+    } finally {
+      setCargando(false);
+    }
+  }, [pagina, buscar, estado]);
+
+  useEffect(() => { cargarStats(); },        [cargarStats]);
+  useEffect(() => { cargar(); },             [cargar]);
+  useEffect(() => { setPagina(1); },         [buscar, estado]);
+
+  /* ── Dar de baja ─────────────────────────────────────────────────────────── */
+  const handleDarDeBaja = async () => {
+    if (!idBaja) return;
+    setProcesandoBaja(true);
+    try {
+      await api.patch(`/api/inscripciones/${idBaja}/baja`);
+      setIdBaja(null);
+      setToast('Beneficiario dado de baja correctamente');
+      cargar(); cargarStats();
+    } catch {
+      setError('No se pudo dar de baja al beneficiario.');
+    } finally {
+      setProcesandoBaja(false);
+    }
+  };
+
+  const handleReactivar = async (id) => {
+    try {
+      await api.patch(`/api/inscripciones/${id}/reactivar`);
+      setToast('Beneficiario reactivado correctamente');
+      cargar(); cargarStats();
+    } catch {
+      setError('No se pudo reactivar el beneficiario.');
+    }
+  };
+
+  /* ── Eliminar ────────────────────────────────────────────────────────────── */
+  const handleEliminar = async () => {
+    if (!idEliminar) return;
+    setEliminando(true);
+    try {
+      await api.delete(`/api/inscripciones/${idEliminar}`);
+      setIdEliminar(null);
+      setToast('Registro eliminado permanentemente');
+      cargar(); cargarStats();
+    } catch {
+      setError('No se pudo eliminar el registro.');
+    } finally {
+      setEliminando(false);
+    }
+  };
+
+  const handleGuardadoEdicion = () => {
+    setEditando(null);
+    setToast('Beneficiario actualizado correctamente');
+    cargar();
+  };
+
+  /* ── Excel — exporta TODOS los registros de la BD ───────────────────────── */
+  const exportarExcel = async () => {
+    setExportando(true);
+    setToast('Preparando exportación completa…');
+    try {
+      const { data } = await api.get('/api/inscripciones', {
+        params: { pagina: 1, porPagina: 9999, estado: 'todos' },
+      });
+      const todos = data.data;
+      if (!todos.length) { setToast('No hay datos para exportar'); return; }
+
+      const encabezados = [
+        'NOMBRE', 'F. NACIMIENTO', 'TIPO DOC.', 'N° DOCUMENTO',
+        'EDAD', 'EPS', 'T. CAMISA', 'T. PANTALÓN', 'T. ZAPATOS',
+        'ALERGIA', 'DESC. ALERGIA', 'OBS. SALUD',
+        'ACUDIENTE', 'PARENTESCO', 'WHATSAPP', 'DIRECCIÓN',
+        'ESTADO', 'F. INSCRIPCIÓN',
+      ];
+      const filas = todos.map(ins => [
+        ins.nombreMenor           || '—',
+        ins.fechaNacimiento       || '—',
+        ins.tipoDocumento         || '—',
+        ins.numeroDocumento       || '—',
+        calcularEdad(ins.fechaNacimiento),
+        ins.eps                   || '—',
+        ins.tallaCamisa           || '—',
+        ins.tallaPantalon         || '—',
+        ins.tallaZapatos          || '—',
+        ins.tieneAlergia === 'si' ? 'Sí' : 'No',
+        ins.descripcionAlergia    || '—',
+        ins.observacionesSalud    || '—',
+        ins.nombreAcudiente       || '—',
+        ins.parentesco            || '—',
+        ins.whatsapp              || '—',
+        ins.direccion             || '—',
+        ins.activo ? 'Activo' : 'Baja',
+        ins.createdAt ? new Date(ins.createdAt).toLocaleDateString('es-CO') : '—',
+      ]);
+
+      const hoja  = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
+      hoja['!cols'] = [30,15,14,18,10,20,10,11,10,10,30,30,30,14,18,30,12,16].map(wch => ({ wch }));
+      const libro = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(libro, hoja, 'Beneficiarios');
+      XLSX.writeFile(libro, `beneficiarios_${new Date().toISOString().slice(0,10)}.xlsx`);
+      setToast(`${todos.length} registros exportados`);
+    } catch {
+      setToast('Error al generar el Excel. Intenta de nuevo.');
+    } finally {
+      setExportando(false);
+    }
+  };
+
+  const totalPaginas = Math.ceil(total / POR_PAGINA);
+
+  const TABS = [
+    { value: 'activos', label: `Activos (${stats.activos})` },
+    { value: 'baja',    label: `Baja (${stats.baja})` },
+    { value: 'todos',   label: `Todos (${stats.total})` },
+  ];
+
+  return (
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── Banner superior ──────────────────────────────────────────────────── */}
+      <Box sx={{
+        background: 'linear-gradient(135deg, #4E1B95 0%, #3a1470 60%, #2D984F 100%)',
+        px: { xs: 2, md: 4 }, py: 3,
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+          <Box>
+            <Typography sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.3 }}>
+              Módulo
+            </Typography>
+            <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+              Beneficiarios
+            </Typography>
+            <Typography sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', mt: 0.4 }}>
+              Gestión de niños y niñas inscritos
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+            <StatCard icon={<PeopleIcon />}        label="Total"   value={stats.total}   color="#B4E8E8" />
+            <StatCard icon={<VerifiedUserIcon />}  label="Activos" value={stats.activos} color="#81c784" />
+            <StatCard icon={<PersonOffIcon />}     label="Baja"    value={stats.baja}    color="#ef9a9a" />
+          </Box>
+        </Box>
+      </Box>
+
+      {/* ── Contenido ────────────────────────────────────────────────────────── */}
+      <Box sx={{ flex: 1 }}>
+        <Container maxWidth="xl" sx={{ py: 3 }}>
+
+          {/* Barra búsqueda + export */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
+            <TextField
+              placeholder="Buscar nombre, documento, acudiente…"
+              size="small"
+              value={buscar}
+              onChange={e => setBuscar(e.target.value)}
+              sx={{ minWidth: 300, flex: 1, maxWidth: 480 }}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" sx={{ color: '#9e9e9e' }} />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+            <Tooltip title="Exporta TODOS los beneficiarios de la base de datos">
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
+                onClick={exportarExcel}
+                disabled={exportando}
+                sx={{
+                  bgcolor: '#2D984F', '&:hover': { bgcolor: '#1e6e38' },
+                  whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2,
+                }}
+              >
+                {exportando ? 'Exportando…' : 'Exportar Excel completo'}
+              </Button>
+            </Tooltip>
+          </Box>
+
+          {/* Tabs */}
+          <Tabs
+            value={estado}
+            onChange={(_, v) => setEstado(v)}
+            sx={{
+              mb: 2,
+              '& .MuiTab-root':     { fontWeight: 600, textTransform: 'none', minHeight: 40, fontSize: '0.85rem' },
+              '& .Mui-selected':    { color: '#4E1B95' },
+              '& .MuiTabs-indicator': { bgcolor: '#4E1B95', height: 3, borderRadius: 2 },
+            }}
+          >
+            {TABS.map(t => <Tab key={t.value} value={t.value} label={t.label} />)}
+          </Tabs>
+
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+          {/* Tabla */}
+          <TableContainer component={Paper} elevation={0} sx={{
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+          }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{
+                  background: 'linear-gradient(90deg, #4E1B95, #3a1470)',
+                  '& .MuiTableCell-root': {
+                    color: '#fff', fontWeight: 700, fontSize: '0.8rem',
+                    py: 1.5, borderBottom: 'none', whiteSpace: 'nowrap',
+                  },
+                }}>
+                  {['Nombre del menor', 'Documento', 'Edad', 'WhatsApp', 'Alergia', 'Estado', 'Acciones'].map(h => (
+                    <TableCell key={h}>{h}</TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+
+              <TableBody>
+                {cargando ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                      <CircularProgress size={32} sx={{ color: '#4E1B95' }} />
+                    </TableCell>
+                  </TableRow>
+                ) : inscripciones.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                      No se encontraron beneficiarios.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  inscripciones.map((ins, idx) => (
+                    <TableRow
+                      key={ins.id}
+                      hover
+                      onClick={() => setSeleccionada(ins)}
+                      sx={{
+                        cursor: 'pointer',
+                        opacity: ins.activo ? 1 : 0.6,
+                        bgcolor: idx % 2 === 0 ? 'inherit' : 'action.hover',
+                        '&:hover': { bgcolor: ins.activo ? '#f3ecff !important' : '#f5f5f5 !important' },
+                        transition: 'background 0.12s',
+                      }}
+                    >
+                      <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        {ins.nombreMenor}
+                      </TableCell>
+                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.secondary' }}>
+                        {ins.tipoDocumento} {ins.numeroDocumento || '—'}
+                      </TableCell>
+                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
+                        {calcularEdad(ins.fechaNacimiento)}
+                      </TableCell>
+                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
+                        {ins.whatsapp ? (
+                          <a
+                            href={`https://wa.me/${ins.whatsapp.replace(/\D/g, '')}`}
+                            target="_blank" rel="noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            style={{ color: '#2D984F', textDecoration: 'none', fontWeight: 700 }}
+                          >
+                            {ins.whatsapp}
+                          </a>
+                        ) : '—'}
+                      </TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                        <Chip
+                          label={ins.tieneAlergia === 'si' ? 'Sí' : 'No'}
+                          color={ins.tieneAlergia === 'si' ? 'warning' : 'default'}
+                          size="small" sx={{ fontSize: '0.72rem' }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                        <Chip
+                          label={ins.activo ? 'Activo' : 'Baja'}
+                          size="small"
+                          sx={{
+                            fontSize: '0.72rem', fontWeight: 700,
+                            bgcolor: ins.activo ? '#e8f5e9' : '#fce4ec',
+                            color:   ins.activo ? '#2e7d32' : '#c62828',
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell onClick={e => e.stopPropagation()} sx={{ whiteSpace: 'nowrap' }}>
+                        <Tooltip title="Ver detalle">
+                          <IconButton size="small" sx={{ color: '#4E1B95' }} onClick={() => setSeleccionada(ins)}>
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Editar">
+                          <IconButton size="small" sx={{ color: '#1976d2' }} onClick={() => setEditando(ins)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        {ins.activo ? (
+                          <Tooltip title="Dar de baja">
+                            <IconButton size="small" sx={{ color: '#e65100' }} onClick={() => setIdBaja(ins.id)}>
+                              <BlockIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Reactivar">
+                            <IconButton size="small" sx={{ color: '#2e7d32' }} onClick={() => handleReactivar(ins.id)}>
+                              <CheckCircleIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <Tooltip title="Eliminar permanentemente">
+                          <IconButton size="small" sx={{ color: '#c62828' }} onClick={() => setIdEliminar(ins.id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {/* Paginación */}
+          {totalPaginas > 1 && (
+            <Box display="flex" justifyContent="center" mt={3}>
+              <Pagination
+                count={totalPaginas} page={pagina}
+                onChange={(_, v) => setPagina(v)}
+                sx={{ '& .Mui-selected': { bgcolor: '#4E1B95 !important', color: '#fff' } }}
+              />
+            </Box>
+          )}
+
+          {/* ── Footer disclaimer ──────────────────────────────────────────── */}
+          <Box sx={{ mt: 5, pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
+              <LockIcon sx={{ fontSize: '1rem', color: '#4E1B95', mt: '2px', flexShrink: 0 }} />
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#4E1B95', display: 'block', mb: 0.3 }}>
+                  Aviso de confidencialidad
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                  La información contenida en este panel es de carácter <strong>estrictamente confidencial</strong> y de uso exclusivo del personal autorizado de la fundación.
+                  Queda prohibida su reproducción, divulgación o uso no autorizado. El acceso indebido a estos datos puede constituir una infracción a la Ley 1581 de 2012 (Protección de Datos Personales).
+                </Typography>
+              </Box>
+            </Box>
+            <Divider sx={{ my: 1.5 }} />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                <strong>Fundación Panorama de Colores</strong> · Entidad sin ánimo de lucro · NIT registrado ante la DIAN
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Panel Administrativo · {new Date().getFullYear()}
+              </Typography>
+            </Box>
+          </Box>
+
+        </Container>
+      </Box>
+
+      {/* ── Modales ──────────────────────────────────────────────────────────── */}
+      {seleccionada && (
+        <DetalleInscripcion
+          inscripcion={seleccionada}
+          onCerrar={() => setSeleccionada(null)}
+          onEditar={() => { setEditando(seleccionada); setSeleccionada(null); }}
+          onEliminar={() => { setIdEliminar(seleccionada.id); setSeleccionada(null); }}
+        />
+      )}
+      {editando && (
+        <EditarInscripcion
+          inscripcion={editando}
+          onCerrar={() => setEditando(null)}
+          onGuardado={handleGuardadoEdicion}
+        />
+      )}
+
+      <Dialog open={!!idBaja} onClose={() => setIdBaja(null)}>
+        <DialogTitle sx={{ color: '#e65100', fontWeight: 700 }}>¿Dar de baja al beneficiario?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            El beneficiario quedará inactivo pero su información se conservará. Podrás reactivarlo en cualquier momento.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIdBaja(null)}>Cancelar</Button>
+          <Button variant="contained" onClick={handleDarDeBaja} disabled={procesandoBaja}
+            sx={{ bgcolor: '#e65100', '&:hover': { bgcolor: '#bf360c' } }}>
+            {procesandoBaja ? 'Procesando…' : 'Dar de baja'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!idEliminar} onClose={() => setIdEliminar(null)}>
+        <DialogTitle sx={{ color: '#c62828', fontWeight: 700 }}>¿Eliminar permanentemente?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Esta acción no se puede deshacer. El registro se borrará definitivamente de la base de datos.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIdEliminar(null)}>Cancelar</Button>
+          <Button color="error" variant="contained" onClick={handleEliminar} disabled={eliminando}>
+            {eliminando ? 'Eliminando…' : 'Eliminar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={!!toast} autoHideDuration={3500} onClose={() => setToast('')}
+        message={toast} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      />
+    </Box>
+  );
+}
+
+export function calcularEdad(fechaNac) {
+  if (!fechaNac) return '—';
+  const hoy = new Date();
+  const nac = new Date(fechaNac);
+  let edad = hoy.getFullYear() - nac.getFullYear();
+  const m = hoy.getMonth() - nac.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+  return `${edad} años`;
+}

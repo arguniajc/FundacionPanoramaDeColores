@@ -32,7 +32,7 @@
                 <li class="nav-item"><a href="#contacto" class="nav-link">Contacto</a></li>
                 <li class="nav-item"><a href="html/inscripcion.html" class="nav-link nav-link-cta"><strong>Inscríbete</strong></a></li>
                 <li class="nav-item">
-                    <a href="html/admin.html" class="nav-link" style="color:#4E1B95;font-weight:800;">
+                    <a id="admin-link" href="/panel/" class="nav-link" style="color:#4E1B95;font-weight:800;">
                         <i class="fas fa-lock"></i> Admin
                     </a>
                 </li>
@@ -401,7 +401,18 @@
     </footer>
 
     <script src="js/script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
     <script> emailjs.init("AQUI_TU_PUBLIC_KEY");</script>
+
+    <!-- Enlace Admin: local → Vite dev server | producción → /panel/ -->
+    <script>
+      (function () {
+        var isLocal = window.location.hostname === 'localhost' ||
+                      window.location.hostname === '127.0.0.1';
+        document.getElementById('admin-link').href = isLocal
+          ? 'http://localhost:5173/panel/'
+          : '/panel/';
+      })();
+    </script>
 </body>
 </html>

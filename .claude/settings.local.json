@@ -11,7 +11,17 @@
       "Bash(dotnet build:*)",
       "Bash(npm install:*)",
       "Bash(npm run:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(cmd /c \"npm run build\")",
+      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs\")",
+      "Bash(\"C:/Program Files/nodejs/npm.cmd\" run build)",
+      "Bash(powershell -Command \"Copy-Item 'c:/Users/dfsalazarr/OneDrive - Sistemas de información empresarial s.a/Escritorio/Diego Salazar/FundacionPanoramaDeColores/frontend/fundacion-web/dist/assets/index-Dkg0cXLu.js' 'c:/Users/dfsalazarr/OneDrive - Sistemas de información empresarial s.a/Escritorio/Diego Salazar/FundacionPanoramaDeColores/panel/assets/'\")",
+      "Bash(\"C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe\" -Command \"Copy-Item 'c:/Users/dfsalazarr/OneDrive - Sistemas de información empresarial s.a/Escritorio/Diego Salazar/FundacionPanoramaDeColores/frontend/fundacion-web/dist/assets/index-Dkg0cXLu.js' 'c:/Users/dfsalazarr/OneDrive - Sistemas de información empresarial s.a/Escritorio/Diego Salazar/FundacionPanoramaDeColores/panel/assets/'; Write-Host OK\")",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" add frontend/fundacion-web/src/pages/Admin/AdminDashboard.jsx panel/index.html \"panel/assets/index-Dkg0cXLu.js\")",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" commit -m \"feat: panel estadisticas beneficiarios, icono WhatsApp en tabla\")",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" log --oneline -5)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" status)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" log --oneline origin/master..HEAD)"
     ]
   }
 }

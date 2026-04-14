@@ -2,27 +2,29 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Redirigiendo…</title>
+  <title>Página no encontrada — Fundación Panorama de Colores</title>
+  <meta name="robots" content="noindex">
   <script>
     /*
-     * GitHub Pages SPA routing fix — raíz del repo
+     * GitHub Pages SPA routing fix
      *
-     * Cuando se recarga una URL como /gestion/sede/beneficiarios,
-     * GitHub Pages no encuentra el archivo y sirve este 404.html.
-     * Detectamos el primer segmento de ruta (/gestion) como base
-     * y redirigimos a /gestion/?r=/sede/beneficiarios para que
-     * el index.html restaure la ruta correcta en el historial.
+     * Con HashRouter las rutas van en el fragmento (#/...) y el servidor
+     * nunca ve el path completo — los recargas ya no causan 404.
+     *
+     * Este 404.html solo se activa si alguien escribe manualmente una
+     * URL sin # o usa un link antiguo de /panel o /gestion sin hash.
+     * En ese caso redirigimos a la raíz de la plataforma.
      */
     (function () {
-      var loc   = window.location;
-      var parts = loc.pathname.split('/').filter(Boolean);
+      var path = window.location.pathname;
 
-      if (parts.length === 0) return;
-
-      var base = '/' + parts[0];                          // '/gestion'
-      var rest = loc.pathname.slice(base.length) || '/';  // '/sede/beneficiarios'
-
-      loc.replace(base + '/?r=' + encodeURIComponent(rest + loc.search + loc.hash));
+      // Redirigir links de /gestion/* o /panel/* al entry point correcto
+      if (path.startsWith('/gestion') || path.startsWith('/panel')) {
+        window.location.replace('/gestion/');
+      } else {
+        // Cualquier otra ruta: ir al inicio público
+        window.location.replace('/');
+      }
     })();
   </script>
 </head>

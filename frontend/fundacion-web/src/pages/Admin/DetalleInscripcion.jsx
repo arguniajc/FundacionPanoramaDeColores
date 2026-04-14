@@ -282,25 +282,46 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
         </Grid>
       </DialogContent>
 
-      <DialogActions sx={{ px: { xs: 1.5, sm: 3 }, py: { xs: 1.5, sm: 2 }, gap: 1, flexWrap: 'wrap' }}>
-        <Tooltip title="Generar PDF">
+      <DialogActions sx={{ px: { xs: 1.5, sm: 3 }, py: { xs: 1.5, sm: 2 }, borderTop: '1px solid', borderColor: 'divider' }}>
+
+        {/* Mobile: solo iconos */}
+        <Box sx={{ display: { xs: 'flex', sm: 'none' }, gap: 1, width: '100%', alignItems: 'center' }}>
+          <Tooltip title="Generar PDF">
+            <IconButton onClick={generarPDF} size="small" sx={{ color: 'secondary.main', border: '1px solid', borderColor: 'secondary.light', borderRadius: 2 }}>
+              <PictureAsPdfIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Editar">
+            <IconButton onClick={onEditar} size="small" sx={{ color: 'primary.main', border: '1px solid', borderColor: 'primary.light', borderRadius: 2 }}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Eliminar">
+            <IconButton onClick={onEliminar} size="small" sx={{ color: 'error.main', border: '1px solid', borderColor: 'error.light', borderRadius: 2 }}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Button onClick={onCerrar} variant="contained" size="small" sx={{ ml: 'auto', bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}>
+            Cerrar
+          </Button>
+        </Box>
+
+        {/* Desktop: botones completos */}
+        <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 1, width: '100%', alignItems: 'center' }}>
           <Button startIcon={<PictureAsPdfIcon />} onClick={generarPDF} variant="outlined" color="secondary" size="small">
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Generar PDF</Box>
+            Generar PDF
           </Button>
-        </Tooltip>
-        <Tooltip title="Editar">
           <Button startIcon={<EditIcon />} onClick={onEditar} variant="outlined" color="primary" size="small">
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Editar</Box>
+            Editar
           </Button>
-        </Tooltip>
-        <Tooltip title="Eliminar">
           <Button startIcon={<DeleteIcon />} onClick={onEliminar} variant="outlined" color="error" size="small">
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Eliminar</Box>
+            Eliminar
           </Button>
-        </Tooltip>
-        <Button onClick={onCerrar} variant="contained" size="small" sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, ml: 'auto' }}>
-          Cerrar
-        </Button>
+          <Button onClick={onCerrar} variant="contained" size="small" sx={{ ml: 'auto', bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}>
+            Cerrar
+          </Button>
+        </Box>
+
       </DialogActions>
     </Dialog>
   );

@@ -92,6 +92,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("PoliticaCors");
+
+// Permite que Google Sign-In funcione con postMessage
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups";
+    await next();
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

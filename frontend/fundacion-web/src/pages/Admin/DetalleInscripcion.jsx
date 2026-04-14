@@ -253,7 +253,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           <Grid size={12}>
             <Typography variant="subtitle2" color="#4E1B95" fontWeight={700}>Tallas</Typography>
             <Divider sx={{ mb: 1.5, mt: 0.5 }} />
-            <Box display="flex" gap={{ xs: 1, sm: 1.5 }} sx={{ flexWrap: 'nowrap' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: { xs: 1, sm: 1.5 }, width: '100%' }}>
               <TallaCard icono="👕" valor={ins.tallaCamisa}   etiqueta="Camisa"   />
               <TallaCard icono="👖" valor={ins.tallaPantalon} etiqueta="Pantalón" />
               <TallaCard icono="👟" valor={ins.tallaZapatos}  etiqueta="Zapatos"  />

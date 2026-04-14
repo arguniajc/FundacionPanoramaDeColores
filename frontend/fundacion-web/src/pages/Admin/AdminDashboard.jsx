@@ -334,12 +334,15 @@ export default function AdminDashboard() {
                       sx={{
                         cursor: 'pointer',
                         opacity: ins.activo ? 1 : 0.6,
-                        bgcolor: idx % 2 === 0 ? 'inherit' : 'action.hover',
+                        bgcolor: idx % 2 === 0 ? 'inherit' : 'rgba(78,27,149,0.06)',
                         '&:hover': {
-                          bgcolor: ins.activo ? '#4E1B95 !important' : '#424242 !important',
-                          '& .MuiTableCell-root': { color: '#fff !important' },
+                          bgcolor: ins.activo ? 'rgba(78,27,149,0.85) !important' : 'rgba(60,60,60,0.85) !important',
+                          '& .MuiTableCell-root': { color: '#fff !important', transition: 'color 0.15s' },
+                          '& .MuiTableCell-root:first-of-type': { borderLeft: '4px solid #a855f7' },
                           '& a': { color: '#4ade80 !important' },
+                          '& .MuiChip-root': { opacity: 0.92 },
                         },
+                        transition: 'background 0.15s',
                         transition: 'background 0.12s',
                       }}
                     >

@@ -5,19 +5,19 @@ import {
   Paper, IconButton, Chip, TextField, InputAdornment, Pagination,
   CircularProgress, Alert, Dialog, DialogTitle, DialogContent,
   DialogContentText, DialogActions, Tooltip, Button, Snackbar, Tabs, Tab,
-  Divider,
+  Divider, Stack,
 } from '@mui/material';
-import SearchIcon           from '@mui/icons-material/Search';
-import DeleteIcon           from '@mui/icons-material/Delete';
-import VisibilityIcon       from '@mui/icons-material/Visibility';
-import EditIcon             from '@mui/icons-material/Edit';
-import DownloadIcon         from '@mui/icons-material/Download';
-import BlockIcon            from '@mui/icons-material/Block';
-import CheckCircleIcon      from '@mui/icons-material/CheckCircle';
-import PeopleIcon           from '@mui/icons-material/People';
-import VerifiedUserIcon     from '@mui/icons-material/VerifiedUser';
-import PersonOffIcon        from '@mui/icons-material/PersonOff';
-import LockIcon             from '@mui/icons-material/Lock';
+import SearchIcon       from '@mui/icons-material/Search';
+import DeleteIcon       from '@mui/icons-material/Delete';
+import VisibilityIcon   from '@mui/icons-material/Visibility';
+import EditIcon         from '@mui/icons-material/Edit';
+import DownloadIcon     from '@mui/icons-material/Download';
+import BlockIcon        from '@mui/icons-material/Block';
+import CheckCircleIcon  from '@mui/icons-material/CheckCircle';
+import PeopleIcon       from '@mui/icons-material/People';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import PersonOffIcon    from '@mui/icons-material/PersonOff';
+import LockIcon         from '@mui/icons-material/Lock';
 import * as XLSX from 'xlsx';
 import api from '../../services/api';
 import DetalleInscripcion from './DetalleInscripcion';
@@ -25,21 +25,24 @@ import EditarInscripcion  from './EditarInscripcion';
 
 const POR_PAGINA = 15;
 
-/* ── Tarjeta de estadística ────────────────────────────────────────────────── */
+/* ── Tarjeta de estadística ─────────────────────────────────────────────────── */
 function StatCard({ icon, label, value, color }) {
   return (
     <Box sx={{
-      display: 'flex', alignItems: 'center', gap: 1.5,
+      display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 },
       bgcolor: 'rgba(255,255,255,0.12)', borderRadius: 2,
-      px: 2.5, py: 1.5, border: '1px solid rgba(255,255,255,0.18)',
-      minWidth: 130,
+      px: { xs: 1.5, sm: 2.5 }, py: { xs: 1, sm: 1.5 },
+      border: '1px solid rgba(255,255,255,0.18)',
+      minWidth: { xs: 0, sm: 130 }, flex: { xs: 1, sm: 'none' },
     }}>
-      <Box sx={{ color, fontSize: '1.6rem', lineHeight: 1, display: 'flex' }}>{icon}</Box>
+      <Box sx={{ color, fontSize: { xs: '1.2rem', sm: '1.6rem' }, lineHeight: 1, display: 'flex', flexShrink: 0 }}>
+        {icon}
+      </Box>
       <Box>
-        <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+        <Typography sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' }, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
           {value}
         </Typography>
-        <Typography sx={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        <Typography sx={{ fontSize: { xs: '0.6rem', sm: '0.68rem' }, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {label}
         </Typography>
       </Box>
@@ -48,26 +51,24 @@ function StatCard({ icon, label, value, color }) {
 }
 
 export default function AdminDashboard() {
-  const [inscripciones, setInscripciones] = useState([]);
-  const [total,         setTotal]         = useState(0);
-  const [pagina,        setPagina]        = useState(1);
-  const [buscar,        setBuscar]        = useState('');
-  const [estado,        setEstado]        = useState('activos');
-  const [cargando,      setCargando]      = useState(false);
-  const [error,         setError]         = useState('');
-  const [toast,         setToast]         = useState('');
-  const [exportando,    setExportando]    = useState(false);
+  const [inscripciones,   setInscripciones]   = useState([]);
+  const [total,           setTotal]           = useState(0);
+  const [pagina,          setPagina]          = useState(1);
+  const [buscar,          setBuscar]          = useState('');
+  const [estado,          setEstado]          = useState('activos');
+  const [cargando,        setCargando]        = useState(false);
+  const [error,           setError]           = useState('');
+  const [toast,           setToast]           = useState('');
+  const [exportando,      setExportando]      = useState(false);
+  const [stats,           setStats]           = useState({ activos: 0, baja: 0, total: 0 });
+  const [seleccionada,    setSeleccionada]    = useState(null);
+  const [editando,        setEditando]        = useState(null);
+  const [idEliminar,      setIdEliminar]      = useState(null);
+  const [eliminando,      setEliminando]      = useState(false);
+  const [idBaja,          setIdBaja]          = useState(null);
+  const [procesandoBaja,  setProcesandoBaja]  = useState(false);
 
-  const [stats,         setStats]         = useState({ activos: 0, baja: 0, total: 0 });
-
-  const [seleccionada,  setSeleccionada]  = useState(null);
-  const [editando,      setEditando]      = useState(null);
-  const [idEliminar,    setIdEliminar]    = useState(null);
-  const [eliminando,    setEliminando]    = useState(false);
-  const [idBaja,        setIdBaja]        = useState(null);
-  const [procesandoBaja, setProcesandoBaja] = useState(false);
-
-  /* ── Cargar stats globales ───────────────────────────────────────────────── */
+  /* ── Stats ────────────────────────────────────────────────────────────────── */
   const cargarStats = useCallback(async () => {
     try {
       const [{ data: a }, { data: b }] = await Promise.all([
@@ -78,10 +79,9 @@ export default function AdminDashboard() {
     } catch { /* silencioso */ }
   }, []);
 
-  /* ── Cargar tabla paginada ───────────────────────────────────────────────── */
+  /* ── Tabla ────────────────────────────────────────────────────────────────── */
   const cargar = useCallback(async () => {
-    setCargando(true);
-    setError('');
+    setCargando(true); setError('');
     try {
       const { data } = await api.get('/api/inscripciones', {
         params: { pagina, porPagina: POR_PAGINA, buscar: buscar || undefined, estado },
@@ -95,11 +95,11 @@ export default function AdminDashboard() {
     }
   }, [pagina, buscar, estado]);
 
-  useEffect(() => { cargarStats(); },        [cargarStats]);
-  useEffect(() => { cargar(); },             [cargar]);
-  useEffect(() => { setPagina(1); },         [buscar, estado]);
+  useEffect(() => { cargarStats(); }, [cargarStats]);
+  useEffect(() => { cargar(); },      [cargar]);
+  useEffect(() => { setPagina(1); },  [buscar, estado]);
 
-  /* ── Dar de baja ─────────────────────────────────────────────────────────── */
+  /* ── Dar de baja ──────────────────────────────────────────────────────────── */
   const handleDarDeBaja = async () => {
     if (!idBaja) return;
     setProcesandoBaja(true);
@@ -108,11 +108,8 @@ export default function AdminDashboard() {
       setIdBaja(null);
       setToast('Beneficiario dado de baja correctamente');
       cargar(); cargarStats();
-    } catch {
-      setError('No se pudo dar de baja al beneficiario.');
-    } finally {
-      setProcesandoBaja(false);
-    }
+    } catch { setError('No se pudo dar de baja al beneficiario.'); }
+    finally   { setProcesandoBaja(false); }
   };
 
   const handleReactivar = async (id) => {
@@ -120,12 +117,10 @@ export default function AdminDashboard() {
       await api.patch(`/api/inscripciones/${id}/reactivar`);
       setToast('Beneficiario reactivado correctamente');
       cargar(); cargarStats();
-    } catch {
-      setError('No se pudo reactivar el beneficiario.');
-    }
+    } catch { setError('No se pudo reactivar el beneficiario.'); }
   };
 
-  /* ── Eliminar ────────────────────────────────────────────────────────────── */
+  /* ── Eliminar ─────────────────────────────────────────────────────────────── */
   const handleEliminar = async () => {
     if (!idEliminar) return;
     setEliminando(true);
@@ -134,11 +129,8 @@ export default function AdminDashboard() {
       setIdEliminar(null);
       setToast('Registro eliminado permanentemente');
       cargar(); cargarStats();
-    } catch {
-      setError('No se pudo eliminar el registro.');
-    } finally {
-      setEliminando(false);
-    }
+    } catch { setError('No se pudo eliminar el registro.'); }
+    finally  { setEliminando(false); }
   };
 
   const handleGuardadoEdicion = () => {
@@ -147,7 +139,7 @@ export default function AdminDashboard() {
     cargar();
   };
 
-  /* ── Excel — exporta TODOS los registros de la BD ───────────────────────── */
+  /* ── Excel ────────────────────────────────────────────────────────────────── */
   const exportarExcel = async () => {
     setExportando(true);
     setToast('Preparando exportación completa…');
@@ -186,7 +178,7 @@ export default function AdminDashboard() {
         ins.createdAt ? new Date(ins.createdAt).toLocaleDateString('es-CO') : '—',
       ]);
 
-      const hoja  = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
+      const hoja = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
       hoja['!cols'] = [30,15,14,18,10,20,10,11,10,10,30,30,30,14,18,30,12,16].map(wch => ({ wch }));
       const libro = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(libro, hoja, 'Beneficiarios');
@@ -207,46 +199,64 @@ export default function AdminDashboard() {
     { value: 'todos',   label: `Todos (${stats.total})` },
   ];
 
-  return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+  /* ── Estilos de hover (texto negro, fondo lavanda suave) ─────────────────── */
+  const hoverSx = (activo) => ({
+    bgcolor: activo ? '#ede7f6 !important' : '#f5f5f5 !important',
+    '& .MuiTableCell-root': { color: '#1a1a1a !important' },
+    '& .MuiTableCell-root:first-of-type': { borderLeft: '3px solid #7C3AED' },
+    '& a': { color: '#1a6b35 !important' },
+  });
 
-      {/* ── Banner superior ──────────────────────────────────────────────────── */}
+  return (
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+
+      {/* ── Banner ─────────────────────────────────────────────────────────── */}
       <Box sx={{
         background: 'linear-gradient(135deg, #4E1B95 0%, #3a1470 60%, #2D984F 100%)',
-        px: { xs: 2, md: 4 }, py: 3,
+        px: { xs: 2, sm: 3, md: 4 },
+        pt: { xs: 2, sm: 3 },
+        pb: { xs: 2, sm: 3 },
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
+          {/* Título */}
           <Box>
             <Typography sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.3 }}>
               Módulo
             </Typography>
-            <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+            <Typography sx={{ fontSize: { xs: '1.3rem', sm: '1.6rem' }, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
               Beneficiarios
             </Typography>
-            <Typography sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', mt: 0.4 }}>
+            <Typography sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', mt: 0.3 }}>
               Gestión de niños y niñas inscritos
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-            <StatCard icon={<PeopleIcon />}        label="Total"   value={stats.total}   color="#B4E8E8" />
-            <StatCard icon={<VerifiedUserIcon />}  label="Activos" value={stats.activos} color="#81c784" />
-            <StatCard icon={<PersonOffIcon />}     label="Baja"    value={stats.baja}    color="#ef9a9a" />
+          {/* Stats */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'nowrap', width: { xs: '100%', sm: 'auto' } }}>
+            <StatCard icon={<PeopleIcon />}       label="Total"   value={stats.total}   color="#B4E8E8" />
+            <StatCard icon={<VerifiedUserIcon />} label="Activos" value={stats.activos} color="#81c784" />
+            <StatCard icon={<PersonOffIcon />}    label="Baja"    value={stats.baja}    color="#ef9a9a" />
           </Box>
         </Box>
       </Box>
 
-      {/* ── Contenido ────────────────────────────────────────────────────────── */}
+      {/* ── Contenido ──────────────────────────────────────────────────────── */}
       <Box sx={{ flex: 1 }}>
-        <Container maxWidth="xl" sx={{ py: 3 }}>
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
 
-          {/* Barra búsqueda + export */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
+          {/* Búsqueda + Export */}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            sx={{ mb: 2 }}
+          >
             <TextField
               placeholder="Buscar nombre, documento, acudiente…"
               size="small"
+              fullWidth
               value={buscar}
               onChange={e => setBuscar(e.target.value)}
-              sx={{ minWidth: 300, flex: 1, maxWidth: 480 }}
+              sx={{ maxWidth: { sm: 480 } }}
               slotProps={{
                 input: {
                   startAdornment: (
@@ -267,21 +277,24 @@ export default function AdminDashboard() {
                 sx={{
                   bgcolor: '#2D984F', '&:hover': { bgcolor: '#1e6e38' },
                   whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2,
+                  flexShrink: 0,
                 }}
               >
-                {exportando ? 'Exportando…' : 'Exportar Excel completo'}
+                {exportando ? 'Exportando…' : 'Exportar Excel'}
               </Button>
             </Tooltip>
-          </Box>
+          </Stack>
 
           {/* Tabs */}
           <Tabs
             value={estado}
             onChange={(_, v) => setEstado(v)}
+            variant="scrollable"
+            scrollButtons="auto"
             sx={{
               mb: 2,
-              '& .MuiTab-root':     { fontWeight: 600, textTransform: 'none', minHeight: 40, fontSize: '0.85rem' },
-              '& .Mui-selected':    { color: '#4E1B95' },
+              '& .MuiTab-root':       { fontWeight: 600, textTransform: 'none', minHeight: 40, fontSize: '0.85rem' },
+              '& .Mui-selected':      { color: '#4E1B95' },
               '& .MuiTabs-indicator': { bgcolor: '#4E1B95', height: 3, borderRadius: 2 },
             }}
           >
@@ -333,26 +346,20 @@ export default function AdminDashboard() {
                       onClick={() => setSeleccionada(ins)}
                       sx={{
                         cursor: 'pointer',
-                        opacity: ins.activo ? 1 : 0.6,
-                        bgcolor: idx % 2 === 0 ? 'inherit' : 'rgba(78,27,149,0.06)',
-                        '&:hover': {
-                          bgcolor: ins.activo ? 'rgba(78,27,149,0.85) !important' : 'rgba(60,60,60,0.85) !important',
-                          '& .MuiTableCell-root': { color: '#fff !important', transition: 'color 0.15s' },
-                          '& .MuiTableCell-root:first-of-type': { borderLeft: '4px solid #a855f7' },
-                          '& a': { color: '#4ade80 !important' },
-                          '& .MuiChip-root': { opacity: 0.92 },
-                        },
-                        transition: 'background 0.15s',
-                        transition: 'background 0.12s',
+                        opacity: ins.activo ? 1 : 0.65,
+                        bgcolor: idx % 2 === 0 ? 'inherit' : 'rgba(78,27,149,0.04)',
+                        transition: 'background 0.15s, opacity 0.15s',
+                        '&:hover': hoverSx(ins.activo),
+                        '&:last-child td': { borderBottom: 0 },
                       }}
                     >
-                      <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap', color: 'text.primary' }}>
                         {ins.nombreMenor}
                       </TableCell>
                       <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.secondary' }}>
                         {ins.tipoDocumento} {ins.numeroDocumento || '—'}
                       </TableCell>
-                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
+                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.primary' }}>
                         {calcularEdad(ins.fechaNacimiento)}
                       </TableCell>
                       <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
@@ -371,7 +378,8 @@ export default function AdminDashboard() {
                         <Chip
                           label={ins.tieneAlergia === 'si' ? 'Sí' : 'No'}
                           color={ins.tieneAlergia === 'si' ? 'warning' : 'default'}
-                          size="small" sx={{ fontSize: '0.72rem' }}
+                          size="small"
+                          sx={{ fontSize: '0.72rem', fontWeight: 600 }}
                         />
                       </TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>
@@ -385,32 +393,32 @@ export default function AdminDashboard() {
                           }}
                         />
                       </TableCell>
-                      <TableCell onClick={e => e.stopPropagation()} sx={{ whiteSpace: 'nowrap' }}>
+                      <TableCell onClick={e => e.stopPropagation()} sx={{ whiteSpace: 'nowrap', pr: 0.5 }}>
                         <Tooltip title="Ver detalle">
-                          <IconButton size="small" sx={{ color: '#4E1B95' }} onClick={() => setSeleccionada(ins)}>
+                          <IconButton size="small" sx={{ color: '#4E1B95', '&:hover': { bgcolor: 'rgba(78,27,149,0.1)' } }} onClick={() => setSeleccionada(ins)}>
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Editar">
-                          <IconButton size="small" sx={{ color: '#1976d2' }} onClick={() => setEditando(ins)}>
+                          <IconButton size="small" sx={{ color: '#1976d2', '&:hover': { bgcolor: 'rgba(25,118,210,0.1)' } }} onClick={() => setEditando(ins)}>
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         {ins.activo ? (
                           <Tooltip title="Dar de baja">
-                            <IconButton size="small" sx={{ color: '#e65100' }} onClick={() => setIdBaja(ins.id)}>
+                            <IconButton size="small" sx={{ color: '#e65100', '&:hover': { bgcolor: 'rgba(230,81,0,0.1)' } }} onClick={() => setIdBaja(ins.id)}>
                               <BlockIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         ) : (
                           <Tooltip title="Reactivar">
-                            <IconButton size="small" sx={{ color: '#2e7d32' }} onClick={() => handleReactivar(ins.id)}>
+                            <IconButton size="small" sx={{ color: '#2e7d32', '&:hover': { bgcolor: 'rgba(46,125,50,0.1)' } }} onClick={() => handleReactivar(ins.id)}>
                               <CheckCircleIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         )}
                         <Tooltip title="Eliminar permanentemente">
-                          <IconButton size="small" sx={{ color: '#c62828' }} onClick={() => setIdEliminar(ins.id)}>
+                          <IconButton size="small" sx={{ color: '#c62828', '&:hover': { bgcolor: 'rgba(198,40,40,0.1)' } }} onClick={() => setIdEliminar(ins.id)}>
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -426,14 +434,19 @@ export default function AdminDashboard() {
           {totalPaginas > 1 && (
             <Box display="flex" justifyContent="center" mt={3}>
               <Pagination
-                count={totalPaginas} page={pagina}
+                count={totalPaginas}
+                page={pagina}
                 onChange={(_, v) => setPagina(v)}
-                sx={{ '& .Mui-selected': { bgcolor: '#4E1B95 !important', color: '#fff' } }}
+                size="small"
+                sx={{
+                  '& .Mui-selected': { bgcolor: '#4E1B95 !important', color: '#fff' },
+                  '& .MuiPaginationItem-root': { fontWeight: 600 },
+                }}
               />
             </Box>
           )}
 
-          {/* ── Footer disclaimer ──────────────────────────────────────────── */}
+          {/* Footer */}
           <Box sx={{ mt: 5, pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
               <LockIcon sx={{ fontSize: '1rem', color: '#4E1B95', mt: '2px', flexShrink: 0 }} />
@@ -443,7 +456,7 @@ export default function AdminDashboard() {
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                   La información contenida en este panel es de carácter <strong>estrictamente confidencial</strong> y de uso exclusivo del personal autorizado de la fundación.
-                  Queda prohibida su reproducción, divulgación o uso no autorizado. El acceso indebido a estos datos puede constituir una infracción a la Ley 1581 de 2012 (Protección de Datos Personales).
+                  Queda prohibida su reproducción, divulgación o uso no autorizado. El acceso indebido a estos datos puede constituir una infracción a la <strong>Ley 1581 de 2012</strong> (Protección de Datos Personales).
                 </Typography>
               </Box>
             </Box>
@@ -461,7 +474,7 @@ export default function AdminDashboard() {
         </Container>
       </Box>
 
-      {/* ── Modales ──────────────────────────────────────────────────────────── */}
+      {/* ── Modales ────────────────────────────────────────────────────────── */}
       {seleccionada && (
         <DetalleInscripcion
           inscripcion={seleccionada}
@@ -478,15 +491,17 @@ export default function AdminDashboard() {
         />
       )}
 
-      <Dialog open={!!idBaja} onClose={() => setIdBaja(null)}>
-        <DialogTitle sx={{ color: '#e65100', fontWeight: 700 }}>¿Dar de baja al beneficiario?</DialogTitle>
+      <Dialog open={!!idBaja} onClose={() => setIdBaja(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ color: '#e65100', fontWeight: 700, pb: 1 }}>
+          ¿Dar de baja al beneficiario?
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
             El beneficiario quedará inactivo pero su información se conservará. Podrás reactivarlo en cualquier momento.
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIdBaja(null)}>Cancelar</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setIdBaja(null)} variant="outlined">Cancelar</Button>
           <Button variant="contained" onClick={handleDarDeBaja} disabled={procesandoBaja}
             sx={{ bgcolor: '#e65100', '&:hover': { bgcolor: '#bf360c' } }}>
             {procesandoBaja ? 'Procesando…' : 'Dar de baja'}
@@ -494,15 +509,17 @@ export default function AdminDashboard() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={!!idEliminar} onClose={() => setIdEliminar(null)}>
-        <DialogTitle sx={{ color: '#c62828', fontWeight: 700 }}>¿Eliminar permanentemente?</DialogTitle>
+      <Dialog open={!!idEliminar} onClose={() => setIdEliminar(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ color: '#c62828', fontWeight: 700, pb: 1 }}>
+          ¿Eliminar permanentemente?
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
             Esta acción no se puede deshacer. El registro se borrará definitivamente de la base de datos.
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIdEliminar(null)}>Cancelar</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setIdEliminar(null)} variant="outlined">Cancelar</Button>
           <Button color="error" variant="contained" onClick={handleEliminar} disabled={eliminando}>
             {eliminando ? 'Eliminando…' : 'Eliminar'}
           </Button>
@@ -510,8 +527,11 @@ export default function AdminDashboard() {
       </Dialog>
 
       <Snackbar
-        open={!!toast} autoHideDuration={3500} onClose={() => setToast('')}
-        message={toast} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        open={!!toast}
+        autoHideDuration={3500}
+        onClose={() => setToast('')}
+        message={toast}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Box>
   );

@@ -63,6 +63,105 @@ public class InscripcionesController : ControllerBase
         });
     }
 
+    // GET api/inscripciones/stats
+    [HttpGet("stats")]
+    [Authorize]
+    public async Task<IActionResult> Stats()
+    {
+        var items = await _db.Inscripciones
+            .Select(i => new
+            {
+                i.Activo,
+                i.FechaNacimiento,
+                i.TieneAlergia,
+                i.NumeroDocumento,
+                i.Eps,
+                i.Whatsapp,
+                i.Direccion,
+                i.TallaCamisa,
+                i.TallaPantalon,
+                i.TallaZapatos,
+                i.FotoMenorUrl,
+                i.CreatedAt,
+            })
+            .ToListAsync();
+
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        static int? Edad(DateOnly f)
+        {
+            var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+            int e = hoy.Year - f.Year;
+            if (hoy < f.AddYears(e)) e--;
+            return e;
+        }
+
+        // Rangos de edad
+        (string Label, int Min, int Max)[] rangos =
+        [
+            ("0-3 años",   0,  3),
+            ("4-6 años",   4,  6),
+            ("7-9 años",   7,  9),
+            ("10-12 años", 10, 12),
+            ("13-15 años", 13, 15),
+            ("16+ años",   16, 99),
+        ];
+
+        var porEdad = rangos.ToDictionary(
+            r => r.Label,
+            r => items.Count(i =>
+            {
+                var e = Edad(i.FechaNacimiento);
+                return e >= r.Min && e <= r.Max;
+            }));
+
+        // Inscripciones por mes (últimos 4 meses)
+        var porMes = Enumerable.Range(0, 4)
+            .Select(k =>
+            {
+                var d = DateTime.UtcNow.AddMonths(-(3 - k));
+                var label = d.ToString("MMM yy", new System.Globalization.CultureInfo("es-CO"));
+                var count = items.Count(i =>
+                    i.CreatedAt.Month == d.Month && i.CreatedAt.Year == d.Year);
+                return (label, count);
+            })
+            .ToDictionary(x => x.label, x => x.count);
+
+        // Top tallas
+        static List<TallaFreq> TopTallas(IEnumerable<string?> valores) =>
+            valores
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .GroupBy(v => v!)
+                .OrderByDescending(g => g.Count())
+                .Take(5)
+                .Select(g => new TallaFreq(g.Key, g.Count()))
+                .ToList();
+
+        var dto = new InscripcionStatsDto
+        {
+            Total        = items.Count,
+            Activos      = items.Count(i => i.Activo),
+            Baja         = items.Count(i => !i.Activo),
+            ConAlergia   = items.Count(i => i.TieneAlergia == "si"),
+            SinDocumento = items.Count(i => string.IsNullOrWhiteSpace(i.NumeroDocumento)),
+            SinEps       = items.Count(i => string.IsNullOrWhiteSpace(i.Eps)),
+            SinWhatsapp  = items.Count(i => string.IsNullOrWhiteSpace(i.Whatsapp)),
+            SinDireccion = items.Count(i => string.IsNullOrWhiteSpace(i.Direccion)),
+            SinTallas    = items.Count(i =>
+                string.IsNullOrWhiteSpace(i.TallaCamisa) ||
+                string.IsNullOrWhiteSpace(i.TallaPantalon) ||
+                string.IsNullOrWhiteSpace(i.TallaZapatos)),
+            SinFoto      = items.Count(i => string.IsNullOrWhiteSpace(i.FotoMenorUrl)),
+            PorEdad      = porEdad,
+            PorMes       = porMes,
+            TopCamisa    = TopTallas(items.Select(i => i.TallaCamisa)),
+            TopZapatos   = TopTallas(items.Select(i => i.TallaZapatos)),
+            TopPantalon  = TopTallas(items.Select(i => i.TallaPantalon)),
+        };
+
+        return Ok(dto);
+    }
+
     // GET api/inscripciones/{id}
     [HttpGet("{id:guid}")]
     [Authorize]

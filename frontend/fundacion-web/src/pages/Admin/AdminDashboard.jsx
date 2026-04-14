@@ -5,7 +5,7 @@ import {
   Paper, IconButton, Chip, TextField, InputAdornment, Pagination,
   CircularProgress, Alert, Dialog, DialogTitle, DialogContent,
   DialogContentText, DialogActions, Tooltip, Button, Snackbar, Tabs, Tab,
-  Divider, Stack, Collapse, LinearProgress,
+  Divider, Stack, LinearProgress, useMediaQuery, useTheme,
 } from '@mui/material';
 import SearchIcon           from '@mui/icons-material/Search';
 import DeleteIcon           from '@mui/icons-material/Delete';
@@ -21,35 +21,14 @@ import LockIcon             from '@mui/icons-material/Lock';
 import WhatsAppIcon         from '@mui/icons-material/WhatsApp';
 import WarningAmberIcon     from '@mui/icons-material/WarningAmber';
 import AssignmentLateIcon   from '@mui/icons-material/AssignmentLate';
-import ExpandMoreIcon       from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon       from '@mui/icons-material/ExpandLess';
-import ChildCareIcon        from '@mui/icons-material/ChildCare';
+import BarChartIcon         from '@mui/icons-material/BarChart';
+import CloseIcon            from '@mui/icons-material/Close';
 import * as XLSX from 'xlsx';
 import api from '../../services/api';
 import DetalleInscripcion from './DetalleInscripcion';
 import EditarInscripcion  from './EditarInscripcion';
 
 const POR_PAGINA = 15;
-
-/* ── Helpers ────────────────────────────────────────────────────────────────── */
-function edadNumerica(fechaNac) {
-  if (!fechaNac) return null;
-  const hoy = new Date();
-  const nac = new Date(fechaNac);
-  let edad = hoy.getFullYear() - nac.getFullYear();
-  const m = hoy.getMonth() - nac.getMonth();
-  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
-  return edad;
-}
-
-const RANGOS = [
-  { label: '0 – 3 años',  min: 0,  max: 3  },
-  { label: '4 – 6 años',  min: 4,  max: 6  },
-  { label: '7 – 9 años',  min: 7,  max: 9  },
-  { label: '10 – 12 años',min: 10, max: 12 },
-  { label: '13 – 15 años',min: 13, max: 15 },
-  { label: '16+ años',    min: 16, max: 99  },
-];
 
 /* ── StatCard del banner ────────────────────────────────────────────────────── */
 function StatCard({ icon, label, value, color }) {
@@ -103,229 +82,195 @@ function BaraStat({ label, count, total, color = '#4E1B95', icon }) {
   );
 }
 
-/* ── Panel de estadísticas ──────────────────────────────────────────────────── */
-function PanelEstadisticas({ todos, cargandoStats }) {
-  const [abierto, setAbierto] = useState(false);
-
-  if (cargandoStats) return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.5, px: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider', mb: 2 }}>
-      <CircularProgress size={16} sx={{ color: '#4E1B95' }} />
-      <Typography variant="caption" color="text.secondary">Calculando estadísticas…</Typography>
-    </Box>
-  );
-
-  if (!todos.length) return null;
-
-  const activos   = todos.filter(i => i.activo);
-  const total     = todos.length;
-  const totalAct  = activos.length;
-
-  // Alergias
-  const conAlergia = todos.filter(i => i.tieneAlergia === 'si').length;
-
-  // Rangos de edad
-  const rangos = RANGOS.map(r => ({
-    ...r,
-    count: todos.filter(i => {
-      const e = edadNumerica(i.fechaNacimiento);
-      return e !== null && e >= r.min && e <= r.max;
-    }).length,
-  }));
-  const sinFecha = todos.filter(i => !i.fechaNacimiento).length;
-  const maxRango = Math.max(...rangos.map(r => r.count), 1);
-
-  // Datos faltantes (sobre activos)
-  const faltaDoc      = todos.filter(i => !i.numeroDocumento).length;
-  const faltaEps      = todos.filter(i => !i.eps).length;
-  const faltaWa       = todos.filter(i => !i.whatsapp).length;
-  const faltaDireccion= todos.filter(i => !i.direccion).length;
-  const faltaTallas   = todos.filter(i => !i.tallaCamisa || !i.tallaPantalon || !i.tallaZapatos).length;
-  const faltaFoto     = todos.filter(i => !i.fotoMenorUrl).length;
-  const incompletos   = todos.filter(i =>
-    !i.numeroDocumento || !i.eps || !i.whatsapp || !i.tallaCamisa || !i.tallaPantalon || !i.tallaZapatos
-  ).length;
-
-  // Inscripciones por mes (últimos 4 meses)
-  const ahora = new Date();
-  const meses = Array.from({ length: 4 }, (_, k) => {
-    const d = new Date(ahora.getFullYear(), ahora.getMonth() - (3 - k), 1);
-    return {
-      label: d.toLocaleDateString('es-CO', { month: 'short', year: '2-digit' }),
-      count: todos.filter(i => {
-        if (!i.createdAt) return false;
-        const c = new Date(i.createdAt);
-        return c.getMonth() === d.getMonth() && c.getFullYear() === d.getFullYear();
-      }).length,
-    };
-  });
-  const maxMes = Math.max(...meses.map(m => m.count), 1);
-
+/* ── Card contenedor para el modal de estadísticas ──────────────────────────── */
+function StatSection({ title, children }) {
   return (
-    <Paper elevation={0} sx={{ mb: 2.5, border: '1px solid', borderColor: 'divider', borderRadius: 3, overflow: 'hidden' }}>
-      {/* Cabecera del panel */}
-      <Box
-        onClick={() => setAbierto(p => !p)}
-        sx={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          px: { xs: 2, sm: 3 }, py: 1.5, cursor: 'pointer',
-          bgcolor: abierto ? 'rgba(78,27,149,0.05)' : 'transparent',
-          '&:hover': { bgcolor: 'rgba(78,27,149,0.05)' },
-          transition: 'background 0.2s',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <ChildCareIcon sx={{ color: '#4E1B95', fontSize: '1.2rem' }} />
-          <Typography fontWeight={700} sx={{ color: '#4E1B95', fontSize: '0.95rem' }}>
-            Estadísticas de beneficiarios
-          </Typography>
-          {/* chips resumen siempre visibles */}
-          <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 0.8, ml: 1 }}>
-            <Chip label={`${totalAct} activos`}    size="small" sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontWeight: 700, fontSize: '0.7rem' }} />
-            <Chip label={`${conAlergia} alergias`} size="small" sx={{ bgcolor: '#fff3e0', color: '#e65100', fontWeight: 700, fontSize: '0.7rem' }} />
-            <Chip label={`${incompletos} incompletos`} size="small" sx={{ bgcolor: '#fce4ec', color: '#c62828', fontWeight: 700, fontSize: '0.7rem' }} />
-          </Box>
+    <Paper elevation={0} sx={{
+      p: { xs: 2, sm: 2.5 },
+      border: '1px solid',
+      borderColor: 'divider',
+      borderRadius: 3,
+      height: '100%',
+    }}>
+      <Typography variant="subtitle2" fontWeight={700} color="#4E1B95"
+        sx={{ mb: 1.8, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 0.7 }}>
+        {title}
+      </Typography>
+      {children}
+    </Paper>
+  );
+}
+
+/* ── Modal de estadísticas detalladas ───────────────────────────────────────── */
+function ModalEstadisticas({ open, onClose, stats, cargando }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const renderBarras = (items, maxVal, color) =>
+    items.map(({ key, val }) => (
+      <Box key={key} sx={{ mb: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.3 }}>
+          <Typography variant="caption" fontWeight={600}>{key}</Typography>
+          <Typography variant="caption" fontWeight={700} color={color}>{val}</Typography>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="caption" color="text.secondary">{abierto ? 'Ocultar' : 'Ver detalles'}</Typography>
-          {abierto ? <ExpandLessIcon sx={{ color: '#4E1B95' }} /> : <ExpandMoreIcon sx={{ color: '#4E1B95' }} />}
+        <Box sx={{ bgcolor: 'rgba(0,0,0,0.06)', borderRadius: 4, height: 10, overflow: 'hidden' }}>
+          <Box sx={{
+            height: '100%', borderRadius: 4,
+            width: `${maxVal > 0 ? (val / maxVal) * 100 : 0}%`,
+            background: `linear-gradient(90deg, ${color}, ${color}cc)`,
+            transition: 'width 0.6s ease',
+            minWidth: val > 0 ? 8 : 0,
+          }} />
         </Box>
       </Box>
+    ));
 
-      <Collapse in={abierto}>
-        <Divider />
-        <Box sx={{ px: { xs: 2, sm: 3 }, py: 2.5 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' }, gap: { xs: 2.5, sm: 3 } }}>
+  const content = () => {
+    if (cargando) return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8, gap: 2 }}>
+        <CircularProgress size={32} sx={{ color: '#4E1B95' }} />
+        <Typography color="text.secondary">Calculando estadísticas…</Typography>
+      </Box>
+    );
+    if (!stats) return (
+      <Box sx={{ py: 6, textAlign: 'center' }}>
+        <Typography color="text.secondary">No hay estadísticas disponibles.</Typography>
+      </Box>
+    );
 
-            {/* ── Distribución por edad ── */}
-            <Box>
-              <Typography variant="subtitle2" fontWeight={700} color="#4E1B95" sx={{ mb: 1.5, fontSize: '0.85rem' }}>
-                📊 Distribución por edad
-              </Typography>
-              {rangos.map(r => (
-                <Box key={r.label} sx={{ mb: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.3 }}>
-                    <Typography variant="caption" fontWeight={600}>{r.label}</Typography>
-                    <Typography variant="caption" fontWeight={700} color="#4E1B95">{r.count}</Typography>
-                  </Box>
-                  <Box sx={{ bgcolor: 'rgba(0,0,0,0.06)', borderRadius: 4, height: 10, overflow: 'hidden' }}>
-                    <Box sx={{
-                      height: '100%', borderRadius: 4,
-                      width: `${(r.count / maxRango) * 100}%`,
-                      background: 'linear-gradient(90deg, #4E1B95, #7C3AED)',
-                      transition: 'width 0.6s ease',
-                      minWidth: r.count > 0 ? 8 : 0,
-                    }} />
-                  </Box>
-                </Box>
-              ))}
-              {sinFecha > 0 && (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                  ⚠ {sinFecha} sin fecha de nacimiento registrada
-                </Typography>
-              )}
-            </Box>
+    const { total, activos, baja, conAlergia,
+            sinDocumento, sinEps, sinWhatsapp, sinDireccion, sinTallas, sinFoto,
+            porEdad, porMes, topCamisa, topZapatos, topPantalon } = stats;
 
-            {/* ── Salud y estado ── */}
-            <Box>
-              <Typography variant="subtitle2" fontWeight={700} color="#4E1B95" sx={{ mb: 1.5, fontSize: '0.85rem' }}>
-                ❤️ Salud y estado
-              </Typography>
-              <BaraStat label="Con alergia"     count={conAlergia}            total={total} color="#e65100" icon={<WarningAmberIcon fontSize="inherit" />} />
-              <BaraStat label="Sin alergia"     count={total - conAlergia}    total={total} color="#2D984F" />
-              <BaraStat label="Activos"         count={totalAct}              total={total} color="#4E1B95" icon={<VerifiedUserIcon fontSize="inherit" />} />
-              <BaraStat label="En baja"         count={total - totalAct}      total={total} color="#9e9e9e" icon={<PersonOffIcon fontSize="inherit" />} />
-              <Divider sx={{ my: 1.5 }} />
-              <Typography variant="caption" color="text.secondary">
-                <strong>{total}</strong> beneficiarios en total (activos + baja)
-              </Typography>
-            </Box>
+    const edadItems = Object.entries(porEdad || {}).map(([k, v]) => ({ key: k, val: v }));
+    const maxEdad = Math.max(...edadItems.map(i => i.val), 1);
 
-            {/* ── Datos faltantes ── */}
-            <Box>
-              <Typography variant="subtitle2" fontWeight={700} color="#4E1B95" sx={{ mb: 1.5, fontSize: '0.85rem' }}>
-                📋 Datos por completar
-              </Typography>
-              <BaraStat label="Sin número documento" count={faltaDoc}       total={total} color="#c62828" icon={<AssignmentLateIcon fontSize="inherit" />} />
-              <BaraStat label="Sin EPS"              count={faltaEps}       total={total} color="#e65100" />
-              <BaraStat label="Sin WhatsApp"         count={faltaWa}        total={total} color="#f57c00" icon={<WhatsAppIcon fontSize="inherit" />} />
-              <BaraStat label="Sin dirección"        count={faltaDireccion} total={total} color="#795548" />
-              <BaraStat label="Con tallas incompletas" count={faltaTallas}  total={total} color="#5c6bc0" />
-              <BaraStat label="Sin foto del menor"   count={faltaFoto}      total={total} color="#9e9e9e" />
-            </Box>
+    const mesItems = Object.entries(porMes || {}).map(([k, v]) => ({ key: k, val: v }));
+    const maxMes = Math.max(...mesItems.map(i => i.val), 1);
 
-            {/* ── Inscripciones recientes ── */}
-            <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1', lg: '1' } }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#4E1B95" sx={{ mb: 1.5, fontSize: '0.85rem' }}>
-                📅 Inscripciones por mes (últimos 4 meses)
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', height: 80 }}>
-                {meses.map(m => (
-                  <Box key={m.label} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                    <Typography variant="caption" fontWeight={700} color="#4E1B95">{m.count}</Typography>
-                    <Box sx={{
-                      width: '100%', borderRadius: '4px 4px 0 0',
-                      height: `${Math.max((m.count / maxMes) * 56, m.count > 0 ? 8 : 2)}px`,
-                      background: m.count > 0 ? 'linear-gradient(180deg, #7C3AED, #4E1B95)' : 'rgba(0,0,0,0.08)',
-                      transition: 'height 0.5s ease',
-                    }} />
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>{m.label}</Typography>
-                  </Box>
-                ))}
+    const topCamisaItems = (topCamisa || []).map(t => ({ key: `Talla ${t.talla}`, val: t.cantidad }));
+    const topZapatosItems = (topZapatos || []).map(t => ({ key: `Talla ${t.talla}`, val: t.cantidad }));
+    const topPantalonItems = (topPantalon || []).map(t => ({ key: `Talla ${t.talla}`, val: t.cantidad }));
+    const maxCamisa = Math.max(...topCamisaItems.map(i => i.val), 1);
+    const maxZapatos = Math.max(...topZapatosItems.map(i => i.val), 1);
+    const maxPantalon = Math.max(...topPantalonItems.map(i => i.val), 1);
+
+    return (
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' },
+        gap: { xs: 2, sm: 2.5 },
+        p: { xs: 2, sm: 3 },
+      }}>
+
+        {/* ── Resumen general ── */}
+        <StatSection title="📊 Resumen general">
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 1 }}>
+            {[
+              { label: 'Total',   val: total,    bg: '#ede7f6', color: '#4E1B95' },
+              { label: 'Activos', val: activos,  bg: '#e8f5e9', color: '#2e7d32' },
+              { label: 'En baja', val: baja,     bg: '#fce4ec', color: '#c62828' },
+              { label: 'Alergias',val: conAlergia,bg:'#fff3e0', color: '#e65100' },
+            ].map(({ label, val, bg, color }) => (
+              <Box key={label} sx={{ bgcolor: bg, borderRadius: 2, p: 1.2, textAlign: 'center' }}>
+                <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color, lineHeight: 1 }}>{val}</Typography>
+                <Typography sx={{ fontSize: '0.7rem', color, fontWeight: 600, mt: 0.3 }}>{label}</Typography>
               </Box>
-            </Box>
-
-            {/* ── Resumen tallas más comunes ── */}
-            <Box>
-              <Typography variant="subtitle2" fontWeight={700} color="#4E1B95" sx={{ mb: 1.5, fontSize: '0.85rem' }}>
-                👕 Talla de camisa más frecuente
-              </Typography>
-              {(() => {
-                const freq = {};
-                todos.forEach(i => { if (i.tallaCamisa) freq[i.tallaCamisa] = (freq[i.tallaCamisa] || 0) + 1; });
-                const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                const maxF = sorted[0]?.[1] || 1;
-                return sorted.length ? sorted.map(([talla, cnt]) => (
-                  <Box key={talla} sx={{ mb: 0.8 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.3 }}>
-                      <Typography variant="caption" fontWeight={600}>Talla {talla}</Typography>
-                      <Typography variant="caption" fontWeight={700} color="#4E1B95">{cnt}</Typography>
-                    </Box>
-                    <Box sx={{ bgcolor: 'rgba(0,0,0,0.06)', borderRadius: 4, height: 8 }}>
-                      <Box sx={{ height: '100%', borderRadius: 4, width: `${(cnt / maxF) * 100}%`, bgcolor: '#2D984F', transition: 'width 0.5s' }} />
-                    </Box>
-                  </Box>
-                )) : <Typography variant="caption" color="text.secondary">Sin datos de tallas</Typography>;
-              })()}
-            </Box>
-
-            {/* ── Talla zapatos más común ── */}
-            <Box>
-              <Typography variant="subtitle2" fontWeight={700} color="#4E1B95" sx={{ mb: 1.5, fontSize: '0.85rem' }}>
-                👟 Talla de zapatos más frecuente
-              </Typography>
-              {(() => {
-                const freq = {};
-                todos.forEach(i => { if (i.tallaZapatos) freq[i.tallaZapatos] = (freq[i.tallaZapatos] || 0) + 1; });
-                const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                const maxF = sorted[0]?.[1] || 1;
-                return sorted.length ? sorted.map(([talla, cnt]) => (
-                  <Box key={talla} sx={{ mb: 0.8 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.3 }}>
-                      <Typography variant="caption" fontWeight={600}>Talla {talla}</Typography>
-                      <Typography variant="caption" fontWeight={700} color="#4E1B95">{cnt}</Typography>
-                    </Box>
-                    <Box sx={{ bgcolor: 'rgba(0,0,0,0.06)', borderRadius: 4, height: 8 }}>
-                      <Box sx={{ height: '100%', borderRadius: 4, width: `${(cnt / maxF) * 100}%`, bgcolor: '#1976d2', transition: 'width 0.5s' }} />
-                    </Box>
-                  </Box>
-                )) : <Typography variant="caption" color="text.secondary">Sin datos de tallas</Typography>;
-              })()}
-            </Box>
-
+            ))}
           </Box>
+        </StatSection>
+
+        {/* ── Distribución por edad ── */}
+        <StatSection title="👶 Distribución por edad">
+          {renderBarras(edadItems, maxEdad, '#4E1B95')}
+        </StatSection>
+
+        {/* ── Datos faltantes ── */}
+        <StatSection title="📋 Datos por completar">
+          <BaraStat label="Sin n° documento"       count={sinDocumento}  total={total} color="#c62828" icon={<AssignmentLateIcon fontSize="inherit" />} />
+          <BaraStat label="Sin EPS"                count={sinEps}        total={total} color="#e65100" />
+          <BaraStat label="Sin WhatsApp"           count={sinWhatsapp}   total={total} color="#f57c00" icon={<WhatsAppIcon fontSize="inherit" />} />
+          <BaraStat label="Sin dirección"          count={sinDireccion}  total={total} color="#795548" />
+          <BaraStat label="Tallas incompletas"     count={sinTallas}     total={total} color="#5c6bc0" />
+          <BaraStat label="Sin foto del menor"     count={sinFoto}       total={total} color="#9e9e9e" />
+        </StatSection>
+
+        {/* ── Inscripciones por mes ── */}
+        <StatSection title="📅 Inscripciones por mes (últimos 4)">
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', height: 90, mt: 1 }}>
+            {mesItems.map(m => (
+              <Box key={m.key} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                <Typography variant="caption" fontWeight={700} color="#4E1B95">{m.val}</Typography>
+                <Box sx={{
+                  width: '100%', borderRadius: '4px 4px 0 0',
+                  height: `${Math.max((m.val / maxMes) * 60, m.val > 0 ? 8 : 2)}px`,
+                  background: m.val > 0 ? 'linear-gradient(180deg, #7C3AED, #4E1B95)' : 'rgba(0,0,0,0.08)',
+                  transition: 'height 0.5s ease',
+                }} />
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textAlign: 'center' }}>
+                  {m.key}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </StatSection>
+
+        {/* ── Top tallas camisa + pantalon ── */}
+        <StatSection title="👕 Talla camisa más frecuente">
+          {topCamisaItems.length
+            ? renderBarras(topCamisaItems, maxCamisa, '#2D984F')
+            : <Typography variant="caption" color="text.secondary">Sin datos</Typography>}
+        </StatSection>
+
+        <StatSection title="👟 Talla zapatos / pantalón">
+          <Typography variant="caption" fontWeight={700} color="#1976d2" sx={{ mb: 1, display: 'block' }}>
+            Zapatos
+          </Typography>
+          {topZapatosItems.length
+            ? renderBarras(topZapatosItems, maxZapatos, '#1976d2')
+            : <Typography variant="caption" color="text.secondary">Sin datos</Typography>}
+          <Divider sx={{ my: 1.2 }} />
+          <Typography variant="caption" fontWeight={700} color="#5c6bc0" sx={{ mb: 1, display: 'block' }}>
+            Pantalón
+          </Typography>
+          {topPantalonItems.length
+            ? renderBarras(topPantalonItems, maxPantalon, '#5c6bc0')
+            : <Typography variant="caption" color="text.secondary">Sin datos</Typography>}
+        </StatSection>
+
+      </Box>
+    );
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullScreen={isMobile}
+      maxWidth="lg"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3, maxHeight: '90vh' } }}
+    >
+      <DialogTitle sx={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'linear-gradient(135deg, #4E1B95 0%, #3a1470 100%)',
+        color: '#fff', py: 2, px: 3,
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <BarChartIcon />
+          <Typography fontWeight={800} sx={{ fontSize: '1.05rem' }}>
+            Estadísticas de beneficiarios
+          </Typography>
         </Box>
-      </Collapse>
-    </Paper>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'rgba(255,255,255,0.8)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.12)' } }}>
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent sx={{ p: 0, overflowY: 'auto' }}>
+        {content()}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -341,8 +286,9 @@ export default function AdminDashboard() {
   const [toast,          setToast]          = useState('');
   const [exportando,     setExportando]     = useState(false);
   const [stats,          setStats]          = useState({ activos: 0, baja: 0, total: 0 });
-  const [todosReg,       setTodosReg]       = useState([]);
+  const [statsDetalle,   setStatsDetalle]   = useState(null);
   const [cargandoStats,  setCargandoStats]  = useState(false);
+  const [modalStats,     setModalStats]     = useState(false);
   const [seleccionada,   setSeleccionada]   = useState(null);
   const [editando,       setEditando]       = useState(null);
   const [idEliminar,     setIdEliminar]     = useState(null);
@@ -361,14 +307,12 @@ export default function AdminDashboard() {
     } catch { /* silencioso */ }
   }, []);
 
-  /* ── Todos los registros para estadísticas detalladas ─────────────────────── */
-  const cargarTodos = useCallback(async () => {
+  /* ── Estadísticas detalladas (endpoint dedicado) ──────────────────────────── */
+  const cargarStatsDetalle = useCallback(async () => {
     setCargandoStats(true);
     try {
-      const { data } = await api.get('/api/inscripciones', {
-        params: { pagina: 1, porPagina: 9999, estado: 'todos' },
-      });
-      setTodosReg(data.data || []);
+      const { data } = await api.get('/api/inscripciones/stats');
+      setStatsDetalle(data);
     } catch { /* silencioso */ }
     finally { setCargandoStats(false); }
   }, []);
@@ -387,7 +331,7 @@ export default function AdminDashboard() {
     } finally { setCargando(false); }
   }, [pagina, buscar, estado]);
 
-  useEffect(() => { cargarStats(); cargarTodos(); }, [cargarStats, cargarTodos]);
+  useEffect(() => { cargarStats(); cargarStatsDetalle(); }, [cargarStats, cargarStatsDetalle]);
   useEffect(() => { cargar(); },     [cargar]);
   useEffect(() => { setPagina(1); }, [buscar, estado]);
 
@@ -399,7 +343,7 @@ export default function AdminDashboard() {
       await api.patch(`/api/inscripciones/${idBaja}/baja`);
       setIdBaja(null);
       setToast('Beneficiario dado de baja correctamente');
-      cargar(); cargarStats(); cargarTodos();
+      cargar(); cargarStats(); cargarStatsDetalle();
     } catch { setError('No se pudo dar de baja al beneficiario.'); }
     finally  { setProcesandoBaja(false); }
   };
@@ -408,7 +352,7 @@ export default function AdminDashboard() {
     try {
       await api.patch(`/api/inscripciones/${id}/reactivar`);
       setToast('Beneficiario reactivado correctamente');
-      cargar(); cargarStats(); cargarTodos();
+      cargar(); cargarStats(); cargarStatsDetalle();
     } catch { setError('No se pudo reactivar el beneficiario.'); }
   };
 
@@ -420,7 +364,7 @@ export default function AdminDashboard() {
       await api.delete(`/api/inscripciones/${idEliminar}`);
       setIdEliminar(null);
       setToast('Registro eliminado permanentemente');
-      cargar(); cargarStats(); cargarTodos();
+      cargar(); cargarStats(); cargarStatsDetalle();
     } catch { setError('No se pudo eliminar el registro.'); }
     finally  { setEliminando(false); }
   };
@@ -428,7 +372,7 @@ export default function AdminDashboard() {
   const handleGuardadoEdicion = () => {
     setEditando(null);
     setToast('Beneficiario actualizado correctamente');
-    cargar(); cargarTodos();
+    cargar(); cargarStatsDetalle();
   };
 
   /* ── Excel ────────────────────────────────────────────────────────────────── */
@@ -520,17 +464,14 @@ export default function AdminDashboard() {
       <Box sx={{ flex: 1 }}>
         <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
 
-          {/* Panel de estadísticas */}
-          <PanelEstadisticas todos={todosReg} cargandoStats={cargandoStats} />
-
-          {/* Búsqueda + Export */}
+          {/* Búsqueda + Estadísticas + Export */}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 2 }}>
             <TextField
               placeholder="Buscar nombre, documento, acudiente…"
               size="small" fullWidth
               value={buscar}
               onChange={e => setBuscar(e.target.value)}
-              sx={{ maxWidth: { sm: 480 } }}
+              sx={{ maxWidth: { sm: 420 } }}
               slotProps={{
                 input: {
                   startAdornment: (
@@ -541,16 +482,29 @@ export default function AdminDashboard() {
                 },
               }}
             />
-            <Tooltip title="Exporta TODOS los beneficiarios de la base de datos">
-              <Button
-                variant="contained" size="small"
-                startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
-                onClick={exportarExcel} disabled={exportando}
-                sx={{ bgcolor: '#2D984F', '&:hover': { bgcolor: '#1e6e38' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
-              >
-                {exportando ? 'Exportando…' : 'Exportar Excel'}
-              </Button>
-            </Tooltip>
+            <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+              <Tooltip title="Ver estadísticas detalladas de beneficiarios">
+                <Button
+                  variant="contained" size="small"
+                  startIcon={cargandoStats ? <CircularProgress size={14} color="inherit" /> : <BarChartIcon />}
+                  onClick={() => setModalStats(true)}
+                  disabled={cargandoStats}
+                  sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2 }}
+                >
+                  Estadísticas
+                </Button>
+              </Tooltip>
+              <Tooltip title="Exporta TODOS los beneficiarios de la base de datos">
+                <Button
+                  variant="contained" size="small"
+                  startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
+                  onClick={exportarExcel} disabled={exportando}
+                  sx={{ bgcolor: '#2D984F', '&:hover': { bgcolor: '#1e6e38' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
+                >
+                  {exportando ? 'Exportando…' : 'Exportar Excel'}
+                </Button>
+              </Tooltip>
+            </Box>
           </Stack>
 
           {/* Tabs */}
@@ -611,13 +565,10 @@ export default function AdminDashboard() {
                       <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.primary' }}>
                         {calcularEdad(ins.fechaNacimiento)}
                       </TableCell>
-                      {/* WhatsApp: número + ícono a la derecha */}
+                      {/* WhatsApp: ícono a la IZQUIERDA del número */}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>
                         {ins.whatsapp ? (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: 'text.primary' }}>
-                              {ins.whatsapp}
-                            </Typography>
                             <Tooltip title="Abrir en WhatsApp">
                               <IconButton
                                 size="small"
@@ -630,6 +581,9 @@ export default function AdminDashboard() {
                                 <WhatsAppIcon sx={{ fontSize: '1rem' }} />
                               </IconButton>
                             </Tooltip>
+                            <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: 'text.primary' }}>
+                              {ins.whatsapp}
+                            </Typography>
                           </Box>
                         ) : '—'}
                       </TableCell>
@@ -719,6 +673,14 @@ export default function AdminDashboard() {
 
         </Container>
       </Box>
+
+      {/* ── Modal de estadísticas ──────────────────────────────────────────── */}
+      <ModalEstadisticas
+        open={modalStats}
+        onClose={() => setModalStats(false)}
+        stats={statsDetalle}
+        cargando={cargandoStats}
+      />
 
       {/* ── Modales ────────────────────────────────────────────────────────── */}
       {seleccionada && (

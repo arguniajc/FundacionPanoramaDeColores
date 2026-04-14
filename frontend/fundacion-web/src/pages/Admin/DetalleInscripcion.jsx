@@ -258,7 +258,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
               <TallaCard icono="👖" valor={ins.tallaPantalon} etiqueta="Pantalón" />
               <TallaCard icono="👟" valor={ins.tallaZapatos}  etiqueta="Zapatos"  />
             </Box>
-            <Box mt={1.5} display="flex" alignItems="center" gap={1}>
+            <Box mt={3} display="flex" alignItems="center" gap={1}>
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -314,17 +314,17 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           <Grid size={{ xs: 12, sm: 6 }}>
             <Campo label="WhatsApp">
               {ins.whatsapp
-                ? <Box display="flex" alignItems="center" sx={{ width: '100%' }}>
-                    <Typography variant="body2" fontWeight={500}>{ins.whatsapp}</Typography>
+                ? <Box display="flex" alignItems="center" gap={0.5}>
                     <IconButton
                       size="small"
                       href={`https://wa.me/${ins.whatsapp.replace(/\D/g, '')}`}
                       target="_blank"
                       component="a"
-                      sx={{ ml: 'auto', color: '#25D366', p: 0.5 }}
+                      sx={{ color: '#25D366', p: 0.3, flexShrink: 0 }}
                     >
-                      <WhatsAppIcon />
+                      <WhatsAppIcon fontSize="small" />
                     </IconButton>
+                    <Typography variant="body2" fontWeight={600}>{ins.whatsapp}</Typography>
                   </Box>
                 : <Typography variant="body2">—</Typography>}
             </Campo>
@@ -377,60 +377,48 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
         }}
       >
         {isMobile ? (
-          /* Mobile: iconos con etiqueta debajo */
+          /* Mobile: botones con color sólido */
           <>
             <Tooltip title="Generar PDF">
-              <IconButton
-                onClick={generarPDF}
-                sx={{ color: 'secondary.main', border: '1px solid', borderColor: 'secondary.light', borderRadius: 2, p: 1 }}
-              >
+              <IconButton onClick={generarPDF}
+                sx={{ bgcolor: '#7B1FA2', color: '#fff', borderRadius: 2, p: 1, '&:hover': { bgcolor: '#6a1b9a' } }}>
                 <PictureAsPdfIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Editar">
-              <IconButton
-                onClick={onEditar}
-                sx={{ color: 'primary.main', border: '1px solid', borderColor: 'primary.light', borderRadius: 2, p: 1 }}
-              >
+              <IconButton onClick={onEditar}
+                sx={{ bgcolor: '#1565C0', color: '#fff', borderRadius: 2, p: 1, '&:hover': { bgcolor: '#0d47a1' } }}>
                 <EditIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Eliminar">
-              <IconButton
-                onClick={onEliminar}
-                sx={{ color: 'error.main', border: '1px solid', borderColor: 'error.light', borderRadius: 2, p: 1 }}
-              >
+              <IconButton onClick={onEliminar}
+                sx={{ bgcolor: '#C62828', color: '#fff', borderRadius: 2, p: 1, '&:hover': { bgcolor: '#b71c1c' } }}>
                 <DeleteIcon />
               </IconButton>
             </Tooltip>
             <Box sx={{ flexGrow: 1 }} />
-            <Button
-              onClick={onCerrar}
-              variant="contained"
-              sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}
-            >
+            <Button onClick={onCerrar} variant="contained"
+              sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}>
               Cerrar
             </Button>
           </>
         ) : (
-          /* Tablet / PC / TV: botones completos */
+          /* Tablet / PC / TV: botones completos con color sólido */
           <>
-            <Button startIcon={<PictureAsPdfIcon />} onClick={generarPDF} variant="outlined" color="secondary" size="small">
-              Generar PDF
+            <Button startIcon={<PictureAsPdfIcon />} onClick={generarPDF} variant="contained" size="small"
+              sx={{ bgcolor: '#7B1FA2', '&:hover': { bgcolor: '#6a1b9a' } }}>
+              PDF
             </Button>
-            <Button startIcon={<EditIcon />} onClick={onEditar} variant="outlined" color="primary" size="small">
+            <Button startIcon={<EditIcon />} onClick={onEditar} variant="contained" color="primary" size="small">
               Editar
             </Button>
-            <Button startIcon={<DeleteIcon />} onClick={onEliminar} variant="outlined" color="error" size="small">
+            <Button startIcon={<DeleteIcon />} onClick={onEliminar} variant="contained" color="error" size="small">
               Eliminar
             </Button>
             <Box sx={{ flexGrow: 1 }} />
-            <Button
-              onClick={onCerrar}
-              variant="contained"
-              size="small"
-              sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}
-            >
+            <Button onClick={onCerrar} variant="contained" size="small"
+              sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}>
               Cerrar
             </Button>
           </>

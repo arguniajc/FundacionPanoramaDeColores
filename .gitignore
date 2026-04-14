@@ -1,0 +1,18 @@
+# .NET
+backend/**/bin/
+backend/**/obj/
+backend/**/*.user
+backend/**/appsettings.Development.json
+
+# Node / React
+frontend/**/node_modules/
+frontend/**/.env
+frontend/**/.env.local
+
+# Visual Studio
+.vs/
+*.sln.user
+
+# OS
+.DS_Store
+Thumbs.db

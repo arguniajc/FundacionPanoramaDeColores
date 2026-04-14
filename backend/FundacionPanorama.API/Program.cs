@@ -8,7 +8,10 @@ using Scalar.AspNetCore;
 // ReSharper disable once RedundantUsingDirective
 using Microsoft.Extensions.Logging;
 
+// ── Puerto dinámico para Render (usa la variable PORT del entorno) ─────────────
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls($"http://+:{port}");
 
 // ── Base de datos (PostgreSQL via EF Core) ──────────────────────────────────
 // Cambiar la cadena de conexión en appsettings.json para apuntar a otra BD

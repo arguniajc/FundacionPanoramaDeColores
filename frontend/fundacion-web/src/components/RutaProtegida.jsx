@@ -13,5 +13,5 @@ export default function RutaProtegida({ children }) {
     );
   }
 
-  return user ? children : <Navigate to="/admin/login" replace />;
+  return user ? children : <Navigate to="/acceso" replace />;
 }

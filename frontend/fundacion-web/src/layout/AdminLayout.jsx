@@ -42,41 +42,41 @@ const MENU = [
   {
     grupo: 'PRINCIPAL',
     items: [
-      { label: 'Dashboard',      icon: <DashboardIcon />,          ruta: '/admin' },
+      { label: 'Dashboard',      icon: <DashboardIcon />,          ruta: '/sede' },
     ],
   },
   {
     grupo: 'MÓDULOS FUNCIONALES',
     items: [
-      { label: 'Beneficiarios',  icon: <ChildCareIcon />,          ruta: '/admin/beneficiarios' },
-      { label: 'Donantes',       icon: <VolunteerActivismIcon />,  ruta: '/admin/donantes' },
-      { label: 'Donaciones',     icon: <MonetizationOnIcon />,     ruta: '/admin/donaciones' },
-      { label: 'Proyectos',      icon: <FolderSpecialIcon />,      ruta: '/admin/proyectos' },
-      { label: 'Actividades',    icon: <EventNoteIcon />,          ruta: '/admin/actividades' },
-      { label: 'Voluntarios',    icon: <PeopleIcon />,             ruta: '/admin/voluntarios' },
+      { label: 'Beneficiarios',  icon: <ChildCareIcon />,          ruta: '/sede/beneficiarios' },
+      { label: 'Donantes',       icon: <VolunteerActivismIcon />,  ruta: '/sede/donantes' },
+      { label: 'Donaciones',     icon: <MonetizationOnIcon />,     ruta: '/sede/donaciones' },
+      { label: 'Proyectos',      icon: <FolderSpecialIcon />,      ruta: '/sede/proyectos' },
+      { label: 'Actividades',    icon: <EventNoteIcon />,          ruta: '/sede/actividades' },
+      { label: 'Voluntarios',    icon: <PeopleIcon />,             ruta: '/sede/voluntarios' },
     ],
   },
   {
     grupo: 'RECURSOS',
     items: [
-      { label: 'Talento Humano', icon: <BadgeIcon />,              ruta: '/admin/talento-humano' },
-      { label: 'Contabilidad',   icon: <AccountBalanceIcon />,     ruta: '/admin/contabilidad' },
-      { label: 'Inventario',     icon: <InventoryIcon />,          ruta: '/admin/inventario' },
+      { label: 'Talento Humano', icon: <BadgeIcon />,              ruta: '/sede/talento-humano' },
+      { label: 'Contabilidad',   icon: <AccountBalanceIcon />,     ruta: '/sede/contabilidad' },
+      { label: 'Inventario',     icon: <InventoryIcon />,          ruta: '/sede/inventario' },
     ],
   },
   {
     grupo: 'REPORTES Y DOCS',
     items: [
-      { label: 'Reportes',       icon: <AssessmentIcon />,         ruta: '/admin/reportes' },
-      { label: 'Documentos',     icon: <FolderIcon />,             ruta: '/admin/documentos' },
+      { label: 'Reportes',       icon: <AssessmentIcon />,         ruta: '/sede/reportes' },
+      { label: 'Documentos',     icon: <FolderIcon />,             ruta: '/sede/documentos' },
     ],
   },
   {
     grupo: 'SISTEMA',
     items: [
-      { label: 'Seguridad',      icon: <SecurityIcon />,           ruta: '/admin/seguridad' },
-      { label: 'Usuarios',       icon: <ManageAccountsIcon />,     ruta: '/admin/usuarios' },
-      { label: 'Configuración',  icon: <SettingsIcon />,           ruta: '/admin/configuracion' },
+      { label: 'Seguridad',      icon: <SecurityIcon />,           ruta: '/sede/seguridad' },
+      { label: 'Equipo',         icon: <ManageAccountsIcon />,     ruta: '/sede/equipo' },
+      { label: 'Configuración',  icon: <SettingsIcon />,           ruta: '/sede/configuracion' },
     ],
   },
 ];
@@ -132,11 +132,11 @@ export default function AdminLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed,  setCollapsed]  = useState({});
 
-  const handleCerrarSesion = () => { logout(); navigate('/admin/login', { replace: true }); };
+  const handleCerrarSesion = () => { logout(); navigate('/acceso', { replace: true }); };
 
   const esActivo = (ruta) =>
-    ruta === '/admin'
-      ? location.pathname === '/admin'
+    ruta === '/sede'
+      ? location.pathname === '/sede'
       : location.pathname.startsWith(ruta);
 
   const toggleGrupo = (g) => setCollapsed(p => ({ ...p, [g]: !p[g] }));

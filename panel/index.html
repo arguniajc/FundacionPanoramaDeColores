@@ -2,18 +2,13 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/panel/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Panel Admin — Fundación Panorama de Colores</title>
+    <title>Redirigiendo…</title>
+    <meta name="robots" content="noindex, nofollow" />
     <script>
-      (function(){
-        var r = new URLSearchParams(window.location.search).get('r');
-        if (r) window.history.replaceState(null, '', '/panel' + decodeURIComponent(r));
-      })();
+      /* La plataforma se movió a /gestion/ — redirigir automáticamente */
+      window.location.replace('/gestion/');
     </script>
-    <script type="module" crossorigin src="/panel/assets/index-CDvbr1Oh.js"></script>
   </head>
-  <body>
-    <div id="root"></div>
-  </body>
+  <body></body>
 </html>

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirigiendo…</title>
+  <script>
+    var path   = window.location.pathname.replace(/^\/gestion/, '') || '/';
+    var search = window.location.search;
+    var hash   = window.location.hash;
+    window.location.replace('/gestion/?r=' + encodeURIComponent(path + search + hash));
+  </script>
+</head>
+<body></body>
+</html>

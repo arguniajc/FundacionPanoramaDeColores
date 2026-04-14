@@ -295,9 +295,9 @@ export default function AdminDashboard() {
             borderRadius: 3,
             border: '1px solid',
             borderColor: 'divider',
-            overflow: 'hidden',
+            overflowX: 'auto',
           }}>
-            <Table size="small">
+            <Table size="small" sx={{ minWidth: 650 }}>
               <TableHead>
                 <TableRow sx={{
                   background: 'linear-gradient(90deg, #4E1B95, #3a1470)',

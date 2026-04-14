@@ -24,10 +24,10 @@ function Campo({ label, value, children }) {
 
 function TallaCard({ icono, valor, etiqueta }) {
   return (
-    <Box textAlign="center" sx={{ flex: 1, bgcolor: '#fdfbff', border: '1px solid #f0eaff', borderRadius: 2, py: 1.5, px: 1, minWidth: 0 }}>
-      <Typography fontSize="1.4rem">{icono}</Typography>
-      <Typography variant="h6" fontWeight={800} color="text.primary">{valor || '—'}</Typography>
-      <Typography variant="caption" color="text.secondary">{etiqueta}</Typography>
+    <Box textAlign="center" sx={{ flex: 1, bgcolor: '#fdfbff', border: '1px solid #f0eaff', borderRadius: 2, py: { xs: 1, sm: 1.5 }, px: { xs: 0.5, sm: 1 }, minWidth: 0 }}>
+      <Typography sx={{ fontSize: { xs: '1.1rem', sm: '1.4rem' } }}>{icono}</Typography>
+      <Typography fontWeight={800} sx={{ color: '#000', fontSize: { xs: '0.95rem', sm: '1.25rem' }, lineHeight: 1.2 }}>{valor || '—'}</Typography>
+      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>{etiqueta}</Typography>
     </Box>
   );
 }
@@ -141,7 +141,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
   };
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="md" fullWidth>
+    <Dialog open onClose={onCerrar} maxWidth="md" fullWidth fullScreen={false}>
       <DialogTitle sx={{ bgcolor: '#4E1B95', color: 'white', display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
         <Avatar src={ins.fotoMenorUrl || undefined} sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, flexShrink: 0 }}>
           {(ins.nombreMenor || '??').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
@@ -282,17 +282,23 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
         </Grid>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-        <Button startIcon={<PictureAsPdfIcon />} onClick={generarPDF} variant="outlined" color="secondary">
-          Generar PDF
-        </Button>
-        <Button startIcon={<EditIcon />} onClick={onEditar} variant="outlined" color="primary">
-          Editar
-        </Button>
-        <Button startIcon={<DeleteIcon />} onClick={onEliminar} variant="outlined" color="error">
-          Eliminar
-        </Button>
-        <Button onClick={onCerrar} variant="contained" sx={{ bgcolor: '#4E1B95', ml: 'auto' }}>
+      <DialogActions sx={{ px: { xs: 1.5, sm: 3 }, py: { xs: 1.5, sm: 2 }, gap: 1, flexWrap: 'wrap' }}>
+        <Tooltip title="Generar PDF">
+          <Button startIcon={<PictureAsPdfIcon />} onClick={generarPDF} variant="outlined" color="secondary" size="small">
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Generar PDF</Box>
+          </Button>
+        </Tooltip>
+        <Tooltip title="Editar">
+          <Button startIcon={<EditIcon />} onClick={onEditar} variant="outlined" color="primary" size="small">
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Editar</Box>
+          </Button>
+        </Tooltip>
+        <Tooltip title="Eliminar">
+          <Button startIcon={<DeleteIcon />} onClick={onEliminar} variant="outlined" color="error" size="small">
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Eliminar</Box>
+          </Button>
+        </Tooltip>
+        <Button onClick={onCerrar} variant="contained" size="small" sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, ml: 'auto' }}>
           Cerrar
         </Button>
       </DialogActions>

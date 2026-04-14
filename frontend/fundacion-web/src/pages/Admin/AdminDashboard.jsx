@@ -335,7 +335,7 @@ export default function AdminDashboard() {
                         cursor: 'pointer',
                         opacity: ins.activo ? 1 : 0.6,
                         bgcolor: idx % 2 === 0 ? 'inherit' : 'action.hover',
-                        '&:hover': { bgcolor: ins.activo ? '#f3ecff !important' : '#f5f5f5 !important' },
+                        '&:hover': { bgcolor: ins.activo ? '#f3ecff !important' : '#f5f5f5 !important', '& .MuiTableCell-root': { color: '#000 !important' } },
                         transition: 'background 0.12s',
                       }}
                     >

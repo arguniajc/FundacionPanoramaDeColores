@@ -2,10 +2,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY ["FundacionPanorama.API/FundacionPanorama.API.csproj", "FundacionPanorama.API/"]
+COPY ["backend/FundacionPanorama.API/FundacionPanorama.API.csproj", "FundacionPanorama.API/"]
 RUN dotnet restore "FundacionPanorama.API/FundacionPanorama.API.csproj"
 
-COPY . .
+COPY backend/ .
 WORKDIR "/src/FundacionPanorama.API"
 RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 

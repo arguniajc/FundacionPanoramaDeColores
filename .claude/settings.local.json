@@ -21,7 +21,9 @@
       "Bash(\"C:/Program Files/Git/cmd/git.exe\" commit -m \"feat: panel estadisticas beneficiarios, icono WhatsApp en tabla\")",
       "Bash(\"C:/Program Files/Git/cmd/git.exe\" log --oneline -5)",
       "Bash(\"C:/Program Files/Git/cmd/git.exe\" status)",
-      "Bash(\"C:/Program Files/Git/cmd/git.exe\" log --oneline origin/master..HEAD)"
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" log --oneline origin/master..HEAD)",
+      "Bash(powershell -Command ':*)",
+      "Bash(cmd.exe /c \"copy \\\\\"c:\\\\Users\\\\dfsalazarr\\\\OneDrive - Sistemas de información empresarial s.a\\\\Escritorio\\\\Diego Salazar\\\\FundacionPanoramaDeColores\\\\frontend\\\\fundacion-web\\\\dist\\\\assets\\\\index-CDvbr1Oh.js\\\\\" \\\\\"c:\\\\Users\\\\dfsalazarr\\\\OneDrive - Sistemas de información empresarial s.a\\\\Escritorio\\\\Diego Salazar\\\\FundacionPanoramaDeColores\\\\panel\\\\assets\\\\index-CDvbr1Oh.js\\\\\"\")"
     ]
   }
 }

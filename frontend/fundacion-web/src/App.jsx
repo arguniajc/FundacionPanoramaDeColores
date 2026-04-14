@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Home from './pages/Home/Home';
 import AdminLogin from './pages/Admin/AdminLogin';
 import Dashboard from './pages/Admin/Dashboard';
 import AdminDashboard from './pages/Admin/AdminDashboard';
@@ -18,8 +17,8 @@ function AdminConLayout({ children }) {
 export default function App() {
   return (
     <Routes>
-      {/* Página principal pública */}
-      <Route path="/" element={<Home />} />
+      {/* Raíz: redirige al panel (RutaProtegida manda a /acceso si no hay sesión) */}
+      <Route path="/" element={<Navigate to="/sede" replace />} />
 
       {/* Acceso — ruta de autenticación */}
       <Route path="/acceso" element={<AdminLogin />} />

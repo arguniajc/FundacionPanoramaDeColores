@@ -1,18 +1,26 @@
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Grid, Typography, Divider, Chip, Box, Avatar, IconButton,
+  Button, Grid, Typography, Divider, Chip, Box, Avatar, IconButton, Tooltip,
+  useMediaQuery, useTheme,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon        from '@mui/icons-material/Edit';
+import DeleteIcon      from '@mui/icons-material/Delete';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import WhatsAppIcon    from '@mui/icons-material/WhatsApp';
+import OpenInNewIcon   from '@mui/icons-material/OpenInNew';
+import CloseIcon       from '@mui/icons-material/Close';
 import { calcularEdad } from './AdminDashboard';
 
 function Campo({ label, value, children }) {
   return (
     <Box mb={1.5}>
-      <Typography variant="caption" color="text.secondary" display="block" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        display="block"
+        fontWeight={700}
+        sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
+      >
         {label}
       </Typography>
       {children ?? (
@@ -24,16 +32,39 @@ function Campo({ label, value, children }) {
 
 function TallaCard({ icono, valor, etiqueta }) {
   return (
-    <Box textAlign="center" sx={{ flex: 1, bgcolor: '#fdfbff', border: '1px solid #f0eaff', borderRadius: 2, py: { xs: 1, sm: 1.5 }, px: { xs: 0.5, sm: 1 }, minWidth: 0 }}>
+    <Box
+      textAlign="center"
+      sx={{
+        flex: 1,
+        bgcolor: '#fdfbff',
+        border: '1px solid #f0eaff',
+        borderRadius: 2,
+        py: { xs: 1, sm: 1.5 },
+        px: { xs: 0.5, sm: 1 },
+        minWidth: 0,
+      }}
+    >
       <Typography sx={{ fontSize: { xs: '1.1rem', sm: '1.4rem' } }}>{icono}</Typography>
-      <Typography fontWeight={800} sx={{ color: '#000', fontSize: { xs: '0.95rem', sm: '1.25rem' }, lineHeight: 1.2 }}>{valor || '—'}</Typography>
-      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>{etiqueta}</Typography>
+      <Typography
+        fontWeight={800}
+        sx={{ color: '#000', fontSize: { xs: '0.9rem', sm: '1.25rem' }, lineHeight: 1.2 }}
+      >
+        {valor || '—'}
+      </Typography>
+      <Typography
+        variant="caption"
+        sx={{ color: 'text.secondary', fontSize: { xs: '0.62rem', sm: '0.75rem' } }}
+      >
+        {etiqueta}
+      </Typography>
     </Box>
   );
 }
 
 export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEditar, onEliminar }) {
-  const edad = calcularEdad(ins.fechaNacimiento);
+  const theme    = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const edad     = calcularEdad(ins.fechaNacimiento);
 
   const generarPDF = () => {
     const fechaInsc = ins.createdAt
@@ -141,26 +172,64 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
   };
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="md" fullWidth fullScreen={false}>
-      <DialogTitle sx={{ bgcolor: '#4E1B95', color: 'white', display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
-        <Avatar src={ins.fotoMenorUrl || undefined} sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, flexShrink: 0 }}>
+    <Dialog
+      open
+      onClose={onCerrar}
+      maxWidth="md"
+      fullWidth
+      fullScreen={isMobile}
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}
+    >
+      {/* ── Encabezado ───────────────────────────────────────────────────────── */}
+      <DialogTitle
+        sx={{
+          bgcolor: '#4E1B95',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: { xs: 1.5, sm: 2 },
+          py: { xs: 1.5, sm: 2 },
+          px: { xs: 2, sm: 3 },
+        }}
+      >
+        <Avatar
+          src={ins.fotoMenorUrl || undefined}
+          sx={{
+            bgcolor: 'rgba(255,255,255,0.2)',
+            width: { xs: 40, sm: 48 },
+            height: { xs: 40, sm: 48 },
+            flexShrink: 0,
+            fontSize: { xs: '0.9rem', sm: '1rem' },
+          }}
+        >
           {(ins.nombreMenor || '??').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
         </Avatar>
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-          <Typography variant="h6" fontWeight={800} noWrap sx={{ color: 'white', lineHeight: 1.3 }}>
+          <Typography
+            fontWeight={800}
+            noWrap
+            sx={{ color: 'white', lineHeight: 1.3, fontSize: { xs: '1rem', sm: '1.25rem' } }}
+          >
             {ins.nombreMenor}
           </Typography>
           <Typography variant="caption" display="block" sx={{ opacity: 0.75, mt: 0.2 }}>
-            {ins.tipoDocumento}&nbsp;&nbsp;·&nbsp;&nbsp;{ins.numeroDocumento || 'Sin documento'}
+            {ins.tipoDocumento}&nbsp;·&nbsp;{ins.numeroDocumento || 'Sin documento'}
           </Typography>
           <Typography variant="caption" display="block" sx={{ opacity: 0.6 }}>
             {edad}
           </Typography>
         </Box>
+        {/* Botón cerrar en mobile (fullScreen) */}
+        {isMobile && (
+          <IconButton onClick={onCerrar} size="small" sx={{ color: 'white', flexShrink: 0 }}>
+            <CloseIcon />
+          </IconButton>
+        )}
       </DialogTitle>
 
-      <DialogContent dividers>
-        <Grid container spacing={2} mt={0}>
+      {/* ── Contenido ────────────────────────────────────────────────────────── */}
+      <DialogContent dividers sx={{ px: { xs: 2, sm: 3 } }}>
+        <Grid container spacing={{ xs: 1.5, sm: 2 }} mt={0}>
 
           {/* Datos personales */}
           <Grid size={12}>
@@ -168,13 +237,13 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             <Divider sx={{ mb: 1.5, mt: 0.5 }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <Campo label="Nombre completo" value={ins.nombreMenor} />
-            <Campo label="Fecha de nacimiento" value={ins.fechaNacimiento} />
+            <Campo label="Nombre completo"      value={ins.nombreMenor} />
+            <Campo label="Fecha de nacimiento"  value={ins.fechaNacimiento} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <Campo label="Tipo de documento" value={ins.tipoDocumento} />
-            <Campo label="Número de documento" value={ins.numeroDocumento || 'Sin documento'} />
-            <Campo label="EPS" value={ins.eps} />
+            <Campo label="Tipo de documento"    value={ins.tipoDocumento} />
+            <Campo label="Número de documento"  value={ins.numeroDocumento || 'Sin documento'} />
+            <Campo label="EPS"                  value={ins.eps} />
           </Grid>
           <Grid size={12}>
             <Campo label="Dirección" value={ins.direccion} />
@@ -184,14 +253,18 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           <Grid size={12}>
             <Typography variant="subtitle2" color="#4E1B95" fontWeight={700}>Tallas</Typography>
             <Divider sx={{ mb: 1.5, mt: 0.5 }} />
-            <Box display="flex" gap={1.5} sx={{ flexWrap: 'nowrap' }}>
-              <TallaCard icono="👕" valor={ins.tallaCamisa} etiqueta="Camisa" />
+            <Box display="flex" gap={{ xs: 1, sm: 1.5 }} sx={{ flexWrap: 'nowrap' }}>
+              <TallaCard icono="👕" valor={ins.tallaCamisa}   etiqueta="Camisa"   />
               <TallaCard icono="👖" valor={ins.tallaPantalon} etiqueta="Pantalón" />
-              <TallaCard icono="👟" valor={ins.tallaZapatos} etiqueta="Zapatos" />
+              <TallaCard icono="👟" valor={ins.tallaZapatos}  etiqueta="Zapatos"  />
             </Box>
-            {/* Etiqueta alergia debajo de las tallas */}
             <Box mt={1.5} display="flex" alignItems="center" gap={1}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                fontWeight={700}
+                sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
+              >
                 Tiene alergia:
               </Typography>
               <Chip
@@ -212,8 +285,12 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
               {ins.tieneAlergia === 'si' && (
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Box sx={{ bgcolor: '#fff5f5', border: '1.5px solid #fed7d7', borderRadius: 2, p: 1.5 }}>
-                    <Typography variant="caption" color="error" fontWeight={700} display="block">DESCRIPCIÓN DE LA ALERGIA</Typography>
-                    <Typography variant="body2" color="error.dark">{ins.descripcionAlergia || '—'}</Typography>
+                    <Typography variant="caption" color="error" fontWeight={700} display="block">
+                      DESCRIPCIÓN DE LA ALERGIA
+                    </Typography>
+                    <Typography variant="body2" color="error.dark">
+                      {ins.descripcionAlergia || '—'}
+                    </Typography>
                   </Box>
                 </Grid>
               )}
@@ -231,7 +308,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             <Divider sx={{ mb: 1.5, mt: 0.5 }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <Campo label="Nombre" value={ins.nombreAcudiente} />
+            <Campo label="Nombre"     value={ins.nombreAcudiente} />
             <Campo label="Parentesco" value={ins.parentesco} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -256,14 +333,21 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           {/* Foto del documento */}
           {ins.fotoDocumentoUrl && (
             <Grid size={12}>
-              <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={1}>Documento de Identidad</Typography>
+              <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={1}>
+                Documento de Identidad
+              </Typography>
               <Divider sx={{ mb: 1.5, mt: 0.5 }} />
               <Box display="flex" alignItems="center" gap={2}>
                 <Box
                   component="img"
                   src={ins.fotoDocumentoUrl}
                   alt="Documento"
-                  sx={{ maxWidth: 200, borderRadius: 2, border: '2px solid #e2d9f3', cursor: 'pointer' }}
+                  sx={{
+                    maxWidth: { xs: '100%', sm: 200 },
+                    borderRadius: 2,
+                    border: '2px solid #e2d9f3',
+                    cursor: 'pointer',
+                  }}
                   onClick={() => window.open(ins.fotoDocumentoUrl, '_blank')}
                 />
                 <IconButton href={ins.fotoDocumentoUrl} target="_blank" component="a" title="Ver en grande">
@@ -282,46 +366,75 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
         </Grid>
       </DialogContent>
 
-      <DialogActions sx={{ px: { xs: 1.5, sm: 3 }, py: { xs: 1.5, sm: 2 }, borderTop: '1px solid', borderColor: 'divider' }}>
-
-        {/* Mobile: solo iconos */}
-        <Box sx={{ display: { xs: 'flex', sm: 'none' }, gap: 1, width: '100%', alignItems: 'center' }}>
-          <Tooltip title="Generar PDF">
-            <IconButton onClick={generarPDF} size="small" sx={{ color: 'secondary.main', border: '1px solid', borderColor: 'secondary.light', borderRadius: 2 }}>
-              <PictureAsPdfIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Editar">
-            <IconButton onClick={onEditar} size="small" sx={{ color: 'primary.main', border: '1px solid', borderColor: 'primary.light', borderRadius: 2 }}>
-              <EditIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Eliminar">
-            <IconButton onClick={onEliminar} size="small" sx={{ color: 'error.main', border: '1px solid', borderColor: 'error.light', borderRadius: 2 }}>
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Button onClick={onCerrar} variant="contained" size="small" sx={{ ml: 'auto', bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}>
-            Cerrar
-          </Button>
-        </Box>
-
-        {/* Desktop: botones completos */}
-        <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 1, width: '100%', alignItems: 'center' }}>
-          <Button startIcon={<PictureAsPdfIcon />} onClick={generarPDF} variant="outlined" color="secondary" size="small">
-            Generar PDF
-          </Button>
-          <Button startIcon={<EditIcon />} onClick={onEditar} variant="outlined" color="primary" size="small">
-            Editar
-          </Button>
-          <Button startIcon={<DeleteIcon />} onClick={onEliminar} variant="outlined" color="error" size="small">
-            Eliminar
-          </Button>
-          <Button onClick={onCerrar} variant="contained" size="small" sx={{ ml: 'auto', bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}>
-            Cerrar
-          </Button>
-        </Box>
-
+      {/* ── Acciones ─────────────────────────────────────────────────────────── */}
+      <DialogActions
+        sx={{
+          px: { xs: 2, sm: 3 },
+          py: { xs: 1.5, sm: 2 },
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          gap: 1,
+        }}
+      >
+        {isMobile ? (
+          /* Mobile: iconos con etiqueta debajo */
+          <>
+            <Tooltip title="Generar PDF">
+              <IconButton
+                onClick={generarPDF}
+                sx={{ color: 'secondary.main', border: '1px solid', borderColor: 'secondary.light', borderRadius: 2, p: 1 }}
+              >
+                <PictureAsPdfIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Editar">
+              <IconButton
+                onClick={onEditar}
+                sx={{ color: 'primary.main', border: '1px solid', borderColor: 'primary.light', borderRadius: 2, p: 1 }}
+              >
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Eliminar">
+              <IconButton
+                onClick={onEliminar}
+                sx={{ color: 'error.main', border: '1px solid', borderColor: 'error.light', borderRadius: 2, p: 1 }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+            <Box sx={{ flexGrow: 1 }} />
+            <Button
+              onClick={onCerrar}
+              variant="contained"
+              sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}
+            >
+              Cerrar
+            </Button>
+          </>
+        ) : (
+          /* Tablet / PC / TV: botones completos */
+          <>
+            <Button startIcon={<PictureAsPdfIcon />} onClick={generarPDF} variant="outlined" color="secondary" size="small">
+              Generar PDF
+            </Button>
+            <Button startIcon={<EditIcon />} onClick={onEditar} variant="outlined" color="primary" size="small">
+              Editar
+            </Button>
+            <Button startIcon={<DeleteIcon />} onClick={onEliminar} variant="outlined" color="error" size="small">
+              Eliminar
+            </Button>
+            <Box sx={{ flexGrow: 1 }} />
+            <Button
+              onClick={onCerrar}
+              variant="contained"
+              size="small"
+              sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}
+            >
+              Cerrar
+            </Button>
+          </>
+        )}
       </DialogActions>
     </Dialog>
   );

@@ -1,21 +1,28 @@
 import { useRef, useState } from 'react';
-import { Box, Typography, CircularProgress, IconButton, Tooltip } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteIcon from '@mui/icons-material/Delete';
+import {
+  Box, Typography, CircularProgress, IconButton,
+  Tooltip, Menu, MenuItem, ListItemIcon, ListItemText,
+} from '@mui/material';
+import CloudUploadIcon  from '@mui/icons-material/CloudUpload';
+import DeleteIcon       from '@mui/icons-material/Delete';
+import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import CameraAltIcon    from '@mui/icons-material/CameraAlt';
+import FlipCameraIosIcon from '@mui/icons-material/FlipCameraIos';
 import api from '../services/api';
 
-/**
- * Botón de carga de imagen con preview.
- * Props:
- *   label      — etiqueta visible (ej. "Foto del menor")
- *   carpeta    — subcarpeta en Supabase Storage (ej. "fotos" | "documentos")
- *   value      — URL actual (string | null)
- *   onChange   — callback(url: string | null)
- */
 export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }) {
-  const inputRef = useRef(null);
+  const inputGaleriaRef   = useRef(null);
+  const inputTraseraRef   = useRef(null);
+  const inputFrontalRef   = useRef(null);
+
   const [subiendo, setSubiendo] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const abrirMenu  = (e) => { if (!subiendo) setAnchorEl(e.currentTarget); };
+  const cerrarMenu = ()  => setAnchorEl(null);
+
+  const elegir = (ref) => { cerrarMenu(); ref.current?.click(); };
 
   const handleSeleccionar = async (e) => {
     const archivo = e.target.files?.[0];
@@ -39,10 +46,9 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
     }
   };
 
-  const handleEliminar = () => {
-    onChange(null);
-    setErrorMsg('');
-  };
+  const handleEliminar = () => { onChange(null); setErrorMsg(''); };
+
+  const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 
   return (
     <Box>
@@ -59,7 +65,9 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
             sx={{
               width: 120, height: 90, objectFit: 'cover',
               borderRadius: 2, border: '2px solid #e0e0e0', display: 'block',
+              cursor: 'pointer',
             }}
+            onClick={abrirMenu}
           />
           <Tooltip title="Eliminar foto">
             <IconButton
@@ -78,7 +86,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
           <Box
             component="button"
             type="button"
-            onClick={() => inputRef.current?.click()}
+            onClick={abrirMenu}
             sx={{
               mt: 0.5, display: 'block', width: '100%',
               fontSize: 11, color: '#4E1B95', background: 'none',
@@ -92,7 +100,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
         <Box
           component="button"
           type="button"
-          onClick={() => !subiendo && inputRef.current?.click()}
+          onClick={abrirMenu}
           sx={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             width: 120, height: 90, border: '2px dashed #bdbdbd', borderRadius: 2,
@@ -107,7 +115,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
             : <CloudUploadIcon sx={{ color: '#bdbdbd', fontSize: 28 }} />
           }
           <Typography variant="caption" color="text.disabled" fontSize={10}>
-            {subiendo ? 'Subiendo…' : 'Subir imagen'}
+            {subiendo ? 'Subiendo…' : 'Subir / Tomar foto'}
           </Typography>
         </Box>
       )}
@@ -118,10 +126,50 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
         </Typography>
       )}
 
+      {/* Menú de opciones */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={cerrarMenu}
+        slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 200 } } }}
+      >
+        <MenuItem onClick={() => elegir(inputGaleriaRef)}>
+          <ListItemIcon><PhotoLibraryIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Galería</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => elegir(inputTraseraRef)}>
+          <ListItemIcon><CameraAltIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Cámara trasera</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => elegir(inputFrontalRef)}>
+          <ListItemIcon><FlipCameraIosIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Cámara frontal</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Input galería — sin capture para elegir de la galería */}
       <input
-        ref={inputRef}
+        ref={inputGaleriaRef}
         type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
+        accept={ACCEPT}
+        style={{ display: 'none' }}
+        onChange={handleSeleccionar}
+      />
+      {/* Input cámara trasera */}
+      <input
+        ref={inputTraseraRef}
+        type="file"
+        accept={ACCEPT}
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={handleSeleccionar}
+      />
+      {/* Input cámara frontal */}
+      <input
+        ref={inputFrontalRef}
+        type="file"
+        accept={ACCEPT}
+        capture="user"
         style={{ display: 'none' }}
         onChange={handleSeleccionar}
       />

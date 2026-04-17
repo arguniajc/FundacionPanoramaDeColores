@@ -54,6 +54,9 @@ builder.Services.AddCors(options =>
 
 // ── Servicios propios ────────────────────────────────────────────────────────
 builder.Services.AddScoped<AuthService>();
+builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection("Supabase"));
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<SupabaseStorageService>();
 
 // ── Controllers + OpenAPI ────────────────────────────────────────────────────
 builder.Services.AddControllers();

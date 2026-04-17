@@ -22,9 +22,10 @@ public class BeneficiarioDto
     public string?   Parentesco         { get; set; }
     public string?   Whatsapp           { get; set; }
     public string?   Direccion          { get; set; }
-    public string?   FotoMenorUrl       { get; set; }
-    public string?   FotoDocumentoUrl   { get; set; }
-    public DateTime  CreatedAt          { get; set; }
+    public string?   FotoMenorUrl            { get; set; }
+    public string?   FotoDocumentoUrl        { get; set; }
+    public string?   FotoDocumentoReversoUrl { get; set; }
+    public DateTime  CreatedAt               { get; set; }
     public bool      Activo             { get; set; }
 }
 
@@ -45,8 +46,9 @@ public class CrearBeneficiarioDto
     public string?   Parentesco         { get; set; }
     public string?   Whatsapp           { get; set; }
     public string?   Direccion          { get; set; }
-    public string?   FotoMenorUrl       { get; set; }
-    public string?   FotoDocumentoUrl   { get; set; }
+    public string?   FotoMenorUrl            { get; set; }
+    public string?   FotoDocumentoUrl        { get; set; }
+    public string?   FotoDocumentoReversoUrl { get; set; }
 }
 
 public class BeneficiarioListDto

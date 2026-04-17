@@ -9,6 +9,7 @@ import PersonAddIcon  from '@mui/icons-material/PersonAdd';
 import CloseIcon      from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import api from '../../services/api';
+import UploadFoto from '../../components/UploadFoto';
 
 const TIPOS_DOC   = ['RC', 'TI', 'CC', 'CE', 'PA', 'NUIP'];
 const PARENTESCOS = ['Madre', 'Padre', 'Abuelo', 'Abuela', 'Tío', 'Tía', 'Hermano', 'Hermana', 'Tutor legal', 'Otro'];
@@ -19,7 +20,7 @@ const FORM_VACIO = {
   eps: '', tallaCamisa: '', tallaPantalon: '', tallaZapatos: '',
   tieneAlergia: 'no', descripcionAlergia: '', observacionesSalud: '',
   nombreAcudiente: '', parentesco: 'Madre', whatsapp: '', direccion: '',
-  fotoMenorUrl: '', fotoDocumentoUrl: '',
+  fotoMenorUrl: null, fotoDocumentoUrl: null, fotoDocumentoReversoUrl: null,
 };
 
 export default function NuevoBeneficiario({ onCerrar, onCreado }) {
@@ -62,8 +63,9 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
         parentesco:         form.parentesco             || null,
         whatsapp:           form.whatsapp.trim()        || null,
         direccion:          form.direccion.trim()       || null,
-        fotoMenorUrl:       form.fotoMenorUrl.trim()    || null,
-        fotoDocumentoUrl:   form.fotoDocumentoUrl.trim()|| null,
+        fotoMenorUrl:            form.fotoMenorUrl            || null,
+        fotoDocumentoUrl:        form.fotoDocumentoUrl        || null,
+        fotoDocumentoReversoUrl: form.fotoDocumentoReversoUrl || null,
       });
       onCreado();
     } catch (err) {
@@ -236,20 +238,36 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
               value={form.direccion} onChange={set('direccion')} />
           </Grid>
 
-          {/* ── Archivos ────────────────────────────────────────────────────── */}
+          {/* ── Fotos ───────────────────────────────────────────────────────── */}
           <Grid size={12}>
             <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={0.5}>
-              Fotos (URL de Supabase Storage)
+              Fotos
             </Typography>
             <Divider sx={{ mb: 1.5, mt: 0.5 }} />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="URL foto del menor" size="small"
-              value={form.fotoMenorUrl} onChange={set('fotoMenorUrl')} />
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <UploadFoto
+              label="Foto del menor"
+              carpeta="fotos"
+              value={form.fotoMenorUrl}
+              onChange={url => setForm(prev => ({ ...prev, fotoMenorUrl: url }))}
+            />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="URL foto del documento" size="small"
-              value={form.fotoDocumentoUrl} onChange={set('fotoDocumentoUrl')} />
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <UploadFoto
+              label="Documento (frente)"
+              carpeta="documentos"
+              value={form.fotoDocumentoUrl}
+              onChange={url => setForm(prev => ({ ...prev, fotoDocumentoUrl: url }))}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <UploadFoto
+              label="Documento (reverso)"
+              carpeta="documentos"
+              value={form.fotoDocumentoReversoUrl}
+              onChange={url => setForm(prev => ({ ...prev, fotoDocumentoReversoUrl: url }))}
+            />
           </Grid>
         </Grid>
       </DialogContent>

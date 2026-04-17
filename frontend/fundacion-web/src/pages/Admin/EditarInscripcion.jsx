@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
+  Box, Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, TextField, MenuItem, FormControl,
   InputLabel, Select, Typography, Divider, Alert,
 } from '@mui/material';
 import api from '../../services/api';
+import UploadFoto from '../../components/UploadFoto';
 
 const TIPOS_DOC = ['TI', 'RC', 'NUIP', 'PPT', 'Pasaporte', 'RAMV', 'Sin documento'];
 const PARENTESCOS = ['Madre', 'Padre', 'Abuelo/a', 'Tío/a', 'Hermano/a', 'Acudiente legal', 'Otro'];
@@ -27,8 +28,9 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
     parentesco:         inscripcion.parentesco || '',
     whatsapp:           inscripcion.whatsapp || '',
     direccion:          inscripcion.direccion || '',
-    fotoMenorUrl:       inscripcion.fotoMenorUrl || '',
-    fotoDocumentoUrl:   inscripcion.fotoDocumentoUrl || '',
+    fotoMenorUrl:            inscripcion.fotoMenorUrl            || null,
+    fotoDocumentoUrl:        inscripcion.fotoDocumentoUrl        || null,
+    fotoDocumentoReversoUrl: inscripcion.fotoDocumentoReversoUrl || null,
   });
 
   const [guardando, setGuardando] = useState(false);
@@ -57,8 +59,9 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
         parentesco:         form.parentesco || null,
         whatsapp:           form.whatsapp || null,
         direccion:          form.direccion || null,
-        fotoMenorUrl:       form.fotoMenorUrl || null,
-        fotoDocumentoUrl:   form.fotoDocumentoUrl || null,
+        fotoMenorUrl:            form.fotoMenorUrl            || null,
+        fotoDocumentoUrl:        form.fotoDocumentoUrl        || null,
+        fotoDocumentoReversoUrl: form.fotoDocumentoReversoUrl || null,
       });
       onGuardado();
     } catch (err) {
@@ -171,6 +174,36 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Dirección" size="small" value={form.direccion} onChange={set('direccion')} />
+          </Grid>
+
+          {/* Fotos */}
+          <Grid size={12}>
+            <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={1}>Fotos</Typography>
+            <Divider sx={{ mb: 1.5, mt: 0.5 }} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <UploadFoto
+              label="Foto del menor"
+              carpeta="fotos"
+              value={form.fotoMenorUrl}
+              onChange={url => setForm(prev => ({ ...prev, fotoMenorUrl: url }))}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <UploadFoto
+              label="Documento (frente)"
+              carpeta="documentos"
+              value={form.fotoDocumentoUrl}
+              onChange={url => setForm(prev => ({ ...prev, fotoDocumentoUrl: url }))}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <UploadFoto
+              label="Documento (reverso)"
+              carpeta="documentos"
+              value={form.fotoDocumentoReversoUrl}
+              onChange={url => setForm(prev => ({ ...prev, fotoDocumentoReversoUrl: url }))}
+            />
           </Grid>
         </Grid>
       </DialogContent>

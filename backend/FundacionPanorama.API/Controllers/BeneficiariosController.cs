@@ -595,8 +595,9 @@ public class BeneficiariosController : ControllerBase
         }
 
         // ── Archivos (fotos) ──────────────────────────────────────────────────
-        await ActualizarArchivo(beneficiarioId, "Foto del menor",  dto.FotoMenorUrl);
-        await ActualizarArchivo(beneficiarioId, "Foto documento",  dto.FotoDocumentoUrl);
+        await ActualizarArchivo(beneficiarioId, "Foto del menor",           dto.FotoMenorUrl);
+        await ActualizarArchivo(beneficiarioId, "Foto documento",           dto.FotoDocumentoUrl);
+        await ActualizarArchivo(beneficiarioId, "Foto documento (reverso)", dto.FotoDocumentoReversoUrl);
     }
 
     private async Task ActualizarArchivo(Guid beneficiarioId, string tipoNombre, string? url)
@@ -664,8 +665,9 @@ public class BeneficiariosController : ControllerBase
             Parentesco         = principal?.Parentesco?.Nombre,
             Whatsapp           = principal?.Acudiente?.Whatsapp,
             Direccion          = principal?.Acudiente?.Direccion,
-            FotoMenorUrl       = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto del menor")?.Url,
-            FotoDocumentoUrl   = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto documento")?.Url,
+            FotoMenorUrl            = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto del menor")?.Url,
+            FotoDocumentoUrl        = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto documento")?.Url,
+            FotoDocumentoReversoUrl = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto documento (reverso)")?.Url,
             CreatedAt          = b.FechaCreacion,
             Activo             = b.Activo
         };

@@ -194,6 +194,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
             <UploadDocumento
               value={form.fotoDocumentoUrl}
               onChange={url => setForm(prev => ({ ...prev, fotoDocumentoUrl: url, fotoDocumentoReversoUrl: null }))}
+              beneficiarioId={inscripcion.id}
             />
           </Grid>
         </Grid>

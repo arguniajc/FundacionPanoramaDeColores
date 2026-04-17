@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<BeneficiarioAlergia>   BeneficiariosAlergia   { get; set; }
     public DbSet<BeneficiarioTalla>     BeneficiariosTalla     { get; set; }
     public DbSet<Archivo>               Archivos               { get; set; }
+    public DbSet<LogDescarga>           LogDescargas           { get; set; }
 
     protected override void OnModelCreating(ModelBuilder mb)
     {

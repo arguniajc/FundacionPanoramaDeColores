@@ -74,7 +74,17 @@ using (var scope = app.Services.CreateScope())
         db.Database.ExecuteSqlRaw(
             "ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;"
         );
-        logger.LogInformation("✅ Migración OK — columna 'activo' verificada.");
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS log_descargas (
+                id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                usuario_email   VARCHAR(255) NOT NULL,
+                beneficiario_id UUID         NOT NULL,
+                tipo_archivo    VARCHAR(100) NOT NULL DEFAULT 'documento',
+                url_archivo     TEXT,
+                descargado_en   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            );
+            """);
+        logger.LogInformation("✅ Migración OK — tabla log_descargas verificada.");
     }
     catch (Exception ex)
     {

@@ -229,8 +229,8 @@ export default function UploadDocumento({ value, onChange }) {
           <PictureAsPdfIcon sx={{ color: '#16a34a', fontSize: 24, flexShrink: 0 }} />
           <Box sx={{ minWidth: 0 }}>
             <Typography fontSize={12} fontWeight={700} color="#166534">PDF guardado</Typography>
-            <Link href={value} target="_blank" rel="noopener" fontSize={11} color="#4E1B95">
-              Ver documento
+            <Link href={value} download target="_blank" rel="noopener" fontSize={11} color="#4E1B95">
+              Descargar PDF
             </Link>
           </Box>
           <Box

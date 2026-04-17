@@ -7,13 +7,11 @@ import CloudUploadIcon  from '@mui/icons-material/CloudUpload';
 import DeleteIcon       from '@mui/icons-material/Delete';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import CameraAltIcon    from '@mui/icons-material/CameraAlt';
-import FlipCameraIosIcon from '@mui/icons-material/FlipCameraIos';
 import api from '../services/api';
 
 export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }) {
-  const inputGaleriaRef   = useRef(null);
-  const inputTraseraRef   = useRef(null);
-  const inputFrontalRef   = useRef(null);
+  const inputGaleriaRef = useRef(null);
+  const inputTraseraRef = useRef(null);
 
   const [subiendo, setSubiendo] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -141,10 +139,6 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
           <ListItemIcon><CameraAltIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Cámara trasera</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => elegir(inputFrontalRef)}>
-          <ListItemIcon><FlipCameraIosIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Cámara frontal</ListItemText>
-        </MenuItem>
       </Menu>
 
       {/* Input galería — sin capture para elegir de la galería */}
@@ -161,15 +155,6 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
         type="file"
         accept={ACCEPT}
         capture="environment"
-        style={{ display: 'none' }}
-        onChange={handleSeleccionar}
-      />
-      {/* Input cámara frontal */}
-      <input
-        ref={inputFrontalRef}
-        type="file"
-        accept={ACCEPT}
-        capture="user"
         style={{ display: 'none' }}
         onChange={handleSeleccionar}
       />

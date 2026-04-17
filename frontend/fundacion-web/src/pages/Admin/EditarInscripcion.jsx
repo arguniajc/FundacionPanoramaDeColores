@@ -41,7 +41,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
     setGuardando(true);
     setError('');
     try {
-      await api.put(`/api/inscripciones/${inscripcion.id}`, {
+      await api.put(`/api/beneficiarios/${inscripcion.id}`, {
         nombreMenor:        form.nombreMenor,
         fechaNacimiento:    form.fechaNacimiento,
         tipoDocumento:      form.tipoDocumento,

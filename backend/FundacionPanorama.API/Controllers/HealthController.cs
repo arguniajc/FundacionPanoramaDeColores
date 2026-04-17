@@ -21,7 +21,7 @@ public class HealthController : ControllerBase
     public async Task<IActionResult> Check()
     {
         // Consulta mínima a la BD: mantiene activos Render + Supabase
-        var total = await _db.Inscripciones.CountAsync();
+        var total = await _db.Beneficiarios.CountAsync();
 
         return Ok(new
         {

@@ -300,8 +300,8 @@ export default function AdminDashboard() {
   const cargarStats = useCallback(async () => {
     try {
       const [{ data: a }, { data: b }] = await Promise.all([
-        api.get('/api/inscripciones', { params: { pagina: 1, porPagina: 1, estado: 'activos' } }),
-        api.get('/api/inscripciones', { params: { pagina: 1, porPagina: 1, estado: 'baja'    } }),
+        api.get('/api/beneficiarios', { params: { pagina: 1, porPagina: 1, estado: 'activos' } }),
+        api.get('/api/beneficiarios', { params: { pagina: 1, porPagina: 1, estado: 'baja'    } }),
       ]);
       setStats({ activos: a.total, baja: b.total, total: a.total + b.total });
     } catch { /* silencioso */ }
@@ -311,7 +311,7 @@ export default function AdminDashboard() {
   const cargarStatsDetalle = useCallback(async () => {
     setCargandoStats(true);
     try {
-      const { data } = await api.get('/api/inscripciones/stats');
+      const { data } = await api.get('/api/beneficiarios/stats');
       setStatsDetalle(data);
     } catch { /* silencioso */ }
     finally { setCargandoStats(false); }
@@ -321,7 +321,7 @@ export default function AdminDashboard() {
   const cargar = useCallback(async () => {
     setCargando(true); setError('');
     try {
-      const { data } = await api.get('/api/inscripciones', {
+      const { data } = await api.get('/api/beneficiarios', {
         params: { pagina, porPagina: POR_PAGINA, buscar: buscar || undefined, estado },
       });
       setInscripciones(data.data);
@@ -340,7 +340,7 @@ export default function AdminDashboard() {
     if (!idBaja) return;
     setProcesandoBaja(true);
     try {
-      await api.patch(`/api/inscripciones/${idBaja}/baja`);
+      await api.patch(`/api/beneficiarios/${idBaja}/baja`);
       setIdBaja(null);
       setToast('Beneficiario dado de baja correctamente');
       cargar(); cargarStats(); cargarStatsDetalle();
@@ -350,7 +350,7 @@ export default function AdminDashboard() {
 
   const handleReactivar = async (id) => {
     try {
-      await api.patch(`/api/inscripciones/${id}/reactivar`);
+      await api.patch(`/api/beneficiarios/${id}/reactivar`);
       setToast('Beneficiario reactivado correctamente');
       cargar(); cargarStats(); cargarStatsDetalle();
     } catch { setError('No se pudo reactivar el beneficiario.'); }
@@ -361,7 +361,7 @@ export default function AdminDashboard() {
     if (!idEliminar) return;
     setEliminando(true);
     try {
-      await api.delete(`/api/inscripciones/${idEliminar}`);
+      await api.delete(`/api/beneficiarios/${idEliminar}`);
       setIdEliminar(null);
       setToast('Registro eliminado permanentemente');
       cargar(); cargarStats(); cargarStatsDetalle();
@@ -380,7 +380,7 @@ export default function AdminDashboard() {
     setExportando(true);
     setToast('Preparando exportación completa…');
     try {
-      const { data } = await api.get('/api/inscripciones', {
+      const { data } = await api.get('/api/beneficiarios', {
         params: { pagina: 1, porPagina: 9999, estado: 'todos' },
       });
       const todos = data.data;

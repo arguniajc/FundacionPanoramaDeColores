@@ -104,36 +104,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// ── Diagnóstico sin auth ─────────────────────────────────────────────────────
-app.MapGet("/api/health", async (AppDbContext db) =>
-{
-    try
-    {
-        // Verifica conexión y cuenta registros
-        var total = await db.Inscripciones.CountAsync();
-
-        // Verifica si la columna activo existe
-        var columnas = await db.Database
-            .SqlQueryRaw<string>(
-                "SELECT column_name FROM information_schema.columns " +
-                "WHERE table_name='inscripciones' AND column_name='activo'")
-            .ToListAsync();
-
-        return Results.Ok(new
-        {
-            estado          = "OK",
-            totalInscritos  = total,
-            columnaActivo   = columnas.Count > 0 ? "existe" : "NO EXISTE — ejecuta la migración",
-            timestamp       = DateTime.UtcNow
-        });
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(
-            title:      "Error de conexión a la base de datos",
-            detail:     ex.Message,
-            statusCode: 500);
-    }
-});
+// ── Diagnóstico sin auth (manejado por HealthController) ────────────────────
 
 app.Run();

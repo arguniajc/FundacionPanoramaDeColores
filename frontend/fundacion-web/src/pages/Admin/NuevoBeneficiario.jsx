@@ -120,7 +120,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Fecha de nacimiento *" size="small" type="date"
               value={form.fechaNacimiento} onChange={set('fechaNacimiento')}
-              InputLabelProps={{ shrink: true }} />
+              slotProps={{ inputLabel: { shrink: true } }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small">

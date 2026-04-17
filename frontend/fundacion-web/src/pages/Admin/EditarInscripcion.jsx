@@ -93,7 +93,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
             <TextField fullWidth label="Nombre completo" size="small" value={form.nombreMenor} onChange={set('nombreMenor')} required />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Fecha de nacimiento" size="small" type="date" value={form.fechaNacimiento} onChange={set('fechaNacimiento')} InputLabelProps={{ shrink: true }} required />
+            <TextField fullWidth label="Fecha de nacimiento" size="small" type="date" value={form.fechaNacimiento} onChange={set('fechaNacimiento')} slotProps={{ inputLabel: { shrink: true } }} required />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small">

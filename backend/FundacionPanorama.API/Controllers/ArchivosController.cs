@@ -27,15 +27,17 @@ public class ArchivosController : ControllerBase
         var tiposPermitidos = new[]
         {
             "image/jpeg", "image/jpg", "image/png",
-            "image/webp", "image/heic", "image/heif"
+            "image/webp", "image/heic", "image/heif",
+            "application/pdf"
         };
 
         if (!tiposPermitidos.Contains(archivo.ContentType.ToLower()))
-            return BadRequest(new { mensaje = "Solo se permiten imágenes (JPG, PNG, WEBP)." });
+            return BadRequest(new { mensaje = "Solo se permiten imágenes (JPG, PNG, WEBP) o PDF." });
 
-        const long maxBytes = 5 * 1024 * 1024; // 5 MB
+        var esPdf    = archivo.ContentType.ToLower() == "application/pdf";
+        long maxBytes = esPdf ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
         if (archivo.Length > maxBytes)
-            return BadRequest(new { mensaje = "La imagen no puede superar 5 MB." });
+            return BadRequest(new { mensaje = esPdf ? "El PDF no puede superar 10 MB." : "La imagen no puede superar 5 MB." });
 
         try
         {

@@ -9,7 +9,8 @@ import PersonAddIcon  from '@mui/icons-material/PersonAdd';
 import CloseIcon      from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import api from '../../services/api';
-import UploadFoto from '../../components/UploadFoto';
+import UploadFoto      from '../../components/UploadFoto';
+import UploadDocumento  from '../../components/UploadDocumento';
 
 const TIPOS_DOC   = ['RC', 'TI', 'CC', 'CE', 'PA', 'NUIP'];
 const PARENTESCOS = ['Madre', 'Padre', 'Abuelo', 'Abuela', 'Tío', 'Tía', 'Hermano', 'Hermana', 'Tutor legal', 'Otro'];
@@ -253,20 +254,10 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
               onChange={url => setForm(prev => ({ ...prev, fotoMenorUrl: url }))}
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <UploadFoto
-              label="Documento (frente)"
-              carpeta="documentos"
+          <Grid size={{ xs: 12, sm: 8 }}>
+            <UploadDocumento
               value={form.fotoDocumentoUrl}
-              onChange={url => setForm(prev => ({ ...prev, fotoDocumentoUrl: url }))}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <UploadFoto
-              label="Documento (reverso)"
-              carpeta="documentos"
-              value={form.fotoDocumentoReversoUrl}
-              onChange={url => setForm(prev => ({ ...prev, fotoDocumentoReversoUrl: url }))}
+              onChange={url => setForm(prev => ({ ...prev, fotoDocumentoUrl: url, fotoDocumentoReversoUrl: null }))}
             />
           </Grid>
         </Grid>

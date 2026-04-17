@@ -7,26 +7,23 @@ import CloudUploadIcon  from '@mui/icons-material/CloudUpload';
 import DeleteIcon       from '@mui/icons-material/Delete';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import CameraAltIcon    from '@mui/icons-material/CameraAlt';
+import CamaraFoto       from './CamaraFoto';
 import api from '../services/api';
 
-export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }) {
-  const inputGaleriaRef = useRef(null);
-  const inputTraseraRef = useRef(null);
+const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 
-  const [subiendo, setSubiendo] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [anchorEl, setAnchorEl] = useState(null);
+export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }) {
+  const inputRef = useRef(null);
+
+  const [subiendo,      setSubiendo]      = useState(false);
+  const [errorMsg,      setErrorMsg]      = useState('');
+  const [anchorEl,      setAnchorEl]      = useState(null);
+  const [camaraAbierta, setCamaraAbierta] = useState(false);
 
   const abrirMenu  = (e) => { if (!subiendo) setAnchorEl(e.currentTarget); };
   const cerrarMenu = ()  => setAnchorEl(null);
 
-  const elegir = (ref) => { cerrarMenu(); ref.current?.click(); };
-
-  const handleSeleccionar = async (e) => {
-    const archivo = e.target.files?.[0];
-    if (!archivo) return;
-    e.target.value = '';
-
+  const subirArchivo = async (archivo) => {
     setSubiendo(true);
     setErrorMsg('');
     try {
@@ -37,16 +34,25 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
       });
       onChange(data.url);
     } catch (err) {
-      const detalle = err.response?.data?.mensaje ?? 'Error al subir la imagen.';
-      setErrorMsg(detalle);
+      setErrorMsg(err.response?.data?.mensaje ?? 'Error al subir la imagen.');
     } finally {
       setSubiendo(false);
     }
   };
 
-  const handleEliminar = () => { onChange(null); setErrorMsg(''); };
+  const handleSeleccionar = async (e) => {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+    e.target.value = '';
+    await subirArchivo(archivo);
+  };
 
-  const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
+  const handleCaptura = async (file) => {
+    setCamaraAbierta(false);
+    await subirArchivo(file);
+  };
+
+  const handleEliminar = () => { onChange(null); setErrorMsg(''); };
 
   return (
     <Box>
@@ -60,12 +66,12 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
             component="img"
             src={value}
             alt={label}
+            onClick={abrirMenu}
             sx={{
               width: 120, height: 90, objectFit: 'cover',
-              borderRadius: 2, border: '2px solid #e0e0e0', display: 'block',
-              cursor: 'pointer',
+              borderRadius: 2, border: '2px solid #e0e0e0',
+              display: 'block', cursor: 'pointer',
             }}
-            onClick={abrirMenu}
           />
           <Tooltip title="Eliminar foto">
             <IconButton
@@ -73,8 +79,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
               onClick={handleEliminar}
               sx={{
                 position: 'absolute', top: -8, right: -8,
-                bgcolor: '#d32f2f', color: '#fff',
-                width: 22, height: 22,
+                bgcolor: '#d32f2f', color: '#fff', width: 22, height: 22,
                 '&:hover': { bgcolor: '#b71c1c' },
               }}
             >
@@ -82,8 +87,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
             </IconButton>
           </Tooltip>
           <Box
-            component="button"
-            type="button"
+            component="button" type="button"
             onClick={abrirMenu}
             sx={{
               mt: 0.5, display: 'block', width: '100%',
@@ -96,8 +100,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
         </Box>
       ) : (
         <Box
-          component="button"
-          type="button"
+          component="button" type="button"
           onClick={abrirMenu}
           sx={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -124,39 +127,34 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
         </Typography>
       )}
 
-      {/* Menú de opciones */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={cerrarMenu}
-        slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 200 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 180 } } }}
       >
-        <MenuItem onClick={() => elegir(inputGaleriaRef)}>
+        <MenuItem onClick={() => { cerrarMenu(); inputRef.current?.click(); }}>
           <ListItemIcon><PhotoLibraryIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Galería</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => elegir(inputTraseraRef)}>
+        <MenuItem onClick={() => { cerrarMenu(); setCamaraAbierta(true); }}>
           <ListItemIcon><CameraAltIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Cámara trasera</ListItemText>
+          <ListItemText>Cámara</ListItemText>
         </MenuItem>
       </Menu>
 
-      {/* Input galería — sin capture para elegir de la galería */}
       <input
-        ref={inputGaleriaRef}
+        ref={inputRef}
         type="file"
         accept={ACCEPT}
         style={{ display: 'none' }}
         onChange={handleSeleccionar}
       />
-      {/* Input cámara trasera */}
-      <input
-        ref={inputTraseraRef}
-        type="file"
-        accept={ACCEPT}
-        capture="environment"
-        style={{ display: 'none' }}
-        onChange={handleSeleccionar}
+
+      <CamaraFoto
+        open={camaraAbierta}
+        onCerrar={() => setCamaraAbierta(false)}
+        onCaptura={handleCaptura}
       />
     </Box>
   );

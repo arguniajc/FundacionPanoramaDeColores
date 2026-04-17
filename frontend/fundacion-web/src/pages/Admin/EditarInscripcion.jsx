@@ -5,7 +5,8 @@ import {
   InputLabel, Select, Typography, Divider, Alert,
 } from '@mui/material';
 import api from '../../services/api';
-import UploadFoto from '../../components/UploadFoto';
+import UploadFoto      from '../../components/UploadFoto';
+import UploadDocumento  from '../../components/UploadDocumento';
 
 const TIPOS_DOC = ['TI', 'RC', 'NUIP', 'PPT', 'Pasaporte', 'RAMV', 'Sin documento'];
 const PARENTESCOS = ['Madre', 'Padre', 'Abuelo/a', 'Tío/a', 'Hermano/a', 'Acudiente legal', 'Otro'];
@@ -189,20 +190,10 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
               onChange={url => setForm(prev => ({ ...prev, fotoMenorUrl: url }))}
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <UploadFoto
-              label="Documento (frente)"
-              carpeta="documentos"
+          <Grid size={{ xs: 12, sm: 8 }}>
+            <UploadDocumento
               value={form.fotoDocumentoUrl}
-              onChange={url => setForm(prev => ({ ...prev, fotoDocumentoUrl: url }))}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <UploadFoto
-              label="Documento (reverso)"
-              carpeta="documentos"
-              value={form.fotoDocumentoReversoUrl}
-              onChange={url => setForm(prev => ({ ...prev, fotoDocumentoReversoUrl: url }))}
+              onChange={url => setForm(prev => ({ ...prev, fotoDocumentoUrl: url, fotoDocumentoReversoUrl: null }))}
             />
           </Grid>
         </Grid>

@@ -24,9 +24,36 @@ import AssignmentLateIcon   from '@mui/icons-material/AssignmentLate';
 import BarChartIcon         from '@mui/icons-material/BarChart';
 import CloseIcon            from '@mui/icons-material/Close';
 import * as XLSX from 'xlsx';
-import api from '../../services/api';
-import DetalleInscripcion from './DetalleInscripcion';
-import EditarInscripcion  from './EditarInscripcion';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import SyncIcon      from '@mui/icons-material/Sync';
+import api              from '../../services/api';
+import DetalleInscripcion  from './DetalleInscripcion';
+import EditarInscripcion   from './EditarInscripcion';
+import NuevoBeneficiario   from './NuevoBeneficiario';
+
+// ── Caché en sessionStorage ───────────────────────────────────────────────────
+const CACHE_PREFIX = 'ben_';
+const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutos
+
+function cacheKey(estado, pagina, buscar) {
+  return `${CACHE_PREFIX}${estado}_${pagina}_${buscar ?? ''}`;
+}
+function leerCache(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const { data, total, ts } = JSON.parse(raw);
+    return Date.now() - ts < CACHE_TTL_MS ? { data, total } : null;
+  } catch { return null; }
+}
+function escribirCache(key, data, total) {
+  try { sessionStorage.setItem(key, JSON.stringify({ data, total, ts: Date.now() })); }
+  catch { /* sessionStorage llena */ }
+}
+export function limpiarCache() {
+  Object.keys(sessionStorage).filter(k => k.startsWith(CACHE_PREFIX))
+    .forEach(k => sessionStorage.removeItem(k));
+}
 
 const POR_PAGINA = 15;
 
@@ -291,10 +318,12 @@ export default function AdminDashboard() {
   const [modalStats,     setModalStats]     = useState(false);
   const [seleccionada,   setSeleccionada]   = useState(null);
   const [editando,       setEditando]       = useState(null);
+  const [creando,        setCreando]        = useState(false);
   const [idEliminar,     setIdEliminar]     = useState(null);
   const [eliminando,     setEliminando]     = useState(false);
   const [idBaja,         setIdBaja]         = useState(null);
   const [procesandoBaja, setProcesandoBaja] = useState(false);
+  const [actualizando,   setActualizando]   = useState(false);
 
   /* ── Stats banner ─────────────────────────────────────────────────────────── */
   const cargarStats = useCallback(async () => {
@@ -317,15 +346,37 @@ export default function AdminDashboard() {
     finally { setCargandoStats(false); }
   }, []);
 
-  /* ── Tabla paginada ───────────────────────────────────────────────────────── */
-  const cargar = useCallback(async () => {
-    setCargando(true); setError('');
+  /* ── Tabla paginada (con caché stale-while-revalidate) ───────────────────── */
+  const cargar = useCallback(async (forzar = false) => {
+    const key = cacheKey(estado, pagina, buscar);
+    const cached = !forzar && leerCache(key);
+
+    if (cached) {
+      // Mostrar datos cacheados inmediatamente
+      setInscripciones(cached.data);
+      setTotal(cached.total);
+      setActualizando(true);
+      // Actualizar en segundo plano
+      try {
+        const { data } = await api.get('/api/beneficiarios', {
+          params: { pagina, porPagina: POR_PAGINA, buscar: buscar || undefined, estado },
+        });
+        setInscripciones(data.data);
+        setTotal(data.total);
+        escribirCache(key, data.data, data.total);
+      } catch { /* mantener caché si falla la red */ }
+      finally { setActualizando(false); }
+      return;
+    }
+
+    setCargando(true); setActualizando(false); setError('');
     try {
       const { data } = await api.get('/api/beneficiarios', {
         params: { pagina, porPagina: POR_PAGINA, buscar: buscar || undefined, estado },
       });
       setInscripciones(data.data);
       setTotal(data.total);
+      escribirCache(key, data.data, data.total);
     } catch {
       setError('No se pudieron cargar los beneficiarios.');
     } finally { setCargando(false); }
@@ -343,7 +394,7 @@ export default function AdminDashboard() {
       await api.patch(`/api/beneficiarios/${idBaja}/baja`);
       setIdBaja(null);
       setToast('Beneficiario dado de baja correctamente');
-      cargar(); cargarStats(); cargarStatsDetalle();
+      limpiarCache(); cargar(true); cargarStats(); cargarStatsDetalle();
     } catch { setError('No se pudo dar de baja al beneficiario.'); }
     finally  { setProcesandoBaja(false); }
   };
@@ -352,7 +403,7 @@ export default function AdminDashboard() {
     try {
       await api.patch(`/api/beneficiarios/${id}/reactivar`);
       setToast('Beneficiario reactivado correctamente');
-      cargar(); cargarStats(); cargarStatsDetalle();
+      limpiarCache(); cargar(true); cargarStats(); cargarStatsDetalle();
     } catch { setError('No se pudo reactivar el beneficiario.'); }
   };
 
@@ -364,7 +415,7 @@ export default function AdminDashboard() {
       await api.delete(`/api/beneficiarios/${idEliminar}`);
       setIdEliminar(null);
       setToast('Registro eliminado permanentemente');
-      cargar(); cargarStats(); cargarStatsDetalle();
+      limpiarCache(); cargar(true); cargarStats(); cargarStatsDetalle();
     } catch { setError('No se pudo eliminar el registro.'); }
     finally  { setEliminando(false); }
   };
@@ -372,7 +423,13 @@ export default function AdminDashboard() {
   const handleGuardadoEdicion = () => {
     setEditando(null);
     setToast('Beneficiario actualizado correctamente');
-    cargar(); cargarStatsDetalle();
+    limpiarCache(); cargar(true); cargarStatsDetalle();
+  };
+
+  const handleBeneficiarioCreado = () => {
+    setCreando(false);
+    setToast('Beneficiario inscrito correctamente');
+    limpiarCache(); cargar(true); cargarStats(); cargarStatsDetalle();
   };
 
   /* ── Excel ────────────────────────────────────────────────────────────────── */
@@ -452,10 +509,27 @@ export default function AdminDashboard() {
               Gestión de niños y niñas inscritos
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'nowrap', width: { xs: '100%', sm: 'auto' } }}>
-            <StatCard icon={<PeopleIcon />}       label="Total"   value={stats.total}   color="#B4E8E8" />
-            <StatCard icon={<VerifiedUserIcon />} label="Activos" value={stats.activos} color="#81c784" />
-            <StatCard icon={<PersonOffIcon />}    label="Baja"    value={stats.baja}    color="#ef9a9a" />
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, width: { xs: '100%', sm: 'auto' }, alignItems: { xs: 'stretch', sm: 'center' } }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <StatCard icon={<PeopleIcon />}       label="Total"   value={stats.total}   color="#B4E8E8" />
+              <StatCard icon={<VerifiedUserIcon />} label="Activos" value={stats.activos} color="#81c784" />
+              <StatCard icon={<PersonOffIcon />}    label="Baja"    value={stats.baja}    color="#ef9a9a" />
+            </Box>
+            <Button
+              variant="contained" size="small"
+              startIcon={<PersonAddIcon />}
+              onClick={() => setCreando(true)}
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.18)',
+                border: '1.5px solid rgba(255,255,255,0.35)',
+                color: '#fff', fontWeight: 700,
+                borderRadius: 2, whiteSpace: 'nowrap',
+                backdropFilter: 'blur(6px)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.28)' },
+              }}
+            >
+              Nuevo beneficiario
+            </Button>
           </Box>
         </Box>
       </Box>
@@ -522,6 +596,15 @@ export default function AdminDashboard() {
           </Tabs>
 
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+          {/* Indicador sutil de actualización en segundo plano */}
+          {actualizando && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 1, opacity: 0.6 }}>
+              <SyncIcon sx={{ fontSize: '0.85rem', color: '#4E1B95', animation: 'spin 1.2s linear infinite',
+                '@keyframes spin': { '100%': { transform: 'rotate(360deg)' } } }} />
+              <Typography variant="caption" color="text.secondary">Actualizando…</Typography>
+            </Box>
+          )}
 
           {/* Tabla */}
           <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', overflowX: 'auto' }}>
@@ -681,6 +764,11 @@ export default function AdminDashboard() {
         stats={statsDetalle}
         cargando={cargandoStats}
       />
+
+      {/* ── Modal nuevo beneficiario ───────────────────────────────────────── */}
+      {creando && (
+        <NuevoBeneficiario onCerrar={() => setCreando(false)} onCreado={handleBeneficiarioCreado} />
+      )}
 
       {/* ── Modales ────────────────────────────────────────────────────────── */}
       {seleccionada && (

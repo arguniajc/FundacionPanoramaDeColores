@@ -27,8 +27,9 @@ import ExpandMoreIcon        from '@mui/icons-material/ExpandMore';
 import DarkModeIcon          from '@mui/icons-material/DarkMode';
 import LightModeIcon         from '@mui/icons-material/LightMode';
 
-import { useAuth }      from '../contexts/AuthContext';
-import { useThemeMode } from '../contexts/ThemeContext';
+import { useAuth }       from '../contexts/AuthContext';
+import { useThemeMode }  from '../contexts/ThemeContext';
+import useInactividad    from '../hooks/useInactividad';
 
 const SIDEBAR_WIDTH = 260;
 
@@ -133,6 +134,12 @@ export default function AdminLayout({ children }) {
   const [collapsed,  setCollapsed]  = useState({});
 
   const handleCerrarSesion = () => { logout(); navigate('/acceso', { replace: true }); };
+
+  // Auto-logout tras 5 minutos de inactividad → redirige al sitio público
+  useInactividad(5, () => {
+    logout();
+    window.location.href = 'https://fundacionpanoramadecolores.org';
+  }, !!user);
 
   const esActivo = (ruta) =>
     ruta === '/sede'

@@ -16,17 +16,27 @@ import api from '../services/api';
 const ACCEPT_IMG = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 const ACCEPT_PDF = 'application/pdf';
 
-function detectarTipoArchivo(buffer) {
-  const b = new Uint8Array(buffer.slice(0, 12));
-  if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46)
-    return { mime: 'application/pdf', ext: '.pdf' };
-  if (b[0] === 0xFF && b[1] === 0xD8)
-    return { mime: 'image/jpeg', ext: '.jpg' };
-  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47)
-    return { mime: 'image/png', ext: '.png' };
-  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46)
-    return { mime: 'image/webp', ext: '.webp' };
-  return { mime: 'application/octet-stream', ext: '' };
+function esPdf(buffer) {
+  const b = new Uint8Array(buffer.slice(0, 4));
+  return b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46;
+}
+
+function bufferABase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunks = [];
+  for (let i = 0; i < bytes.length; i += 8192)
+    chunks.push(String.fromCharCode(...bytes.subarray(i, i + 8192)));
+  return btoa(chunks.join(''));
+}
+
+async function imagenAArrayBufferPdf(buffer) {
+  const { default: jsPDF } = await import('jspdf');
+  const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const b64  = bufferABase64(buffer);
+  const tipo = new Uint8Array(buffer.slice(0, 4))[0] === 0x89 ? 'PNG' : 'JPEG';
+  const mime = tipo === 'PNG' ? 'image/png' : 'image/jpeg';
+  doc.addImage(`data:${mime};base64,${b64}`, tipo, 10, 14, 190, 265);
+  return doc.output('arraybuffer');
 }
 
 const toDataUrl = file => new Promise(resolve => {
@@ -119,16 +129,16 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
           urlArchivo:  value,
         }).catch(() => {}); // no bloquear descarga si el log falla
       }
-      // Detectar tipo real por magic bytes para evitar descargar JPEG como PDF
+      // Si es imagen antigua, convertir a PDF al vuelo; si ya es PDF, descargar directo
       const resp   = await fetch(value);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const buffer = await resp.arrayBuffer();
-      const { mime, ext } = detectarTipoArchivo(buffer);
-      const blob   = new Blob([buffer], { type: mime });
-      const url    = URL.createObjectURL(blob);
+      const buffer      = await resp.arrayBuffer();
+      const finalBuffer = esPdf(buffer) ? buffer : await imagenAArrayBufferPdf(buffer);
+      const blob        = new Blob([finalBuffer], { type: 'application/pdf' });
+      const url         = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href     = url;
-      a.download = `documento-${beneficiarioId ?? 'beneficiario'}${ext}`;
+      a.download = `documento-${beneficiarioId ?? 'beneficiario'}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {

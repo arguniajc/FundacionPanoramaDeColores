@@ -3,6 +3,8 @@ import AdminLogin from './pages/Admin/AdminLogin';
 import Dashboard from './pages/Admin/Dashboard';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import ModuloEnDesarrollo from './pages/Admin/ModuloEnDesarrollo';
+import LogDescargas from './pages/Admin/LogDescargas';
+import Sedes from './pages/Admin/Sedes';
 import AdminLayout from './layout/AdminLayout';
 import RutaProtegida from './components/RutaProtegida';
 
@@ -36,8 +38,10 @@ export default function App() {
       <Route path="/sede/talento-humano"  element={<AdminConLayout><ModuloEnDesarrollo nombre="Talento Humano" /></AdminConLayout>} />
       <Route path="/sede/contabilidad"    element={<AdminConLayout><ModuloEnDesarrollo nombre="Contabilidad" /></AdminConLayout>} />
       <Route path="/sede/inventario"      element={<AdminConLayout><ModuloEnDesarrollo nombre="Inventario" /></AdminConLayout>} />
-      <Route path="/sede/reportes"        element={<AdminConLayout><ModuloEnDesarrollo nombre="Reportes" /></AdminConLayout>} />
-      <Route path="/sede/documentos"      element={<AdminConLayout><ModuloEnDesarrollo nombre="Documentos" /></AdminConLayout>} />
+      <Route path="/sede/reportes"         element={<AdminConLayout><ModuloEnDesarrollo nombre="Reportes" /></AdminConLayout>} />
+      <Route path="/sede/documentos"       element={<AdminConLayout><ModuloEnDesarrollo nombre="Documentos" /></AdminConLayout>} />
+      <Route path="/sede/log-descargas"    element={<AdminConLayout><LogDescargas /></AdminConLayout>} />
+      <Route path="/sede/sedes"            element={<AdminConLayout><Sedes /></AdminConLayout>} />
       <Route path="/sede/seguridad"       element={<AdminConLayout><ModuloEnDesarrollo nombre="Seguridad" /></AdminConLayout>} />
       <Route path="/sede/equipo"          element={<AdminConLayout><ModuloEnDesarrollo nombre="Usuarios" /></AdminConLayout>} />
       <Route path="/sede/configuracion"   element={<AdminConLayout><ModuloEnDesarrollo nombre="Configuración" /></AdminConLayout>} />

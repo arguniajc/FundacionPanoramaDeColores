@@ -4,6 +4,7 @@ using FundacionPanorama.API.Models;
 using FundacionPanorama.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -58,6 +59,35 @@ public class ArchivosController : ControllerBase
         {
             return StatusCode(500, new { mensaje = $"Error al subir el archivo: {ex.Message}" });
         }
+    }
+
+    // GET api/archivos/log-descargas?pagina=1&porPagina=20
+    [HttpGet("log-descargas")]
+    [Authorize]
+    public async Task<IActionResult> ObtenerLog(
+        [FromQuery] int pagina    = 1,
+        [FromQuery] int porPagina = 20)
+    {
+        var total = await _db.LogDescargas.CountAsync();
+        var registros = await _db.LogDescargas
+            .OrderByDescending(l => l.DescargadoEn)
+            .Skip((pagina - 1) * porPagina)
+            .Take(porPagina)
+            .Join(_db.Beneficiarios,
+                  l => l.BeneficiarioId,
+                  b => b.Id,
+                  (l, b) => new {
+                      l.Id,
+                      l.UsuarioEmail,
+                      l.BeneficiarioId,
+                      NombreBeneficiario = b.Nombre,
+                      l.TipoArchivo,
+                      l.UrlArchivo,
+                      l.DescargadoEn
+                  })
+            .ToListAsync();
+
+        return Ok(new { data = registros, total, pagina, porPagina });
     }
 
     // POST api/archivos/log-descarga

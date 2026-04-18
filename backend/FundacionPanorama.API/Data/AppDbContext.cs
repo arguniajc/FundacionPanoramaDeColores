@@ -23,6 +23,8 @@ public class AppDbContext : DbContext
     public DbSet<BeneficiarioTalla>     BeneficiariosTalla     { get; set; }
     public DbSet<Archivo>               Archivos               { get; set; }
     public DbSet<LogDescarga>           LogDescargas           { get; set; }
+    public DbSet<Sede>                  Sedes                  { get; set; }
+    public DbSet<Programa>              Programas              { get; set; }
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -101,6 +103,23 @@ public class AppDbContext : DbContext
             e.Property(t => t.FechaCreacion).HasDefaultValueSql("now()");
             e.Property(t => t.FechaModificacion).HasDefaultValueSql("now()");
             e.Property(t => t.FechaMedicion).HasDefaultValueSql("CURRENT_DATE");
+        });
+
+        // ── Sede ─────────────────────────────────────────────────────────────
+        mb.Entity<Sede>(e =>
+        {
+            e.Property(s => s.Id).HasDefaultValueSql("gen_random_uuid()");
+            e.Property(s => s.FechaCreacion).HasDefaultValueSql("now()");
+            e.Property(s => s.FechaModificacion).HasDefaultValueSql("now()");
+            e.HasMany(s => s.Programas).WithOne(p => p.Sede).HasForeignKey(p => p.SedeId);
+        });
+
+        // ── Programa ─────────────────────────────────────────────────────────
+        mb.Entity<Programa>(e =>
+        {
+            e.Property(p => p.Id).HasDefaultValueSql("gen_random_uuid()");
+            e.Property(p => p.FechaCreacion).HasDefaultValueSql("now()");
+            e.Property(p => p.FechaModificacion).HasDefaultValueSql("now()");
         });
 
         // ── Archivo ───────────────────────────────────────────────────────────

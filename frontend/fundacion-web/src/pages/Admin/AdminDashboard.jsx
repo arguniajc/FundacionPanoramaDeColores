@@ -322,6 +322,7 @@ export default function AdminDashboard() {
   const [idEliminar,     setIdEliminar]     = useState(null);
   const [eliminando,     setEliminando]     = useState(false);
   const [idBaja,         setIdBaja]         = useState(null);
+  const [motivoBaja,     setMotivoBaja]     = useState('');
   const [procesandoBaja, setProcesandoBaja] = useState(false);
   const [actualizando,   setActualizando]   = useState(false);
 
@@ -391,8 +392,9 @@ export default function AdminDashboard() {
     if (!idBaja) return;
     setProcesandoBaja(true);
     try {
-      await api.patch(`/api/beneficiarios/${idBaja}/baja`);
+      await api.patch(`/api/beneficiarios/${idBaja}/baja`, { motivo: motivoBaja || null });
       setIdBaja(null);
+      setMotivoBaja('');
       setToast('Beneficiario dado de baja correctamente');
       limpiarCache(); cargar(true); cargarStats(); cargarStatsDetalle();
     } catch { setError('No se pudo dar de baja al beneficiario.'); }
@@ -783,13 +785,23 @@ export default function AdminDashboard() {
         <EditarInscripcion inscripcion={editando} onCerrar={() => setEditando(null)} onGuardado={handleGuardadoEdicion} />
       )}
 
-      <Dialog open={!!idBaja} onClose={() => setIdBaja(null)} maxWidth="xs" fullWidth>
+      <Dialog open={!!idBaja} onClose={() => { setIdBaja(null); setMotivoBaja(''); }} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ color: '#e65100', fontWeight: 700, pb: 1 }}>¿Dar de baja al beneficiario?</DialogTitle>
         <DialogContent>
-          <DialogContentText>El beneficiario quedará inactivo pero su información se conservará. Podrás reactivarlo en cualquier momento.</DialogContentText>
+          <DialogContentText sx={{ mb: 2 }}>El beneficiario quedará inactivo pero su información se conservará. Podrás reactivarlo en cualquier momento.</DialogContentText>
+          <TextField
+            fullWidth
+            label="Motivo de retiro"
+            size="small"
+            multiline
+            rows={2}
+            value={motivoBaja}
+            onChange={e => setMotivoBaja(e.target.value)}
+            placeholder="Ej: Cambio de domicilio, solicitud del acudiente..."
+          />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setIdBaja(null)} variant="outlined">Cancelar</Button>
+          <Button onClick={() => { setIdBaja(null); setMotivoBaja(''); }} variant="outlined">Cancelar</Button>
           <Button variant="contained" onClick={handleDarDeBaja} disabled={procesandoBaja}
             sx={{ bgcolor: '#e65100', '&:hover': { bgcolor: '#bf360c' } }}>
             {procesandoBaja ? 'Procesando…' : 'Dar de baja'}

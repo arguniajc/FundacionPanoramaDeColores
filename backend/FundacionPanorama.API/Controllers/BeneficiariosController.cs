@@ -298,13 +298,16 @@ public class BeneficiariosController : ControllerBase
     // =========================================================================
     // PATCH api/beneficiarios/{id}/baja
     // =========================================================================
+    public record DarDeBajaDto(string? Motivo);
+
     [HttpPatch("{id:guid}/baja")]
     [Authorize]
-    public async Task<IActionResult> DarDeBaja(Guid id)
+    public async Task<IActionResult> DarDeBaja(Guid id, [FromBody] DarDeBajaDto? dto)
     {
         var b = await _db.Beneficiarios.FindAsync(id);
         if (b is null) return NotFound();
-        b.Activo = false;
+        b.Activo     = false;
+        b.MotivoBaja = string.IsNullOrWhiteSpace(dto?.Motivo) ? null : dto.Motivo.Trim();
         await _db.SaveChangesAsync();
 
         var cargado  = await CargarCompleto(id);
@@ -323,7 +326,8 @@ public class BeneficiariosController : ControllerBase
     {
         var b = await _db.Beneficiarios.FindAsync(id);
         if (b is null) return NotFound();
-        b.Activo = true;
+        b.Activo     = true;
+        b.MotivoBaja = null;
         await _db.SaveChangesAsync();
 
         var cargado  = await CargarCompleto(id);
@@ -669,7 +673,8 @@ public class BeneficiariosController : ControllerBase
             FotoDocumentoUrl        = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto documento")?.Url,
             FotoDocumentoReversoUrl = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto documento (reverso)")?.Url,
             CreatedAt          = b.FechaCreacion,
-            Activo             = b.Activo
+            Activo             = b.Activo,
+            MotivoBaja         = b.MotivoBaja
         };
     }
 }

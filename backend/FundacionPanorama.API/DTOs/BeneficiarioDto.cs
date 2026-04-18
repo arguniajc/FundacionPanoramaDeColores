@@ -27,6 +27,7 @@ public class BeneficiarioDto
     public string?   FotoDocumentoReversoUrl { get; set; }
     public DateTime  CreatedAt               { get; set; }
     public bool      Activo             { get; set; }
+    public string?   MotivoBaja         { get; set; }
 }
 
 public class CrearBeneficiarioDto

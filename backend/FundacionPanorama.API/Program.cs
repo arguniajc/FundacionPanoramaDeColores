@@ -74,6 +74,9 @@ using (var scope = app.Services.CreateScope())
         db.Database.ExecuteSqlRaw(
             "ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;"
         );
+        db.Database.ExecuteSqlRaw(
+            "ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS motivo_baja VARCHAR(500);"
+        );
         db.Database.ExecuteSqlRaw("""
             CREATE TABLE IF NOT EXISTS log_descargas (
                 id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -82,6 +85,30 @@ using (var scope = app.Services.CreateScope())
                 tipo_archivo    VARCHAR(100) NOT NULL DEFAULT 'documento',
                 url_archivo     TEXT,
                 descargado_en   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            );
+            """);
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS sedes (
+                id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                nombre            VARCHAR(150) NOT NULL,
+                direccion         VARCHAR(300),
+                ciudad            VARCHAR(100),
+                telefono          VARCHAR(30),
+                activo            BOOLEAN      NOT NULL DEFAULT true,
+                fecha_creacion    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+                fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            """);
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS programas (
+                id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                sede_id           UUID         NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+                nombre            VARCHAR(150) NOT NULL,
+                descripcion       VARCHAR(500),
+                cupo_maximo       INT,
+                activo            BOOLEAN      NOT NULL DEFAULT true,
+                fecha_creacion    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+                fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
             """);
         logger.LogInformation("✅ Migración OK — tabla log_descargas verificada.");

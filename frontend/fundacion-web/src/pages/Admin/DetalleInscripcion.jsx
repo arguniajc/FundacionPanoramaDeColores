@@ -1,14 +1,16 @@
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, Typography, Divider, Chip, Box, Avatar, IconButton, Tooltip,
-  useMediaQuery, useTheme,
+  useMediaQuery, useTheme, Alert,
 } from '@mui/material';
-import EditIcon        from '@mui/icons-material/Edit';
-import DeleteIcon      from '@mui/icons-material/Delete';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import WhatsAppIcon    from '@mui/icons-material/WhatsApp';
-import OpenInNewIcon   from '@mui/icons-material/OpenInNew';
-import CloseIcon       from '@mui/icons-material/Close';
+import EditIcon          from '@mui/icons-material/Edit';
+import DeleteIcon        from '@mui/icons-material/Delete';
+import PictureAsPdfIcon  from '@mui/icons-material/PictureAsPdf';
+import WhatsAppIcon      from '@mui/icons-material/WhatsApp';
+import DownloadIcon      from '@mui/icons-material/Download';
+import CloseIcon         from '@mui/icons-material/Close';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import api from '../../services/api';
 import { calcularEdad } from './AdminDashboard';
 
 function Campo({ label, value, children }) {
@@ -59,6 +61,27 @@ function TallaCard({ icono, valor, etiqueta }) {
       </Typography>
     </Box>
   );
+}
+
+async function descargarDocumento(ins) {
+  try {
+    await api.post('/api/archivos/log-descarga', {
+      beneficiarioId: ins.id,
+      tipoArchivo:    'documento',
+      urlArchivo:     ins.fotoDocumentoUrl,
+    });
+  } catch { /* no bloquear la descarga si falla el log */ }
+
+  const resp   = await fetch(ins.fotoDocumentoUrl);
+  const blob   = await resp.blob();
+  const url    = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href     = url;
+  anchor.download = `documento_${ins.nombreMenor?.replace(/\s+/g, '_') ?? 'beneficiario'}.pdf`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
 }
 
 export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEditar, onEliminar }) {
@@ -161,8 +184,8 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
   </div>
   ${ins.fotoDocumentoUrl ? `
   <div class="seccion">
-    <div class="sec-titulo">🪪 Documento</div>
-    <img src="${ins.fotoDocumentoUrl}" class="doc-img" alt="Documento">
+    <div class="sec-titulo">🪪 Documento de Identidad</div>
+    <div class="item"><div class="label">PDF guardado</div><div class="valor">Documento disponible para descarga desde el panel administrativo.</div></div>
   </div>` : ''}
   <div class="pie">Generado por Panel Admin · Fundación Panorama de Colores · ${new Date().toLocaleDateString('es-CO')}</div>
 </div>
@@ -330,30 +353,49 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             </Campo>
           </Grid>
 
-          {/* Foto del documento */}
+          {/* Documento de identidad — solo descarga, nunca imagen */}
           {ins.fotoDocumentoUrl && (
             <Grid size={12}>
               <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={1}>
                 Documento de Identidad
               </Typography>
               <Divider sx={{ mb: 1.5, mt: 0.5 }} />
-              <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  component="img"
-                  src={ins.fotoDocumentoUrl}
-                  alt="Documento"
-                  sx={{
-                    maxWidth: { xs: '100%', sm: 200 },
-                    borderRadius: 2,
-                    border: '2px solid #e2d9f3',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => window.open(ins.fotoDocumentoUrl, '_blank')}
-                />
-                <IconButton href={ins.fotoDocumentoUrl} target="_blank" component="a" title="Ver en grande">
-                  <OpenInNewIcon />
-                </IconButton>
+              <Box
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 2,
+                  bgcolor: '#fdfbff', border: '1.5px solid #e2d9f3',
+                  borderRadius: 2, p: 2,
+                }}
+              >
+                <PictureAsPdfOutlinedIcon sx={{ color: '#c62828', fontSize: 36, flexShrink: 0 }} />
+                <Box flex={1}>
+                  <Typography variant="body2" fontWeight={700}>PDF del documento</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Haz clic en Descargar para abrir el documento. La descarga queda registrada.
+                  </Typography>
+                </Box>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<DownloadIcon />}
+                  onClick={() => descargarDocumento(ins)}
+                  sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, flexShrink: 0 }}
+                >
+                  Descargar
+                </Button>
               </Box>
+            </Grid>
+          )}
+
+          {/* Motivo de baja */}
+          {!ins.activo && (
+            <Grid size={12}>
+              <Alert severity="warning" sx={{ mt: 1 }}>
+                <Typography variant="caption" fontWeight={700} display="block">BENEFICIARIO INACTIVO</Typography>
+                {ins.motivoBaja
+                  ? <Typography variant="body2">Motivo: {ins.motivoBaja}</Typography>
+                  : <Typography variant="body2" color="text.secondary">Sin motivo registrado.</Typography>}
+              </Alert>
             </Grid>
           )}
 

@@ -24,6 +24,9 @@ public class Beneficiario
     [Column("activo")]
     public bool Activo { get; set; } = true;
 
+    [Column("motivo_baja"), MaxLength(500)]
+    public string? MotivoBaja { get; set; }
+
     [Column("fecha_creacion")]
     public DateTime FechaCreacion { get; set; }
 

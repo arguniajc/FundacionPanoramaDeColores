@@ -26,6 +26,8 @@ import ExpandLessIcon        from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon        from '@mui/icons-material/ExpandMore';
 import DarkModeIcon          from '@mui/icons-material/DarkMode';
 import LightModeIcon         from '@mui/icons-material/LightMode';
+import DownloadIcon          from '@mui/icons-material/Download';
+import LocationOnIcon        from '@mui/icons-material/LocationOn';
 
 import { useAuth }       from '../contexts/AuthContext';
 import { useThemeMode }  from '../contexts/ThemeContext';
@@ -53,6 +55,7 @@ const MENU = [
       { label: 'Donantes',       icon: <VolunteerActivismIcon />,  ruta: '/sede/donantes' },
       { label: 'Donaciones',     icon: <MonetizationOnIcon />,     ruta: '/sede/donaciones' },
       { label: 'Proyectos',      icon: <FolderSpecialIcon />,      ruta: '/sede/proyectos' },
+      { label: 'Sedes',          icon: <LocationOnIcon />,         ruta: '/sede/sedes' },
       { label: 'Actividades',    icon: <EventNoteIcon />,          ruta: '/sede/actividades' },
       { label: 'Voluntarios',    icon: <PeopleIcon />,             ruta: '/sede/voluntarios' },
     ],
@@ -70,6 +73,7 @@ const MENU = [
     items: [
       { label: 'Reportes',       icon: <AssessmentIcon />,         ruta: '/sede/reportes' },
       { label: 'Documentos',     icon: <FolderIcon />,             ruta: '/sede/documentos' },
+      { label: 'Log Descargas',  icon: <DownloadIcon />,           ruta: '/sede/log-descargas' },
     ],
   },
   {

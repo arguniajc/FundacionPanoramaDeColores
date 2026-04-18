@@ -78,7 +78,7 @@ export default function LogDescargas() {
             placeholder="Buscar por usuario o beneficiario…"
             value={buscar}
             onChange={e => setBuscar(e.target.value)}
-            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+            slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }}
             sx={{ width: { xs: '100%', sm: 340 } }}
           />
         </Box>
@@ -92,9 +92,10 @@ export default function LogDescargas() {
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ bgcolor: '#fdfbff' }}>
+                  {/* xs: solo Usuario y Beneficiario; sm+: todas las columnas */}
                   <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Usuario</TableCell>
                   <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Beneficiario</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Tipo</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#4E1B95', display: { xs: 'none', sm: 'table-cell' } }}>Tipo</TableCell>
                   <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Fecha y hora</TableCell>
                 </TableRow>
               </TableHead>
@@ -107,12 +108,15 @@ export default function LogDescargas() {
                   </TableRow>
                 ) : filtrados.map(r => (
                   <TableRow key={r.id} hover>
-                    <TableCell sx={{ fontSize: '0.82rem' }}>{r.usuarioEmail}</TableCell>
+                    {/* Email truncado para no romper el layout */}
+                    <TableCell sx={{ fontSize: '0.82rem', maxWidth: { xs: 120, sm: 'none' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.usuarioEmail}
+                    </TableCell>
                     <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{r.nombreBeneficiario}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                       <Chip label={r.tipoArchivo} size="small" sx={{ bgcolor: '#f0eaff', color: '#4E1B95', fontWeight: 600, fontSize: '0.72rem' }} />
                     </TableCell>
-                    <TableCell sx={{ fontSize: '0.78rem', color: 'text.secondary' }}>
+                    <TableCell sx={{ fontSize: '0.78rem', color: 'text.secondary', whiteSpace: 'nowrap' }}>
                       {new Date(r.descargadoEn).toLocaleString('es-CO', {
                         year: 'numeric', month: 'short', day: 'numeric',
                         hour: '2-digit', minute: '2-digit',

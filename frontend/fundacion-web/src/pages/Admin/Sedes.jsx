@@ -199,7 +199,8 @@ function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarPrograma, o
 
       {/* Programas */}
       <Collapse in={expandida}>
-        <Box sx={{ px: 2, py: 1.5 }}>
+        {/* overflowX: 'auto' permite scroll horizontal en móvil sin romper el Paper */}
+        <Box sx={{ px: 2, py: 1.5, overflowX: 'auto' }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
             <Typography variant="body2" fontWeight={700} color="#2D984F" display="flex" alignItems="center" gap={0.5}>
               <SchoolIcon fontSize="small" /> Programas ({sede.programas?.length ?? 0})

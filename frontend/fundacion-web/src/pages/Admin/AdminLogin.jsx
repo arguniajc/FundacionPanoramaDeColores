@@ -1,3 +1,6 @@
+// Página de inicio de sesión del panel admin.
+// Usa Google OAuth: el id_token se valida en el backend y retorna un JWT propio.
+// Solo correos en la lista blanca (appsettings Admin:EmailsAutorizados) pueden entrar.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
@@ -14,8 +17,9 @@ export default function AdminLogin() {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
 
+  // Si ya hay sesión activa, redirigir al panel
   useEffect(() => {
-    if (user) navigate('/admin', { replace: true });
+    if (user) navigate('/sede', { replace: true });
   }, [user, navigate]);
 
   const handleGoogleSuccess = async (credentialResponse) => {
@@ -32,7 +36,7 @@ export default function AdminLogin() {
         nombre:    data.nombre,
         avatarUrl: data.avatarUrl,
       });
-      navigate('/admin', { replace: true });
+      navigate('/sede', { replace: true });
     } catch (err) {
       const msg = err.response?.status === 403
         ? 'Tu correo no tiene permisos para acceder al panel.'

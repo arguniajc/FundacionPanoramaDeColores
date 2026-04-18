@@ -1,3 +1,6 @@
+// Formulario de inscripción de un nuevo beneficiario (dialog fullscreen en móvil).
+// Valida duplicados de documento antes de guardar.
+// Incluye upload de foto del menor y documento de identidad (frente+reverso o PDF).
 import { useState } from 'react';
 import {
   Box, Dialog, DialogTitle, DialogContent, DialogActions,

@@ -1,3 +1,5 @@
+// Dashboard de inicio del panel: saludo al usuario y acceso rápido a los módulos principales.
+// Las tarjetas son responsivas: 1 col en móvil, 2 en tablet, 3 en escritorio.
 import { Box, Typography, Grid, Card, CardActionArea } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ChildCareIcon        from '@mui/icons-material/ChildCare';

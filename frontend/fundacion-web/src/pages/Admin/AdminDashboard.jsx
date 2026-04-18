@@ -604,9 +604,14 @@ export default function AdminDashboard() {
                   background: 'linear-gradient(90deg, #4E1B95, #3a1470)',
                   '& .MuiTableCell-root': { color: '#fff', fontWeight: 700, fontSize: '0.8rem', py: 1.5, borderBottom: 'none', whiteSpace: 'nowrap' },
                 }}>
-                  {['Nombre del menor','Documento','Edad','WhatsApp','Alergia','Estado','Acciones'].map(h => (
-                    <TableCell key={h}>{h}</TableCell>
-                  ))}
+                  {/* xs: solo Nombre, Estado, Acciones — el resto se oculta para evitar scroll */}
+                  <TableCell>Nombre del menor</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Documento</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Edad</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>WhatsApp</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Alergia</TableCell>
+                  <TableCell>Estado</TableCell>
+                  <TableCell>Acciones</TableCell>
                 </TableRow>
               </TableHead>
 
@@ -653,15 +658,19 @@ export default function AdminDashboard() {
                             </Tooltip>
                           )}
                         </Box>
+                        {/* En móvil muestra doc+edad inline ya que esas columnas están ocultas */}
+                        <Typography sx={{ display: { xs: 'block', sm: 'none' }, fontSize: '0.72rem', color: 'text.secondary', mt: 0.3 }}>
+                          {ins.tipoDocumento} {ins.numeroDocumento || '—'} · {calcularEdad(ins.fechaNacimiento)}
+                        </Typography>
                       </TableCell>
-                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.secondary' }}>
+                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.secondary', display: { xs: 'none', sm: 'table-cell' } }}>
                         {ins.tipoDocumento} {ins.numeroDocumento || '—'}
                       </TableCell>
-                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.primary' }}>
+                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.primary', display: { xs: 'none', sm: 'table-cell' } }}>
                         {calcularEdad(ins.fechaNacimiento)}
                       </TableCell>
-                      {/* WhatsApp: ícono a la IZQUIERDA del número */}
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      {/* WhatsApp: ícono a la izquierda del número */}
+                      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'table-cell' } }}>
                         {ins.whatsapp ? (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <Tooltip title="Abrir en WhatsApp">
@@ -682,7 +691,7 @@ export default function AdminDashboard() {
                           </Box>
                         ) : '—'}
                       </TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', sm: 'table-cell' } }}>
                         <Chip
                           label={ins.tieneAlergia === 'si' ? 'Sí' : 'No'}
                           color={ins.tieneAlergia === 'si' ? 'warning' : 'default'}

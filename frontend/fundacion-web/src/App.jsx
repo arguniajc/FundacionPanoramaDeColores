@@ -1,3 +1,5 @@
+// Árbol de rutas de la app. Todas las rutas /sede/* requieren autenticación (RutaProtegida).
+// Las rutas sin pantalla definitiva usan ModuloEnDesarrollo como placeholder.
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLogin from './pages/Admin/AdminLogin';
 import Dashboard from './pages/Admin/Dashboard';

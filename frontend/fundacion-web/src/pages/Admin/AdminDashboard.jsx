@@ -1,3 +1,6 @@
+// Pantalla principal de gestión de beneficiarios.
+// Incluye: tabla paginada con búsqueda y filtros, estadísticas, exportación Excel,
+// formularios de alta/edición, y diálogos de baja/reactivación.
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Container,
@@ -30,9 +33,10 @@ import DetalleInscripcion  from './DetalleInscripcion';
 import EditarInscripcion   from './EditarInscripcion';
 import NuevoBeneficiario   from './NuevoBeneficiario';
 
-// ── Caché en sessionStorage ───────────────────────────────────────────────────
+// Caché en sessionStorage para evitar recargar la lista al navegar entre pestañas.
+// TTL de 2 minutos; se invalida al crear, editar o cambiar estado de un beneficiario.
 const CACHE_PREFIX = 'ben_';
-const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutos
+const CACHE_TTL_MS = 2 * 60 * 1000;
 
 function cacheKey(estado, pagina, buscar) {
   return `${CACHE_PREFIX}${estado}_${pagina}_${buscar ?? ''}`;

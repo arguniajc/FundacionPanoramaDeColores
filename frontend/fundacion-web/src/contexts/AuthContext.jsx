@@ -1,3 +1,5 @@
+// Contexto de autenticación: persiste el JWT y los datos del usuario en localStorage.
+// Expone: user, cargando, login(token, userData), logout().
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);

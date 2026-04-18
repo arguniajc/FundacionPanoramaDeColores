@@ -1,3 +1,5 @@
+// Cliente Axios preconfigurado con la URL del backend y JWT automático.
+// Redirige a /acceso si el servidor responde 401 (token expirado o inválido).
 import axios from 'axios';
 
 const api = axios.create({

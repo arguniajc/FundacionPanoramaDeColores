@@ -1,9 +1,8 @@
+// DTOs del módulo Beneficiarios: salida (BeneficiarioDto), entrada (CrearBeneficiarioDto),
+// paginación (BeneficiarioListDto) y estadísticas (BeneficiarioStatsDto).
 namespace FundacionPanorama.API.DTOs;
 
-/// <summary>
-/// DTO de salida con la misma forma plana que tenía InscripcionDto
-/// para mantener compatibilidad con el frontend.
-/// </summary>
+// Forma plana que consume el frontend — combina datos del menor, acudiente, tallas y archivos.
 public class BeneficiarioDto
 {
     public Guid      Id                 { get; set; }

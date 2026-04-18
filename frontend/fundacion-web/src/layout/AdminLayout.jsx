@@ -1,3 +1,5 @@
+// Layout del panel admin: AppBar superior, Drawer lateral con menú de módulos,
+// y área de contenido. Maneja colapso de secciones del menú y toggle de tema.
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {

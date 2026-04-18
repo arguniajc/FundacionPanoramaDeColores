@@ -1,3 +1,6 @@
+// CRUD completo de beneficiarios (niños inscritos). La mayoría de endpoints requieren JWT.
+// Regla de negocio: los beneficiarios no se eliminan permanentemente desde la UI,
+// solo se "dan de baja" (activo=false). El DELETE existe para limpieza de datos por admin.
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.DTOs;
 using FundacionPanorama.API.Models;

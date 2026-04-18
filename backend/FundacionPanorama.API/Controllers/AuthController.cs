@@ -1,3 +1,4 @@
+// Autenticación vía Google OAuth: valida el idToken de Google y emite un JWT propio.
 using FundacionPanorama.API.DTOs;
 using FundacionPanorama.API.Services;
 using Microsoft.AspNetCore.Mvc;

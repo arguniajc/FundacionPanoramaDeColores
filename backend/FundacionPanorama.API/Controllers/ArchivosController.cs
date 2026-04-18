@@ -1,3 +1,4 @@
+// Sube archivos a Supabase Storage y lleva auditoría de descargas de documentos.
 using System.Security.Claims;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Models;

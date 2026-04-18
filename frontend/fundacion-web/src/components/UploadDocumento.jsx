@@ -1,3 +1,6 @@
+// Componente para subir el documento de identidad del beneficiario.
+// Modos: ver PDF existente, subir PDF directo, o fotografiar frente+reverso (genera PDF automáticamente).
+// Props: value (URL guardada), onChange(url), beneficiarioId (para log de descarga).
 import { useRef, useState, useEffect } from 'react';
 import {
   Box, Typography, CircularProgress, IconButton, Tooltip,

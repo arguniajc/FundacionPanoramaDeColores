@@ -1,3 +1,5 @@
+// Auditoría de descargas de documentos: muestra quién descargó qué y cuándo.
+// Llama a GET /api/archivos/log-descargas con paginación del lado del servidor.
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Container, Paper,

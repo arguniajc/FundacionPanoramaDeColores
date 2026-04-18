@@ -1,3 +1,5 @@
+// Modal de detalle de un beneficiario: muestra todos sus datos, tallas, salud y acudiente.
+// El documento se descarga (registra en log de auditoría); nunca se muestra la imagen directamente.
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, Typography, Divider, Chip, Box, Avatar, IconButton, Tooltip,

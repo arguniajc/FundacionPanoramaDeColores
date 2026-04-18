@@ -1,3 +1,4 @@
+// CRUD de sedes (ubicaciones físicas) y sus programas. Todos los endpoints requieren JWT.
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -6,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FundacionPanorama.API.Controllers;
 
+// DTOs de entrada y salida
 public record SedeDto(Guid Id, string Nombre, string? Direccion, string? Ciudad, string? Telefono, bool Activo, DateTime FechaCreacion, List<ProgramaDto> Programas);
 public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, DateTime FechaCreacion);
 public record CrearSedeDto(string Nombre, string? Direccion, string? Ciudad, string? Telefono);

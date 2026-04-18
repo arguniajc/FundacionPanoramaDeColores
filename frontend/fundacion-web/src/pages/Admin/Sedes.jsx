@@ -1,3 +1,5 @@
+// CRUD de sedes y sus programas. Cada sede es una tarjeta expandible con su tabla de programas.
+// Llama a GET/POST/PUT/PATCH/DELETE en /api/sedes y /api/sedes/programas.
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Paper, Button, IconButton, Chip, Tooltip,

@@ -106,10 +106,12 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
           urlArchivo:  value,
         }).catch(() => {}); // no bloquear descarga si el log falla
       }
-      // Fetch como blob para forzar descarga (funciona cross-origin)
-      const resp = await fetch(value);
-      const blob = await resp.blob();
-      const url  = URL.createObjectURL(blob);
+      // Fetch como arrayBuffer y forzar MIME application/pdf para evitar PDF dañado
+      const resp   = await fetch(value);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const buffer = await resp.arrayBuffer();
+      const blob   = new Blob([buffer], { type: 'application/pdf' });
+      const url    = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href     = url;
       a.download = `documento-${beneficiarioId ?? 'beneficiario'}.pdf`;

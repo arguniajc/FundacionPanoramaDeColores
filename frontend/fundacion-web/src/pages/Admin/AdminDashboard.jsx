@@ -8,7 +8,6 @@ import {
   Divider, Stack, LinearProgress, useMediaQuery, useTheme,
 } from '@mui/material';
 import SearchIcon           from '@mui/icons-material/Search';
-import DeleteIcon           from '@mui/icons-material/Delete';
 import VisibilityIcon       from '@mui/icons-material/Visibility';
 import EditIcon             from '@mui/icons-material/Edit';
 import DownloadIcon         from '@mui/icons-material/Download';
@@ -319,8 +318,6 @@ export default function AdminDashboard() {
   const [seleccionada,   setSeleccionada]   = useState(null);
   const [editando,       setEditando]       = useState(null);
   const [creando,        setCreando]        = useState(false);
-  const [idEliminar,     setIdEliminar]     = useState(null);
-  const [eliminando,     setEliminando]     = useState(false);
   const [idBaja,         setIdBaja]         = useState(null);
   const [motivoBaja,     setMotivoBaja]     = useState('');
   const [procesandoBaja, setProcesandoBaja] = useState(false);
@@ -407,19 +404,6 @@ export default function AdminDashboard() {
       setToast('Beneficiario reactivado correctamente');
       limpiarCache(); cargar(true); cargarStats(); cargarStatsDetalle();
     } catch { setError('No se pudo reactivar el beneficiario.'); }
-  };
-
-  /* ── Eliminar ─────────────────────────────────────────────────────────────── */
-  const handleEliminar = async () => {
-    if (!idEliminar) return;
-    setEliminando(true);
-    try {
-      await api.delete(`/api/beneficiarios/${idEliminar}`);
-      setIdEliminar(null);
-      setToast('Registro eliminado permanentemente');
-      limpiarCache(); cargar(true); cargarStats(); cargarStatsDetalle();
-    } catch { setError('No se pudo eliminar el registro.'); }
-    finally  { setEliminando(false); }
   };
 
   const handleGuardadoEdicion = () => {
@@ -641,8 +625,30 @@ export default function AdminDashboard() {
                         '&:last-child td': { borderBottom: 0 },
                       }}
                     >
-                      <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap', color: 'text.primary' }}>
-                        {ins.nombreMenor}
+                      <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'text.primary' }}>
+                        <Box display="flex" alignItems="center" gap={0.8} flexWrap="wrap">
+                          {ins.nombreMenor}
+                          {!ins.fotoMenorUrl && (
+                            <Tooltip title="Foto del menor pendiente — haz clic en Editar para cargarla">
+                              <Chip
+                                label="📷 Foto"
+                                size="small"
+                                onClick={e => { e.stopPropagation(); setEditando(ins); }}
+                                sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: '#fff3e0', color: '#e65100', cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }}
+                              />
+                            </Tooltip>
+                          )}
+                          {!ins.fotoDocumentoUrl && (
+                            <Tooltip title="Documento de identidad pendiente — haz clic en Editar para cargarlo">
+                              <Chip
+                                label="📄 Doc."
+                                size="small"
+                                onClick={e => { e.stopPropagation(); setEditando(ins); }}
+                                sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: '#fce4ec', color: '#c62828', cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }}
+                              />
+                            </Tooltip>
+                          )}
+                        </Box>
                       </TableCell>
                       <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.secondary' }}>
                         {ins.tipoDocumento} {ins.numeroDocumento || '—'}
@@ -713,11 +719,6 @@ export default function AdminDashboard() {
                             </IconButton>
                           </Tooltip>
                         )}
-                        <Tooltip title="Eliminar permanentemente">
-                          <IconButton size="small" sx={{ color: '#c62828', '&:hover': { bgcolor: 'rgba(198,40,40,0.1)' } }} onClick={() => setIdEliminar(ins.id)}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   ))
@@ -778,7 +779,6 @@ export default function AdminDashboard() {
           inscripcion={seleccionada}
           onCerrar={() => setSeleccionada(null)}
           onEditar={() => { setEditando(seleccionada); setSeleccionada(null); }}
-          onEliminar={() => { setIdEliminar(seleccionada.id); setSeleccionada(null); }}
         />
       )}
       {editando && (
@@ -805,19 +805,6 @@ export default function AdminDashboard() {
           <Button variant="contained" onClick={handleDarDeBaja} disabled={procesandoBaja}
             sx={{ bgcolor: '#e65100', '&:hover': { bgcolor: '#bf360c' } }}>
             {procesandoBaja ? 'Procesando…' : 'Dar de baja'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={!!idEliminar} onClose={() => setIdEliminar(null)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ color: '#c62828', fontWeight: 700, pb: 1 }}>¿Eliminar permanentemente?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>Esta acción no se puede deshacer. El registro se borrará definitivamente de la base de datos.</DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setIdEliminar(null)} variant="outlined">Cancelar</Button>
-          <Button color="error" variant="contained" onClick={handleEliminar} disabled={eliminando}>
-            {eliminando ? 'Eliminando…' : 'Eliminar'}
           </Button>
         </DialogActions>
       </Dialog>

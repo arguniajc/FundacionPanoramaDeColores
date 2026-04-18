@@ -4,7 +4,6 @@ import {
   useMediaQuery, useTheme, Alert,
 } from '@mui/material';
 import EditIcon          from '@mui/icons-material/Edit';
-import DeleteIcon        from '@mui/icons-material/Delete';
 import PictureAsPdfIcon  from '@mui/icons-material/PictureAsPdf';
 import WhatsAppIcon      from '@mui/icons-material/WhatsApp';
 import DownloadIcon      from '@mui/icons-material/Download';
@@ -73,7 +72,10 @@ async function descargarDocumento(ins) {
   } catch { /* no bloquear la descarga si falla el log */ }
 
   const resp   = await fetch(ins.fotoDocumentoUrl);
-  const blob   = await resp.blob();
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const buffer = await resp.arrayBuffer();
+  // Forzar MIME type correcto para que el lector de PDF no rechace el archivo
+  const blob   = new Blob([buffer], { type: 'application/pdf' });
   const url    = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href     = url;
@@ -84,7 +86,7 @@ async function descargarDocumento(ins) {
   URL.revokeObjectURL(url);
 }
 
-export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEditar, onEliminar }) {
+export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEditar }) {
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const edad     = calcularEdad(ins.fechaNacimiento);
@@ -433,12 +435,6 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                 <EditIcon />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Eliminar">
-              <IconButton onClick={onEliminar}
-                sx={{ bgcolor: '#C62828', color: '#fff', borderRadius: 2, p: 1, '&:hover': { bgcolor: '#b71c1c' } }}>
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
             <Box sx={{ flexGrow: 1 }} />
             <Button onClick={onCerrar} variant="contained"
               sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}>
@@ -454,9 +450,6 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             </Button>
             <Button startIcon={<EditIcon />} onClick={onEditar} variant="contained" color="primary" size="small">
               Editar
-            </Button>
-            <Button startIcon={<DeleteIcon />} onClick={onEliminar} variant="contained" color="error" size="small">
-              Eliminar
             </Button>
             <Box sx={{ flexGrow: 1 }} />
             <Button onClick={onCerrar} variant="contained" size="small"

@@ -64,59 +64,61 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// ── Auto-migración: añade columnas nuevas si no existen ──────────────────────
+// ── Auto-migración: cada sentencia en su propio try-catch para que un fallo
+//    no bloquee las migraciones siguientes ────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    try
+
+    void Migrar(string sql, string etiqueta)
     {
-        db.Database.ExecuteSqlRaw(
-            "ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;"
-        );
-        db.Database.ExecuteSqlRaw(
-            "ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS motivo_baja VARCHAR(500);"
-        );
-        db.Database.ExecuteSqlRaw("""
-            CREATE TABLE IF NOT EXISTS log_descargas (
-                id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-                usuario_email   VARCHAR(255) NOT NULL,
-                beneficiario_id UUID         NOT NULL,
-                tipo_archivo    VARCHAR(100) NOT NULL DEFAULT 'documento',
-                url_archivo     TEXT,
-                descargado_en   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-            );
-            """);
-        db.Database.ExecuteSqlRaw("""
-            CREATE TABLE IF NOT EXISTS sedes (
-                id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-                nombre            VARCHAR(150) NOT NULL,
-                direccion         VARCHAR(300),
-                ciudad            VARCHAR(100),
-                telefono          VARCHAR(30),
-                activo            BOOLEAN      NOT NULL DEFAULT true,
-                fecha_creacion    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-                fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
-            );
-            """);
-        db.Database.ExecuteSqlRaw("""
-            CREATE TABLE IF NOT EXISTS programas (
-                id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-                sede_id           UUID         NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
-                nombre            VARCHAR(150) NOT NULL,
-                descripcion       VARCHAR(500),
-                cupo_maximo       INT,
-                activo            BOOLEAN      NOT NULL DEFAULT true,
-                fecha_creacion    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-                fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
-            );
-            """);
-        logger.LogInformation("✅ Migración OK — tabla log_descargas verificada.");
+        try   { db.Database.ExecuteSqlRaw(sql); logger.LogInformation("✅ Migración OK: {E}", etiqueta); }
+        catch (Exception ex) { logger.LogWarning("⚠️ Migración omitida [{E}]: {M}", etiqueta, ex.Message); }
     }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "❌ Error en migración automática: {Msg}", ex.Message);
-    }
+
+    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;",
+           "inscripciones.activo");
+
+    Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS motivo_baja VARCHAR(500);",
+           "beneficiarios.motivo_baja");
+
+    Migrar("""
+        CREATE TABLE IF NOT EXISTS log_descargas (
+            id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            usuario_email   VARCHAR(255) NOT NULL,
+            beneficiario_id UUID         NOT NULL,
+            tipo_archivo    VARCHAR(100) NOT NULL DEFAULT 'documento',
+            url_archivo     TEXT,
+            descargado_en   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        );
+        """, "log_descargas");
+
+    Migrar("""
+        CREATE TABLE IF NOT EXISTS sedes (
+            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            nombre             VARCHAR(150) NOT NULL,
+            direccion          VARCHAR(300),
+            ciudad             VARCHAR(100),
+            telefono           VARCHAR(30),
+            activo             BOOLEAN      NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        );
+        """, "sedes");
+
+    Migrar("""
+        CREATE TABLE IF NOT EXISTS programas (
+            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            sede_id            UUID         NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+            nombre             VARCHAR(150) NOT NULL,
+            descripcion        VARCHAR(500),
+            cupo_maximo        INT,
+            activo             BOOLEAN      NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        );
+        """, "programas");
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────
@@ -132,6 +134,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("PoliticaCors");
+
+// Captura excepciones no manejadas DESPUÉS de CORS para que la respuesta
+// de error incluya el header Access-Control-Allow-Origin
+app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
+{
+    ctx.Response.StatusCode  = 500;
+    ctx.Response.ContentType = "application/json";
+    await ctx.Response.WriteAsync("{\"error\":\"Error interno del servidor.\"}");
+}));
 
 // Permite que Google Sign-In funcione con postMessage
 app.Use(async (context, next) =>

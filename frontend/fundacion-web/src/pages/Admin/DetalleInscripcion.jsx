@@ -62,6 +62,19 @@ function TallaCard({ icono, valor, etiqueta }) {
   );
 }
 
+function detectarTipoArchivo(buffer) {
+  const b = new Uint8Array(buffer.slice(0, 12));
+  if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46)
+    return { mime: 'application/pdf', ext: '.pdf' };
+  if (b[0] === 0xFF && b[1] === 0xD8)
+    return { mime: 'image/jpeg', ext: '.jpg' };
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47)
+    return { mime: 'image/png', ext: '.png' };
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46)
+    return { mime: 'image/webp', ext: '.webp' };
+  return { mime: 'application/octet-stream', ext: '' };
+}
+
 async function descargarDocumento(ins) {
   try {
     await api.post('/api/archivos/log-descarga', {
@@ -74,12 +87,13 @@ async function descargarDocumento(ins) {
   const resp   = await fetch(ins.fotoDocumentoUrl);
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   const buffer = await resp.arrayBuffer();
-  // Forzar MIME type correcto para que el lector de PDF no rechace el archivo
-  const blob   = new Blob([buffer], { type: 'application/pdf' });
+  const { mime, ext } = detectarTipoArchivo(buffer);
+  const blob   = new Blob([buffer], { type: mime });
   const url    = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
+  const nombre = ins.nombreMenor?.replace(/\s+/g, '_') ?? 'beneficiario';
   anchor.href     = url;
-  anchor.download = `documento_${ins.nombreMenor?.replace(/\s+/g, '_') ?? 'beneficiario'}.pdf`;
+  anchor.download = `documento_${nombre}${ext}`;
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);

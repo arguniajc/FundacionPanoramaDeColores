@@ -16,6 +16,19 @@ import api from '../services/api';
 const ACCEPT_IMG = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 const ACCEPT_PDF = 'application/pdf';
 
+function detectarTipoArchivo(buffer) {
+  const b = new Uint8Array(buffer.slice(0, 12));
+  if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46)
+    return { mime: 'application/pdf', ext: '.pdf' };
+  if (b[0] === 0xFF && b[1] === 0xD8)
+    return { mime: 'image/jpeg', ext: '.jpg' };
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47)
+    return { mime: 'image/png', ext: '.png' };
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46)
+    return { mime: 'image/webp', ext: '.webp' };
+  return { mime: 'application/octet-stream', ext: '' };
+}
+
 const toDataUrl = file => new Promise(resolve => {
   const r = new FileReader();
   r.onload = e => resolve(e.target.result);
@@ -106,15 +119,16 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
           urlArchivo:  value,
         }).catch(() => {}); // no bloquear descarga si el log falla
       }
-      // Fetch como arrayBuffer y forzar MIME application/pdf para evitar PDF dañado
+      // Detectar tipo real por magic bytes para evitar descargar JPEG como PDF
       const resp   = await fetch(value);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const buffer = await resp.arrayBuffer();
-      const blob   = new Blob([buffer], { type: 'application/pdf' });
+      const { mime, ext } = detectarTipoArchivo(buffer);
+      const blob   = new Blob([buffer], { type: mime });
       const url    = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href     = url;
-      a.download = `documento-${beneficiarioId ?? 'beneficiario'}.pdf`;
+      a.download = `documento-${beneficiarioId ?? 'beneficiario'}${ext}`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {

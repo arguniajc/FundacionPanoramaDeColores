@@ -62,31 +62,6 @@ function TallaCard({ icono, valor, etiqueta }) {
   );
 }
 
-function esPdf(buffer) {
-  const b = new Uint8Array(buffer.slice(0, 4));
-  return b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46; // %PDF
-}
-
-function bufferABase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const chunks = [];
-  for (let i = 0; i < bytes.length; i += 8192)
-    chunks.push(String.fromCharCode(...bytes.subarray(i, i + 8192)));
-  return btoa(chunks.join(''));
-}
-
-async function imagenAArrayBufferPdf(buffer) {
-  const { default: jsPDF } = await import('jspdf');
-  const doc   = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const b64   = bufferABase64(buffer);
-  // Detectar si es PNG o JPEG por magic bytes
-  const bytes = new Uint8Array(buffer.slice(0, 4));
-  const tipo  = (bytes[0] === 0x89) ? 'PNG' : 'JPEG';
-  const mime  = tipo === 'PNG' ? 'image/png' : 'image/jpeg';
-  doc.addImage(`data:${mime};base64,${b64}`, tipo, 10, 14, 190, 265);
-  return doc.output('arraybuffer');
-}
-
 async function descargarDocumento(ins) {
   try {
     await api.post('/api/archivos/log-descarga', {
@@ -96,13 +71,10 @@ async function descargarDocumento(ins) {
     });
   } catch { /* no bloquear la descarga si falla el log */ }
 
-  const resp   = await fetch(ins.fotoDocumentoUrl);
+  const resp = await fetch(ins.fotoDocumentoUrl);
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   const buffer = await resp.arrayBuffer();
-
-  // Si es imagen (registro antiguo), convertir a PDF al vuelo con jsPDF
-  const finalBuffer = esPdf(buffer) ? buffer : await imagenAArrayBufferPdf(buffer);
-  const blob        = new Blob([finalBuffer], { type: 'application/pdf' });
+  const blob   = new Blob([buffer], { type: 'application/pdf' });
 
   const url    = URL.createObjectURL(blob);
   const anchor = document.createElement('a');

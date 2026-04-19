@@ -9,20 +9,18 @@ const api = axios.create({
 // Adjunta el JWT en cada petición si existe
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('admin_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Si el servidor responde 401, limpia la sesión
+// Si el servidor responde 401, limpia la sesión y redirige al login
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_user');
-      window.location.href = '/admin/login';
+      window.location.href = '/#/acceso';
     }
     return Promise.reject(error);
   }

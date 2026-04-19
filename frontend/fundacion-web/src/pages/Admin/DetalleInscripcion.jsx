@@ -1,5 +1,5 @@
-// Modal de detalle de un beneficiario: muestra todos sus datos, tallas, salud y acudiente.
-// El documento se descarga (registra en log de auditoría); nunca se muestra la imagen directamente.
+// Modal de detalle de un beneficiario: datos, tallas, salud, acudiente y descarga de documento.
+// El documento se descarga con registro de auditoría; nunca se muestra directamente en pantalla.
 import { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -13,7 +13,7 @@ import DownloadIcon      from '@mui/icons-material/Download';
 import CloseIcon         from '@mui/icons-material/Close';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import api from '../../services/api';
-import { calcularEdad } from './AdminDashboard';
+import { calcularEdad } from '../../utils/fecha';
 
 function Campo({ label, value, children }) {
   return (
@@ -72,19 +72,18 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
   const [descargando, setDescargando] = useState(false);
   const [errorDescarga, setErrorDescarga] = useState('');
 
-  // Registra la descarga en auditoría, descarga el PDF y lo ofrece al navegador.
   const handleDescargar = async () => {
     if (descargando) return;
     setDescargando(true);
     setErrorDescarga('');
-    // Double-RAF: garantiza que el navegador pinte el spinner antes de iniciar el fetch
+    // Double-RAF: el navegador pinta el spinner antes de que fetch bloquee el hilo
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     try {
       await api.post('/api/archivos/log-descarga', {
         beneficiarioId: ins.id,
         tipoArchivo:    'documento',
         urlArchivo:     ins.fotoDocumentoUrl,
-      }).catch(() => {}); // el log no bloquea la descarga si falla
+      }).catch(() => {}); // el log nunca bloquea la descarga
 
       const resp = await fetch(ins.fotoDocumentoUrl);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

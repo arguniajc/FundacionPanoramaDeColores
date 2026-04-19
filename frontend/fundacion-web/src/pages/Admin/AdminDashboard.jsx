@@ -1,6 +1,5 @@
-// Pantalla principal de gestión de beneficiarios.
-// Incluye: tabla paginada con búsqueda y filtros, estadísticas, exportación Excel,
-// formularios de alta/edición, y diálogos de baja/reactivación.
+// Pantalla de gestión de beneficiarios: tabla paginada con búsqueda, estadísticas,
+// exportación Excel, y diálogos de alta / edición / baja / reactivación.
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Container,
@@ -28,10 +27,11 @@ import CloseIcon            from '@mui/icons-material/Close';
 import * as XLSX from 'xlsx';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import SyncIcon      from '@mui/icons-material/Sync';
-import api              from '../../services/api';
-import DetalleInscripcion  from './DetalleInscripcion';
-import EditarInscripcion   from './EditarInscripcion';
-import NuevoBeneficiario   from './NuevoBeneficiario';
+import api                from '../../services/api';
+import { calcularEdad }  from '../../utils/fecha';
+import DetalleInscripcion from './DetalleInscripcion';
+import EditarInscripcion  from './EditarInscripcion';
+import NuevoBeneficiario  from './NuevoBeneficiario';
 
 // Caché en sessionStorage para evitar recargar la lista al navegar entre pestañas.
 // TTL de 2 minutos; se invalida al crear, editar o cambiar estado de un beneficiario.
@@ -471,13 +471,13 @@ export default function AdminDashboard() {
     { value: 'todos',   label: `Todos (${stats.total})` },
   ];
 
-  /* ── Hover de filas ───────────────────────────────────────────────────────── */
-  const hoverSx = () => ({
+  /* Estilos de hover aplicados a cada fila de la tabla */
+  const HOVER_SX = {
     bgcolor: '#ede7f6 !important',
     '& .MuiTableCell-root': { color: '#1a1a1a !important' },
     '& .MuiTableCell-root:first-of-type': { borderLeft: '3px solid #7C3AED' },
     '& a': { color: '#1a6b35 !important' },
-  });
+  };
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
@@ -630,7 +630,7 @@ export default function AdminDashboard() {
                         opacity: ins.activo ? 1 : 0.65,
                         bgcolor: idx % 2 === 0 ? 'inherit' : 'rgba(78,27,149,0.04)',
                         transition: 'background 0.15s',
-                        '&:hover': hoverSx(),
+                        '&:hover': HOVER_SX,
                         '&:last-child td': { borderBottom: 0 },
                       }}
                     >
@@ -827,12 +827,3 @@ export default function AdminDashboard() {
   );
 }
 
-export function calcularEdad(fechaNac) {
-  if (!fechaNac) return '—';
-  const hoy = new Date();
-  const nac = new Date(fechaNac);
-  let edad = hoy.getFullYear() - nac.getFullYear();
-  const m = hoy.getMonth() - nac.getMonth();
-  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
-  return `${edad} años`;
-}

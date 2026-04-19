@@ -5,12 +5,9 @@ import {
   InputLabel, Select, Typography, Divider, Alert,
 } from '@mui/material';
 import api from '../../services/api';
+import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA } from '../../constants/beneficiarios';
 import UploadFoto      from '../../components/UploadFoto';
-import UploadDocumento  from '../../components/UploadDocumento';
-
-const TIPOS_DOC = ['TI', 'RC', 'NUIP', 'PPT', 'Pasaporte', 'RAMV', 'Sin documento'];
-const PARENTESCOS = ['Madre', 'Padre', 'Abuelo/a', 'Tío/a', 'Hermano/a', 'Acudiente legal', 'Otro'];
-const TALLAS_CAMISA = ['4', '6', '8', '10', '12', '14', 'XS', 'S', 'M', 'L', 'XL'];
+import UploadDocumento from '../../components/UploadDocumento';
 
 export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado }) {
   const [form, setForm] = useState({

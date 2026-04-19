@@ -1,5 +1,5 @@
-// Componente para subir el documento de identidad del beneficiario.
-// Modos: ver PDF existente, subir PDF directo, o fotografiar frente+reverso (genera PDF automáticamente).
+// Sube el documento de identidad del beneficiario.
+// Tres modos: ver PDF guardado, subir PDF directo, o fotografiar frente+reverso (genera PDF con jsPDF).
 // Props: value (URL guardada), onChange(url), beneficiarioId (para log de descarga).
 import { useRef, useState, useEffect } from 'react';
 import {
@@ -41,12 +41,6 @@ async function crearPdf(frenteDataUrl, reversoDataUrl) {
   return doc.output('blob');
 }
 
-/**
- * Props:
- *   value          — URL del PDF guardado (string | null)
- *   onChange       — callback(url: string | null)
- *   beneficiarioId — ID del beneficiario para el log de descarga (string | null)
- */
 export default function UploadDocumento({ value, onChange, beneficiarioId }) {
   const inputPdfRef     = useRef(null);
   const inputFrenteRef  = useRef(null);
@@ -98,10 +92,10 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
     })();
   }, [frente.file, reverso.file]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Descarga (registra en BD primero) ───────────────────────────────────────
   const handleDescargar = async () => {
     if (!value || descargando) return;
     setDescargando(true);
+    // Double-RAF: garantiza que el navegador pinte el spinner antes de iniciar el fetch
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     try {
       if (beneficiarioId) {
@@ -109,7 +103,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
           beneficiarioId,
           tipoArchivo: 'documento',
           urlArchivo:  value,
-        }).catch(() => {}); // no bloquear descarga si el log falla
+        }).catch(() => {}); // el log nunca bloquea la descarga
       }
       const resp = await fetch(value);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

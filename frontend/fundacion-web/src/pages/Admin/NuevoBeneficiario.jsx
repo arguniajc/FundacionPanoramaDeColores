@@ -1,6 +1,5 @@
-// Formulario de inscripción de un nuevo beneficiario (dialog fullscreen en móvil).
+// Formulario de inscripción de un nuevo beneficiario.
 // Valida duplicados de documento antes de guardar.
-// Incluye upload de foto del menor y documento de identidad (frente+reverso o PDF).
 import { useState } from 'react';
 import {
   Box, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -8,16 +7,13 @@ import {
   InputLabel, Select, Typography, Divider, Alert, CircularProgress,
   InputAdornment, IconButton,
 } from '@mui/material';
-import PersonAddIcon  from '@mui/icons-material/PersonAdd';
-import CloseIcon      from '@mui/icons-material/Close';
+import PersonAddIcon   from '@mui/icons-material/PersonAdd';
+import CloseIcon       from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import api from '../../services/api';
+import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA } from '../../constants/beneficiarios';
 import UploadFoto      from '../../components/UploadFoto';
-import UploadDocumento  from '../../components/UploadDocumento';
-
-const TIPOS_DOC   = ['RC', 'TI', 'CC', 'CE', 'PA', 'NUIP'];
-const PARENTESCOS = ['Madre', 'Padre', 'Abuelo', 'Abuela', 'Tío', 'Tía', 'Hermano', 'Hermana', 'Tutor legal', 'Otro'];
-const TALLAS_CAMISA = ['4', '6', '8', '10', '12', '14', 'XS', 'S', 'M', 'L', 'XL'];
+import UploadDocumento from '../../components/UploadDocumento';
 
 const FORM_VACIO = {
   nombreMenor: '', fechaNacimiento: '', tipoDocumento: 'RC', numeroDocumento: '',

@@ -386,9 +386,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                 <Box flex={1}>
                   <Typography variant="body2" fontWeight={700}>PDF del documento</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {descargando
-                      ? 'Preparando el archivo, un momento…'
-                      : 'Haz clic en Descargar para abrir el documento. La descarga queda registrada.'}
+                    Haz clic en Descargar para abrir el documento. La descarga queda registrada.
                   </Typography>
                   {errorDescarga && (
                     <Typography variant="caption" color="error" display="block" mt={0.5}>

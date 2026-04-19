@@ -1,9 +1,10 @@
 // Modal de detalle de un beneficiario: muestra todos sus datos, tallas, salud y acudiente.
 // El documento se descarga (registra en log de auditoría); nunca se muestra la imagen directamente.
+import { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, Typography, Divider, Chip, Box, Avatar, IconButton, Tooltip,
-  useMediaQuery, useTheme, Alert,
+  useMediaQuery, useTheme, Alert, CircularProgress,
 } from '@mui/material';
 import EditIcon          from '@mui/icons-material/Edit';
 import PictureAsPdfIcon  from '@mui/icons-material/PictureAsPdf';
@@ -64,35 +65,44 @@ function TallaCard({ icono, valor, etiqueta }) {
   );
 }
 
-async function descargarDocumento(ins) {
-  try {
-    await api.post('/api/archivos/log-descarga', {
-      beneficiarioId: ins.id,
-      tipoArchivo:    'documento',
-      urlArchivo:     ins.fotoDocumentoUrl,
-    });
-  } catch { /* no bloquear la descarga si falla el log */ }
-
-  const resp = await fetch(ins.fotoDocumentoUrl);
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  const buffer = await resp.arrayBuffer();
-  const blob   = new Blob([buffer], { type: 'application/pdf' });
-
-  const url    = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  const nombre = ins.nombreMenor?.replace(/\s+/g, '_') ?? 'beneficiario';
-  anchor.href     = url;
-  anchor.download = `documento_${nombre}.pdf`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  URL.revokeObjectURL(url);
-}
-
 export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEditar }) {
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const edad     = calcularEdad(ins.fechaNacimiento);
+  const theme       = useTheme();
+  const isMobile    = useMediaQuery(theme.breakpoints.down('sm'));
+  const edad        = calcularEdad(ins.fechaNacimiento);
+  const [descargando, setDescargando] = useState(false);
+  const [errorDescarga, setErrorDescarga] = useState('');
+
+  // Registra la descarga en auditoría, descarga el PDF y lo ofrece al navegador.
+  const handleDescargar = async () => {
+    setDescargando(true);
+    setErrorDescarga('');
+    try {
+      await api.post('/api/archivos/log-descarga', {
+        beneficiarioId: ins.id,
+        tipoArchivo:    'documento',
+        urlArchivo:     ins.fotoDocumentoUrl,
+      }).catch(() => {}); // el log no bloquea la descarga si falla
+
+      const resp = await fetch(ins.fotoDocumentoUrl);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const buffer = await resp.arrayBuffer();
+      const blob   = new Blob([buffer], { type: 'application/pdf' });
+
+      const url    = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      const nombre = ins.nombreMenor?.replace(/\s+/g, '_') ?? 'beneficiario';
+      anchor.href     = url;
+      anchor.download = `documento_${nombre}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch {
+      setErrorDescarga('No se pudo descargar el documento. Intenta de nuevo.');
+    } finally {
+      setDescargando(false);
+    }
+  };
 
   const generarPDF = () => {
     const fechaInsc = ins.createdAt
@@ -376,17 +386,29 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                 <Box flex={1}>
                   <Typography variant="body2" fontWeight={700}>PDF del documento</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Haz clic en Descargar para abrir el documento. La descarga queda registrada.
+                    {descargando
+                      ? 'Preparando el archivo, un momento…'
+                      : 'Haz clic en Descargar para abrir el documento. La descarga queda registrada.'}
                   </Typography>
+                  {errorDescarga && (
+                    <Typography variant="caption" color="error" display="block" mt={0.5}>
+                      {errorDescarga}
+                    </Typography>
+                  )}
                 </Box>
                 <Button
                   variant="contained"
                   size="small"
-                  startIcon={<DownloadIcon />}
-                  onClick={() => descargarDocumento(ins)}
-                  sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, flexShrink: 0 }}
+                  disabled={descargando}
+                  startIcon={
+                    descargando
+                      ? <CircularProgress size={14} color="inherit" />
+                      : <DownloadIcon />
+                  }
+                  onClick={handleDescargar}
+                  sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, flexShrink: 0, minWidth: 120 }}
                 >
-                  Descargar
+                  {descargando ? 'Descargando…' : 'Descargar'}
                 </Button>
               </Box>
             </Grid>

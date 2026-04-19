@@ -101,8 +101,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
 
   // ── Descarga (registra en BD primero) ───────────────────────────────────────
   const handleDescargar = async () => {
-    if (!value) return;
-    // flushSync garantiza que el spinner se pinte ANTES de que inicie el fetch
+    if (!value || descargando) return;
     flushSync(() => setDescargando(true));
     try {
       if (beneficiarioId) {
@@ -261,8 +260,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
             <Button
               size="small" variant="contained"
               onClick={handleDescargar}
-              disabled={descargando}
-              startIcon={descargando ? <CircularProgress size={12} color="inherit" /> : <DownloadIcon />}
+              startIcon={descargando ? <CircularProgress size={12} sx={{ color: '#fff' }} /> : <DownloadIcon />}
               sx={{ bgcolor: '#166534', '&:hover': { bgcolor: '#14532d' }, borderRadius: 2, fontSize: 12, fontWeight: 700 }}
             >
               {descargando ? 'Descargando…' : 'Descargar PDF'}

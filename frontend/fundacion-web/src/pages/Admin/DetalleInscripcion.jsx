@@ -75,7 +75,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
 
   // Registra la descarga en auditoría, descarga el PDF y lo ofrece al navegador.
   const handleDescargar = async () => {
-    // flushSync garantiza que el spinner se pinte ANTES de que inicie el fetch
+    if (descargando) return; // evita doble clic
     flushSync(() => { setDescargando(true); setErrorDescarga(''); });
     try {
       await api.post('/api/archivos/log-descarga', {
@@ -398,10 +398,9 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                 <Button
                   variant="contained"
                   size="small"
-                  disabled={descargando}
                   startIcon={
                     descargando
-                      ? <CircularProgress size={14} color="inherit" />
+                      ? <CircularProgress size={14} sx={{ color: '#fff' }} />
                       : <DownloadIcon />
                   }
                   onClick={handleDescargar}

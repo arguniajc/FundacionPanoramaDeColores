@@ -102,7 +102,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
   const handleDescargar = async () => {
     if (!value || descargando) return;
     setDescargando(true);
-    await new Promise(resolve => setTimeout(resolve, 60));
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     try {
       if (beneficiarioId) {
         await api.post('/api/archivos/log-descarga', {
@@ -260,10 +260,16 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
             <Button
               size="small" variant="contained"
               onClick={handleDescargar}
-              startIcon={descargando ? <CircularProgress size={12} sx={{ color: '#fff' }} /> : <DownloadIcon />}
-              sx={{ bgcolor: '#166534', '&:hover': { bgcolor: '#14532d' }, borderRadius: 2, fontSize: 12, fontWeight: 700 }}
+              sx={{
+                bgcolor: '#166534', '&:hover': { bgcolor: '#14532d' },
+                borderRadius: 2, fontSize: 12, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: '5px',
+              }}
             >
-              {descargando ? 'Descargando…' : 'Descargar PDF'}
+              {descargando
+                ? <><CircularProgress size={12} sx={{ color: '#fff' }} /> Descargando…</>
+                : <><DownloadIcon sx={{ fontSize: 14 }} /> Descargar PDF</>
+              }
             </Button>
             <Button
               size="small" variant="outlined"

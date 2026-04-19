@@ -77,8 +77,8 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
     if (descargando) return;
     setDescargando(true);
     setErrorDescarga('');
-    // Cede el hilo al navegador para que pinte el spinner antes de hacer fetch
-    await new Promise(resolve => setTimeout(resolve, 60));
+    // Double-RAF: garantiza que el navegador pinte el spinner antes de iniciar el fetch
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     try {
       await api.post('/api/archivos/log-descarga', {
         beneficiarioId: ins.id,
@@ -400,15 +400,17 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                 <Button
                   variant="contained"
                   size="small"
-                  startIcon={
-                    descargando
-                      ? <CircularProgress size={14} sx={{ color: '#fff' }} />
-                      : <DownloadIcon />
-                  }
                   onClick={handleDescargar}
-                  sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, flexShrink: 0, minWidth: 120 }}
+                  sx={{
+                    bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' },
+                    flexShrink: 0, minWidth: 120,
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                  }}
                 >
-                  {descargando ? 'Descargando…' : 'Descargar'}
+                  {descargando
+                    ? <><CircularProgress size={14} sx={{ color: '#fff' }} /> Descargando…</>
+                    : <><DownloadIcon sx={{ fontSize: 16 }} /> Descargar</>
+                  }
                 </Button>
               </Box>
             </Grid>

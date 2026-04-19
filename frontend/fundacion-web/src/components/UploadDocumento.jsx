@@ -2,7 +2,6 @@
 // Modos: ver PDF existente, subir PDF directo, o fotografiar frente+reverso (genera PDF automáticamente).
 // Props: value (URL guardada), onChange(url), beneficiarioId (para log de descarga).
 import { useRef, useState, useEffect } from 'react';
-import { flushSync } from 'react-dom';
 import {
   Box, Typography, CircularProgress, IconButton, Tooltip,
   Menu, MenuItem, ListItemIcon, ListItemText, Button,
@@ -102,7 +101,8 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
   // ── Descarga (registra en BD primero) ───────────────────────────────────────
   const handleDescargar = async () => {
     if (!value || descargando) return;
-    flushSync(() => setDescargando(true));
+    setDescargando(true);
+    await new Promise(resolve => setTimeout(resolve, 60));
     try {
       if (beneficiarioId) {
         await api.post('/api/archivos/log-descarga', {

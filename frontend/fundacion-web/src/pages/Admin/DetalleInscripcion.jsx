@@ -1,7 +1,6 @@
 // Modal de detalle de un beneficiario: muestra todos sus datos, tallas, salud y acudiente.
 // El documento se descarga (registra en log de auditoría); nunca se muestra la imagen directamente.
 import { useState } from 'react';
-import { flushSync } from 'react-dom';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, Typography, Divider, Chip, Box, Avatar, IconButton, Tooltip,
@@ -75,8 +74,11 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
 
   // Registra la descarga en auditoría, descarga el PDF y lo ofrece al navegador.
   const handleDescargar = async () => {
-    if (descargando) return; // evita doble clic
-    flushSync(() => { setDescargando(true); setErrorDescarga(''); });
+    if (descargando) return;
+    setDescargando(true);
+    setErrorDescarga('');
+    // Cede el hilo al navegador para que pinte el spinner antes de hacer fetch
+    await new Promise(resolve => setTimeout(resolve, 60));
     try {
       await api.post('/api/archivos/log-descarga', {
         beneficiarioId: ins.id,

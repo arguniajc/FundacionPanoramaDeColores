@@ -1,6 +1,7 @@
 // Modal de detalle de un beneficiario: datos, tallas, salud, acudiente y descarga de documento.
 // El documento se descarga con registro de auditoría; nunca se muestra directamente en pantalla.
 import { useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, Typography, Divider, Chip, Box, Avatar, IconButton, Tooltip,
@@ -75,34 +76,32 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
 
   const handleDescargar = async () => {
     if (descargando) return;
-    setDescargando(true);
-    setErrorDescarga('');
-    // Double-RAF: el navegador pinta el spinner antes de que fetch bloquee el hilo
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    // flushSync fuerza render síncrono: el spinner está en pantalla antes de continuar
+    flushSync(() => { setDescargando(true); setErrorDescarga(''); });
+
+    const tInicio = Date.now();
     try {
       await api.post('/api/archivos/log-descarga', {
         beneficiarioId: ins.id,
         tipoArchivo:    'documento',
         urlArchivo:     ins.fotoDocumentoUrl,
-      }).catch(() => {}); // el log nunca bloquea la descarga
+      }).catch(() => {});
 
-      const resp = await fetch(ins.fotoDocumentoUrl);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const buffer = await resp.arrayBuffer();
-      const blob   = new Blob([buffer], { type: 'application/pdf' });
-
-      const url    = URL.createObjectURL(blob);
+      // Anchor directo: el navegador descarga sin pasar por fetch/CORS
       const anchor = document.createElement('a');
       const nombre = ins.nombreMenor?.replace(/\s+/g, '_') ?? 'beneficiario';
-      anchor.href     = url;
+      anchor.href     = ins.fotoDocumentoUrl;
       anchor.download = `documento_${nombre}.pdf`;
+      anchor.target   = '_blank';
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
     } catch {
-      setErrorDescarga('No se pudo descargar el documento. Intenta de nuevo.');
+      setErrorDescarga('No se pudo iniciar la descarga. Intenta de nuevo.');
     } finally {
+      // Mantener el spinner visible mínimo 1.2 s para que sea perceptible
+      const restante = 1200 - (Date.now() - tInicio);
+      if (restante > 0) await new Promise(r => setTimeout(r, restante));
       setDescargando(false);
     }
   };

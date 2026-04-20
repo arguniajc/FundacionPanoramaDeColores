@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, Typography, Divider, Chip, Box, Avatar, IconButton, Tooltip,
-  useMediaQuery, useTheme, Alert, CircularProgress,
+  useMediaQuery, useTheme, Alert, CircularProgress, LinearProgress,
 } from '@mui/material';
 import EditIcon          from '@mui/icons-material/Edit';
 import PictureAsPdfIcon  from '@mui/icons-material/PictureAsPdf';
@@ -277,16 +277,31 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
               <Divider sx={{ mb: 1.5, mt: 0.5 }} />
               <Box
                 sx={{
+                  position: 'relative',
                   display: 'flex', alignItems: 'center', gap: 2,
                   bgcolor: '#fdfbff', border: '1.5px solid #e2d9f3',
                   borderRadius: 2, p: 2,
+                  overflow: 'hidden',
                 }}
               >
+                {/* Barra de progreso encima del cuadro mientras descarga */}
+                {descargando && (
+                  <LinearProgress
+                    sx={{
+                      position: 'absolute', top: 0, left: 0, right: 0,
+                      height: 4,
+                      bgcolor: 'rgba(78,27,149,0.15)',
+                      '& .MuiLinearProgress-bar': { bgcolor: '#4E1B95' },
+                    }}
+                  />
+                )}
                 <PictureAsPdfOutlinedIcon sx={{ color: '#c62828', fontSize: 36, flexShrink: 0 }} />
                 <Box flex={1}>
                   <Typography variant="body2" fontWeight={700}>PDF del documento</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Haz clic en Descargar para abrir el documento. La descarga queda registrada.
+                  <Typography variant="caption" color={descargando ? '#4E1B95' : 'text.secondary'} fontWeight={descargando ? 600 : 400}>
+                    {descargando
+                      ? 'Descargando, por favor espera…'
+                      : 'Haz clic en Descargar para abrir el documento. La descarga queda registrada.'}
                   </Typography>
                   {errorDescarga && (
                     <Typography variant="caption" color="error" display="block" mt={0.5}>
@@ -298,16 +313,19 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                   variant="contained"
                   size="small"
                   onClick={handleDescargar}
+                  disabled={descargando}
+                  startIcon={
+                    descargando
+                      ? <CircularProgress size={14} sx={{ color: '#fff !important' }} />
+                      : <DownloadIcon sx={{ fontSize: 16 }} />
+                  }
                   sx={{
-                    bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' },
                     flexShrink: 0, minWidth: 120,
-                    display: 'flex', alignItems: 'center', gap: '6px',
+                    bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' },
+                    '&.Mui-disabled': { bgcolor: '#6b30b8', color: '#fff' },
                   }}
                 >
-                  {descargando
-                    ? <><CircularProgress size={14} sx={{ color: '#fff' }} /> Descargando…</>
-                    : <><DownloadIcon sx={{ fontSize: 16 }} /> Descargar</>
-                  }
+                  {descargando ? 'Descargando…' : 'Descargar'}
                 </Button>
               </Box>
             </Grid>

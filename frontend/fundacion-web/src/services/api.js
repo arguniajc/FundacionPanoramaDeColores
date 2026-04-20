@@ -13,14 +13,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Si el servidor responde 401, limpia la sesión y redirige al login
+// Si el servidor responde 401, limpia la sesión y redirige al login.
+// La guarda estaEnLogin evita el loop: si /api/auth/google devuelve 401
+// (credencial inválida), no redirigimos porque ya estamos en la pantalla de acceso.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('admin_token');
-      localStorage.removeItem('admin_user');
-      window.location.href = '/#/acceso';
+      const estaEnLogin = window.location.hash.includes('/acceso');
+      if (!estaEnLogin) {
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+        window.location.href = '/#/acceso';
+      }
     }
     return Promise.reject(error);
   }

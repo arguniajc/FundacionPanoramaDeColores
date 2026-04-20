@@ -1,7 +1,7 @@
 // Sube el documento de identidad del beneficiario.
 // Tres modos: ver PDF guardado, subir PDF directo, o fotografiar frente+reverso (genera PDF con jsPDF).
 // Props: value (URL guardada), onChange(url), beneficiarioId (para log de descarga).
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, CircularProgress, IconButton, Tooltip,
   Menu, MenuItem, ListItemIcon, ListItemText, Button,
@@ -46,6 +46,10 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
   const inputFrenteRef  = useRef(null);
   const inputReversoRef = useRef(null);
   const generandoRef    = useRef(false);
+  // Ref para onChange: permite que el useEffect de auto-generación use siempre
+  // la versión más reciente sin necesidad de incluirla en las dependencias del efecto
+  const onChangeRef     = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
   // 'ver' | 'elegir' | 'fotografiar' | 'subirPdf'
   const [modo,       setModo]       = useState('ver');
@@ -81,7 +85,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
         const { data } = await api.post('/api/archivos/upload?carpeta=documentos', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        onChange(data.url);
+        onChangeRef.current(data.url);
         setPdfListo(true);
       } catch (err) {
         setErrorMsg(err.response?.data?.mensaje ?? 'Error al generar el PDF.');
@@ -90,7 +94,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
         generandoRef.current = false;
       }
     })();
-  }, [frente.file, reverso.file]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [frente.file, reverso.file]);
 
   const handleDescargar = async () => {
     if (!value || descargando) return;
@@ -144,40 +148,40 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
   };
 
   // ── Captura de foto (frente / reverso) ──────────────────────────────────────
-  const capturarLado = (lado) => (file) => {
+  const capturarLado = useCallback((lado) => (file) => {
     const reader = new FileReader();
     reader.onload = e => {
       if (lado === 'frente') setFrente({ file, preview: e.target.result });
       else                    setReverso({ file, preview: e.target.result });
     };
     reader.readAsDataURL(file);
-    onChange(null); setPdfListo(false);
-  };
+    onChangeRef.current(null); setPdfListo(false);
+  }, []);
 
-  const handleInputFoto = (lado) => (e) => {
+  const handleInputFoto = useCallback((lado) => (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
     capturarLado(lado)(file);
-  };
+  }, [capturarLado]);
 
-  const handleCamara = (lado) => (file) => {
+  const handleCamara = useCallback((lado) => (file) => {
     setCamara(prev => ({ ...prev, [lado]: false }));
     capturarLado(lado)(file);
-  };
+  }, [capturarLado]);
 
-  const eliminarLado = (lado) => () => {
+  const eliminarLado = useCallback((lado) => () => {
     if (lado === 'frente') setFrente({ file: null, preview: null });
     else                    setReverso({ file: null, preview: null });
-    onChange(null); setPdfListo(false);
-  };
+    onChangeRef.current(null); setPdfListo(false);
+  }, []);
 
-  const cancelar = () => {
+  const cancelar = useCallback(() => {
     setModo('ver');
     setFrente({ file: null, preview: null });
     setReverso({ file: null, preview: null });
     setErrorMsg(''); setPdfListo(false);
-  };
+  }, []);
 
   // ── Mini-caja de captura (frente o reverso) ──────────────────────────────────
   const LadoBox = ({ lado, label, inputRef }) => {

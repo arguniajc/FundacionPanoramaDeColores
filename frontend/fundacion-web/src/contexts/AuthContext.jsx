@@ -9,10 +9,16 @@ export function AuthProvider({ children }) {
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    const userData = localStorage.getItem('admin_user');
-    if (token && userData) {
-      setUser(JSON.parse(userData));
+    const token   = localStorage.getItem('admin_token');
+    const rawUser = localStorage.getItem('admin_user');
+    if (token && rawUser) {
+      try {
+        setUser(JSON.parse(rawUser));
+      } catch {
+        // JSON corrupto en localStorage — limpiar para evitar estado inválido
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+      }
     }
     setCargando(false);
   }, []);

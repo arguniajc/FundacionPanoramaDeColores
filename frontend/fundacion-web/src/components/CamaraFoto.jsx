@@ -1,3 +1,5 @@
+// Modal que abre la cámara via getUserMedia (funciona en móvil y escritorio).
+// Props: open, onCerrar, onCaptura(file: File)
 import { useRef, useState, useEffect } from 'react';
 import {
   Dialog, DialogContent, DialogActions,
@@ -6,10 +8,6 @@ import {
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import CloseIcon       from '@mui/icons-material/Close';
 
-/**
- * Modal que abre la cámara via getUserMedia (funciona en móvil y portátil).
- * Props: open, onCerrar, onCaptura(file: File)
- */
 export default function CamaraFoto({ open, onCerrar, onCaptura }) {
   const videoRef  = useRef(null);
   const canvasRef = useRef(null);
@@ -18,16 +16,23 @@ export default function CamaraFoto({ open, onCerrar, onCaptura }) {
   const [listo,     setListo]     = useState(false);
   const [error,     setError]     = useState('');
 
+  // Detener el stream de cámara y liberar el recurso
+  const detener = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+  };
+
+  // detener se define ANTES del useEffect para que la referencia esté disponible
+  // en el cleanup (return detener). Con const/arrow, la closure captura la
+  // referencia estable del scope del componente.
   useEffect(() => {
     if (!open) return;
     setError(''); setListo(false); setIniciando(true);
 
-    const constraints = {
+    navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
       audio: false,
-    };
-
-    navigator.mediaDevices.getUserMedia(constraints)
+    })
       .then(stream => {
         streamRef.current = stream;
         if (videoRef.current) videoRef.current.srcObject = stream;
@@ -39,13 +44,8 @@ export default function CamaraFoto({ open, onCerrar, onCaptura }) {
         setIniciando(false);
       });
 
-    return detener;
-  }, [open]);
-
-  const detener = () => {
-    streamRef.current?.getTracks().forEach(t => t.stop());
-    streamRef.current = null;
-  };
+    return detener; // limpia el stream al cerrar o al cambiar `open`
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCerrar = () => { detener(); setListo(false); onCerrar(); };
 
@@ -83,24 +83,18 @@ export default function CamaraFoto({ open, onCerrar, onCaptura }) {
         {iniciando && (
           <Box sx={{ py: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <CircularProgress sx={{ color: '#B4E8E8' }} />
-            <Typography color="rgba(255,255,255,0.5)" fontSize={13}>
-              Iniciando cámara…
-            </Typography>
+            <Typography color="rgba(255,255,255,0.5)" fontSize={13}>Iniciando cámara…</Typography>
           </Box>
         )}
-
         {error && (
           <Typography color="#ff6b6b" sx={{ p: 4, whiteSpace: 'pre-line', fontSize: 14, lineHeight: 1.7 }}>
             {error}
           </Typography>
         )}
-
         <Box
           component="video"
           ref={videoRef}
-          autoPlay
-          playsInline
-          muted
+          autoPlay playsInline muted
           sx={{
             display: listo ? 'block' : 'none',
             width: '100%', maxHeight: 380,
@@ -116,10 +110,7 @@ export default function CamaraFoto({ open, onCerrar, onCaptura }) {
             variant="contained"
             onClick={handleCapturar}
             startIcon={<PhotoCameraIcon />}
-            sx={{
-              bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' },
-              borderRadius: 3, px: 4, fontWeight: 700, fontSize: 15,
-            }}
+            sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, borderRadius: 3, px: 4, fontWeight: 700, fontSize: 15 }}
           >
             Capturar
           </Button>

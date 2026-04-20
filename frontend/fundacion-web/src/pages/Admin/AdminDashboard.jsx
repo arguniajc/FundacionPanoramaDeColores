@@ -27,36 +27,13 @@ import CloseIcon            from '@mui/icons-material/Close';
 import * as XLSX from 'xlsx';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import SyncIcon      from '@mui/icons-material/Sync';
-import api                from '../../services/api';
+import api                              from '../../services/api';
+import { cacheKey, leerCache, escribirCache, limpiarCache } from '../../services/cache';
 import { calcularEdad }  from '../../utils/fecha';
 import DetalleInscripcion from './DetalleInscripcion';
 import EditarInscripcion  from './EditarInscripcion';
 import NuevoBeneficiario  from './NuevoBeneficiario';
 
-// Caché en sessionStorage para evitar recargar la lista al navegar entre pestañas.
-// TTL de 2 minutos; se invalida al crear, editar o cambiar estado de un beneficiario.
-const CACHE_PREFIX = 'ben_';
-const CACHE_TTL_MS = 2 * 60 * 1000;
-
-function cacheKey(estado, pagina, buscar) {
-  return `${CACHE_PREFIX}${estado}_${pagina}_${buscar ?? ''}`;
-}
-function leerCache(key) {
-  try {
-    const raw = sessionStorage.getItem(key);
-    if (!raw) return null;
-    const { data, total, ts } = JSON.parse(raw);
-    return Date.now() - ts < CACHE_TTL_MS ? { data, total } : null;
-  } catch { return null; }
-}
-function escribirCache(key, data, total) {
-  try { sessionStorage.setItem(key, JSON.stringify({ data, total, ts: Date.now() })); }
-  catch { /* sessionStorage llena */ }
-}
-export function limpiarCache() {
-  Object.keys(sessionStorage).filter(k => k.startsWith(CACHE_PREFIX))
-    .forEach(k => sessionStorage.removeItem(k));
-}
 
 const POR_PAGINA = 15;
 
@@ -327,23 +304,13 @@ export default function AdminDashboard() {
   const [procesandoBaja, setProcesandoBaja] = useState(false);
   const [actualizando,   setActualizando]   = useState(false);
 
-  /* ── Stats banner ─────────────────────────────────────────────────────────── */
-  const cargarStats = useCallback(async () => {
-    try {
-      const [{ data: a }, { data: b }] = await Promise.all([
-        api.get('/api/beneficiarios', { params: { pagina: 1, porPagina: 1, estado: 'activos' } }),
-        api.get('/api/beneficiarios', { params: { pagina: 1, porPagina: 1, estado: 'baja'    } }),
-      ]);
-      setStats({ activos: a.total, baja: b.total, total: a.total + b.total });
-    } catch { /* silencioso */ }
-  }, []);
-
-  /* ── Estadísticas detalladas (endpoint dedicado) ──────────────────────────── */
+  /* ── Estadísticas: banner + detalle en un solo request ───────────────────── */
   const cargarStatsDetalle = useCallback(async () => {
     setCargandoStats(true);
     try {
       const { data } = await api.get('/api/beneficiarios/stats');
       setStatsDetalle(data);
+      setStats({ activos: data.activos ?? 0, baja: data.baja ?? 0, total: data.total ?? 0 });
     } catch { /* silencioso */ }
     finally { setCargandoStats(false); }
   }, []);
@@ -384,7 +351,7 @@ export default function AdminDashboard() {
     } finally { setCargando(false); }
   }, [pagina, buscar, estado]);
 
-  useEffect(() => { cargarStats(); cargarStatsDetalle(); }, [cargarStats, cargarStatsDetalle]);
+  useEffect(() => { cargarStatsDetalle(); }, [cargarStatsDetalle]);
   useEffect(() => { cargar(); },     [cargar]);
   useEffect(() => { setPagina(1); }, [buscar, estado]);
 
@@ -397,7 +364,7 @@ export default function AdminDashboard() {
       setIdBaja(null);
       setMotivoBaja('');
       setToast('Beneficiario dado de baja correctamente');
-      limpiarCache(); cargar(true); cargarStats(); cargarStatsDetalle();
+      limpiarCache(); cargar(true); cargarStatsDetalle();
     } catch { setError('No se pudo dar de baja al beneficiario.'); }
     finally  { setProcesandoBaja(false); }
   };
@@ -406,7 +373,7 @@ export default function AdminDashboard() {
     try {
       await api.patch(`/api/beneficiarios/${id}/reactivar`);
       setToast('Beneficiario reactivado correctamente');
-      limpiarCache(); cargar(true); cargarStats(); cargarStatsDetalle();
+      limpiarCache(); cargar(true); cargarStatsDetalle();
     } catch { setError('No se pudo reactivar el beneficiario.'); }
   };
 
@@ -419,7 +386,7 @@ export default function AdminDashboard() {
   const handleBeneficiarioCreado = () => {
     setCreando(false);
     setToast('Beneficiario inscrito correctamente');
-    limpiarCache(); cargar(true); cargarStats(); cargarStatsDetalle();
+    limpiarCache(); cargar(true); cargarStatsDetalle();
   };
 
   /* ── Excel ────────────────────────────────────────────────────────────────── */

@@ -1,22 +1,54 @@
-// Modal de detalle de un beneficiario: datos, tallas, salud, acudiente y descarga de documento.
-// El documento se descarga con registro de auditoría; nunca se muestra directamente en pantalla.
+/**
+ * DetalleInscripcion
+ * Modal que muestra todos los datos de un beneficiario.
+ * El documento de identidad solo se descarga (nunca se muestra en pantalla)
+ * y cada descarga queda registrada en auditoría.
+ *
+ * Props:
+ *   inscripcion  – objeto beneficiario
+ *   onCerrar     – cierra el modal
+ *   onEditar     – abre el formulario de edición
+ */
 import { useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Grid, Typography, Divider, Chip, Box, Avatar, IconButton, Tooltip,
-  useMediaQuery, useTheme, Alert, CircularProgress, LinearProgress,
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  IconButton,
+  LinearProgress,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
-import EditIcon          from '@mui/icons-material/Edit';
-import PictureAsPdfIcon  from '@mui/icons-material/PictureAsPdf';
-import WhatsAppIcon      from '@mui/icons-material/WhatsApp';
-import DownloadIcon      from '@mui/icons-material/Download';
-import CloseIcon         from '@mui/icons-material/Close';
+import CloseIcon               from '@mui/icons-material/Close';
+import DownloadIcon            from '@mui/icons-material/Download';
+import EditIcon                from '@mui/icons-material/Edit';
+import PictureAsPdfIcon        from '@mui/icons-material/PictureAsPdf';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
-import api from '../../services/api';
-import { calcularEdad }    from '../../utils/fecha';
+import WhatsAppIcon            from '@mui/icons-material/WhatsApp';
+
+import api               from '../../services/api';
+import { calcularEdad }  from '../../utils/fecha';
 import { abrirHojaDeVida } from '../../utils/pdf';
 
+// ─── Colores principales ────────────────────────────────────────────────────
+const COLOR_PRIMARIO  = '#4E1B95';
+const COLOR_HOVER     = '#3a1470';
+
+// ─── Subcomponentes locales ──────────────────────────────────────────────────
+
+/** Fila de etiqueta + valor para las secciones de datos */
 function Campo({ label, value, children }) {
   return (
     <Box mb={1.5}>
@@ -30,27 +62,32 @@ function Campo({ label, value, children }) {
         {label}
       </Typography>
       {children ?? (
-        <Typography variant="body2" fontWeight={500}>{value || '—'}</Typography>
+        <Typography variant="body2" fontWeight={500}>
+          {value || '—'}
+        </Typography>
       )}
     </Box>
   );
 }
 
+/** Tarjeta pequeña que muestra una talla (camisa, pantalón o zapatos) */
 function TallaCard({ icono, valor, etiqueta }) {
   return (
     <Box
       textAlign="center"
       sx={{
         flex: 1,
+        minWidth: 0,
         bgcolor: '#fdfbff',
         border: '1px solid #f0eaff',
         borderRadius: 2,
         py: { xs: 1, sm: 1.5 },
         px: { xs: 0.5, sm: 1 },
-        minWidth: 0,
       }}
     >
-      <Typography sx={{ fontSize: { xs: '1.1rem', sm: '1.4rem' } }}>{icono}</Typography>
+      <Typography sx={{ fontSize: { xs: '1.1rem', sm: '1.4rem' } }}>
+        {icono}
+      </Typography>
       <Typography
         fontWeight={800}
         sx={{ color: '#000', fontSize: { xs: '0.9rem', sm: '1.25rem' }, lineHeight: 1.2 }}
@@ -67,39 +104,51 @@ function TallaCard({ icono, valor, etiqueta }) {
   );
 }
 
+// ─── Componente principal ────────────────────────────────────────────────────
+
 export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEditar }) {
-  const theme       = useTheme();
-  const isMobile    = useMediaQuery(theme.breakpoints.down('sm'));
-  const edad        = calcularEdad(ins.fechaNacimiento);
-  const [descargando, setDescargando] = useState(false);
+  const theme    = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const edad     = calcularEdad(ins.fechaNacimiento);
+
+  const [descargando,   setDescargando]   = useState(false);
   const [errorDescarga, setErrorDescarga] = useState('');
 
+  // ── Descarga del documento de identidad ──────────────────────────────────
   const handleDescargar = async () => {
     if (descargando) return;
-    // flushSync fuerza render síncrono: el spinner está en pantalla antes de continuar
-    flushSync(() => { setDescargando(true); setErrorDescarga(''); });
+
+    // flushSync garantiza que el spinner se pinte ANTES de continuar
+    flushSync(() => {
+      setDescargando(true);
+      setErrorDescarga('');
+    });
 
     const tInicio = Date.now();
+
     try {
+      // Registro de auditoría (nunca bloquea la descarga si falla)
       await api.post('/api/archivos/log-descarga', {
         beneficiarioId: ins.id,
         tipoArchivo:    'documento',
         urlArchivo:     ins.fotoDocumentoUrl,
       }).catch(() => {});
 
-      // Anchor directo: el navegador descarga sin pasar por fetch/CORS
-      const anchor = document.createElement('a');
+      // Anchor directo: sin fetch ni problemas de CORS
       const nombre = ins.nombreMenor?.replace(/\s+/g, '_') ?? 'beneficiario';
+      const anchor = document.createElement('a');
       anchor.href     = ins.fotoDocumentoUrl;
       anchor.download = `documento_${nombre}.pdf`;
       anchor.target   = '_blank';
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
+
     } catch {
       setErrorDescarga('No se pudo iniciar la descarga. Intenta de nuevo.');
+
     } finally {
-      // Mantener el spinner visible mínimo 1.2 s para que sea perceptible
+      // Mantener el spinner visible al menos 1.2 s para que sea perceptible
       const restante = 1200 - (Date.now() - tInicio);
       if (restante > 0) await new Promise(r => setTimeout(r, restante));
       setDescargando(false);
@@ -108,6 +157,15 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
 
   const generarPDF = () => abrirHojaDeVida(ins, edad);
 
+  // ── Iniciales del beneficiario para el Avatar ────────────────────────────
+  const iniciales = (ins.nombreMenor || '??')
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
+  // ── JSX ──────────────────────────────────────────────────────────────────
   return (
     <Dialog
       open
@@ -117,10 +175,11 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
       fullScreen={isMobile}
       PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}
     >
-      {/* ── Encabezado ───────────────────────────────────────────────────────── */}
+
+      {/* ── Encabezado ────────────────────────────────────────────────────── */}
       <DialogTitle
         sx={{
-          bgcolor: '#4E1B95',
+          bgcolor: COLOR_PRIMARIO,
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -139,8 +198,9 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             fontSize: { xs: '0.9rem', sm: '1rem' },
           }}
         >
-          {(ins.nombreMenor || '??').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+          {iniciales}
         </Avatar>
+
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography
             fontWeight={800}
@@ -156,7 +216,8 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             {edad}
           </Typography>
         </Box>
-        {/* Botón cerrar en mobile (fullScreen) */}
+
+        {/* En pantalla completa (mobile) el botón cerrar va en el header */}
         {isMobile && (
           <IconButton onClick={onCerrar} size="small" sx={{ color: 'white', flexShrink: 0 }}>
             <CloseIcon />
@@ -164,38 +225,43 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
         )}
       </DialogTitle>
 
-      {/* ── Contenido ────────────────────────────────────────────────────────── */}
+      {/* ── Contenido ─────────────────────────────────────────────────────── */}
       <DialogContent dividers sx={{ px: { xs: 2, sm: 3 } }}>
         <Grid container spacing={{ xs: 1.5, sm: 2 }} mt={0}>
 
-          {/* Datos personales */}
+          {/* Sección: Datos personales */}
           <Grid size={12}>
-            <Typography variant="subtitle2" color="#4E1B95" fontWeight={700}>Datos Personales</Typography>
-            <Divider sx={{ mb: 1.5, mt: 0.5 }} />
+            <Typography variant="subtitle2" color={COLOR_PRIMARIO} fontWeight={700}>
+              Datos Personales
+            </Typography>
+            <Divider sx={{ mt: 0.5, mb: 1.5 }} />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Campo label="Nombre completo"     value={ins.nombreMenor} />
+            <Campo label="Fecha de nacimiento" value={ins.fechaNacimiento} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <Campo label="Nombre completo"      value={ins.nombreMenor} />
-            <Campo label="Fecha de nacimiento"  value={ins.fechaNacimiento} />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Campo label="Tipo de documento"    value={ins.tipoDocumento} />
-            <Campo label="Número de documento"  value={ins.numeroDocumento || 'Sin documento'} />
-            <Campo label="EPS"                  value={ins.eps} />
+            <Campo label="Tipo de documento"   value={ins.tipoDocumento} />
+            <Campo label="Número de documento" value={ins.numeroDocumento || 'Sin documento'} />
+            <Campo label="EPS"                 value={ins.eps} />
           </Grid>
           <Grid size={12}>
             <Campo label="Dirección" value={ins.direccion} />
           </Grid>
 
-          {/* Tallas + Alergia */}
+          {/* Sección: Tallas */}
           <Grid size={12}>
-            <Typography variant="subtitle2" color="#4E1B95" fontWeight={700}>Tallas</Typography>
-            <Divider sx={{ mb: 1.5, mt: 0.5 }} />
-            <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: { xs: 1, sm: 1.5 }, width: '100%' }}>
+            <Typography variant="subtitle2" color={COLOR_PRIMARIO} fontWeight={700}>
+              Tallas
+            </Typography>
+            <Divider sx={{ mt: 0.5, mb: 1.5 }} />
+            <Box sx={{ display: 'flex', gap: { xs: 1, sm: 1.5 } }}>
               <TallaCard icono="👕" valor={ins.tallaCamisa}   etiqueta="Camisa"   />
               <TallaCard icono="👖" valor={ins.tallaPantalon} etiqueta="Pantalón" />
               <TallaCard icono="👟" valor={ins.tallaZapatos}  etiqueta="Zapatos"  />
             </Box>
-            <Box mt={3} display="flex" alignItems="center" gap={1}>
+            <Box mt={2} display="flex" alignItems="center" gap={1}>
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -212,16 +278,24 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             </Box>
           </Grid>
 
-          {/* Salud */}
+          {/* Sección: Salud (solo si hay alergia u observaciones) */}
           {(ins.tieneAlergia === 'si' || ins.observacionesSalud) && (
             <>
               <Grid size={12}>
-                <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={1}>Salud</Typography>
-                <Divider sx={{ mb: 1.5, mt: 0.5 }} />
+                <Typography variant="subtitle2" color={COLOR_PRIMARIO} fontWeight={700} mt={1}>
+                  Salud
+                </Typography>
+                <Divider sx={{ mt: 0.5, mb: 1.5 }} />
               </Grid>
+
               {ins.tieneAlergia === 'si' && (
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Box sx={{ bgcolor: '#fff5f5', border: '1.5px solid #fed7d7', borderRadius: 2, p: 1.5 }}>
+                  <Box sx={{
+                    bgcolor: '#fff5f5',
+                    border: '1.5px solid #fed7d7',
+                    borderRadius: 2,
+                    p: 1.5,
+                  }}>
                     <Typography variant="caption" color="error" fontWeight={700} display="block">
                       DESCRIPCIÓN DE LA ALERGIA
                     </Typography>
@@ -231,6 +305,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                   </Box>
                 </Grid>
               )}
+
               {ins.observacionesSalud && (
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Campo label="Observaciones de salud" value={ins.observacionesSalud} />
@@ -239,65 +314,82 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             </>
           )}
 
-          {/* Acudiente */}
+          {/* Sección: Acudiente */}
           <Grid size={12}>
-            <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={1}>Acudiente</Typography>
-            <Divider sx={{ mb: 1.5, mt: 0.5 }} />
+            <Typography variant="subtitle2" color={COLOR_PRIMARIO} fontWeight={700} mt={1}>
+              Acudiente
+            </Typography>
+            <Divider sx={{ mt: 0.5, mb: 1.5 }} />
           </Grid>
+
           <Grid size={{ xs: 12, sm: 6 }}>
             <Campo label="Nombre"     value={ins.nombreAcudiente} />
             <Campo label="Parentesco" value={ins.parentesco} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Campo label="WhatsApp">
-              {ins.whatsapp
-                ? <Box display="flex" alignItems="center" gap={0.5}>
-                    <IconButton
-                      size="small"
-                      href={`https://wa.me/${ins.whatsapp.replace(/\D/g, '')}`}
-                      target="_blank"
-                      component="a"
-                      sx={{ color: '#25D366', p: 0.3, flexShrink: 0 }}
-                    >
-                      <WhatsAppIcon fontSize="small" />
-                    </IconButton>
-                    <Typography variant="body2" fontWeight={600}>{ins.whatsapp}</Typography>
-                  </Box>
-                : <Typography variant="body2">—</Typography>}
+              {ins.whatsapp ? (
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  <IconButton
+                    size="small"
+                    component="a"
+                    href={`https://wa.me/${ins.whatsapp.replace(/\D/g, '')}`}
+                    target="_blank"
+                    sx={{ color: '#25D366', p: 0.3, flexShrink: 0 }}
+                  >
+                    <WhatsAppIcon fontSize="small" />
+                  </IconButton>
+                  <Typography variant="body2" fontWeight={600}>
+                    {ins.whatsapp}
+                  </Typography>
+                </Box>
+              ) : (
+                <Typography variant="body2">—</Typography>
+              )}
             </Campo>
           </Grid>
 
-          {/* Documento de identidad — solo descarga, nunca imagen */}
+          {/* Sección: Documento de identidad */}
           {ins.fotoDocumentoUrl && (
             <Grid size={12}>
-              <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={1}>
+              <Typography variant="subtitle2" color={COLOR_PRIMARIO} fontWeight={700} mt={1}>
                 Documento de Identidad
               </Typography>
-              <Divider sx={{ mb: 1.5, mt: 0.5 }} />
-              <Box
-                sx={{
-                  position: 'relative',
-                  display: 'flex', alignItems: 'center', gap: 2,
-                  bgcolor: '#fdfbff', border: '1.5px solid #e2d9f3',
-                  borderRadius: 2, p: 2,
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Barra de progreso encima del cuadro mientras descarga */}
+              <Divider sx={{ mt: 0.5, mb: 1.5 }} />
+
+              <Box sx={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                bgcolor: '#fdfbff',
+                border: '1.5px solid #e2d9f3',
+                borderRadius: 2,
+                p: 2,
+                overflow: 'hidden',
+              }}>
+                {/* Barra animada en la parte superior mientras se descarga */}
                 {descargando && (
-                  <LinearProgress
-                    sx={{
-                      position: 'absolute', top: 0, left: 0, right: 0,
-                      height: 4,
-                      bgcolor: 'rgba(78,27,149,0.15)',
-                      '& .MuiLinearProgress-bar': { bgcolor: '#4E1B95' },
-                    }}
-                  />
+                  <LinearProgress sx={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0,
+                    height: 4,
+                    bgcolor: 'rgba(78,27,149,0.15)',
+                    '& .MuiLinearProgress-bar': { bgcolor: COLOR_PRIMARIO },
+                  }} />
                 )}
+
                 <PictureAsPdfOutlinedIcon sx={{ color: '#c62828', fontSize: 36, flexShrink: 0 }} />
+
                 <Box flex={1}>
-                  <Typography variant="body2" fontWeight={700}>PDF del documento</Typography>
-                  <Typography variant="caption" color={descargando ? '#4E1B95' : 'text.secondary'} fontWeight={descargando ? 600 : 400}>
+                  <Typography variant="body2" fontWeight={700}>
+                    PDF del documento
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color={descargando ? COLOR_PRIMARIO : 'text.secondary'}
+                    fontWeight={descargando ? 600 : 400}
+                  >
                     {descargando
                       ? 'Descargando, por favor espera…'
                       : 'Haz clic en Descargar para abrir el documento. La descarga queda registrada.'}
@@ -308,6 +400,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                     </Typography>
                   )}
                 </Box>
+
                 <Button
                   variant="contained"
                   size="small"
@@ -319,8 +412,10 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                       : <DownloadIcon sx={{ fontSize: 16 }} />
                   }
                   sx={{
-                    flexShrink: 0, minWidth: 120,
-                    bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' },
+                    flexShrink: 0,
+                    minWidth: 120,
+                    bgcolor: COLOR_PRIMARIO,
+                    '&:hover': { bgcolor: COLOR_HOVER },
                     '&.Mui-disabled': { bgcolor: '#6b30b8', color: '#fff' },
                   }}
                 >
@@ -330,11 +425,13 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             </Grid>
           )}
 
-          {/* Motivo de baja */}
+          {/* Alerta de beneficiario inactivo */}
           {!ins.activo && (
             <Grid size={12}>
               <Alert severity="warning" sx={{ mt: 1 }}>
-                <Typography variant="caption" fontWeight={700} display="block">BENEFICIARIO INACTIVO</Typography>
+                <Typography variant="caption" fontWeight={700} display="block">
+                  BENEFICIARIO INACTIVO
+                </Typography>
                 {ins.motivoBaja
                   ? <Typography variant="body2">Motivo: {ins.motivoBaja}</Typography>
                   : <Typography variant="body2" color="text.secondary">Sin motivo registrado.</Typography>}
@@ -342,64 +439,86 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             </Grid>
           )}
 
-          {/* Fecha */}
+          {/* Fecha de inscripción */}
           <Grid size={12}>
             <Typography variant="caption" color="text.secondary">
               Inscrito el: {new Date(ins.createdAt).toLocaleString('es-CO')}
             </Typography>
           </Grid>
+
         </Grid>
       </DialogContent>
 
-      {/* ── Acciones ─────────────────────────────────────────────────────────── */}
-      <DialogActions
-        sx={{
-          px: { xs: 2, sm: 3 },
-          py: { xs: 1.5, sm: 2 },
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          gap: 1,
-        }}
-      >
+      {/* ── Acciones ──────────────────────────────────────────────────────── */}
+      <DialogActions sx={{
+        px: { xs: 2, sm: 3 },
+        py: { xs: 1.5, sm: 2 },
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        gap: 1,
+      }}>
         {isMobile ? (
-          /* Mobile: botones con color sólido */
+          // Mobile: solo íconos para ahorrar espacio
           <>
             <Tooltip title="Generar PDF">
-              <IconButton onClick={generarPDF}
-                sx={{ bgcolor: '#7B1FA2', color: '#fff', borderRadius: 2, p: 1, '&:hover': { bgcolor: '#6a1b9a' } }}>
+              <IconButton
+                onClick={generarPDF}
+                sx={{ bgcolor: '#7B1FA2', color: '#fff', borderRadius: 2, p: 1, '&:hover': { bgcolor: '#6a1b9a' } }}
+              >
                 <PictureAsPdfIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Editar">
-              <IconButton onClick={onEditar}
-                sx={{ bgcolor: '#1565C0', color: '#fff', borderRadius: 2, p: 1, '&:hover': { bgcolor: '#0d47a1' } }}>
+              <IconButton
+                onClick={onEditar}
+                sx={{ bgcolor: '#1565C0', color: '#fff', borderRadius: 2, p: 1, '&:hover': { bgcolor: '#0d47a1' } }}
+              >
                 <EditIcon />
               </IconButton>
             </Tooltip>
             <Box sx={{ flexGrow: 1 }} />
-            <Button onClick={onCerrar} variant="contained"
-              sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}>
+            <Button
+              variant="contained"
+              onClick={onCerrar}
+              sx={{ bgcolor: COLOR_PRIMARIO, '&:hover': { bgcolor: COLOR_HOVER } }}
+            >
               Cerrar
             </Button>
           </>
         ) : (
-          /* Tablet / PC / TV: botones completos con color sólido */
+          // Tablet / PC: botones con texto
           <>
-            <Button startIcon={<PictureAsPdfIcon />} onClick={generarPDF} variant="contained" size="small"
-              sx={{ bgcolor: '#7B1FA2', '&:hover': { bgcolor: '#6a1b9a' } }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<PictureAsPdfIcon />}
+              onClick={generarPDF}
+              sx={{ bgcolor: '#7B1FA2', '&:hover': { bgcolor: '#6a1b9a' } }}
+            >
               PDF
             </Button>
-            <Button startIcon={<EditIcon />} onClick={onEditar} variant="contained" color="primary" size="small">
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<EditIcon />}
+              onClick={onEditar}
+              color="primary"
+            >
               Editar
             </Button>
             <Box sx={{ flexGrow: 1 }} />
-            <Button onClick={onCerrar} variant="contained" size="small"
-              sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={onCerrar}
+              sx={{ bgcolor: COLOR_PRIMARIO, '&:hover': { bgcolor: COLOR_HOVER } }}
+            >
               Cerrar
             </Button>
           </>
         )}
       </DialogActions>
+
     </Dialog>
   );
 }

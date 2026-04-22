@@ -152,7 +152,7 @@ public class AppDbContext : DbContext
             e.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()");
             e.Property(c => c.FechaCreacion).HasDefaultValueSql("now()");
             e.Property(c => c.FechaModificacion).HasDefaultValueSql("now()");
-            e.Property(c => c.Opciones).HasColumnType("text[]");
+            // Npgsql mapea string? → text automáticamente; se guarda como JSON para opciones
             e.HasOne(c => c.Programa).WithMany()
              .HasForeignKey(c => c.ProgramaId)
              .OnDelete(DeleteBehavior.Cascade);
@@ -166,6 +166,7 @@ public class AppDbContext : DbContext
             e.Property(i => i.FechaCreacion).HasDefaultValueSql("now()");
             e.Property(i => i.FechaModificacion).HasDefaultValueSql("now()");
             e.Property(i => i.FechaInscripcion).HasDefaultValueSql("now()");
+            e.Property(i => i.Datos).HasColumnType("jsonb");
             e.HasOne(i => i.Beneficiario).WithMany().HasForeignKey(i => i.BeneficiarioId);
             e.HasOne(i => i.Programa).WithMany().HasForeignKey(i => i.ProgramaId);
             e.HasIndex(i => i.ProgramaId);

@@ -170,7 +170,7 @@ using (var scope = app.Services.CreateScope())
             etiqueta           VARCHAR(100) NOT NULL,
             tipo               VARCHAR(30)  NOT NULL DEFAULT 'text',
             obligatorio        BOOLEAN      NOT NULL DEFAULT false,
-            opciones           TEXT[],
+            opciones           TEXT,
             orden              INT          NOT NULL DEFAULT 0,
             activo             BOOLEAN      NOT NULL DEFAULT true,
             fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),

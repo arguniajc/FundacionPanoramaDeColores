@@ -22,7 +22,8 @@ public class Inscripcion
     [Column("fecha_inscripcion")]
     public DateTime FechaInscripcion { get; set; }
 
-    [Column("datos", TypeName = "jsonb")]
+    // jsonb configurado en OnModelCreating vía HasColumnType
+    [Column("datos")]
     public string Datos { get; set; } = "{}";
 
     [Column("observaciones")]

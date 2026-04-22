@@ -1,4 +1,5 @@
 // CRUD de sedes (ubicaciones físicas), programas y campos dinámicos de programas. Requiere JWT.
+using System.Text.Json;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -177,13 +178,13 @@ public class SedesController : ControllerBase
 
         var campo = new ProgramaCampo
         {
-            ProgramaId = programaId,
-            Etiqueta   = dto.Etiqueta.Trim(),
-            Tipo       = dto.Tipo,
-            Obligatorio = dto.Obligatorio,
-            Opciones   = dto.Opciones,
-            Orden      = dto.Orden,
-            Activo     = true,
+            ProgramaId   = programaId,
+            Etiqueta     = dto.Etiqueta.Trim(),
+            Tipo         = dto.Tipo,
+            Obligatorio  = dto.Obligatorio,
+            OpcionesJson = dto.Opciones is { Length: > 0 } ? JsonSerializer.Serialize(dto.Opciones) : null,
+            Orden        = dto.Orden,
+            Activo       = true,
         };
         _db.ProgramasCampos.Add(campo);
         await _db.SaveChangesAsync();
@@ -197,11 +198,11 @@ public class SedesController : ControllerBase
             .FirstOrDefaultAsync(c => c.Id == campoId && c.ProgramaId == programaId);
         if (campo is null) return NotFound();
 
-        campo.Etiqueta    = dto.Etiqueta.Trim();
-        campo.Tipo        = dto.Tipo;
-        campo.Obligatorio = dto.Obligatorio;
-        campo.Opciones    = dto.Opciones;
-        campo.Orden       = dto.Orden;
+        campo.Etiqueta     = dto.Etiqueta.Trim();
+        campo.Tipo         = dto.Tipo;
+        campo.Obligatorio  = dto.Obligatorio;
+        campo.OpcionesJson = dto.Opciones is { Length: > 0 } ? JsonSerializer.Serialize(dto.Opciones) : null;
+        campo.Orden        = dto.Orden;
         await _db.SaveChangesAsync();
         return Ok(MapearCampo(campo));
     }
@@ -227,6 +228,8 @@ public class SedesController : ControllerBase
     );
 
     private static CampoDto MapearCampo(ProgramaCampo c) => new(
-        c.Id, c.ProgramaId, c.Etiqueta, c.Tipo, c.Obligatorio, c.Opciones, c.Orden, c.Activo
+        c.Id, c.ProgramaId, c.Etiqueta, c.Tipo, c.Obligatorio,
+        c.OpcionesJson is not null ? JsonSerializer.Deserialize<string[]>(c.OpcionesJson) : null,
+        c.Orden, c.Activo
     );
 }

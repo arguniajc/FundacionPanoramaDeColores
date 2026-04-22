@@ -22,8 +22,9 @@ public class ProgramaCampo
     [Column("obligatorio")]
     public bool Obligatorio { get; set; }
 
+    // Se almacena como JSON ["op1","op2"] en una columna TEXT para evitar text[] en EF Core
     [Column("opciones")]
-    public string[]? Opciones { get; set; }
+    public string? OpcionesJson { get; set; }
 
     [Column("orden")]
     public int Orden { get; set; }

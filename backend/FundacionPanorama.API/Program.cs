@@ -170,7 +170,7 @@ using (var scope = app.Services.CreateScope())
             etiqueta           VARCHAR(100) NOT NULL,
             tipo               VARCHAR(30)  NOT NULL DEFAULT 'text',
             obligatorio        BOOLEAN      NOT NULL DEFAULT false,
-            opciones           TEXT,
+            opciones_json      TEXT,
             orden              INT          NOT NULL DEFAULT 0,
             activo             BOOLEAN      NOT NULL DEFAULT true,
             fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -178,6 +178,13 @@ using (var scope = app.Services.CreateScope())
         );
         CREATE INDEX IF NOT EXISTS idx_programas_campos_programa ON programas_campos(programa_id);
         """, "programas_campos");
+    Migrar("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='programas_campos' AND column_name='opciones') THEN
+                ALTER TABLE programas_campos RENAME COLUMN opciones TO opciones_json;
+            END IF;
+        END $$;
+        """, "programas_campos.rename_opciones");
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────

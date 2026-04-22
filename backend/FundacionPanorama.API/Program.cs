@@ -119,6 +119,23 @@ using (var scope = app.Services.CreateScope())
             fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
         );
         """, "programas");
+
+    Migrar("""
+        CREATE TABLE IF NOT EXISTS documentos_institucionales (
+            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            titulo             VARCHAR(200) NOT NULL,
+            descripcion        TEXT,
+            categoria          VARCHAR(50)  NOT NULL DEFAULT 'Otros',
+            url                TEXT         NOT NULL,
+            nombre_original    VARCHAR(200),
+            subido_por_email   VARCHAR(200),
+            activo             BOOLEAN      NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_documentos_inst_categoria ON documentos_institucionales(categoria);
+        CREATE INDEX IF NOT EXISTS idx_documentos_inst_activo    ON documentos_institucionales(activo);
+        """, "documentos_institucionales");
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────

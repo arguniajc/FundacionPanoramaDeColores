@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { documentosRepository } from '../../infrastructure/repositories/documentosRepository';
 
-export function useDocumentosInstitucionales(categoriaFiltro) {
+// Siempre carga todos los documentos; el filtrado de categoría se hace en el componente
+// para poder contar documentos por categoría sin peticiones adicionales.
+export function useDocumentosInstitucionales() {
   const [documentos, setDocumentos] = useState([]);
   const [cargando,   setCargando]   = useState(false);
   const [error,      setError]      = useState('');
@@ -10,14 +12,14 @@ export function useDocumentosInstitucionales(categoriaFiltro) {
     setCargando(true);
     setError('');
     try {
-      const { data } = await documentosRepository.listarInstitucionales(categoriaFiltro);
+      const { data } = await documentosRepository.listarInstitucionales();
       setDocumentos(data);
     } catch {
       setError('No se pudo cargar los documentos.');
     } finally {
       setCargando(false);
     }
-  }, [categoriaFiltro]);
+  }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
 

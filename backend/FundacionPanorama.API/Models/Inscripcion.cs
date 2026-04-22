@@ -37,7 +37,4 @@ public class Inscripcion
 
     [Column("fecha_modificacion")]
     public DateTime FechaModificacion { get; set; }
-
-    public Beneficiario? Beneficiario { get; set; }
-    public Programa? Programa { get; set; }
 }

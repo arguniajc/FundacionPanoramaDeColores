@@ -37,6 +37,4 @@ public class ProgramaCampo
 
     [Column("fecha_modificacion")]
     public DateTime FechaModificacion { get; set; }
-
-    public Programa? Programa { get; set; }
 }

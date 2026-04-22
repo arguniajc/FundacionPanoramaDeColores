@@ -1,14 +1,14 @@
-// CRUD de sedes (ubicaciones físicas), programas y campos dinámicos de programas. Requiere JWT.
+// CRUD de sedes, programas y campos dinámicos. Requiere JWT.
 using System.Text.Json;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
 
-// DTOs de entrada y salida
 public record SedeDto(Guid Id, string Nombre, string? Direccion, string? Ciudad, string? Telefono, bool Activo, DateTime FechaCreacion, List<ProgramaDto> Programas);
 public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, DateTime FechaCreacion);
 public record CrearSedeDto(string Nombre, string? Direccion, string? Ciudad, string? Telefono);
@@ -29,7 +29,6 @@ public class SedesController : ControllerBase
     {
         var query = _db.Sedes.Include(s => s.Programas).AsQueryable();
         if (soloActivas) query = query.Where(s => s.Activo);
-
         var sedes = await query.OrderBy(s => s.Nombre).ToListAsync();
         return Ok(sedes.Select(MapearSede));
     }
@@ -158,16 +157,20 @@ public class SedesController : ControllerBase
         return NoContent();
     }
 
-    // ── Campos dinámicos de programa ──────────────────────────────────────────
+    // ── Campos dinámicos — Npgsql directo (sin EF Core DbSet) ─────────────────
 
     [HttpGet("programas/{programaId:guid}/campos")]
     public async Task<IActionResult> ListarCampos(Guid programaId)
     {
-        var campos = await _db.ProgramasCampos
-            .Where(c => c.ProgramaId == programaId && c.Activo)
-            .OrderBy(c => c.Orden)
-            .ToListAsync();
-        return Ok(campos.Select(MapearCampo));
+        var campos = new List<CampoDto>();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo FROM programas_campos WHERE programa_id = @pid AND activo = true ORDER BY orden";
+        cmd.Parameters.AddWithValue("pid", programaId);
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync()) campos.Add(LeerCampo(r));
+        return Ok(campos);
     }
 
     [HttpPost("programas/{programaId:guid}/campos")]
@@ -176,46 +179,78 @@ public class SedesController : ControllerBase
         if (!await _db.Programas.AnyAsync(p => p.Id == programaId))
             return NotFound(new { mensaje = "Programa no encontrado." });
 
-        var campo = new ProgramaCampo
-        {
-            ProgramaId   = programaId,
-            Etiqueta     = dto.Etiqueta.Trim(),
-            Tipo         = dto.Tipo,
-            Obligatorio  = dto.Obligatorio,
-            OpcionesJson = dto.Opciones is { Length: > 0 } ? JsonSerializer.Serialize(dto.Opciones) : null,
-            Orden        = dto.Orden,
-            Activo       = true,
-        };
-        _db.ProgramasCampos.Add(campo);
-        await _db.SaveChangesAsync();
-        return Ok(MapearCampo(campo));
+        var opJson = dto.Opciones is { Length: > 0 } ? JsonSerializer.Serialize(dto.Opciones) : null;
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"INSERT INTO programas_campos (programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo)
+                            VALUES (@pid, @etiqueta, @tipo, @oblig, @opciones, @orden, true)
+                            RETURNING id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo";
+        cmd.Parameters.AddWithValue("pid",      programaId);
+        cmd.Parameters.AddWithValue("etiqueta", dto.Etiqueta.Trim());
+        cmd.Parameters.AddWithValue("tipo",     dto.Tipo);
+        cmd.Parameters.AddWithValue("oblig",    dto.Obligatorio);
+        cmd.Parameters.AddWithValue("opciones", (object?)opJson ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("orden",    dto.Orden);
+        await using var r = await cmd.ExecuteReaderAsync();
+        await r.ReadAsync();
+        return Ok(LeerCampo(r));
     }
 
     [HttpPut("programas/{programaId:guid}/campos/{campoId:guid}")]
     public async Task<IActionResult> ActualizarCampo(Guid programaId, Guid campoId, [FromBody] CrearCampoDto dto)
     {
-        var campo = await _db.ProgramasCampos
-            .FirstOrDefaultAsync(c => c.Id == campoId && c.ProgramaId == programaId);
-        if (campo is null) return NotFound();
-
-        campo.Etiqueta     = dto.Etiqueta.Trim();
-        campo.Tipo         = dto.Tipo;
-        campo.Obligatorio  = dto.Obligatorio;
-        campo.OpcionesJson = dto.Opciones is { Length: > 0 } ? JsonSerializer.Serialize(dto.Opciones) : null;
-        campo.Orden        = dto.Orden;
-        await _db.SaveChangesAsync();
-        return Ok(MapearCampo(campo));
+        var opJson = dto.Opciones is { Length: > 0 } ? JsonSerializer.Serialize(dto.Opciones) : null;
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"UPDATE programas_campos SET etiqueta=@etiqueta, tipo=@tipo, obligatorio=@oblig, opciones_json=@opciones, orden=@orden
+                            WHERE id=@id AND programa_id=@pid
+                            RETURNING id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo";
+        cmd.Parameters.AddWithValue("id",       campoId);
+        cmd.Parameters.AddWithValue("pid",      programaId);
+        cmd.Parameters.AddWithValue("etiqueta", dto.Etiqueta.Trim());
+        cmd.Parameters.AddWithValue("tipo",     dto.Tipo);
+        cmd.Parameters.AddWithValue("oblig",    dto.Obligatorio);
+        cmd.Parameters.AddWithValue("opciones", (object?)opJson ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("orden",    dto.Orden);
+        await using var r = await cmd.ExecuteReaderAsync();
+        if (!await r.ReadAsync()) return NotFound();
+        return Ok(LeerCampo(r));
     }
 
     [HttpDelete("programas/{programaId:guid}/campos/{campoId:guid}")]
     public async Task<IActionResult> EliminarCampo(Guid programaId, Guid campoId)
     {
-        var campo = await _db.ProgramasCampos
-            .FirstOrDefaultAsync(c => c.Id == campoId && c.ProgramaId == programaId);
-        if (campo is null) return NotFound();
-        _db.ProgramasCampos.Remove(campo);
-        await _db.SaveChangesAsync();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM programas_campos WHERE id=@id AND programa_id=@pid";
+        cmd.Parameters.AddWithValue("id",  campoId);
+        cmd.Parameters.AddWithValue("pid", programaId);
+        var rows = await cmd.ExecuteNonQueryAsync();
+        if (rows == 0) return NotFound();
         return NoContent();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private NpgsqlConnection AbrirConexion() =>
+        new(_db.Database.GetConnectionString());
+
+    private static CampoDto LeerCampo(System.Data.Common.DbDataReader r)
+    {
+        var opJson = r.IsDBNull(5) ? null : r.GetString(5);
+        return new CampoDto(
+            r.GetGuid(0),
+            r.GetGuid(1),
+            r.GetString(2),
+            r.GetString(3),
+            r.GetBoolean(4),
+            opJson is not null ? JsonSerializer.Deserialize<string[]>(opJson) : null,
+            r.GetInt32(6),
+            r.GetBoolean(7)
+        );
     }
 
     private static SedeDto MapearSede(Sede s) => new(
@@ -225,11 +260,5 @@ public class SedesController : ControllerBase
 
     private static ProgramaDto MapearPrograma(Programa p) => new(
         p.Id, p.SedeId, p.Sede?.Nombre ?? "", p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo, p.FechaCreacion
-    );
-
-    private static CampoDto MapearCampo(ProgramaCampo c) => new(
-        c.Id, c.ProgramaId, c.Etiqueta, c.Tipo, c.Obligatorio,
-        c.OpcionesJson is not null ? JsonSerializer.Deserialize<string[]>(c.OpcionesJson) : null,
-        c.Orden, c.Activo
     );
 }

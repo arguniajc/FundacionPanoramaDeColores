@@ -26,6 +26,9 @@ public class AppDbContext : DbContext
     public DbSet<Sede>                  Sedes                  { get; set; }
     public DbSet<Programa>              Programas              { get; set; }
 
+    // Módulo Documentos
+    public DbSet<DocumentoInstitucional> DocumentosInstitucionales { get; set; }
+
     protected override void OnModelCreating(ModelBuilder mb)
     {
         base.OnModelCreating(mb);
@@ -129,6 +132,16 @@ public class AppDbContext : DbContext
             e.Property(a => a.FechaCreacion).HasDefaultValueSql("now()");
             e.Property(a => a.FechaModificacion).HasDefaultValueSql("now()");
             e.HasOne(a => a.TipoArchivo).WithMany().HasForeignKey(a => a.TipoArchivoId);
+        });
+
+        // ── DocumentoInstitucional ────────────────────────────────────────────
+        mb.Entity<DocumentoInstitucional>(e =>
+        {
+            e.Property(d => d.Id).HasDefaultValueSql("gen_random_uuid()");
+            e.Property(d => d.FechaCreacion).HasDefaultValueSql("now()");
+            e.Property(d => d.FechaModificacion).HasDefaultValueSql("now()");
+            e.HasIndex(d => d.Categoria);
+            e.HasIndex(d => d.Activo);
         });
     }
 }

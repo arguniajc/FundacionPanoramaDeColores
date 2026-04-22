@@ -25,6 +25,8 @@ public class AppDbContext : DbContext
     public DbSet<LogDescarga>           LogDescargas           { get; set; }
     public DbSet<Sede>                  Sedes                  { get; set; }
     public DbSet<Programa>              Programas              { get; set; }
+    public DbSet<ProgramaCampo>         ProgramasCampos        { get; set; }
+    public DbSet<Inscripcion>           Inscripciones          { get; set; }
 
     // Módulo Documentos
     public DbSet<DocumentoInstitucional> DocumentosInstitucionales { get; set; }
@@ -142,6 +144,32 @@ public class AppDbContext : DbContext
             e.Property(d => d.FechaModificacion).HasDefaultValueSql("now()");
             e.HasIndex(d => d.Categoria);
             e.HasIndex(d => d.Activo);
+        });
+
+        // ── ProgramaCampo ─────────────────────────────────────────────────────
+        mb.Entity<ProgramaCampo>(e =>
+        {
+            e.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()");
+            e.Property(c => c.FechaCreacion).HasDefaultValueSql("now()");
+            e.Property(c => c.FechaModificacion).HasDefaultValueSql("now()");
+            e.Property(c => c.Opciones).HasColumnType("text[]");
+            e.HasOne(c => c.Programa).WithMany()
+             .HasForeignKey(c => c.ProgramaId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(c => c.ProgramaId);
+        });
+
+        // ── Inscripcion ───────────────────────────────────────────────────────
+        mb.Entity<Inscripcion>(e =>
+        {
+            e.Property(i => i.Id).HasDefaultValueSql("gen_random_uuid()");
+            e.Property(i => i.FechaCreacion).HasDefaultValueSql("now()");
+            e.Property(i => i.FechaModificacion).HasDefaultValueSql("now()");
+            e.Property(i => i.FechaInscripcion).HasDefaultValueSql("now()");
+            e.HasOne(i => i.Beneficiario).WithMany().HasForeignKey(i => i.BeneficiarioId);
+            e.HasOne(i => i.Programa).WithMany().HasForeignKey(i => i.ProgramaId);
+            e.HasIndex(i => i.ProgramaId);
+            e.HasIndex(i => i.BeneficiarioId);
         });
     }
 }

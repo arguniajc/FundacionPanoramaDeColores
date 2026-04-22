@@ -17,4 +17,9 @@ export const sedesRepository = {
   editarPrograma:   (id, datos) => apiClient.put(`/api/sedes/programas/${id}`, datos),
   togglePrograma:   (id)        => apiClient.patch(`/api/sedes/programas/${id}/toggle`),
   eliminarPrograma: (id)        => apiClient.delete(`/api/sedes/programas/${id}`),
+
+  listarCampos:     (programaId)           => apiClient.get(`/api/sedes/programas/${programaId}/campos`),
+  crearCampo:       (programaId, datos)    => apiClient.post(`/api/sedes/programas/${programaId}/campos`, datos),
+  editarCampo:      (programaId, id, datos) => apiClient.put(`/api/sedes/programas/${programaId}/campos/${id}`, datos),
+  eliminarCampo:    (programaId, id)       => apiClient.delete(`/api/sedes/programas/${programaId}/campos/${id}`),
 };

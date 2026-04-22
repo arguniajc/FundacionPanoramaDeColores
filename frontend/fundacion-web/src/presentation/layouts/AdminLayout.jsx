@@ -29,6 +29,7 @@ import DarkModeIcon          from '@mui/icons-material/DarkMode';
 import LightModeIcon         from '@mui/icons-material/LightMode';
 import DownloadIcon          from '@mui/icons-material/Download';
 import LocationOnIcon        from '@mui/icons-material/LocationOn';
+import HowToRegIcon          from '@mui/icons-material/HowToReg';
 import { useAuth }      from '../../application/auth/AuthContext';
 import { useThemeMode } from '../../shared/theme/ThemeContext';
 import useInactividad   from '../../shared/hooks/useInactividad';
@@ -52,6 +53,7 @@ const MENU = [
       { label: 'Donantes',       icon: <VolunteerActivismIcon />,  ruta: '/sede/donantes' },
       { label: 'Donaciones',     icon: <MonetizationOnIcon />,     ruta: '/sede/donaciones' },
       { label: 'Proyectos',      icon: <FolderSpecialIcon />,      ruta: '/sede/proyectos' },
+      { label: 'Inscripciones',  icon: <HowToRegIcon />,           ruta: '/sede/inscripciones' },
       { label: 'Sedes',          icon: <LocationOnIcon />,         ruta: '/sede/sedes' },
       { label: 'Actividades',    icon: <EventNoteIcon />,          ruta: '/sede/actividades' },
       { label: 'Voluntarios',    icon: <PeopleIcon />,             ruta: '/sede/voluntarios' },

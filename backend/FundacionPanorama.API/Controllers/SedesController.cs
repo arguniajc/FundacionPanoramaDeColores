@@ -1,4 +1,4 @@
-// CRUD de sedes (ubicaciones físicas) y sus programas. Todos los endpoints requieren JWT.
+// CRUD de sedes (ubicaciones físicas), programas y campos dinámicos de programas. Requiere JWT.
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +12,8 @@ public record SedeDto(Guid Id, string Nombre, string? Direccion, string? Ciudad,
 public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, DateTime FechaCreacion);
 public record CrearSedeDto(string Nombre, string? Direccion, string? Ciudad, string? Telefono);
 public record CrearProgramaDto(Guid SedeId, string Nombre, string? Descripcion, int? CupoMaximo);
+public record CampoDto(Guid Id, Guid ProgramaId, string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, bool Activo);
+public record CrearCampoDto(string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden);
 
 [ApiController]
 [Route("api/sedes")]
@@ -155,6 +157,66 @@ public class SedesController : ControllerBase
         return NoContent();
     }
 
+    // ── Campos dinámicos de programa ──────────────────────────────────────────
+
+    [HttpGet("programas/{programaId:guid}/campos")]
+    public async Task<IActionResult> ListarCampos(Guid programaId)
+    {
+        var campos = await _db.ProgramasCampos
+            .Where(c => c.ProgramaId == programaId && c.Activo)
+            .OrderBy(c => c.Orden)
+            .ToListAsync();
+        return Ok(campos.Select(MapearCampo));
+    }
+
+    [HttpPost("programas/{programaId:guid}/campos")]
+    public async Task<IActionResult> CrearCampo(Guid programaId, [FromBody] CrearCampoDto dto)
+    {
+        if (!await _db.Programas.AnyAsync(p => p.Id == programaId))
+            return NotFound(new { mensaje = "Programa no encontrado." });
+
+        var campo = new ProgramaCampo
+        {
+            ProgramaId = programaId,
+            Etiqueta   = dto.Etiqueta.Trim(),
+            Tipo       = dto.Tipo,
+            Obligatorio = dto.Obligatorio,
+            Opciones   = dto.Opciones,
+            Orden      = dto.Orden,
+            Activo     = true,
+        };
+        _db.ProgramasCampos.Add(campo);
+        await _db.SaveChangesAsync();
+        return Ok(MapearCampo(campo));
+    }
+
+    [HttpPut("programas/{programaId:guid}/campos/{campoId:guid}")]
+    public async Task<IActionResult> ActualizarCampo(Guid programaId, Guid campoId, [FromBody] CrearCampoDto dto)
+    {
+        var campo = await _db.ProgramasCampos
+            .FirstOrDefaultAsync(c => c.Id == campoId && c.ProgramaId == programaId);
+        if (campo is null) return NotFound();
+
+        campo.Etiqueta    = dto.Etiqueta.Trim();
+        campo.Tipo        = dto.Tipo;
+        campo.Obligatorio = dto.Obligatorio;
+        campo.Opciones    = dto.Opciones;
+        campo.Orden       = dto.Orden;
+        await _db.SaveChangesAsync();
+        return Ok(MapearCampo(campo));
+    }
+
+    [HttpDelete("programas/{programaId:guid}/campos/{campoId:guid}")]
+    public async Task<IActionResult> EliminarCampo(Guid programaId, Guid campoId)
+    {
+        var campo = await _db.ProgramasCampos
+            .FirstOrDefaultAsync(c => c.Id == campoId && c.ProgramaId == programaId);
+        if (campo is null) return NotFound();
+        _db.ProgramasCampos.Remove(campo);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     private static SedeDto MapearSede(Sede s) => new(
         s.Id, s.Nombre, s.Direccion, s.Ciudad, s.Telefono, s.Activo, s.FechaCreacion,
         s.Programas.Select(p => new ProgramaDto(p.Id, p.SedeId, s.Nombre, p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo, p.FechaCreacion)).ToList()
@@ -162,5 +224,9 @@ public class SedesController : ControllerBase
 
     private static ProgramaDto MapearPrograma(Programa p) => new(
         p.Id, p.SedeId, p.Sede?.Nombre ?? "", p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo, p.FechaCreacion
+    );
+
+    private static CampoDto MapearCampo(ProgramaCampo c) => new(
+        c.Id, c.ProgramaId, c.Etiqueta, c.Tipo, c.Obligatorio, c.Opciones, c.Orden, c.Activo
     );
 }

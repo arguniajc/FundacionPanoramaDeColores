@@ -136,6 +136,48 @@ using (var scope = app.Services.CreateScope())
         CREATE INDEX IF NOT EXISTS idx_documentos_inst_categoria ON documentos_institucionales(categoria);
         CREATE INDEX IF NOT EXISTS idx_documentos_inst_activo    ON documentos_institucionales(activo);
         """, "documentos_institucionales");
+
+    Migrar("""
+        CREATE TABLE IF NOT EXISTS inscripciones (
+            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            beneficiario_id    UUID         NOT NULL REFERENCES beneficiarios(id),
+            programa_id        UUID         NOT NULL REFERENCES programas(id),
+            estado             VARCHAR(30)  NOT NULL DEFAULT 'activa',
+            fecha_inscripcion  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            datos              JSONB        NOT NULL DEFAULT '{}',
+            observaciones      TEXT,
+            activo             BOOLEAN      NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_inscripciones_programa     ON inscripciones(programa_id);
+        CREATE INDEX IF NOT EXISTS idx_inscripciones_beneficiario ON inscripciones(beneficiario_id);
+        """, "inscripciones");
+
+    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS estado VARCHAR(30) NOT NULL DEFAULT 'activa';",
+           "inscripciones.estado");
+    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS fecha_inscripcion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
+           "inscripciones.fecha_inscripcion");
+    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS datos JSONB NOT NULL DEFAULT '{}';",
+           "inscripciones.datos");
+    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS observaciones TEXT;",
+           "inscripciones.observaciones");
+
+    Migrar("""
+        CREATE TABLE IF NOT EXISTS programas_campos (
+            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            programa_id        UUID         NOT NULL REFERENCES programas(id) ON DELETE CASCADE,
+            etiqueta           VARCHAR(100) NOT NULL,
+            tipo               VARCHAR(30)  NOT NULL DEFAULT 'text',
+            obligatorio        BOOLEAN      NOT NULL DEFAULT false,
+            opciones           TEXT[],
+            orden              INT          NOT NULL DEFAULT 0,
+            activo             BOOLEAN      NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_programas_campos_programa ON programas_campos(programa_id);
+        """, "programas_campos");
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────

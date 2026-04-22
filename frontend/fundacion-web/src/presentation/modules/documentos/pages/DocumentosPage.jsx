@@ -7,21 +7,61 @@ import {
   FormControl, InputLabel, Select, MenuItem, Autocomplete,
   Tooltip,
 } from '@mui/material';
-import FolderIcon       from '@mui/icons-material/Folder';
-import AddIcon          from '@mui/icons-material/Add';
-import DownloadIcon     from '@mui/icons-material/Download';
-import DeleteIcon       from '@mui/icons-material/Delete';
-import SearchIcon       from '@mui/icons-material/Search';
-import UploadFileIcon   from '@mui/icons-material/UploadFile';
-import PersonIcon       from '@mui/icons-material/Person';
-import CloseIcon        from '@mui/icons-material/Close';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import FolderIcon          from '@mui/icons-material/Folder';
+import AddIcon              from '@mui/icons-material/Add';
+import DownloadIcon         from '@mui/icons-material/Download';
+import DeleteIcon           from '@mui/icons-material/Delete';
+import SearchIcon           from '@mui/icons-material/Search';
+import UploadFileIcon       from '@mui/icons-material/UploadFile';
+import PersonIcon           from '@mui/icons-material/Person';
+import CloseIcon            from '@mui/icons-material/Close';
+import InsertDriveFileIcon  from '@mui/icons-material/InsertDriveFile';
+import WarningAmberIcon     from '@mui/icons-material/WarningAmber';
 
 import apiClient from '../../../../infrastructure/http/apiClient';
 import { useDocumentosInstitucionales } from '../../../../application/documentos/useDocumentosInstitucionales';
 import { useDocumentosBeneficiario }    from '../../../../application/documentos/useDocumentosBeneficiario';
 
 const CATEGORIAS = ['Actas', 'Políticas', 'Formularios', 'Informes', 'Certificados', 'Otros'];
+
+// ── Diálogo de confirmación de eliminación ───────────────────────────────────
+function ConfirmarEliminar({ nombre, onConfirmar, onCerrar }) {
+  const [eliminando, setEliminando] = useState(false);
+
+  const handleConfirmar = async () => {
+    setEliminando(true);
+    await onConfirmar();
+    onCerrar();
+  };
+
+  return (
+    <Dialog open onClose={onCerrar} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pt: 3, pb: 1 }}>
+        <WarningAmberIcon sx={{ color: '#d32f2f', fontSize: 28 }} />
+        <Typography fontWeight={700} fontSize="1.05rem">Eliminar documento</Typography>
+      </DialogTitle>
+      <DialogContent sx={{ pb: 1 }}>
+        <Typography variant="body2" color="text.secondary">
+          ¿Estás seguro de que quieres eliminar{' '}
+          <strong style={{ color: '#111' }}>{nombre}</strong>?
+          Esta acción no se puede deshacer.
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+        <Button onClick={onCerrar} variant="outlined" disabled={eliminando}>Cancelar</Button>
+        <Button
+          variant="contained"
+          onClick={handleConfirmar}
+          disabled={eliminando}
+          startIcon={eliminando ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
+          sx={{ bgcolor: '#d32f2f', '&:hover': { bgcolor: '#b71c1c' }, fontWeight: 700, minWidth: 120 }}
+        >
+          {eliminando ? 'Eliminando…' : 'Eliminar'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 const HEADER_GRADIENT = 'linear-gradient(135deg, #4E1B95, #2D984F)';
 
@@ -190,6 +230,7 @@ function TabInstitucionales() {
   const [categoriaFiltro, setCategoriaFiltro] = useState('');
   const [buscar,          setBuscar]          = useState('');
   const [modalAbierto,    setModalAbierto]     = useState(false);
+  const [confirmar,       setConfirmar]        = useState(null); // { id, nombre }
 
   const { documentos, cargando, error, crear, eliminar } = useDocumentosInstitucionales(categoriaFiltro);
 
@@ -280,7 +321,7 @@ function TabInstitucionales() {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Eliminar">
-                        <IconButton size="small" onClick={() => eliminar(doc.id)}>
+                        <IconButton size="small" onClick={() => setConfirmar({ id: doc.id, nombre: doc.titulo })}>
                           <DeleteIcon fontSize="small" sx={{ color: '#d32f2f' }} />
                         </IconButton>
                       </Tooltip>
@@ -296,6 +337,13 @@ function TabInstitucionales() {
       {modalAbierto && (
         <ModalSubirInstitucional onCerrar={() => setModalAbierto(false)} onSubido={crear} />
       )}
+      {confirmar && (
+        <ConfirmarEliminar
+          nombre={confirmar.nombre}
+          onConfirmar={() => eliminar(confirmar.id)}
+          onCerrar={() => setConfirmar(null)}
+        />
+      )}
     </Box>
   );
 }
@@ -306,6 +354,7 @@ function TabPorBeneficiario() {
   const [opciones,      setOpciones]      = useState([]);
   const [buscando,      setBuscando]      = useState(false);
   const [modalAbierto,  setModalAbierto]  = useState(false);
+  const [confirmar,     setConfirmar]     = useState(null); // { id, nombre }
 
   const { archivos, cargando, error, cargar, guardar, eliminar } = useDocumentosBeneficiario();
 
@@ -407,7 +456,7 @@ function TabPorBeneficiario() {
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Eliminar">
-                            <IconButton size="small" onClick={() => eliminar(a.id, beneficiario.id)}>
+                            <IconButton size="small" onClick={() => setConfirmar({ id: a.id, nombre: a.nombreOriginal ?? 'Documento' })}>
                               <DeleteIcon fontSize="small" sx={{ color: '#d32f2f' }} />
                             </IconButton>
                           </Tooltip>
@@ -427,6 +476,13 @@ function TabPorBeneficiario() {
           beneficiario={beneficiario}
           onCerrar={() => setModalAbierto(false)}
           onSubido={(dto) => guardar(beneficiario.id, dto)}
+        />
+      )}
+      {confirmar && (
+        <ConfirmarEliminar
+          nombre={confirmar.nombre}
+          onConfirmar={() => eliminar(confirmar.id, beneficiario?.id)}
+          onCerrar={() => setConfirmar(null)}
         />
       )}
     </Box>

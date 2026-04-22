@@ -166,7 +166,7 @@ public class AppDbContext : DbContext
             e.Property(i => i.FechaCreacion).HasDefaultValueSql("now()");
             e.Property(i => i.FechaModificacion).HasDefaultValueSql("now()");
             e.Property(i => i.FechaInscripcion).HasDefaultValueSql("now()");
-            e.Property(i => i.Datos).HasColumnType("jsonb");
+            // Datos se mapea como string; PostgreSQL hace cast implícito text→jsonb
             e.HasOne(i => i.Beneficiario).WithMany().HasForeignKey(i => i.BeneficiarioId);
             e.HasOne(i => i.Programa).WithMany().HasForeignKey(i => i.ProgramaId);
             e.HasIndex(i => i.ProgramaId);

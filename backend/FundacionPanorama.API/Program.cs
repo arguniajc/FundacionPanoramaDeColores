@@ -144,7 +144,7 @@ using (var scope = app.Services.CreateScope())
             programa_id        UUID         NOT NULL REFERENCES programas(id),
             estado             VARCHAR(30)  NOT NULL DEFAULT 'activa',
             fecha_inscripcion  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-            datos              JSONB        NOT NULL DEFAULT '{}',
+            datos              TEXT         NOT NULL DEFAULT '{}',
             observaciones      TEXT,
             activo             BOOLEAN      NOT NULL DEFAULT true,
             fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -158,7 +158,7 @@ using (var scope = app.Services.CreateScope())
            "inscripciones.estado");
     Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS fecha_inscripcion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
            "inscripciones.fecha_inscripcion");
-    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS datos JSONB NOT NULL DEFAULT '{}';",
+    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS datos TEXT NOT NULL DEFAULT '{}';",
            "inscripciones.datos");
     Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS observaciones TEXT;",
            "inscripciones.observaciones");

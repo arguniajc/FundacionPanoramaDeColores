@@ -1,9 +1,4 @@
-**/bin
-**/obj
-**/.vs
-**/*.user
-frontend/
-docs/
-gestion/
-database/
-.git/
+backend/**/bin/
+backend/**/obj/
+backend/**/.vs/
+backend/**/*.user

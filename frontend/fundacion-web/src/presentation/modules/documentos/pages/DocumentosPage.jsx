@@ -97,34 +97,6 @@ function ConfirmarEliminar({ nombre, onConfirmar, onCerrar }) {
   );
 }
 
-// ── Visor de PDF ─────────────────────────────────────────────────────────────
-function VisorPDF({ url, titulo, onCerrar }) {
-  return (
-    <Dialog open onClose={onCerrar} maxWidth="lg" fullWidth
-      PaperProps={{ sx: { borderRadius: 3, height: '90vh', display: 'flex', flexDirection: 'column' } }}
-    >
-      <DialogTitle sx={{
-        background: HEADER_GRADIENT, color: '#fff', fontWeight: 700, py: 1.5, px: 3,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <Box display="flex" alignItems="center" gap={1}>
-          <InsertDriveFileIcon fontSize="small" />
-          <Typography fontWeight={700} noWrap sx={{ maxWidth: 500 }}>{titulo}</Typography>
-        </Box>
-        <IconButton onClick={onCerrar} size="small" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent sx={{ p: 0, flex: 1, overflow: 'hidden' }}>
-        <iframe
-          src={url}
-          title={titulo}
-          style={{ width: '100%', height: '100%', border: 'none' }}
-        />
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // ── Modal subir múltiples documentos institucionales ─────────────────────────
 function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
@@ -337,7 +309,6 @@ function TabInstitucionales({ onToast }) {
   const [buscar,          setBuscar]          = useState('');
   const [modalAbierto,    setModalAbierto]     = useState(false);
   const [confirmar,       setConfirmar]        = useState(null);
-  const [visor,           setVisor]            = useState(null); // { url, titulo }
 
   const { documentos, cargando, error, crear, eliminar } = useDocumentosInstitucionales();
 
@@ -447,8 +418,8 @@ function TabInstitucionales({ onToast }) {
                       {fmt(doc.fechaCreacion)}
                     </TableCell>
                     <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                      <Tooltip title="Vista previa">
-                        <IconButton size="small" onClick={() => setVisor({ url: doc.url, titulo: doc.titulo })}>
+                      <Tooltip title="Ver / Imprimir">
+                        <IconButton size="small" onClick={() => window.open(doc.url, '_blank', 'noopener,noreferrer')}>
                           <VisibilityIcon fontSize="small" sx={{ color: '#2D984F' }} />
                         </IconButton>
                       </Tooltip>
@@ -485,9 +456,6 @@ function TabInstitucionales({ onToast }) {
           onCerrar={() => setConfirmar(null)}
         />
       )}
-      {visor && (
-        <VisorPDF url={visor.url} titulo={visor.titulo} onCerrar={() => setVisor(null)} />
-      )}
     </Box>
   );
 }
@@ -499,7 +467,6 @@ function TabPorBeneficiario({ onToast }) {
   const [buscando,     setBuscando]     = useState(false);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [confirmar,    setConfirmar]    = useState(null);
-  const [visor,        setVisor]        = useState(null);
 
   const { archivos, cargando, error, cargar, guardar, eliminar } = useDocumentosBeneficiario();
 
@@ -599,8 +566,8 @@ function TabPorBeneficiario({ onToast }) {
                           {fmt(a.fechaCreacion)}
                         </TableCell>
                         <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                          <Tooltip title="Vista previa">
-                            <IconButton size="small" onClick={() => setVisor({ url: a.url, titulo: a.nombreOriginal ?? 'Documento' })}>
+                          <Tooltip title="Ver / Imprimir">
+                            <IconButton size="small" onClick={() => window.open(a.url, '_blank', 'noopener,noreferrer')}>
                               <VisibilityIcon fontSize="small" sx={{ color: '#2D984F' }} />
                             </IconButton>
                           </Tooltip>
@@ -640,16 +607,12 @@ function TabPorBeneficiario({ onToast }) {
           onCerrar={() => setConfirmar(null)}
         />
       )}
-      {visor && (
-        <VisorPDF url={visor.url} titulo={visor.titulo} onCerrar={() => setVisor(null)} />
-      )}
     </Box>
   );
 }
 
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function DocumentosPage() {
-  const [tab] = useState(0);
   const [tabValue, setTabValue] = useState(0);
   const { toast, show: showToast, close: closeToast } = useToast();
 

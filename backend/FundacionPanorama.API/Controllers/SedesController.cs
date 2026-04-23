@@ -13,8 +13,8 @@ public record SedeDto(Guid Id, string Nombre, string? Direccion, string? Ciudad,
 public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, DateTime FechaCreacion);
 public record CrearSedeDto(string Nombre, string? Direccion, string? Ciudad, string? Telefono);
 public record CrearProgramaDto(Guid SedeId, string Nombre, string? Descripcion, int? CupoMaximo);
-public record CampoDto(Guid Id, Guid ProgramaId, string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, bool Activo);
-public record CrearCampoDto(string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden);
+public record CampoDto(Guid Id, Guid ProgramaId, string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, bool Activo, string? Seccion);
+public record CrearCampoDto(string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, string? Seccion);
 
 [ApiController]
 [Route("api/sedes")]
@@ -166,7 +166,7 @@ public class SedesController : ControllerBase
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo FROM programas_campos WHERE programa_id = @pid AND activo = true ORDER BY orden";
+        cmd.CommandText = "SELECT id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion FROM programas_campos WHERE programa_id = @pid AND activo = true ORDER BY orden";
         cmd.Parameters.AddWithValue("pid", programaId);
         await using var r = await cmd.ExecuteReaderAsync();
         while (await r.ReadAsync()) campos.Add(LeerCampo(r));
@@ -183,15 +183,16 @@ public class SedesController : ControllerBase
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"INSERT INTO programas_campos (programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo)
-                            VALUES (@pid, @etiqueta, @tipo, @oblig, @opciones, @orden, true)
-                            RETURNING id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo";
+        cmd.CommandText = @"INSERT INTO programas_campos (programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion)
+                            VALUES (@pid, @etiqueta, @tipo, @oblig, @opciones, @orden, true, @seccion)
+                            RETURNING id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion";
         cmd.Parameters.AddWithValue("pid",      programaId);
         cmd.Parameters.AddWithValue("etiqueta", dto.Etiqueta.Trim());
         cmd.Parameters.AddWithValue("tipo",     dto.Tipo);
         cmd.Parameters.AddWithValue("oblig",    dto.Obligatorio);
         cmd.Parameters.AddWithValue("opciones", (object?)opJson ?? DBNull.Value);
         cmd.Parameters.AddWithValue("orden",    dto.Orden);
+        cmd.Parameters.AddWithValue("seccion",  string.IsNullOrWhiteSpace(dto.Seccion) ? DBNull.Value : (object)dto.Seccion.Trim());
         await using var r = await cmd.ExecuteReaderAsync();
         await r.ReadAsync();
         return Ok(LeerCampo(r));
@@ -204,9 +205,9 @@ public class SedesController : ControllerBase
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"UPDATE programas_campos SET etiqueta=@etiqueta, tipo=@tipo, obligatorio=@oblig, opciones_json=@opciones, orden=@orden
+        cmd.CommandText = @"UPDATE programas_campos SET etiqueta=@etiqueta, tipo=@tipo, obligatorio=@oblig, opciones_json=@opciones, orden=@orden, seccion=@seccion
                             WHERE id=@id AND programa_id=@pid
-                            RETURNING id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo";
+                            RETURNING id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion";
         cmd.Parameters.AddWithValue("id",       campoId);
         cmd.Parameters.AddWithValue("pid",      programaId);
         cmd.Parameters.AddWithValue("etiqueta", dto.Etiqueta.Trim());
@@ -214,6 +215,7 @@ public class SedesController : ControllerBase
         cmd.Parameters.AddWithValue("oblig",    dto.Obligatorio);
         cmd.Parameters.AddWithValue("opciones", (object?)opJson ?? DBNull.Value);
         cmd.Parameters.AddWithValue("orden",    dto.Orden);
+        cmd.Parameters.AddWithValue("seccion",  string.IsNullOrWhiteSpace(dto.Seccion) ? DBNull.Value : (object)dto.Seccion.Trim());
         await using var r = await cmd.ExecuteReaderAsync();
         if (!await r.ReadAsync()) return NotFound();
         return Ok(LeerCampo(r));
@@ -249,7 +251,8 @@ public class SedesController : ControllerBase
             r.GetBoolean(4),
             opJson is not null ? JsonSerializer.Deserialize<string[]>(opJson) : null,
             r.GetInt32(6),
-            r.GetBoolean(7)
+            r.GetBoolean(7),
+            r.IsDBNull(8) ? null : r.GetString(8)
         );
     }
 

@@ -188,22 +188,49 @@ export function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos
   // ─── Formulario dinámico del programa ───────────────────────────────────────
   if (campos.length > 0) {
     seccion('Formulario del Programa');
-    let i = 0;
-    while (i < campos.length) {
-      const c1 = campos[i];
-      const esDoc1 = c1.tipo === 'document';
-      const c2 = campos[i + 1];
-      const esDoc2 = c2 && c2.tipo === 'document';
 
-      if (esDoc1 || !c2 || esDoc2) {
-        fila([{ etiqueta: c1.etiqueta + (c1.obligatorio ? ' *' : ''), valor: valorCampo(c1, datos) }]);
-        i++;
-      } else {
-        fila([
-          { etiqueta: c1.etiqueta + (c1.obligatorio ? ' *' : ''), valor: valorCampo(c1, datos), flex: 1 },
-          { etiqueta: c2.etiqueta + (c2.obligatorio ? ' *' : ''), valor: valorCampo(c2, datos), flex: 1 },
-        ]);
-        i += 2;
+    // Agrupar campos consecutivos por sección
+    const grupos = [];
+    for (const c of campos) {
+      const sec  = c.seccion?.trim() || '';
+      const last = grupos[grupos.length - 1];
+      if (!last || last.sec !== sec) grupos.push({ sec, items: [c] });
+      else last.items.push(c);
+    }
+
+    for (const { sec, items } of grupos) {
+      // Sub-encabezado de sección
+      if (sec) {
+        pageBreak(9);
+        doc.setFillColor(220, 210, 240);
+        doc.rect(ML, y, CW, 6.5, 'F');
+        doc.setDrawColor(...BORDER);
+        doc.rect(ML, y, CW, 6.5, 'S');
+        doc.setTextColor(...PURPLE);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text(sec.toUpperCase(), ML + 4, y + 4.5);
+        y += 8;
+        doc.setTextColor(...DARK);
+      }
+
+      let i = 0;
+      while (i < items.length) {
+        const c1     = items[i];
+        const esDoc1 = c1.tipo === 'document';
+        const c2     = items[i + 1];
+        const esDoc2 = c2 && c2.tipo === 'document';
+
+        if (esDoc1 || !c2 || esDoc2) {
+          fila([{ etiqueta: c1.etiqueta + (c1.obligatorio ? ' *' : ''), valor: valorCampo(c1, datos) }]);
+          i++;
+        } else {
+          fila([
+            { etiqueta: c1.etiqueta + (c1.obligatorio ? ' *' : ''), valor: valorCampo(c1, datos), flex: 1 },
+            { etiqueta: c2.etiqueta + (c2.obligatorio ? ' *' : ''), valor: valorCampo(c2, datos), flex: 1 },
+          ]);
+          i += 2;
+        }
       }
     }
     esp(2);

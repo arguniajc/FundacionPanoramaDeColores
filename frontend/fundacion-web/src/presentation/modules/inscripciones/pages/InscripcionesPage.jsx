@@ -21,6 +21,34 @@ import { archivosRepository }       from '../../../../infrastructure/repositorie
 
 const COLOR = '#4E1B95';
 
+// Agrupa campos consecutivos con la misma sección
+function agruparPorSeccion(campos) {
+  const result = [];
+  for (const c of campos) {
+    const sec  = c.seccion?.trim() || '';
+    const last = result[result.length - 1];
+    if (!last || last.seccion !== sec) result.push({ seccion: sec, campos: [c] });
+    else last.campos.push(c);
+  }
+  return result;
+}
+
+function SeccionHeader({ titulo }) {
+  if (!titulo) return null;
+  return (
+    <Grid size={12}>
+      <Box display="flex" alignItems="center" gap={1} mt={1} mb={0.5}>
+        <Typography variant="caption" fontWeight={800} color={COLOR}
+          sx={{ textTransform: 'uppercase', letterSpacing: 0.9,
+                bgcolor: '#ede7f6', px: 1.5, py: 0.4, borderRadius: 1, flexShrink: 0 }}>
+          {titulo}
+        </Typography>
+        <Box flex={1} sx={{ height: '1.5px', bgcolor: '#d0c4f7' }} />
+      </Box>
+    </Grid>
+  );
+}
+
 const ESTADOS = [
   { value: 'activa',     label: 'Activa',     color: 'success' },
   { value: 'suspendida', label: 'Suspendida', color: 'warning' },
@@ -249,13 +277,18 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         ) : editando ? (
           /* ── Modo edición ──────────────────────────────────────── */
           <Grid container spacing={2}>
-            {campos.map(c => (
-              <Grid key={c.id} size={c.tipo === 'document' ? 12 : { xs: 12, sm: 6 }}>
-                <CampoInput
-                  campo={c}
-                  value={datos[c.id]}
-                  onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
-                />
+            {agruparPorSeccion(campos).map(({ seccion: sec, campos: grp }) => (
+              <Grid key={sec || '_root'} size={12} container spacing={2} sx={{ m: 0, p: 0 }}>
+                <SeccionHeader titulo={sec} />
+                {grp.map(c => (
+                  <Grid key={c.id} size={c.tipo === 'document' ? 12 : { xs: 12, sm: 6 }}>
+                    <CampoInput
+                      campo={c}
+                      value={datos[c.id]}
+                      onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
+                    />
+                  </Grid>
+                ))}
               </Grid>
             ))}
             <Grid size={12}>
@@ -272,20 +305,36 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                 Este programa no tiene campos adicionales en el formulario.
               </Alert>
             ) : (
-              <Box sx={{ border: '1px solid #e2d9f3', borderRadius: 2, overflow: 'hidden', mb: 2 }}>
-                {campos.map((c, idx) => (
-                  <Box key={c.id} sx={{
-                    display: 'flex', gap: 2, p: '8px 14px',
-                    bgcolor: idx % 2 === 0 ? '#fdfbff' : '#f8f5ff',
-                    borderBottom: idx < campos.length - 1 ? '1px solid #ede7f6' : 'none',
-                  }}>
-                    <Typography variant="body2" fontWeight={700} color={COLOR}
-                      sx={{ minWidth: 140, flexShrink: 0 }}>
-                      {c.etiqueta}{c.obligatorio ? ' *' : ''}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
-                      {valorVista(c)}
-                    </Typography>
+              <Box mb={2}>
+                {agruparPorSeccion(campos).map(({ seccion: sec, campos: grp }, gi) => (
+                  <Box key={sec || '_root'}>
+                    {sec && (
+                      <Box display="flex" alignItems="center" gap={1} mt={gi > 0 ? 2 : 0} mb={0.5}>
+                        <Typography variant="caption" fontWeight={800} color={COLOR}
+                          sx={{ textTransform: 'uppercase', letterSpacing: 0.8,
+                                bgcolor: '#ede7f6', px: 1.5, py: 0.3, borderRadius: 1, flexShrink: 0 }}>
+                          {sec}
+                        </Typography>
+                        <Box flex={1} sx={{ height: '1px', bgcolor: '#d0c4f7' }} />
+                      </Box>
+                    )}
+                    <Box sx={{ border: '1px solid #e2d9f3', borderRadius: 2, overflow: 'hidden' }}>
+                      {grp.map((c, idx) => (
+                        <Box key={c.id} sx={{
+                          display: 'flex', gap: 2, p: '8px 14px',
+                          bgcolor: idx % 2 === 0 ? '#fdfbff' : '#f8f5ff',
+                          borderBottom: idx < grp.length - 1 ? '1px solid #ede7f6' : 'none',
+                        }}>
+                          <Typography variant="body2" fontWeight={700} color={COLOR}
+                            sx={{ minWidth: 140, flexShrink: 0 }}>
+                            {c.etiqueta}{c.obligatorio ? ' *' : ''}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
+                            {valorVista(c)}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
                   </Box>
                 ))}
               </Box>
@@ -498,13 +547,18 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
               </Alert>
             ) : (
               <Grid container spacing={2}>
-                {campos.map(c => (
-                  <Grid key={c.id} size={c.tipo === 'document' ? 12 : { xs: 12, sm: 6 }}>
-                    <CampoInput
-                      campo={c}
-                      value={datos[c.id]}
-                      onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
-                    />
+                {agruparPorSeccion(campos).map(({ seccion: sec, campos: grp }) => (
+                  <Grid key={sec || '_root'} size={12} container spacing={2} sx={{ m: 0, p: 0 }}>
+                    <SeccionHeader titulo={sec} />
+                    {grp.map(c => (
+                      <Grid key={c.id} size={c.tipo === 'document' ? 12 : { xs: 12, sm: 6 }}>
+                        <CampoInput
+                          campo={c}
+                          value={datos[c.id]}
+                          onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
+                        />
+                      </Grid>
+                    ))}
                   </Grid>
                 ))}
                 <Grid size={12}>

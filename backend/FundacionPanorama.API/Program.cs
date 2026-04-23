@@ -170,6 +170,7 @@ var app = builder.Build();
         )
         """, "programas_campos");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_programas_campos_programa ON programas_campos(programa_id)", "programas_campos.idx_programa");
+    await Migrar("ALTER TABLE programas_campos ADD COLUMN IF NOT EXISTS seccion VARCHAR(100)", "programas_campos.seccion");
     await Migrar("""
         DO $$ BEGIN
             IF EXISTS (SELECT 1 FROM information_schema.columns

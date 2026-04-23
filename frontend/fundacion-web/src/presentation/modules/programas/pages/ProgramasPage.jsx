@@ -42,20 +42,24 @@ function EditorCamposDialog({ programa, onCerrar }) {
   const [guardando,   setGuardando]   = useState(false);
   const [toast,       setToast]       = useState('');
 
-  const campoVacio = { etiqueta: '', tipo: 'text', obligatorio: false, opciones: '' };
+  const campoVacio = { etiqueta: '', tipo: 'text', obligatorio: false, opciones: '', seccion: '' };
   const [form, setForm] = useState(campoVacio);
 
   useEffect(() => { cargar(); }, [cargar]);
 
   const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
 
+  // Secciones únicas ya usadas en este programa (para sugerencias)
+  const seccionesExistentes = [...new Set(campos.map(c => c.seccion).filter(Boolean))];
+
   const abrirNuevo = () => { setForm(campoVacio); setEditando(null); setFormAbierto(true); };
   const abrirEditar = (c) => {
     setForm({
-      etiqueta:   c.etiqueta,
-      tipo:       c.tipo,
+      etiqueta:    c.etiqueta,
+      tipo:        c.tipo,
       obligatorio: c.obligatorio,
-      opciones:   (c.opciones ?? []).join(', '),
+      opciones:    (c.opciones ?? []).join(', '),
+      seccion:     c.seccion ?? '',
     });
     setEditando(c);
     setFormAbierto(true);
@@ -72,7 +76,8 @@ function EditorCamposDialog({ programa, onCerrar }) {
         opciones:    form.tipo === 'select'
           ? form.opciones.split(',').map(o => o.trim()).filter(Boolean)
           : null,
-        orden: editando ? editando.orden : campos.length,
+        orden:   editando ? editando.orden : campos.length,
+        seccion: form.seccion.trim() || null,
       };
       if (editando) {
         await editarCampo(editando.id, dto);
@@ -131,8 +136,23 @@ function EditorCamposDialog({ programa, onCerrar }) {
               Este programa no tiene campos configurados.
             </Typography>
           ) : (
-            campos.map((c, idx) => (
-              <Box key={c.id} sx={{
+            campos.map((c, idx) => {
+              const sec     = c.seccion?.trim() || '';
+              const prevSec = campos[idx - 1]?.seccion?.trim() || '';
+              const showSec = sec && (idx === 0 || sec !== prevSec);
+              return (
+              <Box key={c.id}>
+                {showSec && (
+                  <Box display="flex" alignItems="center" gap={1} mt={idx > 0 ? 1.5 : 0} mb={0.5}>
+                    <Typography variant="caption" fontWeight={800} color={COLOR}
+                      sx={{ textTransform: 'uppercase', letterSpacing: 0.8,
+                            bgcolor: '#ede7f6', px: 1.5, py: 0.3, borderRadius: 1 }}>
+                      {sec}
+                    </Typography>
+                    <Box flex={1} sx={{ height: '1px', bgcolor: '#d0c4f7' }} />
+                  </Box>
+                )}
+              <Box sx={{
                 display: 'flex', alignItems: 'center', gap: 1,
                 border: '1px solid #e2d9f3', borderRadius: 2,
                 px: 1.5, py: 1, mb: 1, bgcolor: '#fdfbff',
@@ -146,6 +166,7 @@ function EditorCamposDialog({ programa, onCerrar }) {
                     {c.tipo === 'select' && c.opciones?.length > 0 && (
                       <Chip label={`${c.opciones.length} opciones`} size="small" variant="outlined" />
                     )}
+                    {sec && <Chip label={sec} size="small" sx={{ bgcolor: '#f3f0ff', color: COLOR }} />}
                   </Box>
                 </Box>
                 <Tooltip title="Subir"><span>
@@ -169,7 +190,8 @@ function EditorCamposDialog({ programa, onCerrar }) {
                   </IconButton>
                 </Tooltip>
               </Box>
-            ))
+              </Box>
+            );})
           )}
 
           <Button fullWidth variant="outlined" startIcon={<AddIcon />}
@@ -190,6 +212,14 @@ function EditorCamposDialog({ programa, onCerrar }) {
         </DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} mt={0}>
+            <Grid size={12}>
+              <TextField fullWidth size="small" label="Sección (opcional)"
+                placeholder="Ej: Datos personales, Información académica…"
+                value={form.seccion} onChange={set('seccion')}
+                helperText={seccionesExistentes.length > 0
+                  ? `Secciones existentes: ${seccionesExistentes.join(' · ')}`
+                  : 'Agrupa campos bajo un mismo título de sección'} />
+            </Grid>
             <Grid size={12}>
               <TextField fullWidth size="small" label="Etiqueta / Pregunta"
                 value={form.etiqueta} onChange={set('etiqueta')} required />

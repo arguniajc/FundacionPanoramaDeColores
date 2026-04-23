@@ -4,7 +4,17 @@ import { HashRouter } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './application/auth/AuthContext';
 import { AppThemeProvider } from './shared/theme/ThemeContext';
+import ErrorBoundary from './presentation/components/ErrorBoundary';
+import logger from './shared/utils/logger';
 import App from './App.jsx';
+
+// ── Errores JS globales no capturados ─────────────────────────────────────────
+window.addEventListener('error', (e) => {
+  logger.error('JS global error:', e.message, '\n', e.filename, 'línea', e.lineno);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  logger.error('Promise sin manejar:', e.reason);
+});
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -12,7 +22,9 @@ createRoot(document.getElementById('root')).render(
       <HashRouter>
         <AppThemeProvider>
           <AuthProvider>
-            <App />
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
           </AuthProvider>
         </AppThemeProvider>
       </HashRouter>

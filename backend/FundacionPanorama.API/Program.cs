@@ -73,8 +73,15 @@ using (var scope = app.Services.CreateScope())
 
     void Migrar(string sql, string etiqueta)
     {
-        try   { db.Database.ExecuteSqlRaw(sql); logger.LogInformation("✅ Migración OK: {E}", etiqueta); }
-        catch (Exception ex) { logger.LogWarning("⚠️ Migración omitida [{E}]: {M}", etiqueta, ex.Message); }
+        try
+        {
+            db.Database.ExecuteSqlRaw(sql);
+            logger.LogInformation("✅ Migración OK: {Etiqueta}", etiqueta);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "⚠️  Migración omitida [{Etiqueta}]: {Mensaje}", etiqueta, ex.Message);
+        }
     }
 
     Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;",
@@ -236,8 +243,12 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
 {
     ctx.Response.StatusCode  = 500;
     ctx.Response.ContentType = "application/json";
-    var ex = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
-    var msg = ex?.Message ?? "Error interno del servidor.";
+    var ex       = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+    var exLogger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+    if (ex is not null)
+        exLogger.LogError(ex, "❌ Excepción no manejada en {Method} {Path}",
+            ctx.Request.Method, ctx.Request.Path);
+    var msg   = ex?.Message              ?? "Error interno del servidor.";
     var inner = ex?.InnerException?.Message ?? "";
     await ctx.Response.WriteAsJsonAsync(new { error = msg, inner });
 }));

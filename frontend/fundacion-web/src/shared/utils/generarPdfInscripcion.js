@@ -33,9 +33,18 @@ function fmtFecha(iso) {
 
 function valorCampo(campo, datos) {
   const v = datos[campo.id];
+  if (campo.tipo === 'document') return v ? '✓  Entregado' : '☐  PENDIENTE — no entregado';
   if (v === undefined || v === null || v === '') return '—';
   if (campo.tipo === 'boolean') return (v === 'true' || v === true) ? 'Sí' : 'No';
-  if (campo.tipo === 'document') return v ? '✓ Documento adjunto' : '—';
+  if (campo.tipo === 'daterange') {
+    try {
+      const rng = JSON.parse(v);
+      return `${fmtFecha(rng.desde)}  —  ${fmtFecha(rng.hasta)}`;
+    } catch { return String(v); }
+  }
+  if (campo.tipo === 'altura')   return `${v} cm`;
+  if (campo.tipo === 'edad')     return `${v} años`;
+  if (campo.tipo === 'fecha_nac') return fmtFecha(v);
   return String(v);
 }
 
@@ -99,11 +108,12 @@ export function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...GRAY);
       doc.text(String(p.etiqueta).toUpperCase(), x + 3, y + 4.5);
-      // Valor (normal)
+      // Valor (normal; naranja si alerta=true)
       doc.setFontSize(8.5);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...DARK);
+      doc.setTextColor(...(p.alerta ? [200, 80, 0] : DARK));
       lineas[i].forEach((l, li) => doc.text(l, x + 3, y + 9 + li * 4.5));
+      doc.setTextColor(...DARK);
       x += anchos[i];
     });
     y += altFila;
@@ -113,23 +123,28 @@ export function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos
 
   // ─── Encabezado ────────────────────────────────────────────────────────────
   doc.setFillColor(...PURPLE);
-  doc.rect(ML, y, CW, 25, 'F');
+  doc.rect(ML, y, CW, 33, 'F');
   doc.setFillColor(...ACCENT);
-  doc.rect(ML, y + 21, CW, 4, 'F');
+  doc.rect(ML, y + 29, CW, 4, 'F');
 
   doc.setTextColor(...WHITE);
-  doc.setFontSize(15);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Fundación Panorama de Colores', ML + 5, y + 10);
-
-  doc.setFontSize(9.5);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
-  doc.text('Formulario de Inscripción de Beneficiario a Programa', ML + 5, y + 17);
+  doc.text('Fundación Panorama de Colores  ·  Formulario de Inscripción', ML + 5, y + 8);
+
+  // Nombre del programa — título grande
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  const nombreProg = inscripcion.nombrePrograma ?? '';
+  const lineasProg = doc.splitTextToSize(nombreProg, CW - 10);
+  doc.text(lineasProg[0], ML + 5, y + 18);
+  if (lineasProg[1]) doc.text(lineasProg[1], ML + 5, y + 25);
 
   const hoy = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
   doc.setFontSize(7.5);
-  doc.text(hoy, ML + CW - 3, y + 17, { align: 'right' });
-  y += 29;
+  doc.setFont('helvetica', 'normal');
+  doc.text(hoy, ML + CW - 3, y + 8, { align: 'right' });
+  y += 37;
 
   // ─── Datos del beneficiario ─────────────────────────────────────────────────
   seccion('Datos del Beneficiario');
@@ -216,13 +231,15 @@ export function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos
 
       let i = 0;
       while (i < items.length) {
-        const c1     = items[i];
-        const esDoc1 = c1.tipo === 'document';
-        const c2     = items[i + 1];
-        const esDoc2 = c2 && c2.tipo === 'document';
+        const c1      = items[i];
+        const esAncho1 = c1.tipo === 'document' || c1.tipo === 'daterange';
+        const c2      = items[i + 1];
+        const esAncho2 = c2 && (c2.tipo === 'document' || c2.tipo === 'daterange');
+        const esDoc1   = c1.tipo === 'document';
 
-        if (esDoc1 || !c2 || esDoc2) {
-          fila([{ etiqueta: c1.etiqueta + (c1.obligatorio ? ' *' : ''), valor: valorCampo(c1, datos) }]);
+        if (esAncho1 || !c2 || esAncho2) {
+          fila([{ etiqueta: c1.etiqueta + (c1.obligatorio ? ' *' : ''), valor: valorCampo(c1, datos),
+                  alerta: esDoc1 && !datos[c1.id] }]);
           i++;
         } else {
           fila([

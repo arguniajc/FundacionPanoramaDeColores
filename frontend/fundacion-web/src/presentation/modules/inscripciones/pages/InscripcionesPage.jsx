@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Autocomplete, Avatar, Box, Button, Chip, CircularProgress,
   Dialog, DialogActions, DialogContent, DialogTitle,
-  FormControl, FormControlLabel, Grid, IconButton, InputLabel,
+  FormControl, FormControlLabel, Grid, IconButton, InputAdornment, InputLabel,
   MenuItem, Select, Snackbar, Step, StepLabel, Stepper, Switch,
   TextField, Tooltip, Typography,
 } from '@mui/material';
@@ -20,6 +20,23 @@ import { useInscripciones }         from '../../../../application/inscripciones/
 import { archivosRepository }       from '../../../../infrastructure/repositories/archivosRepository';
 
 const COLOR = '#4E1B95';
+
+function calcEdad(fechaNac) {
+  if (!fechaNac) return null;
+  const nac = new Date(fechaNac + 'T00:00:00');
+  const hoy = new Date();
+  let e = hoy.getFullYear() - nac.getFullYear();
+  const m = hoy.getMonth() - nac.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) e--;
+  return e;
+}
+
+function fmtFechaCorta(iso) {
+  if (!iso) return '—';
+  return new Date(iso + 'T00:00:00').toLocaleDateString('es-CO', {
+    day: '2-digit', month: 'long', year: 'numeric',
+  });
+}
 
 // Agrupa campos consecutivos con la misma sección
 function agruparPorSeccion(campos) {
@@ -108,18 +125,84 @@ function CampoInput({ campo, value, onChange }) {
         </Typography>
         {value ? (
           <Box display="flex" alignItems="center" gap={1}>
-            <Chip label="PDF cargado" color="success" size="small" />
-            <Button size="small" onClick={() => window.open(value, '_blank', 'noopener,noreferrer')}>Ver</Button>
+            <Chip label="✓ Entregado" color="success" size="small" />
+            <Button size="small" onClick={() => window.open(value, '_blank', 'noopener,noreferrer')}>Ver PDF</Button>
             <Button size="small" color="error" onClick={() => onChange('')}>Quitar</Button>
           </Box>
         ) : (
-          <Button variant="outlined" component="label" size="small" disabled={subiendo}
-            sx={{ color: COLOR, borderColor: COLOR }}>
-            {subiendo ? 'Subiendo...' : 'Seleccionar PDF'}
-            <input type="file" hidden accept="application/pdf" onChange={handleFile} />
-          </Button>
+          <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+            <Chip label="Pendiente" color="warning" size="small" variant="outlined" />
+            <Button variant="outlined" component="label" size="small" disabled={subiendo}
+              sx={{ color: COLOR, borderColor: COLOR }}>
+              {subiendo ? 'Subiendo...' : 'Seleccionar PDF'}
+              <input type="file" hidden accept="application/pdf" onChange={handleFile} />
+            </Button>
+          </Box>
         )}
       </Box>
+    );
+  }
+
+  if (campo.tipo === 'daterange') {
+    let rng = { desde: '', hasta: '' };
+    try { if (value) rng = JSON.parse(value); } catch {}
+    const setRng = (k, v) => onChange(JSON.stringify({ ...rng, [k]: v }));
+    return (
+      <Box>
+        <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+          {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
+        </Typography>
+        <Box display="flex" gap={1} alignItems="center">
+          <TextField size="small" label="Desde" type="date" value={rng.desde ?? ''}
+            onChange={e => setRng('desde', e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
+          <Typography variant="body2" color="text.secondary" flexShrink={0}>—</Typography>
+          <TextField size="small" label="Hasta" type="date" value={rng.hasta ?? ''}
+            onChange={e => setRng('hasta', e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
+        </Box>
+      </Box>
+    );
+  }
+
+  if (campo.tipo === 'altura') {
+    return (
+      <TextField fullWidth size="small"
+        label={campo.etiqueta}
+        type="number"
+        required={campo.obligatorio}
+        value={value ?? ''}
+        onChange={e => onChange(e.target.value)}
+        slotProps={{ input: { endAdornment: <InputAdornment position="end">cm</InputAdornment> } }}
+      />
+    );
+  }
+
+  if (campo.tipo === 'edad') {
+    return (
+      <TextField fullWidth size="small"
+        label={campo.etiqueta}
+        type="number"
+        required={campo.obligatorio}
+        value={value ?? ''}
+        onChange={e => onChange(e.target.value)}
+        helperText="Auto-calculada del beneficiario"
+        slotProps={{ input: { endAdornment: <InputAdornment position="end">años</InputAdornment> } }}
+      />
+    );
+  }
+
+  if (campo.tipo === 'fecha_nac') {
+    return (
+      <TextField fullWidth size="small"
+        label={campo.etiqueta}
+        type="date"
+        required={campo.obligatorio}
+        value={value ?? ''}
+        onChange={e => onChange(e.target.value)}
+        helperText="Auto-completada del beneficiario"
+        slotProps={{ inputLabel: { shrink: true } }}
+      />
     );
   }
 
@@ -210,14 +293,34 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
 
   const valorVista = (campo) => {
     const v = datos[campo.id];
+
+    if (campo.tipo === 'document') {
+      if (v) return (
+        <Box display="flex" alignItems="center" gap={1}>
+          <Chip label="✓ Entregado" color="success" size="small" />
+          <Button size="small" sx={{ color: COLOR, p: 0, minWidth: 0, textDecoration: 'underline' }}
+            onClick={() => window.open(v, '_blank', 'noopener,noreferrer')}>
+            Ver PDF
+          </Button>
+        </Box>
+      );
+      return <Chip label="Pendiente" color="warning" size="small" variant="outlined" />;
+    }
+
     if (v === undefined || v === null || v === '') return <em style={{ color: '#aaa' }}>—</em>;
+
     if (campo.tipo === 'boolean') return (v === 'true' || v === true) ? 'Sí' : 'No';
-    if (campo.tipo === 'document') return (
-      <Button size="small" sx={{ color: COLOR, p: 0, minWidth: 0, textDecoration: 'underline' }}
-        onClick={() => window.open(v, '_blank', 'noopener,noreferrer')}>
-        Ver PDF
-      </Button>
-    );
+
+    if (campo.tipo === 'daterange') {
+      try {
+        const rng = JSON.parse(v);
+        return `${fmtFechaCorta(rng.desde)} — ${fmtFechaCorta(rng.hasta)}`;
+      } catch { return String(v); }
+    }
+    if (campo.tipo === 'altura')   return `${v} cm`;
+    if (campo.tipo === 'edad')     return `${v} años`;
+    if (campo.tipo === 'fecha_nac') return fmtFechaCorta(v);
+
     return String(v);
   };
 
@@ -281,7 +384,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               <Grid key={sec || '_root'} size={12} container spacing={2} sx={{ m: 0, p: 0 }}>
                 <SeccionHeader titulo={sec} />
                 {grp.map(c => (
-                  <Grid key={c.id} size={c.tipo === 'document' ? 12 : { xs: 12, sm: 6 }}>
+                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: 6 }}>
                     <CampoInput
                       campo={c}
                       value={datos[c.id]}
@@ -418,14 +521,32 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     setCargandoCampos(true);
     sedesRepository.listarCampos(selPrograma.id).then(({ data }) => {
       setCampos(data);
-      setDatos({});
+      // Auto-rellenar campos que se derivan del beneficiario seleccionado
+      const auto = {};
+      for (const c of data) {
+        if (c.tipo === 'edad' && selBenef?.fechaNacimiento) {
+          const e = calcEdad(selBenef.fechaNacimiento);
+          if (e !== null) auto[c.id] = String(e);
+        }
+        if (c.tipo === 'fecha_nac' && selBenef?.fechaNacimiento)
+          auto[c.id] = selBenef.fechaNacimiento;
+      }
+      setDatos(auto);
     }).catch(() => {}).finally(() => setCargandoCampos(false));
-  }, [selPrograma]);
+  }, [selPrograma, selBenef]);
 
   const pasoValido = () => {
     if (paso === 0) return !!selBenef;
     if (paso === 1) return !!selPrograma;
-    if (paso === 2) return campos.every(c => !c.obligatorio || !!datos[c.id]);
+    if (paso === 2) return campos.every(c => {
+      if (!c.obligatorio) return true;
+      const v = datos[c.id];
+      if (!v) return false;
+      if (c.tipo === 'daterange') {
+        try { const r = JSON.parse(v); return !!(r.desde && r.hasta); } catch { return false; }
+      }
+      return true;
+    });
     return true;
   };
 
@@ -551,7 +672,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                   <Grid key={sec || '_root'} size={12} container spacing={2} sx={{ m: 0, p: 0 }}>
                     <SeccionHeader titulo={sec} />
                     {grp.map(c => (
-                      <Grid key={c.id} size={c.tipo === 'document' ? 12 : { xs: 12, sm: 6 }}>
+                      <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: 6 }}>
                         <CampoInput
                           campo={c}
                           value={datos[c.id]}

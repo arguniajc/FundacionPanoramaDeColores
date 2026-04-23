@@ -17,12 +17,16 @@ import { useProgramaCampos } from '../../../../application/programas/usePrograma
 const COLOR = '#4E1B95';
 
 const TIPOS_CAMPO = [
-  { value: 'text',     label: 'Texto' },
-  { value: 'number',   label: 'Número' },
-  { value: 'date',     label: 'Fecha' },
-  { value: 'select',   label: 'Selección' },
-  { value: 'boolean',  label: 'Sí / No' },
-  { value: 'document', label: 'Documento (PDF)' },
+  { value: 'text',      label: 'Texto' },
+  { value: 'number',    label: 'Número' },
+  { value: 'date',      label: 'Fecha' },
+  { value: 'daterange', label: 'Rango de fechas (Desde / Hasta)' },
+  { value: 'altura',    label: 'Altura (cm)' },
+  { value: 'edad',      label: 'Edad — auto del beneficiario' },
+  { value: 'fecha_nac', label: 'Fecha de nacimiento — auto del beneficiario' },
+  { value: 'select',    label: 'Selección' },
+  { value: 'boolean',   label: 'Sí / No' },
+  { value: 'document',  label: 'Documento (PDF)' },
 ];
 
 function chipEstado(activo) {

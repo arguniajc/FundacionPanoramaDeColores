@@ -119,8 +119,30 @@ using (var scope = app.Services.CreateScope())
             fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
         );
         """, "programas");
+    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS direccion VARCHAR(300);",
+           "sedes.direccion");
+    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS ciudad VARCHAR(100);",
+           "sedes.ciudad");
+    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS telefono VARCHAR(30);",
+           "sedes.telefono");
+    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;",
+           "sedes.activo");
+    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
+           "sedes.fecha_creacion");
+    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
+           "sedes.fecha_modificacion");
+    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS sede_id UUID REFERENCES sedes(id) ON DELETE CASCADE;",
+           "programas.sede_id");
+    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS descripcion VARCHAR(500);",
+           "programas.descripcion");
     Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS cupo_maximo INT;",
            "programas.cupo_maximo");
+    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;",
+           "programas.activo");
+    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
+           "programas.fecha_creacion");
+    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
+           "programas.fecha_modificacion");
 
     Migrar("""
         CREATE TABLE IF NOT EXISTS documentos_institucionales (

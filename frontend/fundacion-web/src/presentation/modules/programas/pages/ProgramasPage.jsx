@@ -77,6 +77,13 @@ function EditorCamposDialog({ programa, onCerrar }) {
 
   const seccionesExistentes = seccionesOrdenadas(campos);
 
+  // Detecta si el texto escrito coincide (sin distinción de mayúsculas/espacios)
+  // con una sección existente que no es exactamente igual → duplicado accidental
+  const seccionDigitada = form.seccion.trim();
+  const seccionSimilar = seccionesExistentes.find(
+    s => s.toLowerCase() === seccionDigitada.toLowerCase() && s !== seccionDigitada
+  ) ?? null;
+
   const abrirNuevo = () => {
     setForm({ ...campoVacio, seccion: seccionesExistentes[seccionesExistentes.length - 1] ?? '' });
     setEditando(null);
@@ -311,11 +318,13 @@ function EditorCamposDialog({ programa, onCerrar }) {
                     {...params}
                     fullWidth size="small" label="Sección *" required
                     placeholder="Selecciona una existente o escribe una nueva…"
-                    error={form.seccion.trim() === '' && guardando}
+                    error={seccionSimilar !== null || (seccionDigitada === '' && guardando)}
                     helperText={
-                      seccionesExistentes.length > 0
-                        ? 'Selecciona una sección existente o escribe el nombre de una nueva'
-                        : 'Escribe el nombre de la primera sección (ej: Datos personales)'
+                      seccionSimilar !== null
+                        ? `Ya existe la sección "${seccionSimilar}" — selecciónala del listado para evitar duplicados`
+                        : seccionesExistentes.length > 0
+                          ? 'Selecciona una sección existente o escribe el nombre de una nueva'
+                          : 'Escribe el nombre de la primera sección (ej: Datos personales)'
                     }
                   />
                 )}
@@ -356,7 +365,7 @@ function EditorCamposDialog({ programa, onCerrar }) {
         <DialogActions sx={{ px: 2, py: 1.5 }}>
           <Button onClick={() => setFormAbierto(false)} disabled={guardando}>Cancelar</Button>
           <Button variant="contained" onClick={handleGuardar}
-            disabled={guardando || !form.etiqueta.trim() || !form.seccion.trim()}
+            disabled={guardando || !form.etiqueta.trim() || !seccionDigitada || seccionSimilar !== null}
             sx={{ bgcolor: COLOR }}>
             {guardando ? 'Guardando...' : 'Guardar'}
           </Button>

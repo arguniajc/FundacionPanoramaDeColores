@@ -156,16 +156,18 @@ using (var scope = app.Services.CreateScope())
             activo             BOOLEAN      NOT NULL DEFAULT true,
             fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
             fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-        );
-        CREATE INDEX IF NOT EXISTS idx_documentos_inst_categoria ON documentos_institucionales(categoria);
-        CREATE INDEX IF NOT EXISTS idx_documentos_inst_activo    ON documentos_institucionales(activo);
+        )
         """, "documentos_institucionales");
+    Migrar("CREATE INDEX IF NOT EXISTS idx_documentos_inst_categoria ON documentos_institucionales(categoria)",
+           "documentos_institucionales.idx_categoria");
+    Migrar("CREATE INDEX IF NOT EXISTS idx_documentos_inst_activo ON documentos_institucionales(activo)",
+           "documentos_institucionales.idx_activo");
 
     Migrar("""
         CREATE TABLE IF NOT EXISTS inscripciones (
             id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-            beneficiario_id    UUID         NOT NULL REFERENCES beneficiarios(id),
-            programa_id        UUID         NOT NULL REFERENCES programas(id),
+            beneficiario_id    UUID         NOT NULL,
+            programa_id        UUID         NOT NULL,
             estado             VARCHAR(30)  NOT NULL DEFAULT 'activa',
             fecha_inscripcion  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
             datos              TEXT         NOT NULL DEFAULT '{}',
@@ -173,10 +175,12 @@ using (var scope = app.Services.CreateScope())
             activo             BOOLEAN      NOT NULL DEFAULT true,
             fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
             fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-        );
-        CREATE INDEX IF NOT EXISTS idx_inscripciones_programa     ON inscripciones(programa_id);
-        CREATE INDEX IF NOT EXISTS idx_inscripciones_beneficiario ON inscripciones(beneficiario_id);
+        )
         """, "inscripciones");
+    Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_programa ON inscripciones(programa_id)",
+           "inscripciones.idx_programa");
+    Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_beneficiario ON inscripciones(beneficiario_id)",
+           "inscripciones.idx_beneficiario");
 
     Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS estado VARCHAR(30) NOT NULL DEFAULT 'activa';",
            "inscripciones.estado");
@@ -190,7 +194,7 @@ using (var scope = app.Services.CreateScope())
     Migrar("""
         CREATE TABLE IF NOT EXISTS programas_campos (
             id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-            programa_id        UUID         NOT NULL REFERENCES programas(id) ON DELETE CASCADE,
+            programa_id        UUID         NOT NULL,
             etiqueta           VARCHAR(100) NOT NULL,
             tipo               VARCHAR(30)  NOT NULL DEFAULT 'text',
             obligatorio        BOOLEAN      NOT NULL DEFAULT false,
@@ -199,15 +203,16 @@ using (var scope = app.Services.CreateScope())
             activo             BOOLEAN      NOT NULL DEFAULT true,
             fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
             fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-        );
-        CREATE INDEX IF NOT EXISTS idx_programas_campos_programa ON programas_campos(programa_id);
+        )
         """, "programas_campos");
+    Migrar("CREATE INDEX IF NOT EXISTS idx_programas_campos_programa ON programas_campos(programa_id)",
+           "programas_campos.idx_programa");
     Migrar("""
         DO $$ BEGIN
             IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='programas_campos' AND column_name='opciones') THEN
                 ALTER TABLE programas_campos RENAME COLUMN opciones TO opciones_json;
             END IF;
-        END $$;
+        END $$
         """, "programas_campos.rename_opciones");
 }
 

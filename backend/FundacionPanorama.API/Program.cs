@@ -119,6 +119,8 @@ using (var scope = app.Services.CreateScope())
             fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
         );
         """, "programas");
+    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS cupo_maximo INT;",
+           "programas.cupo_maximo");
 
     Migrar("""
         CREATE TABLE IF NOT EXISTS documentos_institucionales (

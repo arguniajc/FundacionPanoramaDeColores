@@ -207,7 +207,10 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
 {
     ctx.Response.StatusCode  = 500;
     ctx.Response.ContentType = "application/json";
-    await ctx.Response.WriteAsync("{\"error\":\"Error interno del servidor.\"}");
+    var ex = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+    var msg = ex?.Message ?? "Error interno del servidor.";
+    var inner = ex?.InnerException?.Message ?? "";
+    await ctx.Response.WriteAsJsonAsync(new { error = msg, inner });
 }));
 
 // Permite que Google Sign-In funcione con postMessage

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
+  Alert, Autocomplete, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, FormControl, FormControlLabel,
   Grid, IconButton, InputLabel, MenuItem, Select, Snackbar, Switch,
   TextField, Tooltip, Typography,
@@ -298,17 +298,28 @@ function EditorCamposDialog({ programa, onCerrar }) {
         </DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} mt={0}>
-            {/* Sección — obligatoria */}
+            {/* Sección — obligatoria, con autocompletado de secciones existentes */}
             <Grid size={12}>
-              <TextField fullWidth size="small" label="Sección *" required
-                placeholder="Ej: Datos personales, Información académica…"
-                value={form.seccion} onChange={set('seccion')}
-                error={form.seccion.trim() === '' && guardando}
-                helperText={
-                  seccionesExistentes.length > 0
-                    ? `Secciones existentes: ${seccionesExistentes.join(' · ')}`
-                    : 'Todos los campos deben pertenecer a una sección'
-                } />
+              <Autocomplete
+                freeSolo
+                options={seccionesExistentes}
+                value={form.seccion}
+                onInputChange={(_, val) => setForm(p => ({ ...p, seccion: val ?? '' }))}
+                onChange={(_, val) => setForm(p => ({ ...p, seccion: val ?? '' }))}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    fullWidth size="small" label="Sección *" required
+                    placeholder="Selecciona una existente o escribe una nueva…"
+                    error={form.seccion.trim() === '' && guardando}
+                    helperText={
+                      seccionesExistentes.length > 0
+                        ? 'Selecciona una sección existente o escribe el nombre de una nueva'
+                        : 'Escribe el nombre de la primera sección (ej: Datos personales)'
+                    }
+                  />
+                )}
+              />
             </Grid>
             <Grid size={12}>
               <TextField fullWidth size="small" label="Etiqueta / Pregunta *" required

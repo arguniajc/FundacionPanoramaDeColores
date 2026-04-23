@@ -178,6 +178,8 @@ public class SedesController : ControllerBase
     {
         if (!await _db.Programas.AnyAsync(p => p.Id == programaId))
             return NotFound(new { mensaje = "Programa no encontrado." });
+        if (string.IsNullOrWhiteSpace(dto.Seccion))
+            return BadRequest(new { mensaje = "La sección del campo es obligatoria." });
 
         var opJson = dto.Opciones is { Length: > 0 } ? JsonSerializer.Serialize(dto.Opciones) : null;
         await using var conn = AbrirConexion();
@@ -201,6 +203,8 @@ public class SedesController : ControllerBase
     [HttpPut("programas/{programaId:guid}/campos/{campoId:guid}")]
     public async Task<IActionResult> ActualizarCampo(Guid programaId, Guid campoId, [FromBody] CrearCampoDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Seccion))
+            return BadRequest(new { mensaje = "La sección del campo es obligatoria." });
         var opJson = dto.Opciones is { Length: > 0 } ? JsonSerializer.Serialize(dto.Opciones) : null;
         await using var conn = AbrirConexion();
         await conn.OpenAsync();

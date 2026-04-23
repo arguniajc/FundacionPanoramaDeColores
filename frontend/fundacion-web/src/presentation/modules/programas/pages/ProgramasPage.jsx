@@ -5,10 +5,10 @@ import {
   Grid, IconButton, InputLabel, MenuItem, Select, Snackbar, Switch,
   TextField, Tooltip, Typography,
 } from '@mui/material';
-import AddIcon        from '@mui/icons-material/Add';
-import DeleteIcon     from '@mui/icons-material/Delete';
-import EditIcon       from '@mui/icons-material/Edit';
-import TuneIcon       from '@mui/icons-material/Tune';
+import AddIcon           from '@mui/icons-material/Add';
+import DeleteIcon        from '@mui/icons-material/Delete';
+import EditIcon          from '@mui/icons-material/Edit';
+import TuneIcon          from '@mui/icons-material/Tune';
 import ArrowUpwardIcon   from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useSedes }          from '../../../../application/sedes/useSedes';
@@ -31,59 +31,85 @@ function chipEstado(activo) {
     : <Chip label="Inactivo" size="small" color="default" />;
 }
 
+// ── Helpers de ordenación ─────────────────────────────────────────────────────
+
+// Nombre de sección de un campo (vacío = sin sección asignada)
+const secDe = (c) => c.seccion?.trim() || '';
+
+// Campos de una sección ordenados por orden
+const camposDeSeccion = (campos, sec) =>
+  campos.filter(c => secDe(c) === sec).sort((a, b) => a.orden - b.orden);
+
+// Secciones únicas en el orden en que aparecen (por el menor orden de sus campos)
+const seccionesOrdenadas = (campos) => {
+  const seen = new Map();
+  for (const c of [...campos].sort((a, b) => a.orden - b.orden)) {
+    const s = secDe(c);
+    if (!seen.has(s)) seen.set(s, true);
+  }
+  return [...seen.keys()];
+};
+
+// DTO mínimo para editar un campo
+const toDto = (c, orden) => ({
+  etiqueta: c.etiqueta, tipo: c.tipo, obligatorio: c.obligatorio,
+  opciones: c.opciones, orden, seccion: c.seccion,
+});
+
 // ── Editor de campos de un programa ──────────────────────────────────────────
 
 function EditorCamposDialog({ programa, onCerrar }) {
   const { campos, cargando, error, cargar, crearCampo, editarCampo, eliminarCampo } =
     useProgramaCampos(programa.id);
 
-  const [formAbierto, setFormAbierto] = useState(false);
-  const [editando,    setEditando]    = useState(null);
-  const [guardando,   setGuardando]   = useState(false);
-  const [toast,       setToast]       = useState('');
+  const [formAbierto,  setFormAbierto]  = useState(false);
+  const [editando,     setEditando]     = useState(null);
+  const [guardando,    setGuardando]    = useState(false);
+  const [reordenando,  setReordenando]  = useState(false);
+  const [toast,        setToast]        = useState('');
 
-  const campoVacio = { etiqueta: '', tipo: 'text', obligatorio: false, opciones: '', seccion: '' };
+  const campoVacio = { seccion: '', etiqueta: '', tipo: 'text', obligatorio: false, opciones: '' };
   const [form, setForm] = useState(campoVacio);
 
   useEffect(() => { cargar(); }, [cargar]);
 
   const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
 
-  // Secciones únicas ya usadas en este programa (para sugerencias)
-  const seccionesExistentes = [...new Set(campos.map(c => c.seccion).filter(Boolean))];
+  const seccionesExistentes = seccionesOrdenadas(campos);
 
-  const abrirNuevo = () => { setForm(campoVacio); setEditando(null); setFormAbierto(true); };
+  const abrirNuevo = () => {
+    setForm({ ...campoVacio, seccion: seccionesExistentes[seccionesExistentes.length - 1] ?? '' });
+    setEditando(null);
+    setFormAbierto(true);
+  };
   const abrirEditar = (c) => {
     setForm({
+      seccion:     c.seccion ?? '',
       etiqueta:    c.etiqueta,
       tipo:        c.tipo,
       obligatorio: c.obligatorio,
       opciones:    (c.opciones ?? []).join(', '),
-      seccion:     c.seccion ?? '',
     });
     setEditando(c);
     setFormAbierto(true);
   };
 
   const handleGuardar = async () => {
-    if (!form.etiqueta.trim()) return;
+    if (!form.seccion.trim() || !form.etiqueta.trim()) return;
     setGuardando(true);
     try {
       const dto = {
+        seccion:     form.seccion.trim(),
         etiqueta:    form.etiqueta.trim(),
         tipo:        form.tipo,
         obligatorio: form.obligatorio,
         opciones:    form.tipo === 'select'
           ? form.opciones.split(',').map(o => o.trim()).filter(Boolean)
           : null,
-        orden:   editando ? editando.orden : campos.length,
-        seccion: form.seccion.trim() || null,
+        orden: editando ? editando.orden : campos.length,
       };
-      if (editando) {
-        await editarCampo(editando.id, dto);
-      } else {
-        await crearCampo(dto);
-      }
+      if (editando) await editarCampo(editando.id, dto);
+      else          await crearCampo(dto);
       setToast(editando ? 'Campo actualizado' : 'Campo creado');
       setFormAbierto(false);
     } catch {
@@ -94,24 +120,58 @@ function EditorCamposDialog({ programa, onCerrar }) {
   };
 
   const handleEliminar = async (id) => {
-    try {
-      await eliminarCampo(id);
-      setToast('Campo eliminado');
-    } catch {
-      setToast('Error al eliminar');
-    }
+    try { await eliminarCampo(id); setToast('Campo eliminado'); }
+    catch { setToast('Error al eliminar'); }
   };
 
-  const mover = async (idx, direccion) => {
-    const arr    = [...campos];
-    const target = idx + direccion;
-    if (target < 0 || target >= arr.length) return;
-    [arr[idx], arr[target]] = [arr[target], arr[idx]];
+  // ── Mover campo dentro de su sección ────────────────────────────────────────
+  const moverCampo = async (campo, dir) => {
+    setReordenando(true);
+    const sec   = secDe(campo);
+    const grupo = camposDeSeccion(campos, sec);
+    const idx   = grupo.findIndex(c => c.id === campo.id);
+    const tgt   = idx + dir;
+    if (tgt < 0 || tgt >= grupo.length) return;
+    const otro  = grupo[tgt];
     try {
-      await editarCampo(arr[idx].id,    { ...arr[idx],    orden: idx });
-      await editarCampo(arr[target].id, { ...arr[target], orden: target });
+      await editarCampo(campo.id, toDto(campo, otro.orden));
+      await editarCampo(otro.id,  toDto(otro,  campo.orden));
     } catch { setToast('Error al reordenar'); }
+    finally   { setReordenando(false); }
   };
+
+  // ── Mover sección completa (intercambia bloques de campos) ──────────────────
+  const moverSeccion = async (secNombre, dir) => {
+    setReordenando(true);
+    const secciones = seccionesOrdenadas(campos);
+    const idx = secciones.indexOf(secNombre);
+    const tgt = idx + dir;
+    if (tgt < 0 || tgt >= secciones.length) { setReordenando(false); return; }
+
+    const secA = secciones[idx];   // sección que se mueve
+    const secB = secciones[tgt];   // sección vecina
+
+    const cA = camposDeSeccion(campos, secA);
+    const cB = camposDeSeccion(campos, secB);
+
+    // Reunir todos los orden-values que usan los dos grupos, ordenados
+    const ords = [...cA, ...cB].map(c => c.orden).sort((a, b) => a - b);
+
+    // El grupo que queda "primero" toma los menores ords
+    const [primero, segundo] = dir < 0 ? [cA, cB] : [cB, cA];
+    const updates = [
+      ...primero.map((c, i) => ({ campo: c, orden: ords[i] })),
+      ...segundo.map((c, i) => ({ campo: c, orden: ords[primero.length + i] })),
+    ].filter(({ campo, orden }) => campo.orden !== orden);
+
+    try {
+      for (const { campo, orden } of updates)
+        await editarCampo(campo.id, toDto(campo, orden));
+    } catch { setToast('Error al reordenar sección'); }
+    finally   { setReordenando(false); }
+  };
+
+  const secciones = seccionesOrdenadas(campos);
 
   return (
     <>
@@ -136,62 +196,88 @@ function EditorCamposDialog({ programa, onCerrar }) {
               Este programa no tiene campos configurados.
             </Typography>
           ) : (
-            campos.map((c, idx) => {
-              const sec     = c.seccion?.trim() || '';
-              const prevSec = campos[idx - 1]?.seccion?.trim() || '';
-              const showSec = sec && (idx === 0 || sec !== prevSec);
-              return (
-              <Box key={c.id}>
-                {showSec && (
-                  <Box display="flex" alignItems="center" gap={1} mt={idx > 0 ? 1.5 : 0} mb={0.5}>
-                    <Typography variant="caption" fontWeight={800} color={COLOR}
-                      sx={{ textTransform: 'uppercase', letterSpacing: 0.8,
-                            bgcolor: '#ede7f6', px: 1.5, py: 0.3, borderRadius: 1 }}>
-                      {sec}
-                    </Typography>
-                    <Box flex={1} sx={{ height: '1px', bgcolor: '#d0c4f7' }} />
+            <Box>
+              {secciones.map((sec, si) => {
+                const grupo = camposDeSeccion(campos, sec);
+                return (
+                  <Box key={sec || '_root'} sx={{ mb: 2 }}>
+                    {/* ── Encabezado de sección ── */}
+                    <Box sx={{
+                      display: 'flex', alignItems: 'center', gap: 0.5,
+                      bgcolor: COLOR, borderRadius: '8px 8px 0 0', px: 1.5, py: 0.8,
+                    }}>
+                      <Typography variant="caption" fontWeight={800} color="white"
+                        sx={{ textTransform: 'uppercase', letterSpacing: 1, flex: 1 }}>
+                        {sec || '(sin sección)'}
+                      </Typography>
+                      <Tooltip title="Subir sección"><span>
+                        <IconButton size="small" disabled={si === 0 || reordenando}
+                          onClick={() => moverSeccion(sec, -1)}
+                          sx={{ color: 'white', '&.Mui-disabled': { color: 'rgba(255,255,255,.3)' } }}>
+                          <ArrowUpwardIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </span></Tooltip>
+                      <Tooltip title="Bajar sección"><span>
+                        <IconButton size="small" disabled={si === secciones.length - 1 || reordenando}
+                          onClick={() => moverSeccion(sec, 1)}
+                          sx={{ color: 'white', '&.Mui-disabled': { color: 'rgba(255,255,255,.3)' } }}>
+                          <ArrowDownwardIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </span></Tooltip>
+                    </Box>
+
+                    {/* ── Campos de la sección ── */}
+                    <Box sx={{ border: '1px solid #e2d9f3', borderTop: 'none', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
+                      {grupo.map((c, ci) => (
+                        <Box key={c.id} sx={{
+                          display: 'flex', alignItems: 'center', gap: 0.5,
+                          px: 1.5, py: 1,
+                          bgcolor: ci % 2 === 0 ? '#fdfbff' : '#f8f5ff',
+                          borderBottom: ci < grupo.length - 1 ? '1px solid #ede7f6' : 'none',
+                        }}>
+                          <Box flex={1} minWidth={0}>
+                            <Typography variant="body2" fontWeight={700} noWrap>{c.etiqueta}</Typography>
+                            <Box display="flex" gap={0.5} flexWrap="wrap" mt={0.3}>
+                              <Chip label={TIPOS_CAMPO.find(t => t.value === c.tipo)?.label ?? c.tipo}
+                                size="small" sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600 }} />
+                              {c.obligatorio && <Chip label="Requerido" size="small" color="warning" />}
+                              {c.tipo === 'select' && c.opciones?.length > 0 && (
+                                <Chip label={`${c.opciones.length} opciones`} size="small" variant="outlined" />
+                              )}
+                            </Box>
+                          </Box>
+
+                          {/* Flechas de reordenación dentro de la sección */}
+                          <Tooltip title="Subir campo"><span>
+                            <IconButton size="small" disabled={ci === 0 || reordenando}
+                              onClick={() => moverCampo(c, -1)}>
+                              <ArrowUpwardIcon fontSize="small" />
+                            </IconButton>
+                          </span></Tooltip>
+                          <Tooltip title="Bajar campo"><span>
+                            <IconButton size="small" disabled={ci === grupo.length - 1 || reordenando}
+                              onClick={() => moverCampo(c, 1)}>
+                              <ArrowDownwardIcon fontSize="small" />
+                            </IconButton>
+                          </span></Tooltip>
+
+                          <Tooltip title="Editar">
+                            <IconButton size="small" onClick={() => abrirEditar(c)}>
+                              <EditIcon fontSize="small" sx={{ color: COLOR }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Eliminar">
+                            <IconButton size="small" onClick={() => handleEliminar(c.id)}>
+                              <DeleteIcon fontSize="small" color="error" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      ))}
+                    </Box>
                   </Box>
-                )}
-              <Box sx={{
-                display: 'flex', alignItems: 'center', gap: 1,
-                border: '1px solid #e2d9f3', borderRadius: 2,
-                px: 1.5, py: 1, mb: 1, bgcolor: '#fdfbff',
-              }}>
-                <Box flex={1} minWidth={0}>
-                  <Typography variant="body2" fontWeight={700} noWrap>{c.etiqueta}</Typography>
-                  <Box display="flex" gap={0.5} flexWrap="wrap" mt={0.3}>
-                    <Chip label={TIPOS_CAMPO.find(t => t.value === c.tipo)?.label ?? c.tipo}
-                      size="small" sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600 }} />
-                    {c.obligatorio && <Chip label="Requerido" size="small" color="warning" />}
-                    {c.tipo === 'select' && c.opciones?.length > 0 && (
-                      <Chip label={`${c.opciones.length} opciones`} size="small" variant="outlined" />
-                    )}
-                    {sec && <Chip label={sec} size="small" sx={{ bgcolor: '#f3f0ff', color: COLOR }} />}
-                  </Box>
-                </Box>
-                <Tooltip title="Subir"><span>
-                  <IconButton size="small" onClick={() => mover(idx, -1)} disabled={idx === 0}>
-                    <ArrowUpwardIcon fontSize="small" />
-                  </IconButton>
-                </span></Tooltip>
-                <Tooltip title="Bajar"><span>
-                  <IconButton size="small" onClick={() => mover(idx, 1)} disabled={idx === campos.length - 1}>
-                    <ArrowDownwardIcon fontSize="small" />
-                  </IconButton>
-                </span></Tooltip>
-                <Tooltip title="Editar">
-                  <IconButton size="small" onClick={() => abrirEditar(c)}>
-                    <EditIcon fontSize="small" sx={{ color: COLOR }} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Eliminar">
-                  <IconButton size="small" onClick={() => handleEliminar(c.id)}>
-                    <DeleteIcon fontSize="small" color="error" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-              </Box>
-            );})
+                );
+              })}
+            </Box>
           )}
 
           <Button fullWidth variant="outlined" startIcon={<AddIcon />}
@@ -212,22 +298,26 @@ function EditorCamposDialog({ programa, onCerrar }) {
         </DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} mt={0}>
+            {/* Sección — obligatoria */}
             <Grid size={12}>
-              <TextField fullWidth size="small" label="Sección (opcional)"
+              <TextField fullWidth size="small" label="Sección *" required
                 placeholder="Ej: Datos personales, Información académica…"
                 value={form.seccion} onChange={set('seccion')}
-                helperText={seccionesExistentes.length > 0
-                  ? `Secciones existentes: ${seccionesExistentes.join(' · ')}`
-                  : 'Agrupa campos bajo un mismo título de sección'} />
+                error={form.seccion.trim() === '' && guardando}
+                helperText={
+                  seccionesExistentes.length > 0
+                    ? `Secciones existentes: ${seccionesExistentes.join(' · ')}`
+                    : 'Todos los campos deben pertenecer a una sección'
+                } />
             </Grid>
             <Grid size={12}>
-              <TextField fullWidth size="small" label="Etiqueta / Pregunta"
-                value={form.etiqueta} onChange={set('etiqueta')} required />
+              <TextField fullWidth size="small" label="Etiqueta / Pregunta *" required
+                value={form.etiqueta} onChange={set('etiqueta')} />
             </Grid>
             <Grid size={12}>
               <FormControl fullWidth size="small">
-                <InputLabel>Tipo</InputLabel>
-                <Select label="Tipo" value={form.tipo} onChange={set('tipo')}>
+                <InputLabel>Tipo de campo</InputLabel>
+                <Select label="Tipo de campo" value={form.tipo} onChange={set('tipo')}>
                   {TIPOS_CAMPO.map(t => (
                     <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
                   ))}
@@ -255,7 +345,7 @@ function EditorCamposDialog({ programa, onCerrar }) {
         <DialogActions sx={{ px: 2, py: 1.5 }}>
           <Button onClick={() => setFormAbierto(false)} disabled={guardando}>Cancelar</Button>
           <Button variant="contained" onClick={handleGuardar}
-            disabled={guardando || !form.etiqueta.trim()}
+            disabled={guardando || !form.etiqueta.trim() || !form.seccion.trim()}
             sx={{ bgcolor: COLOR }}>
             {guardando ? 'Guardando...' : 'Guardar'}
           </Button>
@@ -388,7 +478,6 @@ export default function ProgramasPage() {
         </Grid>
       )}
 
-      {/* Editor de campos */}
       {camposPrograma && (
         <EditorCamposDialog
           programa={camposPrograma}
@@ -396,7 +485,6 @@ export default function ProgramasPage() {
         />
       )}
 
-      {/* Formulario programa */}
       {formPrograma && (
         <Dialog open onClose={() => setFormPrograma(null)} maxWidth="xs" fullWidth>
           <DialogTitle sx={{ fontWeight: 700 }}>

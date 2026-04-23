@@ -206,6 +206,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
             <Autocomplete
               options={beneficiarios}
               loading={buscando}
+              loadingText="Buscando..."
               value={selBenef}
               onChange={(_, v) => setSelBenef(v)}
               inputValue={busqueda}
@@ -223,24 +224,9 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                   </Box>
                 </li>
               )}
-              renderInput={(params) => {
-                const inputSlot = params.slotProps?.input ?? params.InputProps ?? {};
-                return (
-                  <TextField {...params} label="Buscar por nombre" size="small"
-                    slotProps={{
-                      ...params.slotProps,
-                      input: {
-                        ...inputSlot,
-                        endAdornment: (
-                          <>
-                            {buscando && <CircularProgress size={18} />}
-                            {inputSlot.endAdornment}
-                          </>
-                        ),
-                      },
-                    }} />
-                );
-              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Buscar por nombre" size="small" />
+              )}
             />
             {selBenef && (
               <Box sx={{ mt: 2, p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '1px solid #d0c4f7' }}>

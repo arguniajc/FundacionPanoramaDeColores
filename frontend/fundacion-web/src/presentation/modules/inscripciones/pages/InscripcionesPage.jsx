@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Autocomplete, Avatar, Box, Button, Chip, CircularProgress,
-  Dialog, DialogActions, DialogContent, DialogTitle, Divider,
+  Dialog, DialogActions, DialogContent, DialogTitle,
   FormControl, FormControlLabel, Grid, IconButton, InputLabel,
   MenuItem, Select, Snackbar, Step, StepLabel, Stepper, Switch,
-  Tab, Tabs, TextField, Tooltip, Typography,
+  TextField, Tooltip, Typography,
 } from '@mui/material';
 import AddIcon        from '@mui/icons-material/Add';
 import CheckIcon      from '@mui/icons-material/Check';
 import DeleteIcon     from '@mui/icons-material/Delete';
+import EditIcon       from '@mui/icons-material/Edit';
+import PrintIcon      from '@mui/icons-material/Print';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { beneficiariosRepository }  from '../../../../infrastructure/repositories/beneficiariosRepository';
 import { sedesRepository }          from '../../../../infrastructure/repositories/sedesRepository';
@@ -28,6 +30,84 @@ const ESTADOS = [
 function chipEstado(estado) {
   const e = ESTADOS.find(x => x.value === estado) ?? { label: estado, color: 'default' };
   return <Chip label={e.label} size="small" color={e.color} />;
+}
+
+// ── HTML imprimible del formulario ────────────────────────────────────────────
+function generarHtmlFormulario(inscripcion, campos, datos, observaciones) {
+  const estadoLabel = ESTADOS.find(e => e.value === inscripcion.estado)?.label ?? inscripcion.estado;
+  const fecha = new Date(inscripcion.fechaInscripcion).toLocaleDateString('es-CO', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  const filas = campos.map(c => {
+    let valor = datos[c.id] ?? '';
+    if (c.tipo === 'boolean') valor = (valor === 'true' || valor === true) ? 'Sí' : 'No';
+    if (c.tipo === 'document' && valor)
+      valor = `<a href="${valor}" target="_blank">Ver documento</a>`;
+    return `
+      <tr>
+        <td style="padding:7px 12px;font-weight:600;color:#4E1B95;border-bottom:1px solid #ede7f6;width:42%;vertical-align:top">${c.etiqueta}${c.obligatorio ? ' *' : ''}</td>
+        <td style="padding:7px 12px;border-bottom:1px solid #ede7f6;vertical-align:top">${valor || '<em style="color:#aaa">—</em>'}</td>
+      </tr>`;
+  }).join('');
+
+  const obsHtml = observaciones
+    ? `<div style="margin-top:20px;padding:12px 16px;background:#f3f0ff;border-radius:6px;border-left:4px solid #4E1B95">
+         <strong style="color:#4E1B95;font-size:12px;text-transform:uppercase;letter-spacing:.5px">Observaciones</strong>
+         <p style="margin:6px 0 0;font-size:13px">${observaciones}</p>
+       </div>`
+    : '';
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Formulario de Inscripción — ${inscripcion.nombreBeneficiario}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; color: #333; margin: 0; padding: 28px; font-size: 13px; }
+    @media print { body { padding: 0; } .no-print { display: none; } }
+    h1 { margin: 0; font-size: 17px; }
+    .header { background: #4E1B95; color: white; padding: 14px 20px; border-radius: 8px 8px 0 0; }
+    .header p { margin: 3px 0 0; font-size: 12px; opacity: .8; }
+    .sub-header { background: #ede7f6; padding: 10px 20px; border-radius: 0 0 8px 8px; margin-bottom: 18px; display: flex; gap: 32px; }
+    .sub-item { font-size: 12px; }
+    .sub-item strong { color: #4E1B95; display: block; font-size: 11px; text-transform: uppercase; }
+    .card { border: 1.5px solid #e2d9f3; border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+    .card-title { background: #f3f0ff; padding: 7px 14px; font-weight: 700; color: #4E1B95; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #e2d9f3; }
+    table { width: 100%; border-collapse: collapse; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; background: #e8f5e9; color: #2e7d32; }
+    .footer { margin-top: 28px; font-size: 11px; color: #aaa; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+    .print-btn { position: fixed; top: 16px; right: 16px; background: #4E1B95; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <button class="print-btn no-print" onclick="window.print()">Imprimir</button>
+
+  <div class="header">
+    <h1>Fundación Panorama de Colores</h1>
+    <p>Formulario de Inscripción</p>
+  </div>
+  <div class="sub-header">
+    <div class="sub-item"><strong>Beneficiario</strong>${inscripcion.nombreBeneficiario}</div>
+    <div class="sub-item"><strong>Documento</strong>${inscripcion.documentoBeneficiario ?? '—'}</div>
+    <div class="sub-item"><strong>Programa</strong>${inscripcion.nombrePrograma}</div>
+    <div class="sub-item"><strong>Sede</strong>${inscripcion.nombreSede}</div>
+    <div class="sub-item"><strong>Fecha inscripción</strong>${fecha}</div>
+    <div class="sub-item"><strong>Estado</strong><span class="badge">${estadoLabel}</span></div>
+  </div>
+
+  ${campos.length > 0 ? `
+  <div class="card">
+    <div class="card-title">Datos del formulario</div>
+    <table>${filas}</table>
+  </div>` : '<p style="color:#999;font-style:italic">Este programa no tiene campos adicionales.</p>'}
+
+  ${obsHtml}
+
+  <div class="footer">Generado el ${new Date().toLocaleString('es-CO')} · Fundación Panorama de Colores</div>
+</body>
+</html>`;
 }
 
 // ── Campo dinámico del formulario ─────────────────────────────────────────────
@@ -78,9 +158,7 @@ function CampoInput({ campo, value, onChange }) {
         {value ? (
           <Box display="flex" alignItems="center" gap={1}>
             <Chip label="PDF cargado" color="success" size="small" />
-            <Button size="small" onClick={() => window.open(value, '_blank', 'noopener,noreferrer')}>
-              Ver
-            </Button>
+            <Button size="small" onClick={() => window.open(value, '_blank', 'noopener,noreferrer')}>Ver</Button>
             <Button size="small" color="error" onClick={() => onChange('')}>Quitar</Button>
           </Box>
         ) : (
@@ -106,6 +184,194 @@ function CampoInput({ campo, value, onChange }) {
   );
 }
 
+// ── Ver / Editar formulario ───────────────────────────────────────────────────
+
+function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
+  const [campos,        setCampos]        = useState([]);
+  const [cargando,      setCargando]      = useState(true);
+  const [editando,      setEditando]      = useState(false);
+  const [datos,         setDatos]         = useState({});
+  const [observaciones, setObservaciones] = useState('');
+  const [guardando,     setGuardando]     = useState(false);
+  const [error,         setError]         = useState('');
+
+  useEffect(() => {
+    setCargando(true);
+    setEditando(false);
+    setError('');
+    try { setDatos(JSON.parse(inscripcion.datos || '{}')); } catch { setDatos({}); }
+    setObservaciones(inscripcion.observaciones ?? '');
+    sedesRepository.listarCampos(inscripcion.programaId)
+      .then(({ data }) => setCampos(data))
+      .catch(() => {})
+      .finally(() => setCargando(false));
+  }, [inscripcion.id]);
+
+  const handleGuardar = async () => {
+    setGuardando(true);
+    setError('');
+    try {
+      const result = await inscripcionesRepository.actualizar(inscripcion.id, {
+        datos: JSON.stringify(datos),
+        observaciones: observaciones.trim() || null,
+      });
+      onActualizada(result.data);
+      setEditando(false);
+    } catch {
+      setError('No se pudo guardar los cambios.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const handleImprimir = () => {
+    const win = window.open('', '_blank', 'noopener,noreferrer');
+    win.document.write(generarHtmlFormulario(inscripcion, campos, datos, observaciones));
+    win.document.close();
+    setTimeout(() => win.print(), 400);
+  };
+
+  const valorVista = (campo) => {
+    const v = datos[campo.id];
+    if (v === undefined || v === null || v === '') return <em style={{ color: '#aaa' }}>—</em>;
+    if (campo.tipo === 'boolean') return (v === 'true' || v === true) ? 'Sí' : 'No';
+    if (campo.tipo === 'document') return (
+      <Button size="small" sx={{ color: COLOR, p: 0, minWidth: 0, textDecoration: 'underline' }}
+        onClick={() => window.open(v, '_blank', 'noopener,noreferrer')}>
+        Ver PDF
+      </Button>
+    );
+    return String(v);
+  };
+
+  const fecha = new Date(inscripcion.fechaInscripcion).toLocaleDateString('es-CO', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  return (
+    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <DialogTitle sx={{ bgcolor: COLOR, color: 'white', py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box>
+          <Typography fontWeight={700} component="div">Formulario de inscripción</Typography>
+          <Typography variant="caption" sx={{ opacity: .85 }}>
+            {inscripcion.nombreBeneficiario} · {inscripcion.nombrePrograma}
+          </Typography>
+        </Box>
+        <Tooltip title="Imprimir formulario">
+          <IconButton onClick={handleImprimir} sx={{ color: 'white' }} size="small">
+            <PrintIcon />
+          </IconButton>
+        </Tooltip>
+      </DialogTitle>
+
+      <DialogContent dividers sx={{ p: 3 }}>
+        {/* Resumen de la inscripción */}
+        <Box sx={{ mb: 2.5, p: 1.5, bgcolor: '#f3f0ff', borderRadius: 2, border: '1px solid #d0c4f7' }}>
+          <Grid container spacing={1}>
+            <Grid size={{ xs: 6 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">Programa</Typography>
+              <Typography variant="body2" fontWeight={700} color={COLOR}>{inscripcion.nombrePrograma}</Typography>
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">Sede</Typography>
+              <Typography variant="body2">{inscripcion.nombreSede}</Typography>
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">Fecha de inscripción</Typography>
+              <Typography variant="body2">{fecha}</Typography>
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">Estado</Typography>
+              <Box mt={0.3}>{chipEstado(inscripcion.estado)}</Box>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+        {cargando ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress sx={{ color: COLOR }} />
+          </Box>
+        ) : editando ? (
+          /* ── Modo edición ──────────────────────────────────────── */
+          <Grid container spacing={2}>
+            {campos.map(c => (
+              <Grid key={c.id} size={c.tipo === 'document' ? 12 : { xs: 12, sm: 6 }}>
+                <CampoInput
+                  campo={c}
+                  value={datos[c.id]}
+                  onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
+                />
+              </Grid>
+            ))}
+            <Grid size={12}>
+              <TextField fullWidth size="small" label="Observaciones (opcional)"
+                multiline rows={2} value={observaciones}
+                onChange={e => setObservaciones(e.target.value)} />
+            </Grid>
+          </Grid>
+        ) : (
+          /* ── Modo vista ────────────────────────────────────────── */
+          <Box>
+            {campos.length === 0 ? (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Este programa no tiene campos adicionales en el formulario.
+              </Alert>
+            ) : (
+              <Box sx={{ border: '1px solid #e2d9f3', borderRadius: 2, overflow: 'hidden', mb: 2 }}>
+                {campos.map((c, idx) => (
+                  <Box key={c.id} sx={{
+                    display: 'flex', gap: 2, p: '8px 14px',
+                    bgcolor: idx % 2 === 0 ? '#fdfbff' : '#f8f5ff',
+                    borderBottom: idx < campos.length - 1 ? '1px solid #ede7f6' : 'none',
+                  }}>
+                    <Typography variant="body2" fontWeight={700} color={COLOR}
+                      sx={{ minWidth: 140, flexShrink: 0 }}>
+                      {c.etiqueta}{c.obligatorio ? ' *' : ''}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
+                      {valorVista(c)}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+            {observaciones && (
+              <Box sx={{ p: 1.5, bgcolor: '#f3f0ff', borderRadius: 2, border: '1px solid #d0c4f7' }}>
+                <Typography variant="caption" fontWeight={700} color={COLOR} display="block">Observaciones</Typography>
+                <Typography variant="body2" mt={0.3}>{observaciones}</Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+        <Button onClick={onCerrar} disabled={guardando}>Cerrar</Button>
+        <Box flex={1} />
+        {editando ? (
+          <>
+            <Button onClick={() => { setEditando(false); setError(''); }} disabled={guardando}>
+              Cancelar
+            </Button>
+            <Button variant="contained" onClick={handleGuardar}
+              disabled={guardando} sx={{ bgcolor: COLOR }}>
+              {guardando ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+          </>
+        ) : (
+          <Button variant="outlined" startIcon={<EditIcon />}
+            onClick={() => setEditando(true)}
+            sx={{ color: COLOR, borderColor: COLOR }}>
+            Editar
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 // ── Stepper de nueva inscripción ──────────────────────────────────────────────
 
 function NuevaInscripcionDialog({ onCerrar, onCreada }) {
@@ -123,7 +389,6 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [guardando,       setGuardando]       = useState(false);
   const [error,           setError]           = useState('');
 
-  // Búsqueda de beneficiarios
   useEffect(() => {
     if (busqueda.length < 2) { setBeneficiarios([]); return; }
     const t = setTimeout(async () => {
@@ -137,7 +402,6 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     return () => clearTimeout(t);
   }, [busqueda]);
 
-  // Carga de programas activos
   useEffect(() => {
     sedesRepository.listar({ soloActivas: true }).then(({ data }) => {
       const progs = data.flatMap(s =>
@@ -147,7 +411,6 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     }).catch(() => {});
   }, []);
 
-  // Carga de campos cuando se selecciona programa
   useEffect(() => {
     if (!selPrograma) { setCampos([]); return; }
     setCargandoCampos(true);
@@ -199,7 +462,6 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-        {/* Paso 0: Seleccionar beneficiario */}
         {paso === 0 && (
           <Box>
             <Typography fontWeight={700} mb={2}>Busca el beneficiario</Typography>
@@ -239,7 +501,6 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
           </Box>
         )}
 
-        {/* Paso 1: Seleccionar programa */}
         {paso === 1 && (
           <Box>
             <Typography fontWeight={700} mb={2}>Selecciona el programa</Typography>
@@ -269,7 +530,6 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
           </Box>
         )}
 
-        {/* Paso 2: Formulario dinámico */}
         {paso === 2 && (
           <Box>
             <Typography fontWeight={700} mb={2}>
@@ -330,16 +590,16 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
 // ── Página principal ──────────────────────────────────────────────────────────
 
 export default function InscripcionesPage() {
-  const { inscripciones, cargando, error, cargar, cambiarEstado, eliminar } = useInscripciones();
+  const { inscripciones, cargando, error, cargar, actualizar, cambiarEstado, eliminar } = useInscripciones();
 
-  const [tab,          setTab]          = useState(0);
-  const [filtroProg,   setFiltroProg]   = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('');
-  const [filtroBuscar, setFiltroBuscar] = useState('');
-  const [programas,    setProgramas]    = useState([]);
-  const [nuevaAbierta, setNuevaAbierta] = useState(false);
-  const [cambiandoId,  setCambiandoId]  = useState(null);
-  const [toast,        setToast]        = useState('');
+  const [filtroProg,    setFiltroProg]    = useState('');
+  const [filtroEstado,  setFiltroEstado]  = useState('');
+  const [filtroBuscar,  setFiltroBuscar]  = useState('');
+  const [programas,     setProgramas]     = useState([]);
+  const [nuevaAbierta,  setNuevaAbierta]  = useState(false);
+  const [verInscripcion, setVerInscripcion] = useState(null);
+  const [cambiandoId,   setCambiandoId]   = useState(null);
+  const [toast,         setToast]         = useState('');
 
   useEffect(() => {
     sedesRepository.listar().then(({ data }) => {
@@ -392,7 +652,6 @@ export default function InscripcionesPage() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      {/* Filtros */}
       <Box display="flex" gap={1.5} flexWrap="wrap" mb={2}>
         <TextField size="small" label="Buscar beneficiario" sx={{ minWidth: 200 }}
           value={filtroBuscar} onChange={e => setFiltroBuscar(e.target.value)} />
@@ -453,11 +712,18 @@ export default function InscripcionesPage() {
                     {ESTADOS.map(e => <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>)}
                   </Select>
                 </FormControl>
-                <Tooltip title="Eliminar inscripción">
-                  <IconButton size="small" onClick={() => handleEliminar(i.id)}>
-                    <DeleteIcon fontSize="small" color="error" />
-                  </IconButton>
-                </Tooltip>
+                <Box display="flex" gap={0.5}>
+                  <Tooltip title="Ver / Editar formulario">
+                    <IconButton size="small" onClick={() => setVerInscripcion(i)}>
+                      <VisibilityIcon fontSize="small" sx={{ color: COLOR }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Eliminar inscripción">
+                    <IconButton size="small" onClick={() => handleEliminar(i.id)}>
+                      <DeleteIcon fontSize="small" color="error" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               </Box>
             </Box>
           ))}
@@ -471,6 +737,18 @@ export default function InscripcionesPage() {
             setNuevaAbierta(false);
             setToast(`${ins.nombreBeneficiario} inscrito en ${ins.nombrePrograma}`);
             recargar();
+          }}
+        />
+      )}
+
+      {verInscripcion && (
+        <VerFormularioDialog
+          inscripcion={verInscripcion}
+          onCerrar={() => setVerInscripcion(null)}
+          onActualizada={(updated) => {
+            actualizar(verInscripcion.id, { datos: updated.datos, observaciones: updated.observaciones });
+            setVerInscripcion(updated);
+            setToast('Formulario actualizado');
           }}
         />
       )}

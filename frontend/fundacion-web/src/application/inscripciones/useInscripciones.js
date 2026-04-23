@@ -26,6 +26,12 @@ export function useInscripciones(filtros = {}) {
     return data;
   };
 
+  const actualizar = async (id, dto) => {
+    const { data } = await inscripcionesRepository.actualizar(id, dto);
+    setInscripciones(prev => prev.map(i => i.id === id ? data : i));
+    return data;
+  };
+
   const cambiarEstado = async (id, estado) => {
     const { data } = await inscripcionesRepository.cambiarEstado(id, estado);
     setInscripciones(prev => prev.map(i => i.id === id ? data : i));
@@ -36,5 +42,5 @@ export function useInscripciones(filtros = {}) {
     setInscripciones(prev => prev.filter(i => i.id !== id));
   };
 
-  return { inscripciones, cargando, error, cargar, crear, cambiarEstado, eliminar };
+  return { inscripciones, cargando, error, cargar, crear, actualizar, cambiarEstado, eliminar };
 }

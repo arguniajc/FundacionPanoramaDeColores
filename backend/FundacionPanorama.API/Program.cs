@@ -4,8 +4,8 @@ using FundacionPanorama.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using Scalar.AspNetCore;
-// ReSharper disable once RedundantUsingDirective
 using Microsoft.Extensions.Logging;
 
 // ── Puerto dinámico para Render (usa la variable PORT del entorno) ─────────────
@@ -64,33 +64,48 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// ── Auto-migración: cada sentencia en su propio try-catch para que un fallo
-//    no bloquee las migraciones siguientes ────────────────────────────────────
-using (var scope = app.Services.CreateScope())
+// ── Auto-migración via Npgsql directo (sin EF Core) ──────────────────────────
 {
-    var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var migLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    var connStr   = app.Configuration.GetConnectionString("DefaultConnection")!;
 
-    void Migrar(string sql, string etiqueta)
+    await using var conn = new NpgsqlConnection(connStr);
+    await conn.OpenAsync();
+
+    async Task Migrar(string sql, string etiqueta)
     {
         try
         {
-            db.Database.ExecuteSqlRaw(sql);
-            logger.LogInformation("✅ Migración OK: {Etiqueta}", etiqueta);
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = sql;
+            await cmd.ExecuteNonQueryAsync();
+            migLogger.LogInformation("✅ Migración OK: {E}", etiqueta);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "⚠️  Migración omitida [{Etiqueta}]: {Mensaje}", etiqueta, ex.Message);
+            migLogger.LogWarning(ex, "⚠️  Migración omitida [{E}]: {M}", etiqueta, ex.Message);
+            // Reset connection state after a failed statement
+            try { await conn.CloseAsync(); await conn.OpenAsync(); } catch { /* ignored */ }
         }
     }
 
-    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;",
-           "inscripciones.activo");
+    // ── Columnas retroactivas en tablas que ya existían ───────────────────────
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS motivo_baja VARCHAR(500)", "beneficiarios.motivo_baja");
+    await Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS direccion VARCHAR(300)",            "sedes.direccion");
+    await Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS ciudad VARCHAR(100)",               "sedes.ciudad");
+    await Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS telefono VARCHAR(30)",              "sedes.telefono");
+    await Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true", "sedes.activo");
+    await Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW()", "sedes.fecha_creacion");
+    await Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()", "sedes.fecha_modificacion");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS sede_id UUID",                  "programas.sede_id");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS descripcion VARCHAR(500)",      "programas.descripcion");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS cupo_maximo INT",               "programas.cupo_maximo");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true", "programas.activo");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW()", "programas.fecha_creacion");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()", "programas.fecha_modificacion");
 
-    Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS motivo_baja VARCHAR(500);",
-           "beneficiarios.motivo_baja");
-
-    Migrar("""
+    // ── Tablas nuevas ─────────────────────────────────────────────────────────
+    await Migrar("""
         CREATE TABLE IF NOT EXISTS log_descargas (
             id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
             usuario_email   VARCHAR(255) NOT NULL,
@@ -98,60 +113,10 @@ using (var scope = app.Services.CreateScope())
             tipo_archivo    VARCHAR(100) NOT NULL DEFAULT 'documento',
             url_archivo     TEXT,
             descargado_en   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-        );
+        )
         """, "log_descargas");
 
-    Migrar("""
-        CREATE TABLE IF NOT EXISTS sedes (
-            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-            nombre             VARCHAR(150) NOT NULL,
-            direccion          VARCHAR(300),
-            ciudad             VARCHAR(100),
-            telefono           VARCHAR(30),
-            activo             BOOLEAN      NOT NULL DEFAULT true,
-            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-        );
-        """, "sedes");
-
-    Migrar("""
-        CREATE TABLE IF NOT EXISTS programas (
-            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-            sede_id            UUID         NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
-            nombre             VARCHAR(150) NOT NULL,
-            descripcion        VARCHAR(500),
-            cupo_maximo        INT,
-            activo             BOOLEAN      NOT NULL DEFAULT true,
-            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-        );
-        """, "programas");
-    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS direccion VARCHAR(300);",
-           "sedes.direccion");
-    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS ciudad VARCHAR(100);",
-           "sedes.ciudad");
-    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS telefono VARCHAR(30);",
-           "sedes.telefono");
-    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;",
-           "sedes.activo");
-    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
-           "sedes.fecha_creacion");
-    Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
-           "sedes.fecha_modificacion");
-    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS sede_id UUID REFERENCES sedes(id) ON DELETE CASCADE;",
-           "programas.sede_id");
-    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS descripcion VARCHAR(500);",
-           "programas.descripcion");
-    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS cupo_maximo INT;",
-           "programas.cupo_maximo");
-    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true;",
-           "programas.activo");
-    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
-           "programas.fecha_creacion");
-    Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
-           "programas.fecha_modificacion");
-
-    Migrar("""
+    await Migrar("""
         CREATE TABLE IF NOT EXISTS documentos_institucionales (
             id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
             titulo             VARCHAR(200) NOT NULL,
@@ -165,40 +130,32 @@ using (var scope = app.Services.CreateScope())
             fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
         )
         """, "documentos_institucionales");
-    Migrar("CREATE INDEX IF NOT EXISTS idx_documentos_inst_categoria ON documentos_institucionales(categoria)",
-           "documentos_institucionales.idx_categoria");
-    Migrar("CREATE INDEX IF NOT EXISTS idx_documentos_inst_activo ON documentos_institucionales(activo)",
-           "documentos_institucionales.idx_activo");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_documentos_inst_categoria ON documentos_institucionales(categoria)", "documentos_institucionales.idx_categoria");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_documentos_inst_activo    ON documentos_institucionales(activo)",    "documentos_institucionales.idx_activo");
 
-    Migrar("""
+    await Migrar("""
         CREATE TABLE IF NOT EXISTS inscripciones (
-            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-            beneficiario_id    UUID         NOT NULL,
-            programa_id        UUID         NOT NULL,
-            estado             VARCHAR(30)  NOT NULL DEFAULT 'activa',
-            fecha_inscripcion  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-            datos              TEXT         NOT NULL DEFAULT '{}',
+            id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+            beneficiario_id    UUID        NOT NULL,
+            programa_id        UUID        NOT NULL,
+            estado             VARCHAR(30) NOT NULL DEFAULT 'activa',
+            fecha_inscripcion  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            datos              TEXT        NOT NULL DEFAULT '{}',
             observaciones      TEXT,
-            activo             BOOLEAN      NOT NULL DEFAULT true,
-            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            activo             BOOLEAN     NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
         """, "inscripciones");
-    Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_programa ON inscripciones(programa_id)",
-           "inscripciones.idx_programa");
-    Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_beneficiario ON inscripciones(beneficiario_id)",
-           "inscripciones.idx_beneficiario");
+    await Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS estado            VARCHAR(30)  NOT NULL DEFAULT 'activa'", "inscripciones.estado");
+    await Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS fecha_inscripcion TIMESTAMPTZ NOT NULL DEFAULT NOW()",     "inscripciones.fecha_inscripcion");
+    await Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS datos             TEXT        NOT NULL DEFAULT '{}'",      "inscripciones.datos");
+    await Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS observaciones     TEXT",                                   "inscripciones.observaciones");
+    await Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS activo            BOOLEAN     NOT NULL DEFAULT true",      "inscripciones.activo");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_programa      ON inscripciones(programa_id)",      "inscripciones.idx_programa");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_beneficiario  ON inscripciones(beneficiario_id)",  "inscripciones.idx_beneficiario");
 
-    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS estado VARCHAR(30) NOT NULL DEFAULT 'activa';",
-           "inscripciones.estado");
-    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS fecha_inscripcion TIMESTAMPTZ NOT NULL DEFAULT NOW();",
-           "inscripciones.fecha_inscripcion");
-    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS datos TEXT NOT NULL DEFAULT '{}';",
-           "inscripciones.datos");
-    Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS observaciones TEXT;",
-           "inscripciones.observaciones");
-
-    Migrar("""
+    await Migrar("""
         CREATE TABLE IF NOT EXISTS programas_campos (
             id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
             programa_id        UUID         NOT NULL,
@@ -212,11 +169,11 @@ using (var scope = app.Services.CreateScope())
             fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
         )
         """, "programas_campos");
-    Migrar("CREATE INDEX IF NOT EXISTS idx_programas_campos_programa ON programas_campos(programa_id)",
-           "programas_campos.idx_programa");
-    Migrar("""
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_programas_campos_programa ON programas_campos(programa_id)", "programas_campos.idx_programa");
+    await Migrar("""
         DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='programas_campos' AND column_name='opciones') THEN
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_name='programas_campos' AND column_name='opciones') THEN
                 ALTER TABLE programas_campos RENAME COLUMN opciones TO opciones_json;
             END IF;
         END $$

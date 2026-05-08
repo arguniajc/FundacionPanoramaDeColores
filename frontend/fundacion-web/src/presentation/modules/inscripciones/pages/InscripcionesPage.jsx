@@ -783,18 +783,37 @@ export default function InscripcionesPage() {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-        <Typography variant="h5" fontWeight={800} color={COLOR}>Inscripciones</Typography>
+
+      {/* ── Cabecera ─────────────────────────────────────────────── */}
+      <Box sx={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 2, mb: 4,
+      }}>
+        <Box>
+          <Typography sx={{
+            fontSize: '0.68rem', color: 'text.secondary',
+            textTransform: 'uppercase', letterSpacing: '0.12em', mb: 0.5,
+          }}>
+            Módulo
+          </Typography>
+          <Typography variant="h5" fontWeight={800} color={COLOR}>Inscripciones</Typography>
+        </Box>
         <Button variant="contained" startIcon={<AddIcon />}
-          onClick={() => setNuevaAbierta(true)} sx={{ bgcolor: COLOR }}>
+          onClick={() => setNuevaAbierta(true)}
+          sx={{ bgcolor: COLOR, flexShrink: 0, px: 2.5 }}>
           Nueva inscripción
         </Button>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      <Box display="flex" gap={2} flexWrap="wrap" mb={3}>
-        <TextField size="small" label="Buscar beneficiario" sx={{ minWidth: 200 }}
+      {/* ── Barra de filtros ─────────────────────────────────────── */}
+      <Box sx={{
+        display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center',
+        bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
+        borderRadius: 2, p: 2, mb: 3,
+      }}>
+        <TextField size="small" label="Buscar beneficiario" sx={{ minWidth: 200, flex: 1 }}
           value={filtroBuscar} onChange={e => setFiltroBuscar(e.target.value)} />
         <FormControl size="small" sx={{ minWidth: 180 }}>
           <InputLabel>Programa</InputLabel>

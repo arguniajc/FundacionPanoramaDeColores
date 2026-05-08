@@ -159,13 +159,16 @@ function VistaPreviewDialog({ campos, programa, onCerrar }) {
               return (
                 <Box key={sec || '_root'} mb={si < secciones.length - 1 ? 3 : 0}>
                   {sec && (
-                    <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-                      <Typography variant="caption" fontWeight={800} color={COLOR}
-                        sx={{ textTransform: 'uppercase', letterSpacing: 0.9,
-                              bgcolor: '#ede7f6', px: 1.5, py: 0.4, borderRadius: 1, flexShrink: 0 }}>
+                    <Box sx={{
+                      borderLeft: `5px solid ${COLOR}`,
+                      bgcolor: 'rgba(78,27,149,0.07)',
+                      borderRadius: '0 8px 8px 0',
+                      px: 1.5, py: 0.9, mb: 2,
+                    }}>
+                      <Typography fontWeight={800} color={COLOR}
+                        sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                         {sec}
                       </Typography>
-                      <Box flex={1} sx={{ height: '1.5px', bgcolor: '#d0c4f7' }} />
                     </Box>
                   )}
                   <Grid container spacing={2.5}>
@@ -201,7 +204,7 @@ function SortableCampoRow({ campo, ci, grupoLength, onEditar, onEliminar, onAnch
     <Box ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 10 : 'auto' }}
       sx={{
-        display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.8,
+        display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1.2,
         bgcolor: isDragging ? '#ede7f6' : ci % 2 === 0 ? '#fdfbff' : '#f8f5ff',
         borderBottom: ci < grupoLength - 1 ? '1px solid #ede7f6' : 'none',
         boxShadow: isDragging ? '0 4px 14px rgba(78,27,149,.18)' : 'none',
@@ -217,15 +220,15 @@ function SortableCampoRow({ campo, ci, grupoLength, onEditar, onEliminar, onAnch
       {/* Info del campo */}
       <Box flex={1} minWidth={0}>
         <Typography variant="body2" fontWeight={700} noWrap>{campo.etiqueta}</Typography>
-        <Box display="flex" gap={0.5} flexWrap="wrap" mt={0.2}>
+        <Box display="flex" gap={0.8} flexWrap="wrap" mt={0.6}>
           <Chip label={tipoLabel} size="small"
-            sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600, height: 18, fontSize: 10 }} />
+            sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600 }} />
           {campo.obligatorio && (
-            <Chip label="Req." size="small" color="warning" sx={{ height: 18, fontSize: 10 }} />
+            <Chip label="Req." size="small" color="warning" />
           )}
           <Chip label={esFull ? '← fila completa →' : '⬛ media fila'}
             size="small" variant="outlined"
-            sx={{ height: 18, fontSize: 10, color: '#888', borderColor: '#ddd' }} />
+            sx={{ color: '#888', borderColor: '#ddd' }} />
         </Box>
       </Box>
 

@@ -147,17 +147,17 @@ function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarPrograma, o
   const [expandida, setExpandida] = useState(false);
 
   return (
-    <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', mb: 2 }}>
+    <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', mb: 3 }}>
       <Box
         sx={{
-          display: 'flex', alignItems: 'center', gap: 1.5,
-          px: 2, py: 1.5, bgcolor: '#fdfbff',
+          display: 'flex', alignItems: 'center', gap: 2,
+          px: 2.5, py: 2, bgcolor: '#fdfbff',
           borderBottom: expandida ? '1px solid' : 'none', borderColor: 'divider',
         }}
       >
         <LocationOnIcon sx={{ color: '#4E1B95', flexShrink: 0 }} />
         <Box flex={1} minWidth={0}>
-          <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+          <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
             <Typography fontWeight={700} noWrap>{sede.nombre}</Typography>
             <Chip label={sede.activo ? 'Activa' : 'Inactiva'} size="small"
               color={sede.activo ? 'success' : 'default'} />
@@ -168,7 +168,7 @@ function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarPrograma, o
             </Typography>
           )}
         </Box>
-        <Box display="flex" gap={0.5} flexShrink={0}>
+        <Box display="flex" gap={1} flexShrink={0}>
           <Tooltip title={sede.activo ? 'Desactivar' : 'Activar'}>
             <IconButton size="small" onClick={() => onToggle(sede)}>
               {sede.activo ? <ToggleOnIcon sx={{ color: '#2D984F' }} /> : <ToggleOffIcon sx={{ color: '#aaa' }} />}
@@ -193,8 +193,8 @@ function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarPrograma, o
       </Box>
 
       <Collapse in={expandida}>
-        <Box sx={{ px: 2, py: 1.5, overflowX: 'auto' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+        <Box sx={{ px: 2.5, py: 2, overflowX: 'auto' }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} mb={1.5}>
             <Typography variant="body2" fontWeight={700} color="#2D984F" display="flex" alignItems="center" gap={0.5}>
               <SchoolIcon fontSize="small" /> Programas ({sede.programas?.length ?? 0})
             </Typography>

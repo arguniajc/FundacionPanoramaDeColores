@@ -47,13 +47,13 @@ function Seccion({ titulo, icono, mt = 1 }) {
   return (
     <Grid size={12}>
       <Box
-        display="flex" alignItems="center" gap={1}
+        display="flex" alignItems="center" gap={1.5}
         mt={mt}
         sx={{
           borderLeft: `5px solid ${COLOR_PRIMARIO}`,
           bgcolor: 'rgba(78,27,149,0.07)',
           borderRadius: '0 8px 8px 0',
-          px: 1.5, py: 0.8,
+          px: 1.5, py: 1,
         }}
       >
         {icono && (
@@ -69,7 +69,7 @@ function Seccion({ titulo, icono, mt = 1 }) {
           {titulo}
         </Typography>
       </Box>
-      <Box mb={1.5} />
+      <Box mb={2} />
     </Grid>
   );
 }
@@ -110,12 +110,12 @@ function calcularImc(pesoKg, tallaCm, fechaNacimiento) {
 
 function Campo({ label, value, children }) {
   return (
-    <Box mb={1.5}>
+    <Box mb={2}>
       <Typography
         variant="body2"
         display="block"
         fontWeight={800}
-        sx={{ color: '#2d1566', mb: 0.2 }}
+        sx={{ color: '#2d1566', mb: 0.5 }}
       >
         {label}
       </Typography>
@@ -138,8 +138,8 @@ function TallaCard({ icono, valor, etiqueta }) {
         bgcolor: '#fdfbff',
         border: '1px solid #f0eaff',
         borderRadius: 2,
-        py: { xs: 1, sm: 1.5 },
-        px: { xs: 0.5, sm: 1 },
+        py: { xs: 1.5, sm: 2 },
+        px: { xs: 1, sm: 1.5 },
       }}
     >
       <Typography sx={{ fontSize: { xs: '1.1rem', sm: '1.4rem' } }}>{icono}</Typography>
@@ -273,7 +273,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           {lugarNacimiento && (
             <Grid size={12}>
               <Campo label="Lugar de nacimiento">
-                <Box display="flex" alignItems="center" gap={0.5}>
+                <Box display="flex" alignItems="center" gap={1}>
                   <LocationOnIcon sx={{ fontSize: 15, color: COLOR_PRIMARIO }} />
                   <Typography variant="body2" fontWeight={500}>{lugarNacimiento}</Typography>
                 </Box>
@@ -311,7 +311,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           <Seccion titulo="Tallas" />
 
           <Grid size={12}>
-            <Box sx={{ display: 'flex', gap: { xs: 1, sm: 1.5 }, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 2 }, flexWrap: 'wrap' }}>
               <TallaCard icono="👕" valor={ins.tallaCamisa}   etiqueta="Camisa"   />
               <TallaCard icono="👖" valor={ins.tallaPantalon} etiqueta="Pantalón" />
               <TallaCard icono="👟" valor={ins.tallaZapatos}  etiqueta="Zapatos"  />
@@ -329,7 +329,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
 
             {/* ── IMC ────────────────────────────────────────────────────────── */}
             {imc && (
-              <Box mt={1.5} display="flex" alignItems="center" gap={1}>
+              <Box mt={2} display="flex" alignItems="center" gap={1.5}>
                 <Typography variant="body2" fontWeight={800} sx={{ color: '#2d1566' }}>
                   IMC:
                 </Typography>
@@ -341,7 +341,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
               </Box>
             )}
 
-            <Box mt={2} display="flex" alignItems="center" gap={1}>
+            <Box mt={2} display="flex" alignItems="center" gap={1.5}>
               <Typography variant="body2" fontWeight={800} sx={{ color: '#2d1566' }}>
                 Tiene alergia:
               </Typography>
@@ -384,7 +384,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           )}
 
           <Grid size={12}>
-            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+            <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
               <Typography variant="body2" fontWeight={800} sx={{ color: '#2d1566' }}>
                 Discapacidad / condición especial:
               </Typography>
@@ -399,7 +399,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           {ins.tieneDiscapacidad && ins.descripcionDiscapacidad && (
             <Grid size={12}>
               <Box sx={{
-                bgcolor: '#fffde7', border: '1.5px solid #ffe082', borderRadius: 2, p: 1.5, mt: 0.5,
+                bgcolor: '#fffde7', border: '1.5px solid #ffe082', borderRadius: 2, p: 1.5, mt: 1,
               }}>
                 <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
                   DESCRIPCIÓN DE LA DISCAPACIDAD / CONDICIÓN
@@ -438,11 +438,11 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           <Grid size={{ xs: 12, sm: 6 }}>
             <Campo label="WhatsApp">
               {ins.whatsapp ? (
-                <Box display="flex" alignItems="center" gap={0.5}>
+                <Box display="flex" alignItems="center" gap={1}>
                   <IconButton size="small" component="a"
                     href={`https://wa.me/${ins.whatsapp.replace(/\D/g, '')}`}
                     target="_blank"
-                    sx={{ color: '#25D366', p: 0.3, flexShrink: 0 }}>
+                    sx={{ color: '#25D366', p: 0.5, flexShrink: 0 }}>
                     <WhatsAppIcon fontSize="small" />
                   </IconButton>
                   <Typography variant="body2" fontWeight={600}>{ins.whatsapp}</Typography>

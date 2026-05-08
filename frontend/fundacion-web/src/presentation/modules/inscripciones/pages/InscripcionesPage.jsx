@@ -54,13 +54,16 @@ function SeccionHeader({ titulo }) {
   if (!titulo) return null;
   return (
     <Grid size={12}>
-      <Box display="flex" alignItems="center" gap={1} mt={1} mb={0.5}>
-        <Typography variant="caption" fontWeight={800} color={COLOR}
-          sx={{ textTransform: 'uppercase', letterSpacing: 0.9,
-                bgcolor: '#ede7f6', px: 1.5, py: 0.4, borderRadius: 1, flexShrink: 0 }}>
+      <Box sx={{
+        borderLeft: `5px solid ${COLOR}`,
+        bgcolor: 'rgba(78,27,149,0.07)',
+        borderRadius: '0 8px 8px 0',
+        px: 1.5, py: 0.9, mt: 1,
+      }}>
+        <Typography fontWeight={800} color={COLOR}
+          sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           {titulo}
         </Typography>
-        <Box flex={1} sx={{ height: '1.5px', bgcolor: '#d0c4f7' }} />
       </Box>
     </Grid>
   );
@@ -843,10 +846,10 @@ export default function InscripcionesPage() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {filtradas.map(i => (
             <Box key={i.id} sx={{
-              border: '1.5px solid #e2d9f3', borderRadius: 2, p: 2,
-              bgcolor: '#fdfbff', display: 'flex', gap: 1.5, alignItems: 'flex-start',
+              border: '1.5px solid #e2d9f3', borderRadius: 2, p: 2.5,
+              bgcolor: '#fdfbff', display: 'flex', gap: 2, alignItems: 'flex-start',
             }}>
-              <Avatar sx={{ bgcolor: COLOR, width: 40, height: 40, flexShrink: 0 }}>
+              <Avatar sx={{ bgcolor: COLOR, width: 44, height: 44, flexShrink: 0 }}>
                 {(i.nombreBeneficiario || '?')[0].toUpperCase()}
               </Avatar>
               <Box flex={1} minWidth={0}>
@@ -854,17 +857,17 @@ export default function InscripcionesPage() {
                 <Typography variant="caption" color="text.secondary">
                   {i.documentoBeneficiario ?? 'Sin documento'}
                 </Typography>
-                <Box display="flex" gap={0.5} flexWrap="wrap" mt={0.5} alignItems="center">
+                <Box display="flex" gap={1} flexWrap="wrap" mt={1} alignItems="center">
                   <Chip label={i.nombrePrograma} size="small"
                     sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600 }} />
                   <Typography variant="caption" color="text.secondary">{i.nombreSede}</Typography>
                   {chipEstado(i.estado)}
                 </Box>
-                <Typography variant="caption" color="text.secondary" display="block" mt={0.3}>
+                <Typography variant="caption" color="text.secondary" display="block" mt={0.8}>
                   {new Date(i.fechaInscripcion).toLocaleDateString('es-CO')}
                 </Typography>
               </Box>
-              <Box display="flex" flexDirection="column" gap={0.5} alignItems="flex-end">
+              <Box display="flex" flexDirection="column" gap={1} alignItems="flex-end">
                 <FormControl size="small" sx={{ minWidth: 130 }}>
                   <Select value={i.estado} size="small"
                     disabled={cambiandoId === i.id}

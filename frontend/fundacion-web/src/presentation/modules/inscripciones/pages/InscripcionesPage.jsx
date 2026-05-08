@@ -384,7 +384,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               <Grid key={sec || '_root'} size={12} container spacing={2} sx={{ m: 0, p: 0 }}>
                 <SeccionHeader titulo={sec} />
                 {grp.map(c => (
-                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: 6 }}>
+                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
                     <CampoInput
                       campo={c}
                       value={datos[c.id]}

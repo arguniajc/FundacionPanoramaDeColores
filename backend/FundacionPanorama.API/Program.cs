@@ -90,7 +90,21 @@ var app = builder.Build();
     }
 
     // ── Columnas retroactivas en tablas que ya existían ───────────────────────
-    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS motivo_baja VARCHAR(500)", "beneficiarios.motivo_baja");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS motivo_baja VARCHAR(500)",                                    "beneficiarios.motivo_baja");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS pais_nacimiento VARCHAR(100)",                                "beneficiarios.pais_nacimiento");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS departamento_nacimiento VARCHAR(100)",                        "beneficiarios.departamento_nacimiento");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS ciudad_nacimiento VARCHAR(100)",                              "beneficiarios.ciudad_nacimiento");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS barrio VARCHAR(100)",                                         "beneficiarios.barrio");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS num_personas_vive INT",                                       "beneficiarios.num_personas_vive");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS num_hermanos INT",                                            "beneficiarios.num_hermanos");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS nombre_colegio VARCHAR(200)",                                 "beneficiarios.nombre_colegio");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS grado_escolar VARCHAR(50)",                                   "beneficiarios.grado_escolar");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS tiene_discapacidad BOOLEAN NOT NULL DEFAULT false",           "beneficiarios.tiene_discapacidad");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS descripcion_discapacidad TEXT",                               "beneficiarios.descripcion_discapacidad");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS vive_con_nino BOOLEAN",                                       "beneficiarios.vive_con_nino");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS autorizacion BOOLEAN NOT NULL DEFAULT false",                 "beneficiarios.autorizacion");
+    await Migrar("ALTER TABLE beneficiario_talla ADD COLUMN IF NOT EXISTS peso_kg DECIMAL(5,2)",                                   "beneficiario_talla.peso_kg");
+    await Migrar("ALTER TABLE beneficiario_talla ADD COLUMN IF NOT EXISTS talla_cm INT",                                           "beneficiario_talla.talla_cm");
     await Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS direccion VARCHAR(300)",            "sedes.direccion");
     await Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS ciudad VARCHAR(100)",               "sedes.ciudad");
     await Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS telefono VARCHAR(30)",              "sedes.telefono");

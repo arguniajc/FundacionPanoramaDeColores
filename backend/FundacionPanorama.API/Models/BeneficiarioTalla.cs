@@ -21,6 +21,12 @@ public class BeneficiarioTalla
     [Column("talla_zapatos"), MaxLength(10)]
     public string? TallaZapatos { get; set; }
 
+    [Column("peso_kg")]
+    public decimal? PesoKg { get; set; }
+
+    [Column("talla_cm")]
+    public int? TallaCm { get; set; }
+
     [Column("fecha_medicion")]
     public DateOnly FechaMedicion { get; set; }
 

@@ -240,11 +240,23 @@ public class BeneficiariosController : ControllerBase
 
         var beneficiario = new Beneficiario
         {
-            Nombre          = dto.NombreMenor.Trim(),
-            FechaNacimiento = dto.FechaNacimiento,
-            TipoDocumentoId = tipoDocId,
-            NumeroDocumento = string.IsNullOrWhiteSpace(dto.NumeroDocumento) ? null : dto.NumeroDocumento.Trim(),
-            Activo          = true
+            Nombre                  = dto.NombreMenor.Trim(),
+            FechaNacimiento         = dto.FechaNacimiento,
+            TipoDocumentoId         = tipoDocId,
+            NumeroDocumento         = string.IsNullOrWhiteSpace(dto.NumeroDocumento) ? null : dto.NumeroDocumento.Trim(),
+            PaisNacimiento          = string.IsNullOrWhiteSpace(dto.PaisNacimiento)         ? null : dto.PaisNacimiento.Trim(),
+            DepartamentoNacimiento  = string.IsNullOrWhiteSpace(dto.DepartamentoNacimiento) ? null : dto.DepartamentoNacimiento.Trim(),
+            CiudadNacimiento        = string.IsNullOrWhiteSpace(dto.CiudadNacimiento)       ? null : dto.CiudadNacimiento.Trim(),
+            Barrio                  = string.IsNullOrWhiteSpace(dto.Barrio)                 ? null : dto.Barrio.Trim(),
+            NumPersonasVive         = dto.NumPersonasVive,
+            NumHermanos             = dto.NumHermanos,
+            NombreColegio           = string.IsNullOrWhiteSpace(dto.NombreColegio)  ? null : dto.NombreColegio.Trim(),
+            GradoEscolar            = string.IsNullOrWhiteSpace(dto.GradoEscolar)   ? null : dto.GradoEscolar.Trim(),
+            TieneDiscapacidad       = dto.TieneDiscapacidad,
+            DescripcionDiscapacidad = string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad) ? null : dto.DescripcionDiscapacidad.Trim(),
+            ViveConNino             = dto.ViveConNino,
+            Autorizacion            = dto.Autorizacion,
+            Activo                  = true
         };
         _db.Beneficiarios.Add(beneficiario);
         await _db.SaveChangesAsync();
@@ -281,10 +293,22 @@ public class BeneficiariosController : ControllerBase
         var tipoDocId = await ResolverTipoDocumentoId(dto.TipoDocumento);
         var epsId     = await ResolverEpsId(dto.Eps);
 
-        beneficiario.Nombre          = dto.NombreMenor.Trim();
-        beneficiario.FechaNacimiento = dto.FechaNacimiento;
-        beneficiario.TipoDocumentoId = tipoDocId;
-        beneficiario.NumeroDocumento = string.IsNullOrWhiteSpace(dto.NumeroDocumento) ? null : dto.NumeroDocumento.Trim();
+        beneficiario.Nombre                  = dto.NombreMenor.Trim();
+        beneficiario.FechaNacimiento         = dto.FechaNacimiento;
+        beneficiario.TipoDocumentoId         = tipoDocId;
+        beneficiario.NumeroDocumento         = string.IsNullOrWhiteSpace(dto.NumeroDocumento) ? null : dto.NumeroDocumento.Trim();
+        beneficiario.PaisNacimiento          = string.IsNullOrWhiteSpace(dto.PaisNacimiento)         ? null : dto.PaisNacimiento.Trim();
+        beneficiario.DepartamentoNacimiento  = string.IsNullOrWhiteSpace(dto.DepartamentoNacimiento) ? null : dto.DepartamentoNacimiento.Trim();
+        beneficiario.CiudadNacimiento        = string.IsNullOrWhiteSpace(dto.CiudadNacimiento)       ? null : dto.CiudadNacimiento.Trim();
+        beneficiario.Barrio                  = string.IsNullOrWhiteSpace(dto.Barrio)                 ? null : dto.Barrio.Trim();
+        beneficiario.NumPersonasVive         = dto.NumPersonasVive;
+        beneficiario.NumHermanos             = dto.NumHermanos;
+        beneficiario.NombreColegio           = string.IsNullOrWhiteSpace(dto.NombreColegio)  ? null : dto.NombreColegio.Trim();
+        beneficiario.GradoEscolar            = string.IsNullOrWhiteSpace(dto.GradoEscolar)   ? null : dto.GradoEscolar.Trim();
+        beneficiario.TieneDiscapacidad       = dto.TieneDiscapacidad;
+        beneficiario.DescripcionDiscapacidad = string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad) ? null : dto.DescripcionDiscapacidad.Trim();
+        beneficiario.ViveConNino             = dto.ViveConNino;
+        beneficiario.Autorizacion            = dto.Autorizacion;
 
         await CrearOActualizarDependientes(id, dto, epsId, isNew: false);
         await _db.SaveChangesAsync();
@@ -572,7 +596,9 @@ public class BeneficiariosController : ControllerBase
         var hasTallas =
             !string.IsNullOrWhiteSpace(dto.TallaCamisa) ||
             !string.IsNullOrWhiteSpace(dto.TallaPantalon) ||
-            !string.IsNullOrWhiteSpace(dto.TallaZapatos);
+            !string.IsNullOrWhiteSpace(dto.TallaZapatos) ||
+            dto.PesoKg.HasValue ||
+            dto.TallaCm.HasValue;
 
         if (hasTallas)
         {
@@ -589,6 +615,8 @@ public class BeneficiariosController : ControllerBase
                     TallaCamisa    = string.IsNullOrWhiteSpace(dto.TallaCamisa)   ? null : dto.TallaCamisa.Trim(),
                     TallaPantalon  = string.IsNullOrWhiteSpace(dto.TallaPantalon) ? null : dto.TallaPantalon.Trim(),
                     TallaZapatos   = string.IsNullOrWhiteSpace(dto.TallaZapatos)  ? null : dto.TallaZapatos.Trim(),
+                    PesoKg         = dto.PesoKg,
+                    TallaCm        = dto.TallaCm,
                     FechaMedicion  = DateOnly.FromDateTime(DateTime.UtcNow),
                     Activo         = true
                 });
@@ -598,6 +626,8 @@ public class BeneficiariosController : ControllerBase
                 tallaActual.TallaCamisa   = string.IsNullOrWhiteSpace(dto.TallaCamisa)   ? null : dto.TallaCamisa.Trim();
                 tallaActual.TallaPantalon = string.IsNullOrWhiteSpace(dto.TallaPantalon) ? null : dto.TallaPantalon.Trim();
                 tallaActual.TallaZapatos  = string.IsNullOrWhiteSpace(dto.TallaZapatos)  ? null : dto.TallaZapatos.Trim();
+                tallaActual.PesoKg        = dto.PesoKg;
+                tallaActual.TallaCm       = dto.TallaCm;
             }
         }
 
@@ -656,28 +686,42 @@ public class BeneficiariosController : ControllerBase
 
         return new BeneficiarioDto
         {
-            Id                 = b.Id,
-            NombreMenor        = b.Nombre,
-            FechaNacimiento    = b.FechaNacimiento ?? DateOnly.MinValue,
-            TipoDocumento      = b.TipoDocumento?.Codigo ?? "",
-            NumeroDocumento    = b.NumeroDocumento,
-            Eps                = b.Salud?.Eps?.Nombre,
-            TallaCamisa        = talla?.TallaCamisa,
-            TallaPantalon      = talla?.TallaPantalon,
-            TallaZapatos       = talla?.TallaZapatos,
-            TieneAlergia       = b.Alergias.Any(a => a.Activo) ? "si" : "no",
-            DescripcionAlergia = alergia?.Descripcion,
-            ObservacionesSalud = b.Salud?.Observaciones,
-            NombreAcudiente    = principal?.Acudiente?.Nombre ?? "",
-            Parentesco         = principal?.Parentesco?.Nombre,
-            Whatsapp           = principal?.Acudiente?.Whatsapp,
-            Direccion          = principal?.Acudiente?.Direccion,
+            Id                      = b.Id,
+            NombreMenor             = b.Nombre,
+            FechaNacimiento         = b.FechaNacimiento ?? DateOnly.MinValue,
+            TipoDocumento           = b.TipoDocumento?.Codigo ?? "",
+            NumeroDocumento         = b.NumeroDocumento,
+            Eps                     = b.Salud?.Eps?.Nombre,
+            TallaCamisa             = talla?.TallaCamisa,
+            TallaPantalon           = talla?.TallaPantalon,
+            TallaZapatos            = talla?.TallaZapatos,
+            PesoKg                  = talla?.PesoKg,
+            TallaCm                 = talla?.TallaCm,
+            TieneAlergia            = b.Alergias.Any(a => a.Activo) ? "si" : "no",
+            DescripcionAlergia      = alergia?.Descripcion,
+            ObservacionesSalud      = b.Salud?.Observaciones,
+            TieneDiscapacidad       = b.TieneDiscapacidad,
+            DescripcionDiscapacidad = b.DescripcionDiscapacidad,
+            NombreAcudiente         = principal?.Acudiente?.Nombre ?? "",
+            Parentesco              = principal?.Parentesco?.Nombre,
+            Whatsapp                = principal?.Acudiente?.Whatsapp,
+            Direccion               = principal?.Acudiente?.Direccion,
+            ViveConNino             = b.ViveConNino,
+            PaisNacimiento          = b.PaisNacimiento,
+            DepartamentoNacimiento  = b.DepartamentoNacimiento,
+            CiudadNacimiento        = b.CiudadNacimiento,
+            Barrio                  = b.Barrio,
+            NumPersonasVive         = b.NumPersonasVive,
+            NumHermanos             = b.NumHermanos,
+            NombreColegio           = b.NombreColegio,
+            GradoEscolar            = b.GradoEscolar,
+            Autorizacion            = b.Autorizacion,
             FotoMenorUrl            = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto del menor")?.Url,
             FotoDocumentoUrl        = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto documento")?.Url,
             FotoDocumentoReversoUrl = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto documento (reverso)")?.Url,
-            CreatedAt          = b.FechaCreacion,
-            Activo             = b.Activo,
-            MotivoBaja         = b.MotivoBaja
+            CreatedAt               = b.FechaCreacion,
+            Activo                  = b.Activo,
+            MotivoBaja              = b.MotivoBaja
         };
     }
 }

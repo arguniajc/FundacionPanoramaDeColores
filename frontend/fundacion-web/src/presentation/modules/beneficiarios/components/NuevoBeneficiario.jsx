@@ -1,11 +1,10 @@
 // Formulario de inscripción de un nuevo beneficiario.
-// Valida duplicados de documento antes de guardar.
 import { useState } from 'react';
 import {
   Box, Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, TextField, MenuItem, FormControl,
   InputLabel, Select, Typography, Divider, Alert, CircularProgress,
-  InputAdornment, IconButton,
+  InputAdornment, IconButton, Autocomplete, Checkbox, FormControlLabel,
 } from '@mui/material';
 import PersonAddIcon   from '@mui/icons-material/PersonAdd';
 import CloseIcon       from '@mui/icons-material/Close';
@@ -14,14 +13,42 @@ import apiClient       from '../../../../infrastructure/http/apiClient';
 import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA } from '../../../../shared/constants/beneficiarios';
 import UploadFoto      from '../../../../shared/components/UploadFoto';
 import UploadDocumento from '../../../../shared/components/UploadDocumento';
+import { useGeografiaColombia } from '../../../../shared/hooks/useGeografiaColombia';
+
+const GRADOS = ['Prejardín','Jardín','Transición','1°','2°','3°','4°','5°','6°','7°','8°','9°','10°','11°'];
 
 const FORM_VACIO = {
+  // Datos del menor
   nombreMenor: '', fechaNacimiento: '', tipoDocumento: 'RC', numeroDocumento: '',
-  eps: '', tallaCamisa: '', tallaPantalon: '', tallaZapatos: '',
-  tieneAlergia: 'no', descripcionAlergia: '', observacionesSalud: '',
-  nombreAcudiente: '', parentesco: 'Madre', whatsapp: '', direccion: '',
+  paisNacimiento: 'Colombia', departamentoNacimiento: '', ciudadNacimiento: '',
+  barrio: '', direccion: '', numPersonasVive: '', numHermanos: '',
+  // Tallas
+  tallaCamisa: '', tallaPantalon: '', tallaZapatos: '', pesoKg: '', tallaCm: '',
+  // Salud
+  eps: '', tieneAlergia: 'no', descripcionAlergia: '', observacionesSalud: '',
+  tieneDiscapacidad: false, descripcionDiscapacidad: '',
+  // Educación
+  nombreColegio: '', gradoEscolar: '',
+  // Acudiente
+  nombreAcudiente: '', parentesco: 'Madre', whatsapp: '', viveConNino: '',
+  // Autorización
+  autorizacion: false,
+  // Fotos
   fotoMenorUrl: null, fotoDocumentoUrl: null, fotoDocumentoReversoUrl: null,
 };
+
+function SeccionTitulo({ children }) {
+  return (
+    <>
+      <Grid size={12}>
+        <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={0.5}>
+          {children}
+        </Typography>
+        <Divider sx={{ mb: 1.5, mt: 0.5 }} />
+      </Grid>
+    </>
+  );
+}
 
 export default function NuevoBeneficiario({ onCerrar, onCreado }) {
   const [form,           setForm]           = useState(FORM_VACIO);
@@ -30,7 +57,12 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
   const [docExiste,      setDocExiste]      = useState(false);
   const [verificandoDoc, setVerificandoDoc] = useState(false);
 
-  const set = campo => e => setForm(prev => ({ ...prev, [campo]: e.target.value }));
+  const { departamentos, ciudades, cargandoCiudades } = useGeografiaColombia(
+    form.paisNacimiento?.toLowerCase() === 'colombia' ? form.departamentoNacimiento : ''
+  );
+
+  const set  = campo => e => setForm(prev => ({ ...prev, [campo]: e.target.value }));
+  const setV = (campo, valor) => setForm(prev => ({ ...prev, [campo]: valor }));
 
   const verificarDocumento = async () => {
     const num = form.numeroDocumento.trim();
@@ -45,24 +77,39 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
 
   const handleGuardar = async () => {
     if (docExiste) { setError('Ese número de documento ya está registrado.'); return; }
+    if (!form.autorizacion) { setError('Debe aceptar la autorización para inscribir al beneficiario.'); return; }
     setGuardando(true); setError('');
     try {
       await apiClient.post('/api/beneficiarios', {
-        nombreMenor:        form.nombreMenor.trim(),
-        fechaNacimiento:    form.fechaNacimiento,
-        tipoDocumento:      form.tipoDocumento,
-        numeroDocumento:    form.numeroDocumento.trim() || null,
-        eps:                form.eps.trim()             || null,
-        tallaCamisa:        form.tallaCamisa            || null,
-        tallaPantalon:      form.tallaPantalon.trim()   || null,
-        tallaZapatos:       form.tallaZapatos.trim()    || null,
-        tieneAlergia:       form.tieneAlergia,
-        descripcionAlergia: form.tieneAlergia === 'si' ? (form.descripcionAlergia.trim() || null) : null,
-        observacionesSalud: form.observacionesSalud.trim() || null,
-        nombreAcudiente:    form.nombreAcudiente.trim(),
-        parentesco:         form.parentesco             || null,
-        whatsapp:           form.whatsapp.trim()        || null,
-        direccion:          form.direccion.trim()       || null,
+        nombreMenor:             form.nombreMenor.trim(),
+        fechaNacimiento:         form.fechaNacimiento,
+        tipoDocumento:           form.tipoDocumento,
+        numeroDocumento:         form.numeroDocumento.trim() || null,
+        paisNacimiento:          form.paisNacimiento.trim()  || null,
+        departamentoNacimiento:  form.departamentoNacimiento || null,
+        ciudadNacimiento:        form.ciudadNacimiento       || null,
+        barrio:                  form.barrio.trim()          || null,
+        direccion:               form.direccion.trim()       || null,
+        numPersonasVive:         form.numPersonasVive ? parseInt(form.numPersonasVive) : null,
+        numHermanos:             form.numHermanos    ? parseInt(form.numHermanos)    : null,
+        eps:                     form.eps.trim()             || null,
+        tallaCamisa:             form.tallaCamisa             || null,
+        tallaPantalon:           form.tallaPantalon.trim()    || null,
+        tallaZapatos:            form.tallaZapatos.trim()     || null,
+        pesoKg:                  form.pesoKg    ? parseFloat(form.pesoKg)    : null,
+        tallaCm:                 form.tallaCm   ? parseInt(form.tallaCm)     : null,
+        tieneAlergia:            form.tieneAlergia,
+        descripcionAlergia:      form.tieneAlergia === 'si' ? (form.descripcionAlergia.trim() || null) : null,
+        observacionesSalud:      form.observacionesSalud.trim() || null,
+        tieneDiscapacidad:       form.tieneDiscapacidad,
+        descripcionDiscapacidad: form.tieneDiscapacidad ? (form.descripcionDiscapacidad.trim() || null) : null,
+        nombreColegio:           form.nombreColegio.trim() || null,
+        gradoEscolar:            form.gradoEscolar         || null,
+        nombreAcudiente:         form.nombreAcudiente.trim(),
+        parentesco:              form.parentesco            || null,
+        whatsapp:                form.whatsapp.trim()       || null,
+        viveConNino:             form.viveConNino === 'si' ? true : form.viveConNino === 'no' ? false : null,
+        autorizacion:            form.autorizacion,
         fotoMenorUrl:            form.fotoMenorUrl            || null,
         fotoDocumentoUrl:        form.fotoDocumentoUrl        || null,
         fotoDocumentoReversoUrl: form.fotoDocumentoReversoUrl || null,
@@ -82,6 +129,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
     form.nombreMenor.trim() &&
     form.fechaNacimiento &&
     form.nombreAcudiente.trim() &&
+    form.autorizacion &&
     !docExiste &&
     !guardando;
 
@@ -106,12 +154,10 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         <Grid container spacing={2}>
-          <Grid size={12}>
-            <Typography variant="subtitle2" color="#4E1B95" fontWeight={700}>
-              Datos del menor
-            </Typography>
-            <Divider sx={{ mb: 1.5, mt: 0.5 }} />
-          </Grid>
+
+          {/* ── Datos del menor ── */}
+          <SeccionTitulo>Datos del menor</SeccionTitulo>
+
           <Grid size={{ xs: 12, sm: 8 }}>
             <TextField fullWidth label="Nombre completo *" size="small"
               value={form.nombreMenor} onChange={set('nombreMenor')} />
@@ -140,9 +186,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
               slotProps={{
                 input: {
                   endAdornment: verificandoDoc ? (
-                    <InputAdornment position="end">
-                      <CircularProgress size={14} />
-                    </InputAdornment>
+                    <InputAdornment position="end"><CircularProgress size={14} /></InputAdornment>
                   ) : docExiste === false && form.numeroDocumento ? (
                     <InputAdornment position="end">
                       <CheckCircleIcon sx={{ fontSize: 16, color: '#2e7d32' }} />
@@ -153,13 +197,63 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="EPS" size="small" value={form.eps} onChange={set('eps')} />
+            <Autocomplete
+              freeSolo
+              options={['Colombia']}
+              value={form.paisNacimiento}
+              onInputChange={(_, v) => setForm(p => ({ ...p, paisNacimiento: v, departamentoNacimiento: '', ciudadNacimiento: '' }))}
+              renderInput={params => <TextField {...params} label="País de nacimiento" size="small" />}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Autocomplete
+              options={departamentos}
+              value={form.departamentoNacimiento || null}
+              onChange={(_, v) => setForm(p => ({ ...p, departamentoNacimiento: v || '', ciudadNacimiento: '' }))}
+              disabled={form.paisNacimiento?.toLowerCase() !== 'colombia'}
+              renderInput={params => <TextField {...params} label="Departamento" size="small" />}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Autocomplete
+              options={ciudades}
+              value={form.ciudadNacimiento || null}
+              onChange={(_, v) => setV('ciudadNacimiento', v || '')}
+              disabled={!form.departamentoNacimiento}
+              loading={cargandoCiudades}
+              renderInput={params => (
+                <TextField {...params} label="Ciudad" size="small"
+                  slotProps={{ input: { ...params.InputProps,
+                    endAdornment: cargandoCiudades
+                      ? <CircularProgress size={14} />
+                      : params.InputProps.endAdornment,
+                  }}}
+                />
+              )}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField fullWidth label="Barrio" size="small"
+              value={form.barrio} onChange={set('barrio')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 8 }}>
+            <TextField fullWidth label="Dirección" size="small"
+              value={form.direccion} onChange={set('direccion')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="N.º personas con quienes vive" size="small" type="number"
+              value={form.numPersonasVive} onChange={set('numPersonasVive')}
+              slotProps={{ htmlInput: { min: 1, max: 20 } }} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="N.º de hermanos" size="small" type="number"
+              value={form.numHermanos} onChange={set('numHermanos')}
+              slotProps={{ htmlInput: { min: 0, max: 20 } }} />
           </Grid>
 
-          <Grid size={12}>
-            <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={0.5}>Tallas</Typography>
-            <Divider sx={{ mb: 1.5, mt: 0.5 }} />
-          </Grid>
+          {/* ── Tallas ── */}
+          <SeccionTitulo>Tallas</SeccionTitulo>
+
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Talla camisa</InputLabel>
@@ -177,12 +271,26 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
             <TextField fullWidth label="Talla zapatos" size="small"
               value={form.tallaZapatos} onChange={set('tallaZapatos')} />
           </Grid>
-
-          <Grid size={12}>
-            <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={0.5}>Salud</Typography>
-            <Divider sx={{ mb: 1.5, mt: 0.5 }} />
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Peso" size="small" type="number"
+              value={form.pesoKg} onChange={set('pesoKg')}
+              slotProps={{ htmlInput: { min: 1, max: 200, step: 0.1 },
+                input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> } }} />
           </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Talla (altura)" size="small" type="number"
+              value={form.tallaCm} onChange={set('tallaCm')}
+              slotProps={{ htmlInput: { min: 30, max: 250 },
+                input: { endAdornment: <InputAdornment position="end">cm</InputAdornment> } }} />
+          </Grid>
+
+          {/* ── Salud ── */}
+          <SeccionTitulo>Salud</SeccionTitulo>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="EPS" size="small" value={form.eps} onChange={set('eps')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
               <InputLabel>¿Tiene alergia?</InputLabel>
               <Select label="¿Tiene alergia?" value={form.tieneAlergia} onChange={set('tieneAlergia')}>
@@ -192,7 +300,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
             </FormControl>
           </Grid>
           {form.tieneAlergia === 'si' && (
-            <Grid size={{ xs: 12, sm: 8 }}>
+            <Grid size={12}>
               <TextField fullWidth label="Descripción de la alergia *" size="small"
                 value={form.descripcionAlergia} onChange={set('descripcionAlergia')} />
             </Grid>
@@ -201,11 +309,45 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
             <TextField fullWidth label="Observaciones de salud" size="small" multiline rows={2}
               value={form.observacionesSalud} onChange={set('observacionesSalud')} />
           </Grid>
-
           <Grid size={12}>
-            <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={0.5}>Acudiente</Typography>
-            <Divider sx={{ mb: 1.5, mt: 0.5 }} />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={form.tieneDiscapacidad}
+                  onChange={e => setForm(p => ({ ...p, tieneDiscapacidad: e.target.checked, descripcionDiscapacidad: '' }))}
+                  color="secondary"
+                />
+              }
+              label="Tiene discapacidad o condición de salud especial"
+            />
           </Grid>
+          {form.tieneDiscapacidad && (
+            <Grid size={12}>
+              <TextField fullWidth label="Descripción de la discapacidad / condición *" size="small"
+                value={form.descripcionDiscapacidad} onChange={set('descripcionDiscapacidad')} />
+            </Grid>
+          )}
+
+          {/* ── Educación ── */}
+          <SeccionTitulo>Educación</SeccionTitulo>
+
+          <Grid size={{ xs: 12, sm: 8 }}>
+            <TextField fullWidth label="Nombre del colegio" size="small"
+              value={form.nombreColegio} onChange={set('nombreColegio')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Autocomplete
+              freeSolo
+              options={GRADOS}
+              value={form.gradoEscolar}
+              onInputChange={(_, v) => setV('gradoEscolar', v)}
+              renderInput={params => <TextField {...params} label="Grado escolar" size="small" />}
+            />
+          </Grid>
+
+          {/* ── Acudiente ── */}
+          <SeccionTitulo>Acudiente</SeccionTitulo>
+
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Nombre del acudiente *" size="small"
               value={form.nombreAcudiente} onChange={set('nombreAcudiente')} />
@@ -224,14 +366,35 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
               placeholder="Ej: 3001234567" />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Dirección" size="small"
-              value={form.direccion} onChange={set('direccion')} />
+            <FormControl fullWidth size="small">
+              <InputLabel>¿Vive con el niño?</InputLabel>
+              <Select label="¿Vive con el niño?" value={form.viveConNino} onChange={set('viveConNino')}>
+                <MenuItem value=""><em>No especificado</em></MenuItem>
+                <MenuItem value="si">Sí</MenuItem>
+                <MenuItem value="no">No</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
 
+          {/* ── Autorización ── */}
+          <SeccionTitulo>Autorización</SeccionTitulo>
+
           <Grid size={12}>
-            <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={0.5}>Fotos</Typography>
-            <Divider sx={{ mb: 1.5, mt: 0.5 }} />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={form.autorizacion}
+                  onChange={e => setForm(p => ({ ...p, autorizacion: e.target.checked }))}
+                  color="primary"
+                />
+              }
+              label="Autorizo la inscripción del menor a los programas de la Fundación Panorama de Colores y el uso de sus datos con fines institucionales."
+            />
           </Grid>
+
+          {/* ── Fotos ── */}
+          <SeccionTitulo>Fotos</SeccionTitulo>
+
           <Grid size={{ xs: 12, sm: 4 }}>
             <UploadFoto
               label="Foto del menor"

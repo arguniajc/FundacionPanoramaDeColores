@@ -11,16 +11,38 @@ public class BeneficiarioDto
     public string    TipoDocumento      { get; set; } = string.Empty;
     public string?   NumeroDocumento    { get; set; }
     public string?   Eps                { get; set; }
+    // ── Tallas ────────────────────────────────────────────────────────────────
     public string?   TallaCamisa        { get; set; }
     public string?   TallaPantalon      { get; set; }
     public string?   TallaZapatos       { get; set; }
+    public decimal?  PesoKg             { get; set; }
+    public int?      TallaCm            { get; set; }
+    // ── Salud ─────────────────────────────────────────────────────────────────
     public string    TieneAlergia       { get; set; } = "no";
     public string?   DescripcionAlergia { get; set; }
     public string?   ObservacionesSalud { get; set; }
+    public bool      TieneDiscapacidad  { get; set; }
+    public string?   DescripcionDiscapacidad { get; set; }
+    // ── Acudiente ─────────────────────────────────────────────────────────────
     public string    NombreAcudiente    { get; set; } = string.Empty;
     public string?   Parentesco         { get; set; }
     public string?   Whatsapp           { get; set; }
     public string?   Direccion          { get; set; }
+    public bool?     ViveConNino        { get; set; }
+    // ── Lugar de nacimiento ───────────────────────────────────────────────────
+    public string?   PaisNacimiento          { get; set; }
+    public string?   DepartamentoNacimiento  { get; set; }
+    public string?   CiudadNacimiento        { get; set; }
+    public string?   Barrio                  { get; set; }
+    // ── Composición familiar ──────────────────────────────────────────────────
+    public int?      NumPersonasVive    { get; set; }
+    public int?      NumHermanos        { get; set; }
+    // ── Educación ─────────────────────────────────────────────────────────────
+    public string?   NombreColegio      { get; set; }
+    public string?   GradoEscolar       { get; set; }
+    // ── Autorización ──────────────────────────────────────────────────────────
+    public bool      Autorizacion       { get; set; }
+    // ── Archivos ──────────────────────────────────────────────────────────────
     public string?   FotoMenorUrl            { get; set; }
     public string?   FotoDocumentoUrl        { get; set; }
     public string?   FotoDocumentoReversoUrl { get; set; }
@@ -36,16 +58,38 @@ public class CrearBeneficiarioDto
     public string    TipoDocumento      { get; set; } = string.Empty;
     public string?   NumeroDocumento    { get; set; }
     public string?   Eps                { get; set; }
+    // ── Tallas ────────────────────────────────────────────────────────────────
     public string?   TallaCamisa        { get; set; }
     public string?   TallaPantalon      { get; set; }
     public string?   TallaZapatos       { get; set; }
+    public decimal?  PesoKg             { get; set; }
+    public int?      TallaCm            { get; set; }
+    // ── Salud ─────────────────────────────────────────────────────────────────
     public string    TieneAlergia       { get; set; } = "no";
     public string?   DescripcionAlergia { get; set; }
     public string?   ObservacionesSalud { get; set; }
+    public bool      TieneDiscapacidad  { get; set; }
+    public string?   DescripcionDiscapacidad { get; set; }
+    // ── Acudiente ─────────────────────────────────────────────────────────────
     public string    NombreAcudiente    { get; set; } = string.Empty;
     public string?   Parentesco         { get; set; }
     public string?   Whatsapp           { get; set; }
     public string?   Direccion          { get; set; }
+    public bool?     ViveConNino        { get; set; }
+    // ── Lugar de nacimiento ───────────────────────────────────────────────────
+    public string?   PaisNacimiento          { get; set; }
+    public string?   DepartamentoNacimiento  { get; set; }
+    public string?   CiudadNacimiento        { get; set; }
+    public string?   Barrio                  { get; set; }
+    // ── Composición familiar ──────────────────────────────────────────────────
+    public int?      NumPersonasVive    { get; set; }
+    public int?      NumHermanos        { get; set; }
+    // ── Educación ─────────────────────────────────────────────────────────────
+    public string?   NombreColegio      { get; set; }
+    public string?   GradoEscolar       { get; set; }
+    // ── Autorización ──────────────────────────────────────────────────────────
+    public bool      Autorizacion       { get; set; }
+    // ── Archivos ──────────────────────────────────────────────────────────────
     public string?   FotoMenorUrl            { get; set; }
     public string?   FotoDocumentoUrl        { get; set; }
     public string?   FotoDocumentoReversoUrl { get; set; }

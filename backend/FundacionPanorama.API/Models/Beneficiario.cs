@@ -27,6 +27,48 @@ public class Beneficiario
     [Column("motivo_baja"), MaxLength(500)]
     public string? MotivoBaja { get; set; }
 
+    // ── Lugar de nacimiento ───────────────────────────────────────────────────
+    [Column("pais_nacimiento"), MaxLength(100)]
+    public string? PaisNacimiento { get; set; }
+
+    [Column("departamento_nacimiento"), MaxLength(100)]
+    public string? DepartamentoNacimiento { get; set; }
+
+    [Column("ciudad_nacimiento"), MaxLength(100)]
+    public string? CiudadNacimiento { get; set; }
+
+    [Column("barrio"), MaxLength(100)]
+    public string? Barrio { get; set; }
+
+    // ── Composición familiar ──────────────────────────────────────────────────
+    [Column("num_personas_vive")]
+    public int? NumPersonasVive { get; set; }
+
+    [Column("num_hermanos")]
+    public int? NumHermanos { get; set; }
+
+    // ── Educación ─────────────────────────────────────────────────────────────
+    [Column("nombre_colegio"), MaxLength(200)]
+    public string? NombreColegio { get; set; }
+
+    [Column("grado_escolar"), MaxLength(50)]
+    public string? GradoEscolar { get; set; }
+
+    // ── Salud adicional ───────────────────────────────────────────────────────
+    [Column("tiene_discapacidad")]
+    public bool TieneDiscapacidad { get; set; } = false;
+
+    [Column("descripcion_discapacidad")]
+    public string? DescripcionDiscapacidad { get; set; }
+
+    // ── Acudiente / convivencia ───────────────────────────────────────────────
+    [Column("vive_con_nino")]
+    public bool? ViveConNino { get; set; }
+
+    // ── Autorización ──────────────────────────────────────────────────────────
+    [Column("autorizacion")]
+    public bool Autorizacion { get; set; } = false;
+
     [Column("fecha_creacion")]
     public DateTime FechaCreacion { get; set; }
 

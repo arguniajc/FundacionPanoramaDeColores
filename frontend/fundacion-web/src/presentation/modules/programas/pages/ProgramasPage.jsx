@@ -624,16 +624,29 @@ export default function ProgramasPage() {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
-        <Typography variant="h5" fontWeight={800} color={COLOR}>Proyectos</Typography>
+
+      {/* ── Cabecera ─────────────────────────────────────────────── */}
+      <Box sx={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 2, mb: 4,
+      }}>
+        <Box>
+          <Typography sx={{
+            fontSize: '0.68rem', color: 'text.secondary',
+            textTransform: 'uppercase', letterSpacing: '0.12em', mb: 0.5,
+          }}>
+            Módulo
+          </Typography>
+          <Typography variant="h5" fontWeight={800} color={COLOR}>Proyectos</Typography>
+        </Box>
         <Button variant="contained" startIcon={<AddIcon />}
           onClick={abrirNuevoPrograma} disabled={sedes.length === 0}
-          sx={{ bgcolor: COLOR, ml: 3 }}>
+          sx={{ bgcolor: COLOR, flexShrink: 0, px: 2.5 }}>
           Nuevo proyecto
         </Button>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
       {cargando ? (
         <Box display="flex" justifyContent="center" py={8}>

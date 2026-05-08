@@ -183,13 +183,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
               disabled={!form.departamentoNacimiento}
               loading={cargandoCiudades}
               renderInput={params => (
-                <TextField {...params} label="Ciudad" size="small"
-                  slotProps={{ input: { ...params.InputProps,
-                    endAdornment: cargandoCiudades
-                      ? <CircularProgress size={14} />
-                      : params.InputProps.endAdornment,
-                  }}}
-                />
+                <TextField {...params} label="Ciudad" size="small" />
               )}
             />
           </Grid>

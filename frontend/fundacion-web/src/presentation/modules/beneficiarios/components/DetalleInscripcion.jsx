@@ -112,16 +112,15 @@ function Campo({ label, value, children }) {
   return (
     <Box mb={1.5}>
       <Typography
-        variant="caption"
-        color="text.secondary"
+        variant="body2"
         display="block"
-        fontWeight={700}
-        sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
+        fontWeight={800}
+        sx={{ color: '#2d1566', mb: 0.2 }}
       >
         {label}
       </Typography>
       {children ?? (
-        <Typography variant="body2" fontWeight={500}>
+        <Typography variant="body2" fontWeight={400} color="text.primary">
           {value || '—'}
         </Typography>
       )}
@@ -330,34 +329,20 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
 
             {/* ── IMC ────────────────────────────────────────────────────────── */}
             {imc && (
-              <Box mt={2} sx={{
-                display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap',
-                bgcolor: 'rgba(78,27,149,0.04)', border: '1px solid rgba(78,27,149,0.15)',
-                borderRadius: 2, px: 2, py: 1.2,
-              }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700}
-                    sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    IMC (Índice de Masa Corporal)
-                  </Typography>
-                  <Box display="flex" alignItems="baseline" gap={0.8} mt={0.3}>
-                    <Typography variant="h5" fontWeight={900} sx={{ color: imc.color, lineHeight: 1 }}>
-                      {imc.valor}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">kg/m²</Typography>
-                    <Chip label={imc.label} size="small"
-                      sx={{ bgcolor: imc.color, color: '#fff', fontWeight: 700, ml: 0.5 }} />
-                  </Box>
-                </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto', fontStyle: 'italic', maxWidth: 220 }}>
-                  Clasificación orientativa. Para diagnóstico use percentiles OMS por edad y sexo.
+              <Box mt={1.5} display="flex" alignItems="center" gap={1}>
+                <Typography variant="body2" fontWeight={800} sx={{ color: '#2d1566' }}>
+                  IMC:
                 </Typography>
+                <Chip
+                  label={`${imc.valor} kg/m²  ·  ${imc.label}`}
+                  size="small"
+                  sx={{ bgcolor: imc.color, color: '#fff', fontWeight: 700 }}
+                />
               </Box>
             )}
 
             <Box mt={2} display="flex" alignItems="center" gap={1}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}
-                sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <Typography variant="body2" fontWeight={800} sx={{ color: '#2d1566' }}>
                 Tiene alergia:
               </Typography>
               <Chip
@@ -400,8 +385,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
 
           <Grid size={12}>
             <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-              <Typography variant="caption" color="text.secondary" fontWeight={700}
-                sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <Typography variant="body2" fontWeight={800} sx={{ color: '#2d1566' }}>
                 Discapacidad / condición especial:
               </Typography>
               <Chip

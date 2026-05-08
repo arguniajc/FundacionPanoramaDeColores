@@ -624,12 +624,12 @@ export default function ProgramasPage() {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-        <Typography variant="h5" fontWeight={800} color={COLOR}>Programas</Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
+        <Typography variant="h5" fontWeight={800} color={COLOR}>Proyectos</Typography>
         <Button variant="contained" startIcon={<AddIcon />}
           onClick={abrirNuevoPrograma} disabled={sedes.length === 0}
-          sx={{ bgcolor: COLOR }}>
-          Nuevo programa
+          sx={{ bgcolor: COLOR, ml: 3 }}>
+          Nuevo proyecto
         </Button>
       </Box>
 
@@ -641,7 +641,7 @@ export default function ProgramasPage() {
         </Box>
       ) : todosLosProgramas.length === 0 ? (
         <Alert severity="info">
-          No hay programas registrados. {sedes.length === 0 && 'Primero crea una sede.'}
+          No hay proyectos registrados. {sedes.length === 0 && 'Primero crea una sede.'}
         </Alert>
       ) : (
         <Grid container spacing={2}>
@@ -683,7 +683,7 @@ export default function ProgramasPage() {
                     sx={{ color: COLOR, borderColor: COLOR, flex: 1 }}>
                     Campos
                   </Button>
-                  <Tooltip title="Editar programa">
+                  <Tooltip title="Editar proyecto">
                     <IconButton size="small" onClick={() => abrirEditarPrograma(p)}>
                       <EditIcon fontSize="small" sx={{ color: COLOR }} />
                     </IconButton>
@@ -711,7 +711,7 @@ export default function ProgramasPage() {
       {formPrograma && (
         <Dialog open onClose={() => setFormPrograma(null)} maxWidth="xs" fullWidth>
           <DialogTitle sx={{ fontWeight: 700 }}>
-            {formPrograma.id ? 'Editar programa' : 'Nuevo programa'}
+            {formPrograma.id ? 'Editar proyecto' : 'Nuevo proyecto'}
           </DialogTitle>
           <DialogContent dividers>
             {errForm && <Alert severity="error" sx={{ mb: 2 }}>{errForm}</Alert>}

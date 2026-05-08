@@ -53,7 +53,7 @@ const MENU = [
       { label: 'Donantes',       icon: <VolunteerActivismIcon />,  ruta: '/sede/donantes' },
       { label: 'Donaciones',     icon: <MonetizationOnIcon />,     ruta: '/sede/donaciones' },
       { label: 'Proyectos',      icon: <FolderSpecialIcon />,      ruta: '/sede/proyectos' },
-      { label: 'Inscripciones',  icon: <HowToRegIcon />,           ruta: '/sede/inscripciones' },
+      { label: 'Inscripciones a proyectos', icon: <HowToRegIcon />, ruta: '/sede/inscripciones' },
       { label: 'Sedes',          icon: <LocationOnIcon />,         ruta: '/sede/sedes' },
       { label: 'Actividades',    icon: <EventNoteIcon />,          ruta: '/sede/actividades' },
       { label: 'Voluntarios',    icon: <PeopleIcon />,             ruta: '/sede/voluntarios' },

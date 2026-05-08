@@ -46,15 +46,66 @@ const COLOR_HOVER    = '#3a1470';
 function Seccion({ titulo, icono, mt = 1 }) {
   return (
     <Grid size={12}>
-      <Box display="flex" alignItems="center" gap={0.7} mt={mt}>
-        {icono && <Box sx={{ color: COLOR_PRIMARIO, display: 'flex' }}>{icono}</Box>}
-        <Typography variant="subtitle2" color={COLOR_PRIMARIO} fontWeight={700}>
+      <Box
+        display="flex" alignItems="center" gap={1}
+        mt={mt}
+        sx={{
+          borderLeft: `5px solid ${COLOR_PRIMARIO}`,
+          bgcolor: 'rgba(78,27,149,0.07)',
+          borderRadius: '0 8px 8px 0',
+          px: 1.5, py: 0.8,
+        }}
+      >
+        {icono && (
+          <Box sx={{ color: COLOR_PRIMARIO, display: 'flex', flexShrink: 0 }}>
+            {icono}
+          </Box>
+        )}
+        <Typography
+          variant="subtitle1"
+          fontWeight={800}
+          sx={{ color: COLOR_PRIMARIO, letterSpacing: '0.03em', lineHeight: 1 }}
+        >
           {titulo}
         </Typography>
       </Box>
-      <Divider sx={{ mt: 0.5, mb: 1.5 }} />
+      <Box mb={1.5} />
     </Grid>
   );
+}
+
+// IMC para niños (OMS): valor numérico + clasificación orientativa por edad
+function calcularImc(pesoKg, tallaCm, fechaNacimiento) {
+  if (!pesoKg || !tallaCm) return null;
+  const tallam = tallaCm / 100;
+  const imc    = pesoKg / (tallam * tallam);
+
+  // Edad en años
+  let edadAnios = 0;
+  if (fechaNacimiento) {
+    const hoy = new Date();
+    const nac = new Date(fechaNacimiento);
+    edadAnios = hoy.getFullYear() - nac.getFullYear();
+    if (hoy < new Date(nac.setFullYear(hoy.getFullYear()))) edadAnios--;
+  }
+
+  // Clasificación OMS simplificada para menores de 18
+  let label, color;
+  if (edadAnios < 18) {
+    if      (imc < 14)   { label = 'Bajo peso severo'; color = '#c62828'; }
+    else if (imc < 16)   { label = 'Bajo peso';        color = '#ef6c00'; }
+    else if (imc < 18.5) { label = 'Bajo peso leve';   color = '#f9a825'; }
+    else if (imc < 25)   { label = 'Peso adecuado';    color = '#2e7d32'; }
+    else if (imc < 30)   { label = 'Sobrepeso';        color = '#ef6c00'; }
+    else                 { label = 'Obesidad';          color = '#c62828'; }
+  } else {
+    if      (imc < 18.5) { label = 'Bajo peso';    color = '#ef6c00'; }
+    else if (imc < 25)   { label = 'Normal';        color = '#2e7d32'; }
+    else if (imc < 30)   { label = 'Sobrepeso';     color = '#ef6c00'; }
+    else                 { label = 'Obesidad';       color = '#c62828'; }
+  }
+
+  return { valor: imc.toFixed(1), label, color };
 }
 
 function Campo({ label, value, children }) {
@@ -113,6 +164,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const edad     = calcularEdad(ins.fechaNacimiento);
+  const imc      = calcularImc(ins.pesoKg, ins.tallaCm, ins.fechaNacimiento);
 
   const [descargando,   setDescargando]   = useState(false);
   const [errorDescarga, setErrorDescarga] = useState('');
@@ -275,6 +327,33 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                 etiqueta="Altura"
               />
             </Box>
+
+            {/* ── IMC ────────────────────────────────────────────────────────── */}
+            {imc && (
+              <Box mt={2} sx={{
+                display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap',
+                bgcolor: 'rgba(78,27,149,0.04)', border: '1px solid rgba(78,27,149,0.15)',
+                borderRadius: 2, px: 2, py: 1.2,
+              }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}
+                    sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    IMC (Índice de Masa Corporal)
+                  </Typography>
+                  <Box display="flex" alignItems="baseline" gap={0.8} mt={0.3}>
+                    <Typography variant="h5" fontWeight={900} sx={{ color: imc.color, lineHeight: 1 }}>
+                      {imc.valor}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">kg/m²</Typography>
+                    <Chip label={imc.label} size="small"
+                      sx={{ bgcolor: imc.color, color: '#fff', fontWeight: 700, ml: 0.5 }} />
+                  </Box>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto', fontStyle: 'italic', maxWidth: 220 }}>
+                  Clasificación orientativa. Para diagnóstico use percentiles OMS por edad y sexo.
+                </Typography>
+              </Box>
+            )}
 
             <Box mt={2} display="flex" alignItems="center" gap={1}>
               <Typography variant="caption" color="text.secondary" fontWeight={700}

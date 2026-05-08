@@ -408,31 +408,36 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                 Este programa no tiene campos adicionales en el formulario.
               </Alert>
             ) : (
-              <Box mb={2}>
+              <Box>
                 {agruparPorSeccion(campos).map(({ seccion: sec, campos: grp }, gi) => (
-                  <Box key={sec || '_root'}>
+                  <Box key={sec || '_root'} sx={{ mb: 2.5 }}>
                     {sec && (
-                      <Box display="flex" alignItems="center" gap={1} mt={gi > 0 ? 2 : 0} mb={0.5}>
-                        <Typography variant="caption" fontWeight={800} color={COLOR}
-                          sx={{ textTransform: 'uppercase', letterSpacing: 0.8,
-                                bgcolor: '#ede7f6', px: 1.5, py: 0.3, borderRadius: 1, flexShrink: 0 }}>
+                      <Box sx={{
+                        borderLeft: `5px solid ${COLOR}`,
+                        bgcolor: 'rgba(78,27,149,0.07)',
+                        px: 1.5, py: 0.8,
+                        borderRadius: '0 8px 8px 0',
+                        mb: 1.2,
+                      }}>
+                        <Typography fontWeight={800} color={COLOR}
+                          sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                           {sec}
                         </Typography>
-                        <Box flex={1} sx={{ height: '1px', bgcolor: '#d0c4f7' }} />
                       </Box>
                     )}
-                    <Box sx={{ border: '1px solid #e2d9f3', borderRadius: 2, overflow: 'hidden' }}>
-                      {grp.map((c, idx) => (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
+                      {grp.map((c) => (
                         <Box key={c.id} sx={{
-                          display: 'flex', gap: 2, p: '8px 14px',
-                          bgcolor: idx % 2 === 0 ? '#fdfbff' : '#f8f5ff',
-                          borderBottom: idx < grp.length - 1 ? '1px solid #ede7f6' : 'none',
+                          bgcolor: '#fdfbff', borderRadius: 2,
+                          border: '1px solid #ede7f6', px: 2, py: 1.1,
                         }}>
-                          <Typography variant="body2" fontWeight={700} color={COLOR}
-                            sx={{ minWidth: 140, flexShrink: 0 }}>
+                          <Typography sx={{
+                            fontSize: '0.68rem', fontWeight: 800, color: '#2d1566',
+                            textTransform: 'uppercase', letterSpacing: '0.07em', mb: 0.35, display: 'block',
+                          }}>
                             {c.etiqueta}{c.obligatorio ? ' *' : ''}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
+                          <Typography variant="body2" color="text.primary" sx={{ wordBreak: 'break-word', lineHeight: 1.5 }}>
                             {valorVista(c)}
                           </Typography>
                         </Box>
@@ -443,9 +448,17 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               </Box>
             )}
             {observaciones && (
-              <Box sx={{ p: 1.5, bgcolor: '#f3f0ff', borderRadius: 2, border: '1px solid #d0c4f7' }}>
-                <Typography variant="caption" fontWeight={700} color={COLOR} display="block">Observaciones</Typography>
-                <Typography variant="body2" mt={0.3}>{observaciones}</Typography>
+              <Box sx={{
+                borderLeft: `5px solid ${COLOR}`,
+                bgcolor: 'rgba(78,27,149,0.07)',
+                borderRadius: '0 8px 8px 0',
+                px: 1.5, py: 1,
+              }}>
+                <Typography fontWeight={800} color={COLOR}
+                  sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.5, display: 'block' }}>
+                  Observaciones
+                </Typography>
+                <Typography variant="body2" color="text.primary">{observaciones}</Typography>
               </Box>
             )}
           </Box>

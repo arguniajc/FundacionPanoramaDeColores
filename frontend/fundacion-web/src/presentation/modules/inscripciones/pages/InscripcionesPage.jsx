@@ -1,3 +1,4 @@
+// Gestión de inscripciones: listado con filtros, alta por stepper y edición/PDF del formulario dinámico.
 import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Autocomplete, Avatar, Box, Button, Chip, CircularProgress,
@@ -21,6 +22,7 @@ import { archivosRepository }       from '../../../../infrastructure/repositorie
 
 const COLOR = '#4E1B95';
 
+// Returns age in full years calculated from an ISO birth-date string
 function calcEdad(fechaNac) {
   if (!fechaNac) return null;
   const nac = new Date(fechaNac + 'T00:00:00');
@@ -31,6 +33,7 @@ function calcEdad(fechaNac) {
   return e;
 }
 
+// Formats an ISO date to a long Spanish locale string (e.g. "08 de mayo de 2025")
 function fmtFechaCorta(iso) {
   if (!iso) return '—';
   return new Date(iso + 'T00:00:00').toLocaleDateString('es-CO', {
@@ -38,7 +41,7 @@ function fmtFechaCorta(iso) {
   });
 }
 
-// Agrupa campos consecutivos con la misma sección
+// Groups consecutive fields that share the same section name for sectioned rendering
 function agruparPorSeccion(campos) {
   const result = [];
   for (const c of campos) {
@@ -108,6 +111,7 @@ function CampoInput({ campo, value, onChange }) {
   }
 
   if (campo.tipo === 'document') {
+    // Uploads the selected PDF to S3 and stores the returned URL as the field value
     const handleFile = async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -233,6 +237,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [generandoPdf,  setGenerandoPdf]  = useState(false);
   const [error,         setError]         = useState('');
 
+  // Load field definitions and parse saved JSON data each time the inscription changes
   useEffect(() => {
     setCargando(true);
     setEditando(false);
@@ -245,6 +250,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       .finally(() => setCargando(false));
   }, [inscripcion.id]);
 
+  // Saves the edited form data back to the backend and switches back to view mode
   const handleGuardar = async () => {
     setGuardando(true);
     setError('');
@@ -262,6 +268,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
     }
   };
 
+  // Generates a PDF of the inscription form and opens it in a new browser tab for printing
   const handleImprimir = async () => {
     setGenerandoPdf(true);
     try {
@@ -294,6 +301,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
     }
   };
 
+  // Formats a raw field value for human-readable display in view mode (e.g. booleans, date ranges, units)
   const valorVista = (campo) => {
     const v = datos[campo.id];
 
@@ -510,6 +518,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [guardando,       setGuardando]       = useState(false);
   const [error,           setError]           = useState('');
 
+  // Debounced search for beneficiaries as the user types (fires 300 ms after last keystroke)
   useEffect(() => {
     if (busqueda.length < 2) { setBeneficiarios([]); return; }
     const t = setTimeout(async () => {
@@ -523,6 +532,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     return () => clearTimeout(t);
   }, [busqueda]);
 
+  // Load all active programs from all sedes once on mount, for the program selection step
   useEffect(() => {
     sedesRepository.listar({ soloActivas: true }).then(({ data }) => {
       const progs = data.flatMap(s =>
@@ -532,6 +542,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     }).catch(() => {});
   }, []);
 
+  // Load field definitions for the chosen program; auto-fills age and birth-date from the beneficiary
   useEffect(() => {
     if (!selPrograma) { setCampos([]); return; }
     setCargandoCampos(true);
@@ -551,6 +562,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     }).catch(() => {}).finally(() => setCargandoCampos(false));
   }, [selPrograma, selBenef]);
 
+  // Returns true when the current wizard step has all required data filled in
   const pasoValido = () => {
     if (paso === 0) return !!selBenef;
     if (paso === 1) return !!selPrograma;
@@ -566,6 +578,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     return true;
   };
 
+  // Submits the completed inscription (beneficiary + program + form data) to the backend
   const handleSubmit = async () => {
     setGuardando(true);
     setError('');
@@ -745,6 +758,7 @@ export default function InscripcionesPage() {
   const [cambiandoId,   setCambiandoId]   = useState(null);
   const [toast,         setToast]         = useState('');
 
+  // Load all programs once on mount so the "Programa" filter dropdown is populated
   useEffect(() => {
     sedesRepository.listar().then(({ data }) => {
       setProgramas(data.flatMap(s =>
@@ -753,12 +767,15 @@ export default function InscripcionesPage() {
     }).catch(() => {});
   }, []);
 
+  // Reloads the inscription list applying the current program and status filters
   const recargar = useCallback(() => {
     cargar({ programaId: filtroProg || undefined, estado: filtroEstado || undefined });
   }, [cargar, filtroProg, filtroEstado]);
 
+  // Re-fetch inscriptions whenever the program or status filter changes
   useEffect(() => { recargar(); }, [recargar]);
 
+  // Client-side filter by beneficiary name or document number (applied on top of server filter)
   const filtradas = inscripciones.filter(i => {
     if (filtroBuscar) {
       const q = filtroBuscar.toLowerCase();
@@ -768,6 +785,7 @@ export default function InscripcionesPage() {
     return true;
   });
 
+  // Updates the status of an inscription via the API and shows a toast
   const handleCambiarEstado = async (id, estado) => {
     setCambiandoId(id);
     try {
@@ -777,6 +795,7 @@ export default function InscripcionesPage() {
     finally  { setCambiandoId(null); }
   };
 
+  // Deletes an inscription via the API and shows a toast
   const handleEliminar = async (id) => {
     try {
       await eliminar(id);

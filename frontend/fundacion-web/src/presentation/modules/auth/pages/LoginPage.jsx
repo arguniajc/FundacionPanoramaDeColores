@@ -17,10 +17,12 @@ export default function LoginPage() {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
 
+  // Redirects already-authenticated users directly to the /sede dashboard
   useEffect(() => {
     if (user) navigate('/sede', { replace: true });
   }, [user, navigate]);
 
+  // Sends Google id_token to backend, validates it, and stores the returned JWT
   const handleGoogleSuccess = async (credentialResponse) => {
     setCargando(true);
     setError('');

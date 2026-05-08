@@ -22,13 +22,16 @@ function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
+  // Reset form fields and clear error whenever the dialog opens or initial data changes
   useEffect(() => {
     if (abierto) setForm({ nombre: inicial?.nombre ?? '', direccion: inicial?.direccion ?? '', ciudad: inicial?.ciudad ?? '', telefono: inicial?.telefono ?? '' });
     setError('');
   }, [abierto, inicial]);
 
+  // Generic field-change handler — updates one key in the form state
   const set = campo => e => setForm(p => ({ ...p, [campo]: e.target.value }));
 
+  // Creates or updates a sede via API; passes the saved result upstream
   const handleGuardar = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
     setGuardando(true);
@@ -86,13 +89,16 @@ function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
+  // Reset form fields and clear error whenever the dialog opens or initial data changes
   useEffect(() => {
     if (abierto) setForm({ nombre: inicial?.nombre ?? '', descripcion: inicial?.descripcion ?? '', cupoMaximo: inicial?.cupoMaximo ?? '' });
     setError('');
   }, [abierto, inicial]);
 
+  // Generic field-change handler — updates one key in the form state
   const set = campo => e => setForm(p => ({ ...p, [campo]: e.target.value }));
 
+  // Creates or updates a program via API; passes the saved result upstream
   const handleGuardar = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
     setGuardando(true);
@@ -273,6 +279,7 @@ export default function SedesPage() {
   const [confirmEliminar, setConfirmEliminar] = useState(null);
   const [eliminando,      setEliminando]      = useState(false);
 
+  // Fetches all sedes (with nested programs) from the API
   const cargar = useCallback(async () => {
     setCargando(true);
     setError('');
@@ -286,8 +293,10 @@ export default function SedesPage() {
     }
   }, []);
 
+  // Load sedes once on mount
   useEffect(() => { cargar(); }, [cargar]);
 
+  // Upserts the saved sede into local state and closes the dialog
   const handleGuardadoSede = (sedeActualizada) => {
     setSedes(prev => {
       const existe = prev.find(s => s.id === sedeActualizada.id);
@@ -298,6 +307,7 @@ export default function SedesPage() {
     setToast('Sede guardada correctamente');
   };
 
+  // Toggles a sede's active status via API and updates local state
   const handleToggleSede = async (sede) => {
     try {
       const { data } = await apiClient.patch(`/api/sedes/${sede.id}/toggle`);
@@ -305,6 +315,7 @@ export default function SedesPage() {
     } catch { setError('Error al cambiar estado de la sede.'); }
   };
 
+  // Deletes a sede from the API and removes it from local state
   const handleEliminarSede = async () => {
     if (!confirmEliminar) return;
     setEliminando(true);
@@ -317,6 +328,7 @@ export default function SedesPage() {
     finally { setEliminando(false); }
   };
 
+  // Upserts the saved program into its parent sede's program list
   const handleGuardadoPrograma = (prog) => {
     setSedes(prev => prev.map(s => {
       if (s.id !== prog.sedeId) return s;
@@ -330,6 +342,7 @@ export default function SedesPage() {
     setToast('Programa guardado correctamente');
   };
 
+  // Toggles a program's active status via API and updates local state
   const handleTogglePrograma = async (prog) => {
     try {
       const { data } = await apiClient.patch(`/api/sedes/programas/${prog.id}/toggle`);
@@ -340,6 +353,7 @@ export default function SedesPage() {
     } catch { setError('Error al cambiar estado del programa.'); }
   };
 
+  // Deletes a program from the API and removes it from its parent sede's list
   const handleEliminarPrograma = async () => {
     if (!confirmEliminar) return;
     setEliminando(true);
@@ -355,6 +369,7 @@ export default function SedesPage() {
     finally { setEliminando(false); }
   };
 
+  // Dispatches to handleEliminarSede or handleEliminarPrograma based on confirmation type
   const handleConfirmarEliminar = () => {
     if (confirmEliminar?.tipo === 'sede') return handleEliminarSede();
     if (confirmEliminar?.tipo === 'programa') return handleEliminarPrograma();

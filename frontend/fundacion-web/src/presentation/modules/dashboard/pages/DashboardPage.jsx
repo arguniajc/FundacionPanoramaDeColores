@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const { mode }  = useThemeMode();
   const navigate  = useNavigate();
   const hora      = new Date().getHours();
+  // Derive time-of-day greeting from current hour
   const saludo    = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches';
 
   return (

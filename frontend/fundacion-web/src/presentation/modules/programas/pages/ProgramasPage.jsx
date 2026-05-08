@@ -1,3 +1,4 @@
+// Gestión de proyectos/programas: CRUD de programas por sede y editor de campos de formulario dinámico.
 import { useState, useEffect } from 'react';
 import {
   Alert, Autocomplete, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
@@ -47,9 +48,12 @@ function chipEstado(activo) {
 }
 
 // ── Helpers de ordenación ─────────────────────────────────────────────────────
+// Returns the section name of a field, or '' if it has none
 const secDe          = (c) => c.seccion?.trim() || '';
+// Returns the fields belonging to a section, sorted by their 'orden' value
 const camposDeSeccion = (campos, sec) =>
   campos.filter(c => secDe(c) === sec).sort((a, b) => a.orden - b.orden);
+// Returns unique section names in the order they first appear across all fields (by 'orden')
 const seccionesOrdenadas = (campos) => {
   const seen = new Map();
   for (const c of [...campos].sort((a, b) => a.orden - b.orden)) {
@@ -58,6 +62,7 @@ const seccionesOrdenadas = (campos) => {
   }
   return [...seen.keys()];
 };
+// Maps a campo object to the minimal API DTO, setting a new 'orden' value
 const toDto = (c, orden) => ({
   etiqueta: c.etiqueta, tipo: c.tipo, obligatorio: c.obligatorio,
   opciones: c.opciones, orden, seccion: c.seccion, columnas: c.columnas ?? 6,
@@ -271,8 +276,10 @@ function EditorCamposDialog({ programa, onCerrar }) {
   const campoVacio = { seccion: '', etiqueta: '', tipo: 'text', obligatorio: false, opciones: '', columnas: 6 };
   const [form, setForm] = useState(campoVacio);
 
+  // Load the program's fields when the editor dialog opens
   useEffect(() => { cargar(); }, [cargar]);
 
+  // Generic field-change handler that updates a single key in the campo form state
   const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
 
   const seccionesExistentes = seccionesOrdenadas(campos);
@@ -281,11 +288,13 @@ function EditorCamposDialog({ programa, onCerrar }) {
     s => s.toLowerCase() === seccionDigitada.toLowerCase() && s !== seccionDigitada
   ) ?? null;
 
+  // Opens the add-field form, pre-filling section with the last existing section name
   const abrirNuevo = () => {
     setForm({ ...campoVacio, seccion: seccionesExistentes[seccionesExistentes.length - 1] ?? '' });
     setEditando(null);
     setFormAbierto(true);
   };
+  // Opens the edit-field form pre-filled with the selected field's current data
   const abrirEditar = (c) => {
     setForm({
       seccion:     c.seccion ?? '',
@@ -299,6 +308,7 @@ function EditorCamposDialog({ programa, onCerrar }) {
     setFormAbierto(true);
   };
 
+  // Creates or updates a field via API depending on whether editando is set
   const handleGuardar = async () => {
     if (!form.seccion.trim() || !form.etiqueta.trim()) return;
     setGuardando(true);
@@ -325,12 +335,13 @@ function EditorCamposDialog({ programa, onCerrar }) {
     }
   };
 
+  // Deletes a field by id via API
   const handleEliminar = async (id) => {
     try { await eliminarCampo(id); setToast('Campo eliminado'); }
     catch { setToast('Error al eliminar'); }
   };
 
-  // ── Drag & drop — reordenar dentro de una sección ────────────────────────────
+  // ── Drag & drop: reorders fields within a section after a drop ────────────────
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -357,7 +368,7 @@ function EditorCamposDialog({ programa, onCerrar }) {
     finally   { setReordenando(false); }
   };
 
-  // ── Mover sección completa ────────────────────────────────────────────────────
+  // Moves an entire section (all its fields) up (-1) or down (+1) relative to other sections
   const moverSeccion = async (secNombre, dir) => {
     setReordenando(true);
     const secciones = seccionesOrdenadas(campos);
@@ -379,7 +390,7 @@ function EditorCamposDialog({ programa, onCerrar }) {
     finally   { setReordenando(false); }
   };
 
-  // ── Cambiar ancho del campo ────────────────────────────────────────────────
+  // Toggles a field between half-width (6 columns) and full-width (12 columns)
   const cambiarAncho = async (campo) => {
     const nuevoCols = (campo.columnas ?? 6) === 6 ? 12 : 6;
     try {
@@ -599,16 +610,20 @@ export default function ProgramasPage() {
   const [guardandoProg,  setGuardandoProg]  = useState(false);
   const [errForm,        setErrForm]        = useState('');
 
+  // Flattens all programs from every sede into a single list for the grid view
   const todosLosProgramas = sedes.flatMap(s =>
     (s.programas ?? []).map(p => ({ ...p, nombreSede: s.nombre }))
   );
 
+  // Initializes the program form state for creating a new program
   const abrirNuevoPrograma = () =>
     setFormPrograma({ sedeId: sedes[0]?.id ?? '', nombre: '', descripcion: '', cupoMaximo: '' });
 
+  // Initializes the program form state for editing an existing program
   const abrirEditarPrograma = (p) =>
     setFormPrograma({ id: p.id, sedeId: p.sedeId, nombre: p.nombre, descripcion: p.descripcion ?? '', cupoMaximo: p.cupoMaximo ?? '' });
 
+  // Creates or updates a program via the useSedes hook based on whether formPrograma.id is set
   const handleGuardarPrograma = async () => {
     if (!formPrograma.nombre.trim() || !formPrograma.sedeId) return;
     setGuardandoProg(true);

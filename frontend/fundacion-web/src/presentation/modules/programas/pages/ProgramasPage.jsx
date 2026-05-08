@@ -168,7 +168,7 @@ function VistaPreviewDialog({ campos, programa, onCerrar }) {
                       <Box flex={1} sx={{ height: '1.5px', bgcolor: '#d0c4f7' }} />
                     </Box>
                   )}
-                  <Grid container spacing={2}>
+                  <Grid container spacing={2.5}>
                     {grp.map(c => (
                       <Grid key={c.id}
                         size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
@@ -404,8 +404,8 @@ function EditorCamposDialog({ programa, onCerrar }) {
           </Tooltip>
         </DialogTitle>
 
-        <DialogContent dividers sx={{ p: 2 }}>
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <DialogContent dividers sx={{ p: 3 }}>
+          {error && <Alert severity="error" sx={{ mb: 2.5 }}>{error}</Alert>}
 
           {cargando ? (
             <Box display="flex" justifyContent="center" py={4}>
@@ -496,7 +496,7 @@ function EditorCamposDialog({ programa, onCerrar }) {
           {editando ? 'Editar campo' : 'Nuevo campo'}
         </DialogTitle>
         <DialogContent dividers>
-          <Grid container spacing={2} mt={0}>
+          <Grid container spacing={2.5} mt={0}>
             {/* Sección — obligatoria */}
             <Grid size={12}>
               <Autocomplete freeSolo options={seccionesExistentes}
@@ -623,7 +623,7 @@ export default function ProgramasPage() {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
         <Typography variant="h5" fontWeight={800} color={COLOR}>Proyectos</Typography>
         <Button variant="contained" startIcon={<AddIcon />}
@@ -644,13 +644,13 @@ export default function ProgramasPage() {
           No hay proyectos registrados. {sedes.length === 0 && 'Primero crea una sede.'}
         </Alert>
       ) : (
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           {todosLosProgramas.map(p => (
             <Grid key={p.id} size={{ xs: 12, sm: 6, md: 4 }}>
               <Box sx={{
                 border: '1.5px solid #e2d9f3', borderRadius: 3,
-                p: 2, bgcolor: '#fdfbff', height: '100%',
-                display: 'flex', flexDirection: 'column', gap: 1,
+                p: 2.5, bgcolor: '#fdfbff', height: '100%',
+                display: 'flex', flexDirection: 'column', gap: 1.5,
               }}>
                 <Box display="flex" alignItems="flex-start" gap={1}>
                   <Box flex={1}>
@@ -714,8 +714,8 @@ export default function ProgramasPage() {
             {formPrograma.id ? 'Editar proyecto' : 'Nuevo proyecto'}
           </DialogTitle>
           <DialogContent dividers>
-            {errForm && <Alert severity="error" sx={{ mb: 2 }}>{errForm}</Alert>}
-            <Grid container spacing={2} mt={0}>
+            {errForm && <Alert severity="error" sx={{ mb: 2.5 }}>{errForm}</Alert>}
+            <Grid container spacing={2.5} mt={0}>
               <Grid size={12}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Sede *</InputLabel>

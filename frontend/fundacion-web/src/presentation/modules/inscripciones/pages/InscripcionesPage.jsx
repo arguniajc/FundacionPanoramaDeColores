@@ -379,9 +379,9 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
           </Box>
         ) : editando ? (
           /* ── Modo edición ──────────────────────────────────────── */
-          <Grid container spacing={2}>
+          <Grid container spacing={2.5}>
             {agruparPorSeccion(campos).map(({ seccion: sec, campos: grp }) => (
-              <Grid key={sec || '_root'} size={12} container spacing={2} sx={{ m: 0, p: 0 }}>
+              <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                 <SeccionHeader titulo={sec} />
                 {grp.map(c => (
                   <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
@@ -680,9 +680,9 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                 Este programa no tiene campos adicionales. Puedes inscribir directamente.
               </Alert>
             ) : (
-              <Grid container spacing={2}>
+              <Grid container spacing={2.5}>
                 {agruparPorSeccion(campos).map(({ seccion: sec, campos: grp }) => (
-                  <Grid key={sec || '_root'} size={12} container spacing={2} sx={{ m: 0, p: 0 }}>
+                  <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                     <SeccionHeader titulo={sec} />
                     {grp.map(c => (
                       <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: 6 }}>
@@ -782,8 +782,8 @@ export default function InscripcionesPage() {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
         <Typography variant="h5" fontWeight={800} color={COLOR}>Inscripciones</Typography>
         <Button variant="contained" startIcon={<AddIcon />}
           onClick={() => setNuevaAbierta(true)} sx={{ bgcolor: COLOR }}>
@@ -791,9 +791,9 @@ export default function InscripcionesPage() {
         </Button>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      <Box display="flex" gap={1.5} flexWrap="wrap" mb={2}>
+      <Box display="flex" gap={2} flexWrap="wrap" mb={3}>
         <TextField size="small" label="Buscar beneficiario" sx={{ minWidth: 200 }}
           value={filtroBuscar} onChange={e => setFiltroBuscar(e.target.value)} />
         <FormControl size="small" sx={{ minWidth: 180 }}>
@@ -821,7 +821,7 @@ export default function InscripcionesPage() {
       ) : filtradas.length === 0 ? (
         <Alert severity="info">No hay inscripciones que coincidan con los filtros.</Alert>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {filtradas.map(i => (
             <Box key={i.id} sx={{
               border: '1.5px solid #e2d9f3', borderRadius: 2, p: 2,

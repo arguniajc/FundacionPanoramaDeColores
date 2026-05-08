@@ -55,7 +55,7 @@ function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
       </DialogTitle>
       <DialogContent dividers>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Grid container spacing={2} mt={0}>
+        <Grid container spacing={2.5} mt={0}>
           <Grid size={12}>
             <TextField fullWidth label="Nombre *" size="small" value={form.nombre} onChange={set('nombre')} />
           </Grid>
@@ -120,7 +120,7 @@ function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial }) {
       </DialogTitle>
       <DialogContent dividers>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Grid container spacing={2} mt={0}>
+        <Grid container spacing={2.5} mt={0}>
           <Grid size={12}>
             <TextField fullWidth label="Nombre *" size="small" value={form.nombre} onChange={set('nombre')} />
           </Grid>
@@ -361,7 +361,7 @@ export default function SedesPage() {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <Box
         sx={{
           background: 'linear-gradient(135deg, #4E1B95, #2D984F)',

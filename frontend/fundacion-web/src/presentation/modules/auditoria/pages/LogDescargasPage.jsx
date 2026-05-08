@@ -46,7 +46,7 @@ export default function LogDescargasPage() {
   const totalPaginas = Math.ceil(total / POR_PAGINA);
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <Box
         sx={{
           background: 'linear-gradient(135deg, #4E1B95, #2D984F)',

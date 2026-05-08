@@ -41,10 +41,10 @@ function SeccionTitulo({ children }) {
   return (
     <>
       <Grid size={12}>
-        <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={0.5}>
+        <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={1.5}>
           {children}
         </Typography>
-        <Divider sx={{ mb: 1.5, mt: 0.5 }} />
+        <Divider sx={{ mb: 1, mt: 0.75 }} />
       </Grid>
     </>
   );
@@ -150,10 +150,10 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ px: { xs: 2, sm: 3 }, py: 2.5 }}>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      <DialogContent dividers sx={{ px: { xs: 2, sm: 3 }, py: 3 }}>
+        {error && <Alert severity="error" sx={{ mb: 2.5 }}>{error}</Alert>}
 
-        <Grid container spacing={2}>
+        <Grid container spacing={2.5}>
 
           {/* ── Datos del menor ── */}
           <SeccionTitulo>Datos del menor</SeccionTitulo>

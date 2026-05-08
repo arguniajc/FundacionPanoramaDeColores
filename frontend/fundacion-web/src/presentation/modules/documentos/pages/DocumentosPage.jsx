@@ -617,7 +617,7 @@ export default function DocumentosPage() {
   const { toast, show: showToast, close: closeToast } = useToast();
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <Box sx={{ background: HEADER_GRADIENT, borderRadius: 3, p: { xs: 2, sm: 3 }, mb: 3, color: 'white' }}>
         <Box display="flex" alignItems="center" gap={1.5}>
           <FolderIcon sx={{ fontSize: 32, opacity: 0.85 }} />

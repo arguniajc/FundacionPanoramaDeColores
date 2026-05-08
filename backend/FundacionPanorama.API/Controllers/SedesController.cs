@@ -9,11 +9,11 @@ using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
 
-public record SedeDto(Guid Id, string Nombre, string? Direccion, string? Ciudad, string? Telefono, bool Activo, DateTime FechaCreacion, List<ProgramaDto> Programas);
-public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, DateTime FechaCreacion);
+public record SedeDto(Guid Id, string Nombre, string? Direccion, string? Ciudad, string? Telefono, bool Activo, DateTime FechaCreacion, DateTime FechaModificacion, List<ProgramaDto> Programas);
+public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, DateTime FechaCreacion, DateTime FechaModificacion);
 public record CrearSedeDto(string Nombre, string? Direccion, string? Ciudad, string? Telefono);
 public record CrearProgramaDto(Guid SedeId, string Nombre, string? Descripcion, int? CupoMaximo);
-public record CampoDto(Guid Id, Guid ProgramaId, string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, bool Activo, string? Seccion, int Columnas);
+public record CampoDto(Guid Id, Guid ProgramaId, string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, bool Activo, string? Seccion, int Columnas, DateTime FechaCreacion, DateTime FechaModificacion);
 public record CrearCampoDto(string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, string? Seccion, int? Columnas);
 
 [ApiController]
@@ -63,10 +63,11 @@ public class SedesController : ControllerBase
     {
         var sede = await _db.Sedes.Include(s => s.Programas).FirstOrDefaultAsync(s => s.Id == id);
         if (sede is null) return NotFound();
-        sede.Nombre    = dto.Nombre.Trim();
-        sede.Direccion = dto.Direccion?.Trim();
-        sede.Ciudad    = dto.Ciudad?.Trim();
-        sede.Telefono  = dto.Telefono?.Trim();
+        sede.Nombre             = dto.Nombre.Trim();
+        sede.Direccion          = dto.Direccion?.Trim();
+        sede.Ciudad             = dto.Ciudad?.Trim();
+        sede.Telefono           = dto.Telefono?.Trim();
+        sede.FechaModificacion  = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return Ok(MapearSede(sede));
     }
@@ -76,7 +77,8 @@ public class SedesController : ControllerBase
     {
         var sede = await _db.Sedes.Include(s => s.Programas).FirstOrDefaultAsync(s => s.Id == id);
         if (sede is null) return NotFound();
-        sede.Activo = !sede.Activo;
+        sede.Activo            = !sede.Activo;
+        sede.FechaModificacion = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return Ok(MapearSede(sede));
     }
@@ -129,10 +131,11 @@ public class SedesController : ControllerBase
     {
         var programa = await _db.Programas.Include(p => p.Sede).FirstOrDefaultAsync(p => p.Id == id);
         if (programa is null) return NotFound();
-        programa.SedeId      = dto.SedeId;
-        programa.Nombre      = dto.Nombre.Trim();
-        programa.Descripcion = dto.Descripcion?.Trim();
-        programa.CupoMaximo  = dto.CupoMaximo;
+        programa.SedeId             = dto.SedeId;
+        programa.Nombre             = dto.Nombre.Trim();
+        programa.Descripcion        = dto.Descripcion?.Trim();
+        programa.CupoMaximo         = dto.CupoMaximo;
+        programa.FechaModificacion  = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return Ok(MapearPrograma(programa));
     }
@@ -142,7 +145,8 @@ public class SedesController : ControllerBase
     {
         var programa = await _db.Programas.Include(p => p.Sede).FirstOrDefaultAsync(p => p.Id == id);
         if (programa is null) return NotFound();
-        programa.Activo = !programa.Activo;
+        programa.Activo            = !programa.Activo;
+        programa.FechaModificacion = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return Ok(MapearPrograma(programa));
     }
@@ -166,7 +170,7 @@ public class SedesController : ControllerBase
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion, columnas FROM programas_campos WHERE programa_id = @pid AND activo = true ORDER BY orden";
+        cmd.CommandText = "SELECT id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion, columnas, fecha_creacion, fecha_modificacion FROM programas_campos WHERE programa_id = @pid AND activo = true ORDER BY orden";
         cmd.Parameters.AddWithValue("pid", programaId);
         await using var r = await cmd.ExecuteReaderAsync();
         while (await r.ReadAsync()) campos.Add(LeerCampo(r));
@@ -187,7 +191,7 @@ public class SedesController : ControllerBase
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"INSERT INTO programas_campos (programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion, columnas)
                             VALUES (@pid, @etiqueta, @tipo, @oblig, @opciones, @orden, true, @seccion, @columnas)
-                            RETURNING id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion, columnas";
+                            RETURNING id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion, columnas, fecha_creacion, fecha_modificacion";
         cmd.Parameters.AddWithValue("pid",      programaId);
         cmd.Parameters.AddWithValue("etiqueta", dto.Etiqueta.Trim());
         cmd.Parameters.AddWithValue("tipo",     dto.Tipo);
@@ -210,9 +214,9 @@ public class SedesController : ControllerBase
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"UPDATE programas_campos SET etiqueta=@etiqueta, tipo=@tipo, obligatorio=@oblig, opciones_json=@opciones, orden=@orden, seccion=@seccion, columnas=@columnas
+        cmd.CommandText = @"UPDATE programas_campos SET etiqueta=@etiqueta, tipo=@tipo, obligatorio=@oblig, opciones_json=@opciones, orden=@orden, seccion=@seccion, columnas=@columnas, fecha_modificacion=NOW()
                             WHERE id=@id AND programa_id=@pid
-                            RETURNING id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion, columnas";
+                            RETURNING id, programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion, columnas, fecha_creacion, fecha_modificacion";
         cmd.Parameters.AddWithValue("id",       campoId);
         cmd.Parameters.AddWithValue("pid",      programaId);
         cmd.Parameters.AddWithValue("etiqueta", dto.Etiqueta.Trim());
@@ -258,17 +262,19 @@ public class SedesController : ControllerBase
             opJson is not null ? JsonSerializer.Deserialize<string[]>(opJson) : null,
             r.GetInt32(6),
             r.GetBoolean(7),
-            r.IsDBNull(8) ? null : r.GetString(8),
-            r.IsDBNull(9) ? 6   : r.GetInt32(9)
+            r.IsDBNull(8)  ? null : r.GetString(8),
+            r.IsDBNull(9)  ? 6    : r.GetInt32(9),
+            r.GetDateTime(10),
+            r.GetDateTime(11)
         );
     }
 
     private static SedeDto MapearSede(Sede s) => new(
-        s.Id, s.Nombre, s.Direccion, s.Ciudad, s.Telefono, s.Activo, s.FechaCreacion,
-        s.Programas.Select(p => new ProgramaDto(p.Id, p.SedeId, s.Nombre, p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo, p.FechaCreacion)).ToList()
+        s.Id, s.Nombre, s.Direccion, s.Ciudad, s.Telefono, s.Activo, s.FechaCreacion, s.FechaModificacion,
+        s.Programas.Select(p => new ProgramaDto(p.Id, p.SedeId, s.Nombre, p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo, p.FechaCreacion, p.FechaModificacion)).ToList()
     );
 
     private static ProgramaDto MapearPrograma(Programa p) => new(
-        p.Id, p.SedeId, p.Sede?.Nombre ?? "", p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo, p.FechaCreacion
+        p.Id, p.SedeId, p.Sede?.Nombre ?? "", p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo, p.FechaCreacion, p.FechaModificacion
     );
 }

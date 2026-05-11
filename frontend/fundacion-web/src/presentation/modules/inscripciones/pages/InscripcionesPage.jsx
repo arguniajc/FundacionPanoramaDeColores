@@ -1492,9 +1492,11 @@ export default function InscripcionesPage() {
                   <Box display="flex" gap={1} flexWrap="wrap" mt={1} alignItems="center">
                     <Chip label={i.nombrePrograma} size="small"
                       sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600 }} />
-                    <Typography variant="caption" color="text.secondary">{i.nombreSede}</Typography>
                     {chipEstado(i.estado)}
                   </Box>
+                  <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                    {i.nombreSede}
+                  </Typography>
                   <Typography variant="caption" color="text.secondary" display="block" mt={0.8}>
                     {new Date(i.fechaInscripcion).toLocaleDateString('es-CO')}
                   </Typography>

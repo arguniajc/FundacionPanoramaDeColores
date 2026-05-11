@@ -752,23 +752,23 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
 
       <DialogContent dividers sx={{ p: 3 }}>
         {/* Resumen de la inscripción */}
-        <Box sx={{ mb: 2.5, p: 1.5, bgcolor: '#f3f0ff', borderRadius: 2, border: '1px solid #d0c4f7' }}>
-          <Grid container spacing={1}>
+        <Box sx={{ mb: 2.5, p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '1px solid #d0c4f7' }}>
+          <Grid container spacing={2}>
             <Grid size={{ xs: 6 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">Programa</Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}>Programa</Typography>
               <Typography variant="body2" fontWeight={700} color={COLOR}>{inscripcion.nombrePrograma}</Typography>
             </Grid>
             <Grid size={{ xs: 6 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">Sede</Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}>Sede</Typography>
               <Typography variant="body2">{inscripcion.nombreSede}</Typography>
             </Grid>
             <Grid size={{ xs: 6 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">Fecha de inscripción</Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}>Fecha de inscripción</Typography>
               <Typography variant="body2">{fecha}</Typography>
             </Grid>
             <Grid size={{ xs: 6 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">Estado</Typography>
-              <Box mt={0.3}>{chipEstado(inscripcion.estado)}</Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}>Estado</Typography>
+              <Box>{chipEstado(inscripcion.estado)}</Box>
             </Grid>
           </Grid>
         </Box>
@@ -795,16 +795,16 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                   {(beneficiario.nombreMenor || '?')[0].toUpperCase()}
                 </Avatar>
               )}
-              <Grid container spacing={0.8} sx={{ flex: 1 }}>
+              <Grid container spacing={1.5} sx={{ flex: 1 }}>
                 <Grid size={12}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700}
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
                     sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
                     Nombre completo
                   </Typography>
                   <Typography variant="body2" fontWeight={700}>{beneficiario.nombreMenor}</Typography>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700}
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
                     sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
                     Documento
                   </Typography>
@@ -813,7 +813,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                   </Typography>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700}
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
                     sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
                     Edad / Nacimiento
                   </Typography>
@@ -830,23 +830,23 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             </Box>
 
             {/* Acudiente */}
-            <Grid container spacing={0.8} sx={{ mb: 1 }}>
+            <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
               <Grid size={{ xs: 12, sm: 5 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700}
+                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
                   sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
                   Acudiente
                 </Typography>
                 <Typography variant="body2">{beneficiario.nombreAcudiente || '—'}</Typography>
               </Grid>
               <Grid size={{ xs: 6, sm: 3 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700}
+                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
                   sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
                   Parentesco
                 </Typography>
                 <Typography variant="body2">{beneficiario.parentesco || '—'}</Typography>
               </Grid>
               <Grid size={{ xs: 6, sm: 4 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700}
+                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
                   sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
                   WhatsApp / Teléfono
                 </Typography>
@@ -855,16 +855,16 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             </Grid>
 
             {/* Salud */}
-            <Grid container spacing={0.8}>
+            <Grid container spacing={1.5}>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700}
+                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
                   sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
                   EPS / Aseguradora
                 </Typography>
                 <Typography variant="body2">{beneficiario.eps || '—'}</Typography>
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700}
+                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
                   sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
                   Alergia
                 </Typography>
@@ -876,7 +876,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               </Grid>
               {beneficiario.observacionesSalud && (
                 <Grid size={12}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700}
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
                     sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
                     Observaciones de salud
                   </Typography>

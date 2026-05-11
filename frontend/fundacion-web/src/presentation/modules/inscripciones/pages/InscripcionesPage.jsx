@@ -292,7 +292,7 @@ function CampoInput({ campo, value, onChange, activo = true, onToggle }) {
           {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
         </Typography>
         <Grid container spacing={1.5}>
-          <Grid size={{ xs: 12, sm: 7 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small" required={campo.obligatorio}>
               <InputLabel>Grado</InputLabel>
               <Select label="Grado" value={ge.grado} onChange={e => setGE('grado', e.target.value)}>
@@ -300,7 +300,7 @@ function CampoInput({ campo, value, onChange, activo = true, onToggle }) {
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, sm: 5 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Jornada</InputLabel>
               <Select label="Jornada" value={ge.jornada} onChange={e => setGE('jornada', e.target.value)}>
@@ -896,7 +896,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                   const activo  = esPanel ? (panelActivo[c.id] !== false) : true;
                   if (c.tipo === 'datos_tutor' && !activo) return null;
                   return (
-                    <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || esPanel) ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
+                    <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || c.tipo === 'grado_escolar' || esPanel) ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
                       <CampoInput
                         campo={c}
                         value={datos[c.id]}
@@ -1288,7 +1288,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                       // Tutor oculto hasta que ambos padres se deshabiliten
                       if (c.tipo === 'datos_tutor' && !activo) return null;
                       return (
-                        <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || esPanel) ? 12 : { xs: 12, sm: 6 }}>
+                        <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || c.tipo === 'grado_escolar' || esPanel) ? 12 : { xs: 12, sm: 6 }}>
                           <CampoInput
                             campo={c}
                             value={datos[c.id]}

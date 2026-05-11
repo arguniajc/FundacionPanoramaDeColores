@@ -19,6 +19,7 @@ import { sedesRepository }          from '../../../../infrastructure/repositorie
 import { inscripcionesRepository }  from '../../../../infrastructure/repositories/inscripcionesRepository';
 import { useInscripciones }         from '../../../../application/inscripciones/useInscripciones';
 import { archivosRepository }       from '../../../../infrastructure/repositories/archivosRepository';
+import { PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA } from '../../../../shared/utils/geodata';
 
 const COLOR = '#4E1B95';
 
@@ -209,6 +210,26 @@ function CampoInput({ campo, value, onChange }) {
         onChange={e => onChange(e.target.value)}
         helperText="Auto-completada del beneficiario"
         slotProps={{ inputLabel: { shrink: true } }}
+      />
+    );
+  }
+
+  if (campo.tipo === 'pais' || campo.tipo === 'departamento' || campo.tipo === 'ciudad') {
+    const opciones = campo.tipo === 'pais' ? PAISES
+      : campo.tipo === 'departamento' ? DEPARTAMENTOS_COLOMBIA
+      : CIUDADES_COLOMBIA;
+    return (
+      <Autocomplete
+        freeSolo
+        options={opciones}
+        value={value ?? ''}
+        onChange={(_, v) => onChange(v ?? '')}
+        onInputChange={(_, v) => onChange(v)}
+        renderInput={(params) => (
+          <TextField {...params} fullWidth size="small"
+            label={campo.etiqueta + (campo.obligatorio ? ' *' : '')}
+            required={campo.obligatorio} />
+        )}
       />
     );
   }

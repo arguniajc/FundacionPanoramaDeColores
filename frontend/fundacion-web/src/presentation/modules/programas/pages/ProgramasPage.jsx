@@ -26,20 +26,24 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useSedes }          from '../../../../application/sedes/useSedes';
 import { useProgramaCampos } from '../../../../application/programas/useProgramaCampos';
+import { PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA } from '../../../../shared/utils/geodata';
 
 const COLOR = '#4E1B95';
 
 const TIPOS_CAMPO = [
-  { value: 'text',      label: 'Texto' },
-  { value: 'number',    label: 'Número' },
-  { value: 'date',      label: 'Fecha' },
-  { value: 'daterange', label: 'Rango de fechas (Desde / Hasta)' },
-  { value: 'altura',    label: 'Altura (cm)' },
-  { value: 'edad',      label: 'Edad — auto del beneficiario' },
-  { value: 'fecha_nac', label: 'Fecha de nacimiento — auto del beneficiario' },
-  { value: 'select',    label: 'Selección' },
-  { value: 'boolean',   label: 'Sí / No' },
-  { value: 'document',  label: 'Documento (PDF)' },
+  { value: 'text',         label: 'Texto' },
+  { value: 'number',       label: 'Número' },
+  { value: 'date',         label: 'Fecha' },
+  { value: 'daterange',    label: 'Rango de fechas (Desde / Hasta)' },
+  { value: 'altura',       label: 'Altura (cm)' },
+  { value: 'edad',         label: 'Edad — auto del beneficiario' },
+  { value: 'fecha_nac',    label: 'Fecha de nacimiento — auto del beneficiario' },
+  { value: 'select',       label: 'Selección' },
+  { value: 'boolean',      label: 'Sí / No' },
+  { value: 'document',     label: 'Documento (PDF)' },
+  { value: 'pais',         label: 'País (lista precargada)' },
+  { value: 'departamento', label: 'Departamento de Colombia (lista precargada)' },
+  { value: 'ciudad',       label: 'Ciudad de Colombia (lista precargada)' },
 ];
 
 function chipEstado(activo) {
@@ -137,6 +141,20 @@ function CampoPreview({ campo }) {
       slotProps={{ inputLabel: { shrink: true } }}
     />
   );
+
+  if (campo.tipo === 'pais' || campo.tipo === 'departamento' || campo.tipo === 'ciudad') {
+    const opciones = campo.tipo === 'pais' ? PAISES
+      : campo.tipo === 'departamento' ? DEPARTAMENTOS_COLOMBIA
+      : CIUDADES_COLOMBIA;
+    return (
+      <Autocomplete freeSolo disabled options={opciones} value={null}
+        renderInput={(params) => (
+          <TextField {...params} fullWidth size="small" label={label}
+            helperText={`Lista de ${opciones.length} opciones precargadas`} />
+        )}
+      />
+    );
+  }
 
   return (
     <TextField fullWidth size="small" label={label} disabled value=""

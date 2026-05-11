@@ -5,6 +5,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   Collapse, Divider, CircularProgress, Alert, Snackbar, Grid,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  useMediaQuery, useTheme,
 } from '@mui/material';
 import AddIcon        from '@mui/icons-material/Add';
 import EditIcon       from '@mui/icons-material/Edit';
@@ -21,6 +22,8 @@ function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   const [form, setForm] = useState({ nombre: '', direccion: '', ciudad: '', telefono: '' });
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  const theme    = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Reinicia los campos del formulario y limpia el error cada vez que el diálogo se abre o cambia la sede inicial
   useEffect(() => {
@@ -52,7 +55,8 @@ function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   };
 
   return (
-    <Dialog open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth>
+    <Dialog open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2 } }}>
       <DialogTitle sx={{ bgcolor: '#4E1B95', color: 'white', fontWeight: 700 }}>
         {inicial?.id ? 'Editar sede' : 'Nueva sede'}
       </DialogTitle>
@@ -88,6 +92,8 @@ function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial }) {
   const [form, setForm] = useState({ nombre: '', descripcion: '', cupoMaximo: '' });
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  const theme    = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Reinicia los campos del formulario y limpia el error cada vez que el diálogo se abre o cambia el programa inicial
   useEffect(() => {
@@ -120,7 +126,8 @@ function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial }) {
   };
 
   return (
-    <Dialog open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth>
+    <Dialog open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2 } }}>
       <DialogTitle sx={{ bgcolor: '#2D984F', color: 'white', fontWeight: 700 }}>
         {inicial?.id ? 'Editar programa' : 'Nuevo programa'}
       </DialogTitle>

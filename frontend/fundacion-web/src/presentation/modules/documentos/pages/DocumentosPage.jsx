@@ -5,7 +5,7 @@ import {
   IconButton, CircularProgress, Alert, TextField, InputAdornment,
   Dialog, DialogTitle, DialogContent, DialogActions,
   FormControl, InputLabel, Select, MenuItem, Autocomplete,
-  Tooltip, Snackbar, LinearProgress,
+  Tooltip, Snackbar, LinearProgress, useMediaQuery, useTheme,
 } from '@mui/material';
 import MuiAlert           from '@mui/material/Alert';
 import FolderIcon         from '@mui/icons-material/Folder';
@@ -109,6 +109,8 @@ function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
   const [progreso,   setProgreso]   = useState(0);  // 0-100
   const [error,      setError]      = useState('');
   const inputRef = useRef();
+  const theme    = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Agrega archivos PDF al listado de carga, omitiendo duplicados por nombre de archivo
   const agregarArchivos = (lista) => {
@@ -157,7 +159,8 @@ function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
   };
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
       <DialogTitle sx={{ background: HEADER_GRADIENT, color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box display="flex" alignItems="center" gap={1}><UploadFileIcon /> Subir documentos</Box>
         <IconButton onClick={onCerrar} size="small" sx={{ color: 'rgba(255,255,255,0.8)' }}><CloseIcon /></IconButton>
@@ -244,6 +247,8 @@ function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido, onToa
   const [subiendo, setSubiendo] = useState(false);
   const [error,    setError]    = useState('');
   const inputRef = useRef();
+  const theme    = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Sube un solo archivo a la carpeta S3 del beneficiario y cierra el modal al terminar con éxito
   const handleSubir = async () => {
@@ -267,7 +272,8 @@ function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido, onToa
   };
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
       <DialogTitle sx={{ background: HEADER_GRADIENT, color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box display="flex" alignItems="center" gap={1}><UploadFileIcon /> Subir documento</Box>
         <IconButton onClick={onCerrar} size="small" sx={{ color: 'rgba(255,255,255,0.8)' }}><CloseIcon /></IconButton>

@@ -5,6 +5,7 @@ import {
   DialogContent, DialogTitle, Divider, FormControl, FormControlLabel,
   Grid, IconButton, InputAdornment, InputLabel, MenuItem, Select, Snackbar,
   Switch, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
+  useMediaQuery, useTheme,
 } from '@mui/material';
 import AddIcon           from '@mui/icons-material/Add';
 import DeleteIcon        from '@mui/icons-material/Delete';
@@ -147,9 +148,12 @@ function CampoPreview({ campo }) {
 
 // ── Dialog de vista previa ────────────────────────────────────────────────────
 function VistaPreviewDialog({ campos, programa, onCerrar }) {
+  const theme    = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const secciones = seccionesOrdenadas(campos);
   return (
-    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
       <DialogTitle sx={{ bgcolor: COLOR, color: 'white', py: 1.5 }}>
         <Typography fontWeight={700}>Vista previa del formulario</Typography>
         <Typography variant="caption" sx={{ opacity: 0.8 }}>{programa.nombre} · {programa.nombreSede}</Typography>
@@ -272,6 +276,8 @@ function EditorCamposDialog({ programa, onCerrar }) {
   const [reordenando,  setReordenando]  = useState(false);
   const [toast,        setToast]        = useState('');
   const [preview,      setPreview]      = useState(false);
+  const theme    = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const campoVacio = { seccion: '', etiqueta: '', tipo: 'text', obligatorio: false, opciones: '', columnas: 6 };
   const [form, setForm] = useState(campoVacio);
@@ -403,7 +409,8 @@ function EditorCamposDialog({ programa, onCerrar }) {
 
   return (
     <>
-      <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
         <DialogTitle sx={{ bgcolor: COLOR, color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center' }}>
           <Box flex={1}>
             Campos: {programa.nombre}
@@ -609,6 +616,8 @@ export default function ProgramasPage() {
   const [formPrograma,   setFormPrograma]   = useState(null);
   const [guardandoProg,  setGuardandoProg]  = useState(false);
   const [errForm,        setErrForm]        = useState('');
+  const theme    = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Aplana todos los programas de cada sede en una lista única para la vista de cuadrícula
   const todosLosProgramas = sedes.flatMap(s =>
@@ -740,7 +749,8 @@ export default function ProgramasPage() {
       )}
 
       {formPrograma && (
-        <Dialog open onClose={() => setFormPrograma(null)} maxWidth="xs" fullWidth>
+        <Dialog open onClose={() => setFormPrograma(null)} maxWidth="xs" fullWidth fullScreen={isMobile}
+          PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2 } }}>
           <DialogTitle sx={{ fontWeight: 700 }}>
             {formPrograma.id ? 'Editar proyecto' : 'Nuevo proyecto'}
           </DialogTitle>

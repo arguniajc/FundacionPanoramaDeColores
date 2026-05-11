@@ -88,7 +88,7 @@ export default function LogDescargasPage() {
             <CircularProgress sx={{ color: '#4E1B95' }} />
           </Box>
         ) : (
-          <TableContainer>
+          <TableContainer sx={{ overflowX: 'auto' }}>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ bgcolor: '#fdfbff' }}>

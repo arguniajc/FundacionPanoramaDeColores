@@ -5,7 +5,7 @@ import {
   Dialog, DialogActions, DialogContent, DialogTitle,
   FormControl, FormControlLabel, Grid, IconButton, InputAdornment, InputLabel,
   MenuItem, Select, Snackbar, Step, StepLabel, Stepper, Switch,
-  TextField, Tooltip, Typography,
+  TextField, Tooltip, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
 import AddIcon        from '@mui/icons-material/Add';
 import CheckIcon      from '@mui/icons-material/Check';
@@ -236,6 +236,8 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [guardando,     setGuardando]     = useState(false);
   const [generandoPdf,  setGenerandoPdf]  = useState(false);
   const [error,         setError]         = useState('');
+  const theme   = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Carga las definiciones de campos y parsea el JSON guardado cada vez que cambia la inscripción
   useEffect(() => {
@@ -340,7 +342,8 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   });
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
       <DialogTitle sx={{ bgcolor: COLOR, color: 'white', py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Typography fontWeight={700} component="div">Formulario de inscripción</Typography>
@@ -517,6 +520,8 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [observaciones,   setObservaciones]   = useState('');
   const [guardando,       setGuardando]       = useState(false);
   const [error,           setError]           = useState('');
+  const theme   = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Búsqueda diferida de beneficiarios mientras el usuario escribe (se dispara 300 ms tras el último tecleo)
   useEffect(() => {
@@ -600,7 +605,8 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const PASOS = ['Beneficiario', 'Programa', 'Formulario'];
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
       <DialogTitle sx={{ bgcolor: COLOR, color: 'white', fontWeight: 700 }}>
         Nueva Inscripción
       </DialogTitle>
@@ -865,29 +871,34 @@ export default function InscripcionesPage() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {filtradas.map(i => (
             <Box key={i.id} sx={{
-              border: '1.5px solid #e2d9f3', borderRadius: 2, p: 2.5,
-              bgcolor: '#fdfbff', display: 'flex', gap: 2, alignItems: 'flex-start',
+              border: '1.5px solid #e2d9f3', borderRadius: 2, p: 2.5, bgcolor: '#fdfbff',
+              display: 'flex', flexDirection: { xs: 'column', sm: 'row' },
+              gap: { xs: 1.5, sm: 2 }, alignItems: { xs: 'stretch', sm: 'flex-start' },
             }}>
-              <Avatar sx={{ bgcolor: COLOR, width: 44, height: 44, flexShrink: 0 }}>
-                {(i.nombreBeneficiario || '?')[0].toUpperCase()}
-              </Avatar>
-              <Box flex={1} minWidth={0}>
-                <Typography fontWeight={800} noWrap>{i.nombreBeneficiario}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {i.documentoBeneficiario ?? 'Sin documento'}
-                </Typography>
-                <Box display="flex" gap={1} flexWrap="wrap" mt={1} alignItems="center">
-                  <Chip label={i.nombrePrograma} size="small"
-                    sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600 }} />
-                  <Typography variant="caption" color="text.secondary">{i.nombreSede}</Typography>
-                  {chipEstado(i.estado)}
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+                <Avatar sx={{ bgcolor: COLOR, width: 44, height: 44, flexShrink: 0 }}>
+                  {(i.nombreBeneficiario || '?')[0].toUpperCase()}
+                </Avatar>
+                <Box flex={1} minWidth={0}>
+                  <Typography fontWeight={800} noWrap>{i.nombreBeneficiario}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {i.documentoBeneficiario ?? 'Sin documento'}
+                  </Typography>
+                  <Box display="flex" gap={1} flexWrap="wrap" mt={1} alignItems="center">
+                    <Chip label={i.nombrePrograma} size="small"
+                      sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600 }} />
+                    <Typography variant="caption" color="text.secondary">{i.nombreSede}</Typography>
+                    {chipEstado(i.estado)}
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" display="block" mt={0.8}>
+                    {new Date(i.fechaInscripcion).toLocaleDateString('es-CO')}
+                  </Typography>
                 </Box>
-                <Typography variant="caption" color="text.secondary" display="block" mt={0.8}>
-                  {new Date(i.fechaInscripcion).toLocaleDateString('es-CO')}
-                </Typography>
               </Box>
-              <Box display="flex" flexDirection="column" gap={1} alignItems="flex-end">
-                <FormControl size="small" sx={{ minWidth: 130 }}>
+              <Box display="flex" flexDirection={{ xs: 'row', sm: 'column' }} gap={1}
+                alignItems="center" justifyContent={{ xs: 'flex-end', sm: 'flex-start' }}
+                sx={{ flexShrink: 0 }}>
+                <FormControl size="small" sx={{ minWidth: { xs: 'auto', sm: 130 }, flex: { xs: 1, sm: 'none' } }}>
                   <Select value={i.estado} size="small"
                     disabled={cambiandoId === i.id}
                     onChange={e => handleCambiarEstado(i.id, e.target.value)}>

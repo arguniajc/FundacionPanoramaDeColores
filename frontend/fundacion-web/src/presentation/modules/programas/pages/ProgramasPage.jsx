@@ -29,6 +29,7 @@ import { useProgramaCampos } from '../../../../application/programas/usePrograma
 import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
+  TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
 } from '../../../../shared/utils/geodata';
 
 const COLOR = '#4E1B95';
@@ -44,7 +45,14 @@ const TIPOS_CAMPO = [
   { value: 'select',         label: 'Selección' },
   { value: 'boolean',        label: 'Sí / No' },
   { value: 'document',       label: 'Documento (PDF)' },
-  { value: 'tipo_documento', label: 'Tipo de documento (CC, TI, RC…)' },
+  { value: 'documento_id',   label: 'Documento: tipo + número (campo combinado)' },
+  { value: 'tipo_documento', label: 'Tipo de documento solo (CC, TI, RC…)' },
+  { value: 'telefono',       label: 'Teléfono / Celular' },
+  { value: 'email',          label: 'Correo electrónico' },
+  { value: 'peso',           label: 'Peso (kg)' },
+  { value: 'talla_ropa',     label: 'Talla de ropa (T2-T16, XS-XXXL)' },
+  { value: 'talla_zapatos',  label: 'Talla de zapatos (18-45)' },
+  { value: 'valoracion',     label: 'Valoración del 1 al 5' },
   { value: 'genero',         label: 'Género (lista precargada)' },
   { value: 'tipo_sangre',    label: 'Tipo de sangre (A+, O-…)' },
   { value: 'estrato',        label: 'Estrato socioeconómico (1-6)' },
@@ -165,12 +173,46 @@ function CampoPreview({ campo }) {
     );
   }
 
-  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero' ||
+  if (campo.tipo === 'documento_id') return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+        {label}
+      </Typography>
+      <Box display="flex" gap={1}>
+        <FormControl size="small" disabled sx={{ width: 130 }}>
+          <InputLabel shrink>Tipo</InputLabel>
+          <Select label="Tipo" value="" displayEmpty>
+            {TIPOS_DOCUMENTO.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+          </Select>
+        </FormControl>
+        <TextField size="small" label="Número" disabled value="" sx={{ flex: 1 }} />
+      </Box>
+    </Box>
+  );
+
+  if (campo.tipo === 'telefono') return (
+    <TextField fullWidth size="small" label={label} type="tel" disabled value=""
+      slotProps={{ input: { startAdornment: <InputAdornment position="start">📞</InputAdornment> } }} />
+  );
+
+  if (campo.tipo === 'email') return (
+    <TextField fullWidth size="small" label={label} type="email" disabled value=""
+      placeholder="ejemplo@correo.com" />
+  );
+
+  if (campo.tipo === 'peso') return (
+    <TextField fullWidth size="small" label={label} type="number" disabled value=""
+      slotProps={{ input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> } }} />
+  );
+
+  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero'  ||
       campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato' ||
-      campo.tipo === 'nivel_educativo') {
+      campo.tipo === 'nivel_educativo'|| campo.tipo === 'talla_ropa' ||
+      campo.tipo === 'talla_zapatos'  || campo.tipo === 'valoracion') {
     const listas = {
       tipo_documento: TIPOS_DOCUMENTO, genero: GENEROS,
       tipo_sangre: TIPOS_SANGRE, estrato: ESTRATOS, nivel_educativo: NIVELES_EDUCATIVOS,
+      talla_ropa: TALLAS_ROPA, talla_zapatos: TALLAS_ZAPATOS, valoracion: VALORACIONES,
     };
     const ops = listas[campo.tipo];
     return (
@@ -229,7 +271,7 @@ function VistaPreviewDialog({ campos, programa, onCerrar }) {
                   <Grid container spacing={2.5}>
                     {grp.map(c => (
                       <Grid key={c.id}
-                        size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
+                        size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'documento_id') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
                         <CampoPreview campo={c} />
                       </Grid>
                     ))}

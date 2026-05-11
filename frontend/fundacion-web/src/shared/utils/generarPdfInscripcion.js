@@ -75,6 +75,11 @@ function valorCampo(campo, datos) {
   const v = datos[campo.id];
   if (campo.tipo === 'firma')    return v ? '✓  Firma capturada' : '☐  Sin firma';
   if (campo.tipo === 'document') return v ? '✓  Entregado' : '☐  PENDIENTE — no entregado';
+  if (campo.tipo === 'documento_id') {
+    if (!v) return '—';
+    try { const d = JSON.parse(v); return `${d.tipo || '—'}  ${d.numero || '—'}`; } catch { return String(v); }
+  }
+  if (campo.tipo === 'peso') return v ? `${v} kg` : '—';
   if (v === undefined || v === null || v === '') return '—';
   if (campo.tipo === 'boolean') return (v === 'true' || v === true) ? 'Sí' : 'No';
   if (campo.tipo === 'daterange') {

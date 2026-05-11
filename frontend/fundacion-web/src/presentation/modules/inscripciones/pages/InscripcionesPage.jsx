@@ -22,6 +22,7 @@ import { archivosRepository }       from '../../../../infrastructure/repositorie
 import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
+  TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
 } from '../../../../shared/utils/geodata';
 import FirmaPad from '../../../../shared/components/FirmaPad';
 
@@ -229,12 +230,66 @@ function CampoInput({ campo, value, onChange }) {
     );
   }
 
-  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero' ||
+  if (campo.tipo === 'documento_id') {
+    let doc = { tipo: '', numero: '' };
+    try { if (value) doc = JSON.parse(value); } catch {}
+    const setDoc = (k, v) => onChange(JSON.stringify({ ...doc, [k]: v }));
+    return (
+      <Box>
+        <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+          {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
+        </Typography>
+        <Box display="flex" gap={1}>
+          <FormControl size="small" sx={{ width: 140, flexShrink: 0 }}>
+            <InputLabel>Tipo</InputLabel>
+            <Select label="Tipo" value={doc.tipo} onChange={e => setDoc('tipo', e.target.value)}>
+              {TIPOS_DOCUMENTO.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <TextField size="small" label="Número" sx={{ flex: 1 }}
+            value={doc.numero} onChange={e => setDoc('numero', e.target.value)}
+            required={campo.obligatorio} />
+        </Box>
+      </Box>
+    );
+  }
+
+  if (campo.tipo === 'telefono') return (
+    <TextField fullWidth size="small"
+      label={campo.etiqueta} type="tel"
+      required={campo.obligatorio}
+      value={value ?? ''}
+      onChange={e => onChange(e.target.value)}
+    />
+  );
+
+  if (campo.tipo === 'email') return (
+    <TextField fullWidth size="small"
+      label={campo.etiqueta} type="email"
+      required={campo.obligatorio}
+      value={value ?? ''}
+      onChange={e => onChange(e.target.value)}
+    />
+  );
+
+  if (campo.tipo === 'peso') return (
+    <TextField fullWidth size="small"
+      label={campo.etiqueta} type="number"
+      required={campo.obligatorio}
+      value={value ?? ''}
+      onChange={e => onChange(e.target.value)}
+      slotProps={{ input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> } }}
+    />
+  );
+
+  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero'  ||
       campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato' ||
-      campo.tipo === 'nivel_educativo') {
+      campo.tipo === 'nivel_educativo'|| campo.tipo === 'talla_ropa' ||
+      campo.tipo === 'talla_zapatos'  || campo.tipo === 'valoracion') {
     const listas = {
       tipo_documento: TIPOS_DOCUMENTO, genero: GENEROS,
       tipo_sangre: TIPOS_SANGRE, estrato: ESTRATOS, nivel_educativo: NIVELES_EDUCATIVOS,
+      talla_ropa: TALLAS_ROPA, talla_zapatos: TALLAS_ZAPATOS, valoracion: VALORACIONES,
     };
     return (
       <FormControl fullWidth size="small" required={campo.obligatorio}>
@@ -383,6 +438,14 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                 border: '1px solid #e0d9f3', borderRadius: 1, bgcolor: 'white' }} />
       );
       return <Chip label="Sin firma" color="warning" size="small" variant="outlined" />;
+    }
+
+    if (campo.tipo === 'documento_id') {
+      if (!v) return <em style={{ color: '#aaa' }}>—</em>;
+      try {
+        const doc = JSON.parse(v);
+        return `${doc.tipo || '—'} · ${doc.numero || '—'}`;
+      } catch { return String(v); }
     }
 
     if (campo.tipo === 'document') {
@@ -590,7 +653,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                 <SeccionHeader titulo={sec} />
                 {grp.map(c => (
-                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
+                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
                     <CampoInput
                       campo={c}
                       value={datos[c.id]}
@@ -802,6 +865,9 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         if (c.tipo === 'daterange') {
           try { const r = JSON.parse(v); return !!(r.desde && r.hasta); } catch { return false; }
         }
+        if (c.tipo === 'documento_id') {
+          try { const d = JSON.parse(v); return !!(d.tipo && d.numero); } catch { return false; }
+        }
         return true;
       });
     }
@@ -932,7 +998,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                   <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                     <SeccionHeader titulo={sec} />
                     {grp.map(c => (
-                      <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma') ? 12 : { xs: 12, sm: 6 }}>
+                      <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id') ? 12 : { xs: 12, sm: 6 }}>
                         <CampoInput
                           campo={c}
                           value={datos[c.id]}

@@ -28,8 +28,8 @@ async function cargarImagenCircular(url) {
         ctx.arc(px / 2, px / 2, px / 2 - bord, 0, Math.PI * 2);
         ctx.clip();
         const side = Math.min(img.naturalWidth, img.naturalHeight);
-        const sx   = (img.naturalWidth  - side) / 2;
-        const sy   = (img.naturalHeight - side) / 2;
+        const sx   = (img.naturalWidth  - side) / 2; // centrar horizontalmente
+        const sy   = 0;                               // empezar desde arriba para no cortar la cara
         ctx.drawImage(img, sx, sy, side, side, 0, 0, px, px);
         ctx.restore();
         resolve(canvas.toDataURL('image/jpeg', 0.95));

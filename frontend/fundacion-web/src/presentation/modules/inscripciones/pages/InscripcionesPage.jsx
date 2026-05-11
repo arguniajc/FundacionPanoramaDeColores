@@ -178,7 +178,7 @@ function CampoInput({ campo, value, onChange }) {
     );
   }
 
-  if (campo.tipo === 'altura') {
+  if (campo.tipo === 'talla' || campo.tipo === 'altura') {
     return (
       <TextField fullWidth size="small"
         label={campo.etiqueta}
@@ -186,7 +186,7 @@ function CampoInput({ campo, value, onChange }) {
         required={campo.obligatorio}
         value={value ?? ''}
         onChange={e => onChange(e.target.value)}
-        slotProps={{ input: { endAdornment: <InputAdornment position="end">cm</InputAdornment> } }}
+        slotProps={{ input: { inputProps: { min: 0, step: 1 }, endAdornment: <InputAdornment position="end">cm</InputAdornment> } }}
       />
     );
   }
@@ -278,7 +278,7 @@ function CampoInput({ campo, value, onChange }) {
       required={campo.obligatorio}
       value={value ?? ''}
       onChange={e => onChange(e.target.value)}
-      slotProps={{ input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> } }}
+      slotProps={{ input: { inputProps: { min: 0, step: 0.1 }, endAdornment: <InputAdornment position="end">kg</InputAdornment> } }}
     />
   );
 
@@ -471,7 +471,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         return `${fmtFechaCorta(rng.desde)} — ${fmtFechaCorta(rng.hasta)}`;
       } catch { return String(v); }
     }
-    if (campo.tipo === 'altura')   return `${v} cm`;
+    if (campo.tipo === 'talla' || campo.tipo === 'altura') return `${v} cm`;
     if (campo.tipo === 'edad')     return `${v} años`;
     if (campo.tipo === 'fecha_nac') return fmtFechaCorta(v);
 

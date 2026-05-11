@@ -88,7 +88,7 @@ function valorCampo(campo, datos) {
       return `${fmtFecha(rng.desde)}  —  ${fmtFecha(rng.hasta)}`;
     } catch { return String(v); }
   }
-  if (campo.tipo === 'altura')   return `${v} cm`;
+  if (campo.tipo === 'talla' || campo.tipo === 'altura') return `${v} cm`;
   if (campo.tipo === 'edad')     return `${v} años`;
   if (campo.tipo === 'fecha_nac') return fmtFecha(v);
   return String(v);

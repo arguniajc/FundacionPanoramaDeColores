@@ -39,6 +39,7 @@ const TIPOS_CAMPO = [
   { value: 'number',         label: 'Número' },
   { value: 'date',           label: 'Fecha' },
   { value: 'daterange',      label: 'Rango de fechas (Desde / Hasta)' },
+  { value: 'talla',          label: 'Talla / Estatura (cm)' },
   { value: 'altura',         label: 'Altura (cm)' },
   { value: 'edad',           label: 'Edad — auto del beneficiario' },
   { value: 'fecha_nac',      label: 'Fecha de nacimiento — auto del beneficiario' },
@@ -141,7 +142,7 @@ function CampoPreview({ campo }) {
     </Box>
   );
 
-  if (campo.tipo === 'altura') return (
+  if (campo.tipo === 'talla' || campo.tipo === 'altura') return (
     <TextField fullWidth size="small" label={label} type="number" disabled value=""
       slotProps={{ input: { endAdornment: <InputAdornment position="end">cm</InputAdornment> } }}
     />
@@ -377,9 +378,13 @@ function EditorCamposDialog({ programa, onCerrar }) {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  const wasLoadingRef = React.useRef(false);
+
   // Carga inicial: normaliza órdenes y copia al estado local de trabajo
+  // wasLoadingRef evita que el efecto inicialice con camposServidor=[] antes de que cargar() empiece
   useEffect(() => {
-    if (cargando || loadedRef.current) return;
+    if (cargando) { wasLoadingRef.current = true; return; }
+    if (!wasLoadingRef.current || loadedRef.current) return;
     loadedRef.current = true;
     const secs = seccionesOrdenadas(camposServidor);
     let ord = 0;

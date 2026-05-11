@@ -358,18 +358,39 @@ function CampoInput({ campo, value, onChange }) {
     let d = {};
     try { if (value) d = JSON.parse(value); } catch {}
     const setD = (k, v) => onChange(JSON.stringify({ ...d, [k]: v }));
+    const SC = '#7B3FC4'; // color secundario: violeta medio, distinto del morado primario
     return (
-      <Box>
+      <Box sx={{
+        border: `1.5px solid ${SC}40`,
+        borderRadius: 2.5,
+        overflow: 'hidden',
+        boxShadow: '0 3px 14px rgba(78,27,149,0.10)',
+      }}>
+        {/* Cabecera de sub-sección: color secundario, visualmente diferente a las secciones principales */}
         <Box sx={{
-          borderLeft: `5px solid ${COLOR}`, bgcolor: 'rgba(78,27,149,0.07)',
-          borderRadius: '0 8px 8px 0', px: 1.5, py: 0.9, mb: 2,
+          bgcolor: `${SC}18`,
+          borderBottom: `1.5px solid ${SC}30`,
+          borderLeft: `5px solid ${SC}`,
+          px: 2, py: 1,
+          display: 'flex', alignItems: 'center', gap: 1.5,
         }}>
-          <Typography fontWeight={800} color={COLOR}
-            sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
-          </Typography>
+          <Box flex={1}>
+            <Typography sx={{
+              fontSize: '0.65rem', fontWeight: 700, color: SC, letterSpacing: '0.15em',
+              textTransform: 'uppercase', lineHeight: 1,
+            }}>
+              Sub-sección
+            </Typography>
+            <Typography sx={{ fontSize: '0.88rem', fontWeight: 800, color: SC, mt: 0.3 }}>
+              {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
+            </Typography>
+          </Box>
+          <Chip label="14 campos" size="small"
+            sx={{ bgcolor: `${SC}18`, color: SC, fontWeight: 700, fontSize: '0.68rem',
+                  border: `1px solid ${SC}40`, height: 22 }} />
         </Box>
-        <Box sx={{ px: 1 }}>
+        {/* Área de campos: fondo levemente sombreado para indicar agrupación */}
+        <Box sx={{ bgcolor: '#f9f6ff', p: 2.5 }}>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField fullWidth size="small" label="Fecha de nacimiento" type="date"

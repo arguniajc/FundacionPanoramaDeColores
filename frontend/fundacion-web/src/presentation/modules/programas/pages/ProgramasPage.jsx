@@ -237,23 +237,35 @@ function CampoPreview({ campo }) {
   );
 
   if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre') {
+    const SC = '#7B3FC4';
     return (
-      <Box>
+      <Box sx={{
+        border: `1.5px solid ${SC}40`, borderRadius: 2.5, overflow: 'hidden',
+        boxShadow: '0 3px 14px rgba(78,27,149,0.10)',
+      }}>
         <Box sx={{
-          borderLeft: `5px solid ${COLOR}`, bgcolor: 'rgba(78,27,149,0.07)',
-          borderRadius: '0 8px 8px 0', px: 1.5, py: 0.9, mb: 1.5,
-          display: 'flex', alignItems: 'center', gap: 1,
+          bgcolor: `${SC}18`, borderBottom: `1.5px solid ${SC}30`,
+          borderLeft: `5px solid ${SC}`, px: 2, py: 1,
+          display: 'flex', alignItems: 'center', gap: 1.5,
         }}>
-          <Typography fontWeight={800} color={COLOR} flex={1}
-            sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            {label}
-          </Typography>
+          <Box flex={1}>
+            <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: SC,
+              letterSpacing: '0.15em', textTransform: 'uppercase', lineHeight: 1 }}>
+              Sub-sección
+            </Typography>
+            <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: SC, mt: 0.3 }}>
+              {label}
+            </Typography>
+          </Box>
           <Chip label="14 sub-campos" size="small"
-            sx={{ bgcolor: 'rgba(78,27,149,0.12)', color: COLOR, fontSize: 10, height: 20 }} />
+            sx={{ bgcolor: `${SC}18`, color: SC, fontWeight: 700, fontSize: '0.68rem',
+                  border: `1px solid ${SC}40`, height: 22 }} />
         </Box>
-        <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-          Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación · Autoidentificación étnica
-        </Typography>
+        <Box sx={{ bgcolor: '#f9f6ff', px: 2, py: 1.5 }}>
+          <Typography variant="caption" color="text.secondary">
+            Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación · Autoidentificación
+          </Typography>
+        </Box>
       </Box>
     );
   }

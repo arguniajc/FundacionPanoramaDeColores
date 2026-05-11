@@ -26,25 +26,34 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useSedes }          from '../../../../application/sedes/useSedes';
 import { useProgramaCampos } from '../../../../application/programas/useProgramaCampos';
-import { PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA } from '../../../../shared/utils/geodata';
+import {
+  PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
+  TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
+} from '../../../../shared/utils/geodata';
 
 const COLOR = '#4E1B95';
 
 const TIPOS_CAMPO = [
-  { value: 'text',         label: 'Texto' },
-  { value: 'number',       label: 'Número' },
-  { value: 'date',         label: 'Fecha' },
-  { value: 'daterange',    label: 'Rango de fechas (Desde / Hasta)' },
-  { value: 'altura',       label: 'Altura (cm)' },
-  { value: 'edad',         label: 'Edad — auto del beneficiario' },
-  { value: 'fecha_nac',    label: 'Fecha de nacimiento — auto del beneficiario' },
-  { value: 'select',       label: 'Selección' },
-  { value: 'boolean',      label: 'Sí / No' },
-  { value: 'document',     label: 'Documento (PDF)' },
-  { value: 'pais',         label: 'País (lista precargada)' },
-  { value: 'departamento', label: 'Departamento de Colombia (lista precargada)' },
-  { value: 'ciudad',       label: 'Ciudad de Colombia (lista precargada)' },
+  { value: 'text',           label: 'Texto' },
+  { value: 'number',         label: 'Número' },
+  { value: 'date',           label: 'Fecha' },
+  { value: 'daterange',      label: 'Rango de fechas (Desde / Hasta)' },
+  { value: 'altura',         label: 'Altura (cm)' },
+  { value: 'edad',           label: 'Edad — auto del beneficiario' },
+  { value: 'fecha_nac',      label: 'Fecha de nacimiento — auto del beneficiario' },
+  { value: 'select',         label: 'Selección' },
+  { value: 'boolean',        label: 'Sí / No' },
+  { value: 'document',       label: 'Documento (PDF)' },
+  { value: 'tipo_documento', label: 'Tipo de documento (CC, TI, RC…)' },
+  { value: 'genero',         label: 'Género (lista precargada)' },
+  { value: 'tipo_sangre',    label: 'Tipo de sangre (A+, O-…)' },
+  { value: 'estrato',        label: 'Estrato socioeconómico (1-6)' },
+  { value: 'nivel_educativo',label: 'Nivel educativo (lista precargada)' },
+  { value: 'pais',           label: 'País (lista precargada)' },
+  { value: 'departamento',   label: 'Departamento de Colombia (lista precargada)' },
+  { value: 'ciudad',         label: 'Ciudad de Colombia (lista precargada)' },
 ];
+
 
 function chipEstado(activo) {
   return activo
@@ -153,6 +162,25 @@ function CampoPreview({ campo }) {
             helperText={`Lista de ${opciones.length} opciones precargadas`} />
         )}
       />
+    );
+  }
+
+  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero' ||
+      campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato' ||
+      campo.tipo === 'nivel_educativo') {
+    const listas = {
+      tipo_documento: TIPOS_DOCUMENTO, genero: GENEROS,
+      tipo_sangre: TIPOS_SANGRE, estrato: ESTRATOS, nivel_educativo: NIVELES_EDUCATIVOS,
+    };
+    const ops = listas[campo.tipo];
+    return (
+      <FormControl fullWidth size="small">
+        <InputLabel shrink>{label}</InputLabel>
+        <Select label={label} value="" disabled displayEmpty>
+          <MenuItem value=""><em>Seleccionar…</em></MenuItem>
+          {ops.map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+        </Select>
+      </FormControl>
     );
   }
 

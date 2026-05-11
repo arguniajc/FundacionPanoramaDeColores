@@ -19,7 +19,10 @@ import { sedesRepository }          from '../../../../infrastructure/repositorie
 import { inscripcionesRepository }  from '../../../../infrastructure/repositories/inscripcionesRepository';
 import { useInscripciones }         from '../../../../application/inscripciones/useInscripciones';
 import { archivosRepository }       from '../../../../infrastructure/repositories/archivosRepository';
-import { PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA } from '../../../../shared/utils/geodata';
+import {
+  PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
+  TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
+} from '../../../../shared/utils/geodata';
 import FirmaPad from '../../../../shared/components/FirmaPad';
 
 const COLOR = '#4E1B95';
@@ -223,6 +226,26 @@ function CampoInput({ campo, value, onChange }) {
         onChange={onChange}
         obligatorio={campo.obligatorio}
       />
+    );
+  }
+
+  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero' ||
+      campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato' ||
+      campo.tipo === 'nivel_educativo') {
+    const listas = {
+      tipo_documento: TIPOS_DOCUMENTO, genero: GENEROS,
+      tipo_sangre: TIPOS_SANGRE, estrato: ESTRATOS, nivel_educativo: NIVELES_EDUCATIVOS,
+    };
+    return (
+      <FormControl fullWidth size="small" required={campo.obligatorio}>
+        <InputLabel>{campo.etiqueta + (campo.obligatorio ? ' *' : '')}</InputLabel>
+        <Select
+          label={campo.etiqueta + (campo.obligatorio ? ' *' : '')}
+          value={value ?? ''}
+          onChange={e => onChange(e.target.value)}>
+          {listas[campo.tipo].map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+        </Select>
+      </FormControl>
     );
   }
 

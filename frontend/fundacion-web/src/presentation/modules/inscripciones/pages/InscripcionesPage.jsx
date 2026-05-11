@@ -412,10 +412,10 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             <Box sx={{ display: 'flex', gap: 2, mb: 1.5, alignItems: 'flex-start' }}>
               {beneficiario.fotoMenorUrl ? (
                 <Box component="img" src={beneficiario.fotoMenorUrl} alt="Foto beneficiario"
-                  sx={{ width: 64, height: 72, objectFit: 'cover', borderRadius: 1.5,
-                        border: `2px solid ${COLOR}`, flexShrink: 0 }} />
+                  sx={{ width: 72, height: 88, objectFit: 'contain', borderRadius: 1.5,
+                        border: `2px solid ${COLOR}`, flexShrink: 0, bgcolor: '#f3f0ff' }} />
               ) : (
-                <Avatar sx={{ bgcolor: COLOR, width: 64, height: 64, flexShrink: 0,
+                <Avatar sx={{ bgcolor: COLOR, width: 72, height: 72, flexShrink: 0,
                               borderRadius: 1.5, fontSize: '1.5rem' }}>
                   {(beneficiario.nombreMenor || '?')[0].toUpperCase()}
                 </Avatar>

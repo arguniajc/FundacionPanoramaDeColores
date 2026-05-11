@@ -524,6 +524,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [cargando,      setCargando]      = useState(true);
   const [editando,      setEditando]      = useState(false);
   const [datos,         setDatos]         = useState({});
+  const [panelActivo,   setPanelActivo]   = useState({});
   const [observaciones, setObservaciones] = useState('');
   const [guardando,     setGuardando]     = useState(false);
   const [generandoPdf,  setGenerandoPdf]  = useState(false);
@@ -531,6 +532,8 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [beneficiario,  setBeneficiario]  = useState(null);
   const theme   = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const tienePadreMadre = campos.some(c => c.tipo === 'datos_padre') && campos.some(c => c.tipo === 'datos_madre');
 
   // Carga campos del programa y datos personales del beneficiario cada vez que cambia la inscripción
   useEffect(() => {
@@ -547,6 +550,21 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       .then(([camposRes, benefRes]) => {
         setCampos(camposRes.data);
         setBeneficiario(benefRes.data);
+        // Init panelActivo: infer from existing datos — if no one has data yet, default padre/madre to true
+        let datosActuales = {};
+        try { datosActuales = JSON.parse(inscripcion.datos || '{}'); } catch {}
+        const padresMadreIds = camposRes.data
+          .filter(c => c.tipo === 'datos_padre' || c.tipo === 'datos_madre')
+          .map(c => c.id);
+        const alguienTieneDatos = padresMadreIds.some(id => !!datosActuales[id]);
+        const initPanel = {};
+        for (const c of camposRes.data) {
+          if (c.tipo === 'datos_padre' || c.tipo === 'datos_madre')
+            initPanel[c.id] = alguienTieneDatos ? !!datosActuales[c.id] : true;
+          if (c.tipo === 'datos_tutor')
+            initPanel[c.id] = !!datosActuales[c.id];
+        }
+        setPanelActivo(initPanel);
       })
       .catch(() => {})
       .finally(() => setCargando(false));
@@ -568,6 +586,23 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
     } finally {
       setGuardando(false);
     }
+  };
+
+  const handleTogglePanelEdit = (campo) => {
+    const nuevoActivo = !panelActivo[campo.id];
+    const next = { ...panelActivo, [campo.id]: nuevoActivo };
+    if (!nuevoActivo) {
+      setDatos(prev => { const n = { ...prev }; delete n[campo.id]; return n; });
+      const padresMadre = campos.filter(c => c.tipo === 'datos_padre' || c.tipo === 'datos_madre');
+      const todosApagados = padresMadre.every(c => (c.id === campo.id ? true : !next[c.id]));
+      if (todosApagados) campos.filter(c => c.tipo === 'datos_tutor').forEach(c => { next[c.id] = true; });
+    } else {
+      campos.filter(c => c.tipo === 'datos_tutor').forEach(c => {
+        next[c.id] = false;
+        setDatos(prev => { const n = { ...prev }; delete n[c.id]; return n; });
+      });
+    }
+    setPanelActivo(next);
   };
 
   // Genera un PDF del formulario de inscripción y lo abre en una nueva pestaña para imprimir
@@ -853,15 +888,22 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             {agruparPorSeccion(campos).map(({ seccion: sec, campos: grp }) => (
               <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                 <SeccionHeader titulo={sec} />
-                {grp.map(c => (
-                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
-                    <CampoInput
-                      campo={c}
-                      value={datos[c.id]}
-                      onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
-                    />
-                  </Grid>
-                ))}
+                {grp.map(c => {
+                  const esPanel = c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor';
+                  const activo  = esPanel ? (panelActivo[c.id] !== false) : true;
+                  if (c.tipo === 'datos_tutor' && !activo) return null;
+                  return (
+                    <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || esPanel) ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
+                      <CampoInput
+                        campo={c}
+                        value={datos[c.id]}
+                        onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
+                        activo={esPanel ? activo : undefined}
+                        onToggle={(c.tipo === 'datos_padre' || c.tipo === 'datos_madre') && tienePadreMadre ? () => handleTogglePanelEdit(c) : undefined}
+                      />
+                    </Grid>
+                  );
+                })}
               </Grid>
             ))}
             <Grid size={12}>
@@ -1009,6 +1051,8 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [error,           setError]           = useState('');
   const theme   = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const tienePadreMadre = campos.some(c => c.tipo === 'datos_padre') && campos.some(c => c.tipo === 'datos_madre');
 
   // Búsqueda diferida de beneficiarios mientras el usuario escribe (se dispara 300 ms tras el último tecleo)
   useEffect(() => {
@@ -1248,7 +1292,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                             value={datos[c.id]}
                             onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
                             activo={esPanel ? activo : undefined}
-                            onToggle={(c.tipo === 'datos_padre' || c.tipo === 'datos_madre') ? () => handleTogglePanel(c) : undefined}
+                            onToggle={(c.tipo === 'datos_padre' || c.tipo === 'datos_madre') && tienePadreMadre ? () => handleTogglePanel(c) : undefined}
                           />
                         </Grid>
                       );

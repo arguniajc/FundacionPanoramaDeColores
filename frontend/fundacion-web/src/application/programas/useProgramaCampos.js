@@ -23,6 +23,7 @@ export function useProgramaCampos(programaId) {
   const crearCampo = async (dto) => {
     const { data } = await sedesRepository.crearCampo(programaId, dto);
     setCampos(prev => [...prev, data].sort((a, b) => a.orden - b.orden));
+    return data;
   };
 
   const editarCampo = async (id, dto) => {

@@ -285,65 +285,72 @@ function SortableCampoRow({ campo, ci, grupoLength, onEditar, onEliminar, onAnch
 
 // ── Editor de campos de un programa ──────────────────────────────────────────
 function EditorCamposDialog({ programa, onCerrar }) {
-  const { campos, cargando, error, cargar, crearCampo, editarCampo, eliminarCampo } =
+  const { campos: camposServidor, cargando, error, cargar, crearCampo, editarCampo, eliminarCampo } =
     useProgramaCampos(programa.id);
 
-  const [formAbierto,  setFormAbierto]  = useState(false);
-  const [editando,     setEditando]     = useState(null);
-  const [guardando,    setGuardando]    = useState(false);
-  const [reordenando,  setReordenando]  = useState(false);
-  const [toast,        setToast]        = useState('');
-  const [preview,      setPreview]      = useState(false);
+  // Estado local: todos los cambios se acumulan aquí hasta que el usuario pulsa "Guardar"
+  const [camposLocal,  setCamposLocal]  = useState([]);
+  const [camposOrig,   setCamposOrig]   = useState([]);
+  const loadedRef = React.useRef(false);
+  const tempRef   = React.useRef(0);
+
+  const [formAbierto, setFormAbierto] = useState(false);
+  const [editando,    setEditando]    = useState(null);
+  const [guardando,   setGuardando]   = useState(false);
+  const [toast,       setToast]       = useState('');
+  const [preview,     setPreview]     = useState(false);
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const normalizadoRef = React.useRef(false);
 
   const campoVacio = { seccion: '', etiqueta: '', tipo: 'text', obligatorio: false, opciones: '', columnas: 6 };
   const [form, setForm] = useState(campoVacio);
 
-  // Carga los campos del programa cuando se abre el diálogo editor
   useEffect(() => { cargar(); }, [cargar]);
 
-  // Normaliza órdenes al primer cargar para corregir secciones no consecutivas
+  // Carga inicial: normaliza órdenes y copia al estado local de trabajo
   useEffect(() => {
-    if (cargando || campos.length === 0 || normalizadoRef.current) return;
-    normalizadoRef.current = true;
-    const secs = seccionesOrdenadas(campos);
+    if (cargando || loadedRef.current) return;
+    loadedRef.current = true;
+    const secs = seccionesOrdenadas(camposServidor);
     let ord = 0;
-    const updates = [];
-    for (const sec of secs) {
-      for (const c of camposDeSeccion(campos, sec)) {
-        if (c.orden !== ord) updates.push({ campo: c, nuevaOrden: ord });
-        ord++;
-      }
-    }
-    if (updates.length === 0) return;
-    setReordenando(true);
-    (async () => {
-      try {
-        for (const { campo, nuevaOrden } of updates)
-          await editarCampo(campo.id, toDto(campo, nuevaOrden));
-      } catch { /* silencioso — no crítico */ }
-      finally { setReordenando(false); }
-    })();
-  }, [cargando, campos, editarCampo]);
+    const map = new Map(camposServidor.map(c => [c.id, { ...c }]));
+    for (const sec of secs)
+      for (const c of camposDeSeccion(camposServidor, sec))
+        map.get(c.id).orden = ord++;
+    const normalized = [...map.values()].sort((a, b) => a.orden - b.orden);
+    setCamposLocal(normalized);
+    setCamposOrig(normalized.map(c => ({ ...c })));
+  }, [cargando, camposServidor]);
 
-  // Manejador genérico que actualiza una sola clave en el estado del formulario de campo
   const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
 
-  const seccionesExistentes = seccionesOrdenadas(campos);
+  const seccionesExistentes = seccionesOrdenadas(camposLocal);
   const seccionDigitada     = form.seccion.trim();
   const seccionSimilar      = seccionesExistentes.find(
     s => s.toLowerCase() === seccionDigitada.toLowerCase() && s !== seccionDigitada
   ) ?? null;
 
-  // Abre el formulario de nuevo campo, pre-llenando la sección con el último nombre existente
+  // Hay cambios sin guardar?
+  const hayPendientes = React.useMemo(() => {
+    if (!loadedRef.current) return false;
+    if (camposLocal.some(c => c._isNew)) return true;
+    const localRealIds = new Set(camposLocal.filter(c => !c._isNew).map(c => c.id));
+    if (camposOrig.some(c => !localRealIds.has(c.id))) return true;
+    const origById = new Map(camposOrig.map(c => [c.id, c]));
+    for (const l of camposLocal) {
+      if (l._isNew) continue;
+      const o = origById.get(l.id);
+      if (o && JSON.stringify(toDto(l, l.orden)) !== JSON.stringify(toDto(o, o.orden))) return true;
+    }
+    return false;
+  }, [camposLocal, camposOrig]);
+
+  // ── Abrir formulario ──────────────────────────────────────────────────────────
   const abrirNuevo = () => {
     setForm({ ...campoVacio, seccion: seccionesExistentes[seccionesExistentes.length - 1] ?? '' });
     setEditando(null);
     setFormAbierto(true);
   };
-  // Abre el formulario de edición pre-llenado con los datos actuales del campo seleccionado
   const abrirEditar = (c) => {
     setForm({
       seccion:     c.seccion ?? '',
@@ -357,121 +364,131 @@ function EditorCamposDialog({ programa, onCerrar }) {
     setFormAbierto(true);
   };
 
-  // Crea o actualiza un campo en la API según si editando está definido
-  const handleGuardar = async () => {
+  // ── Operaciones locales (sin llamadas a la API) ───────────────────────────────
+
+  const handleCampoFormGuardar = () => {
     if (!form.seccion.trim() || !form.etiqueta.trim()) return;
-    setGuardando(true);
-    try {
-      const seccion = form.seccion.trim();
-      let orden;
-
-      if (editando) {
-        orden = editando.orden;
-      } else {
-        const enSeccion = camposDeSeccion(campos, seccion);
+    const seccion = form.seccion.trim();
+    const dto = {
+      seccion,
+      etiqueta:    form.etiqueta.trim(),
+      tipo:        form.tipo,
+      obligatorio: form.obligatorio,
+      columnas:    form.columnas,
+      opciones:    form.tipo === 'select'
+        ? form.opciones.split(',').map(o => o.trim()).filter(Boolean)
+        : null,
+    };
+    if (editando) {
+      setCamposLocal(prev => prev.map(c => c.id === editando.id ? { ...c, ...dto } : c));
+    } else {
+      setCamposLocal(prev => {
+        const enSeccion = camposDeSeccion(prev, seccion);
+        let orden, base;
         if (enSeccion.length > 0) {
-          // Insertar al final de la sección existente
-          const maxOrden = Math.max(...enSeccion.map(c => c.orden));
-          orden = maxOrden + 1;
-          // Desplazar +1 todos los campos de otras secciones que vengan después
-          const aDesplazar = campos
-            .filter(c => c.orden >= orden && secDe(c) !== seccion)
-            .sort((a, b) => b.orden - a.orden); // desc para evitar colisiones
-          for (const c of aDesplazar)
-            await editarCampo(c.id, toDto(c, c.orden + 1));
+          const max = Math.max(...enSeccion.map(c => c.orden));
+          orden = max + 1;
+          base  = prev.map(c => c.orden >= orden && secDe(c) !== seccion ? { ...c, orden: c.orden + 1 } : c);
         } else {
-          // Sección nueva o vacía: poner al final de todo
-          orden = campos.length > 0 ? Math.max(...campos.map(c => c.orden)) + 1 : 0;
+          orden = prev.length > 0 ? Math.max(...prev.map(c => c.orden)) + 1 : 0;
+          base  = prev;
         }
-      }
-
-      const dto = {
-        seccion,
-        etiqueta:    form.etiqueta.trim(),
-        tipo:        form.tipo,
-        obligatorio: form.obligatorio,
-        columnas:    form.columnas,
-        opciones:    form.tipo === 'select'
-          ? form.opciones.split(',').map(o => o.trim()).filter(Boolean)
-          : null,
-        orden,
-      };
-      if (editando) await editarCampo(editando.id, dto);
-      else          await crearCampo(dto);
-      setToast(editando ? 'Campo actualizado' : 'Campo creado');
-      setFormAbierto(false);
-    } catch {
-      setToast('Error al guardar el campo');
-    } finally {
-      setGuardando(false);
+        return [...base, { ...dto, id: `_temp_${++tempRef.current}`, _isNew: true, orden }]
+          .sort((a, b) => a.orden - b.orden);
+      });
     }
+    setFormAbierto(false);
   };
 
-  // Elimina un campo por id en la API
-  const handleEliminar = async (id) => {
-    try { await eliminarCampo(id); setToast('Campo eliminado'); }
-    catch { setToast('Error al eliminar'); }
+  const handleEliminar = (id) => {
+    setCamposLocal(prev => prev.filter(c => c.id !== id));
   };
 
-  // ── Drag & drop: reordena los campos dentro de una sección tras soltar ──────────
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const handleDragEnd = async (event, secNombre) => {
+  const handleDragEnd = (event, secNombre) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const grupo   = camposDeSeccion(campos, secNombre);
+    const grupo   = camposDeSeccion(camposLocal, secNombre);
     const oldIdx  = grupo.findIndex(c => c.id === active.id);
     const newIdx  = grupo.findIndex(c => c.id === over.id);
     if (oldIdx === -1 || newIdx === -1) return;
     const reord   = arrayMove(grupo, oldIdx, newIdx);
     const ordenes = grupo.map(c => c.orden).sort((a, b) => a - b);
-    const updates = reord
-      .map((c, i) => ({ campo: c, ord: ordenes[i] }))
-      .filter(({ campo, ord }) => campo.orden !== ord);
-    if (!updates.length) return;
-    setReordenando(true);
-    try {
-      for (const { campo, ord } of updates)
-        await editarCampo(campo.id, toDto(campo, ord));
-    } catch { setToast('Error al reordenar'); }
-    finally   { setReordenando(false); }
+    const idToOrd = new Map(reord.map((c, i) => [c.id, ordenes[i]]));
+    setCamposLocal(prev =>
+      prev.map(c => idToOrd.has(c.id) ? { ...c, orden: idToOrd.get(c.id) } : c)
+        .sort((a, b) => a.orden - b.orden)
+    );
   };
 
-  // Mueve una sección completa (todos sus campos) hacia arriba (-1) o hacia abajo (+1) respecto a otras secciones
-  const moverSeccion = async (secNombre, dir) => {
-    setReordenando(true);
-    const secciones = seccionesOrdenadas(campos);
-    const idx = secciones.indexOf(secNombre);
-    const tgt = idx + dir;
-    if (tgt < 0 || tgt >= secciones.length) { setReordenando(false); return; }
-    const cA   = camposDeSeccion(campos, secciones[idx]);
-    const cB   = camposDeSeccion(campos, secciones[tgt]);
+  const moverSeccion = (secNombre, dir) => {
+    const secs = seccionesOrdenadas(camposLocal);
+    const idx  = secs.indexOf(secNombre);
+    const tgt  = idx + dir;
+    if (tgt < 0 || tgt >= secs.length) return;
+    const cA   = camposDeSeccion(camposLocal, secs[idx]);
+    const cB   = camposDeSeccion(camposLocal, secs[tgt]);
     const ords = [...cA, ...cB].map(c => c.orden).sort((a, b) => a - b);
     const [primero, segundo] = dir < 0 ? [cA, cB] : [cB, cA];
-    const updates = [
-      ...primero.map((c, i) => ({ campo: c, orden: ords[i] })),
-      ...segundo.map((c, i) => ({ campo: c, orden: ords[primero.length + i] })),
-    ].filter(({ campo, orden }) => campo.orden !== orden);
-    try {
-      for (const { campo, orden } of updates)
-        await editarCampo(campo.id, toDto(campo, orden));
-    } catch { setToast('Error al reordenar sección'); }
-    finally   { setReordenando(false); }
+    const idToOrd = new Map([
+      ...primero.map((c, i) => [c.id, ords[i]]),
+      ...segundo.map((c, i) => [c.id, ords[primero.length + i]]),
+    ]);
+    setCamposLocal(prev =>
+      prev.map(c => idToOrd.has(c.id) ? { ...c, orden: idToOrd.get(c.id) } : c)
+        .sort((a, b) => a.orden - b.orden)
+    );
   };
 
-  // Alterna un campo entre media fila (6 columnas) y fila completa (12 columnas)
-  const cambiarAncho = async (campo) => {
+  const cambiarAncho = (campo) => {
     const nuevoCols = (campo.columnas ?? 6) === 6 ? 12 : 6;
-    try {
-      await editarCampo(campo.id, { ...toDto(campo, campo.orden), columnas: nuevoCols });
-      setToast(nuevoCols === 12 ? 'Ancho: fila completa' : 'Ancho: media fila');
-    } catch { setToast('Error al cambiar ancho'); }
+    setCamposLocal(prev => prev.map(c => c.id === campo.id ? { ...c, columnas: nuevoCols } : c));
   };
 
-  const secciones = seccionesOrdenadas(campos);
+  // ── Guardar TODO al servidor ──────────────────────────────────────────────────
+  const handleGuardarTodo = async () => {
+    setGuardando(true);
+    try {
+      const origById     = new Map(camposOrig.map(c => [c.id, c]));
+      const localRealIds = new Set(camposLocal.filter(c => !c._isNew).map(c => c.id));
+
+      // 1. Eliminar los borrados localmente
+      for (const orig of camposOrig)
+        if (!localRealIds.has(orig.id)) await eliminarCampo(orig.id);
+
+      // 2. Actualizar los modificados
+      for (const local of camposLocal) {
+        if (local._isNew) continue;
+        const orig = origById.get(local.id);
+        if (orig && JSON.stringify(toDto(local, local.orden)) !== JSON.stringify(toDto(orig, orig.orden)))
+          await editarCampo(local.id, toDto(local, local.orden));
+      }
+
+      // 3. Crear los nuevos y obtener IDs reales
+      const tempToReal = new Map();
+      for (const local of camposLocal) {
+        if (!local._isNew) continue;
+        const data = await crearCampo(toDto(local, local.orden));
+        tempToReal.set(local.id, data);
+      }
+
+      // Actualizar estado con IDs reales y nuevo snapshot
+      const nuevosLocal = camposLocal.map(c => (!c._isNew ? c : (tempToReal.get(c.id) ?? c)));
+      setCamposLocal(nuevosLocal);
+      setCamposOrig(nuevosLocal.map(c => ({ ...c })));
+      setToast('Cambios guardados correctamente');
+    } catch {
+      setToast('Error al guardar los cambios');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const secciones = seccionesOrdenadas(camposLocal);
 
   return (
     <>
@@ -493,22 +510,26 @@ function EditorCamposDialog({ programa, onCerrar }) {
 
         <DialogContent dividers sx={{ p: 3 }}>
           {error && <Alert severity="error" sx={{ mb: 2.5 }}>{error}</Alert>}
+          {hayPendientes && (
+            <Alert severity="warning" sx={{ mb: 2 }} icon={false}>
+              Tienes cambios sin guardar — pulsa <strong>Guardar</strong> para aplicarlos.
+            </Alert>
+          )}
 
           {cargando ? (
             <Box display="flex" justifyContent="center" py={4}>
               <CircularProgress sx={{ color: COLOR }} />
             </Box>
-          ) : campos.length === 0 ? (
+          ) : camposLocal.length === 0 ? (
             <Typography color="text.secondary" textAlign="center" py={3}>
               Este programa no tiene campos configurados.
             </Typography>
           ) : (
             <Box>
               {secciones.map((sec, si) => {
-                const grupo = camposDeSeccion(campos, sec);
+                const grupo = camposDeSeccion(camposLocal, sec);
                 return (
                   <Box key={sec || '_root'} sx={{ mb: 2 }}>
-                    {/* Encabezado de sección con ↑↓ */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5,
                                bgcolor: COLOR, borderRadius: '8px 8px 0 0', px: 1.5, py: 0.8 }}>
                       <Typography variant="caption" fontWeight={800} color="white"
@@ -516,14 +537,14 @@ function EditorCamposDialog({ programa, onCerrar }) {
                         {sec || '(sin sección)'}
                       </Typography>
                       <Tooltip title="Subir sección"><span>
-                        <IconButton size="small" disabled={si === 0 || reordenando}
+                        <IconButton size="small" disabled={si === 0}
                           onClick={() => moverSeccion(sec, -1)}
                           sx={{ color: 'white', '&.Mui-disabled': { color: 'rgba(255,255,255,.3)' } }}>
                           <ArrowUpwardIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                       </span></Tooltip>
                       <Tooltip title="Bajar sección"><span>
-                        <IconButton size="small" disabled={si === secciones.length - 1 || reordenando}
+                        <IconButton size="small" disabled={si === secciones.length - 1}
                           onClick={() => moverSeccion(sec, 1)}
                           sx={{ color: 'white', '&.Mui-disabled': { color: 'rgba(255,255,255,.3)' } }}>
                           <ArrowDownwardIcon sx={{ fontSize: 16 }} />
@@ -531,7 +552,6 @@ function EditorCamposDialog({ programa, onCerrar }) {
                       </span></Tooltip>
                     </Box>
 
-                    {/* Campos arrastrables */}
                     <Box sx={{ border: '1px solid #e2d9f3', borderTop: 'none',
                                borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
                       <DndContext sensors={sensors} collisionDetection={closestCenter}
@@ -544,7 +564,7 @@ function EditorCamposDialog({ programa, onCerrar }) {
                               onEditar={abrirEditar}
                               onEliminar={handleEliminar}
                               onAncho={cambiarAncho}
-                              reordenando={reordenando} />
+                              reordenando={false} />
                           ))}
                         </SortableContext>
                       </DndContext>
@@ -568,23 +588,27 @@ function EditorCamposDialog({ programa, onCerrar }) {
             Vista previa
           </Button>
           <Box flex={1} />
-          <Button onClick={onCerrar} variant="contained" sx={{ bgcolor: COLOR }}>Cerrar</Button>
+          <Button onClick={onCerrar} disabled={guardando}>Cerrar</Button>
+          <Button variant="contained" onClick={handleGuardarTodo}
+            disabled={guardando || !hayPendientes}
+            sx={{ bgcolor: COLOR, minWidth: 110 }}>
+            {guardando ? 'Guardando…' : hayPendientes ? 'Guardar *' : 'Guardar'}
+          </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Vista previa */}
+      {/* Vista previa — usa el estado local para reflejar cambios aún no guardados */}
       {preview && (
-        <VistaPreviewDialog campos={campos} programa={programa} onCerrar={() => setPreview(false)} />
+        <VistaPreviewDialog campos={camposLocal} programa={programa} onCerrar={() => setPreview(false)} />
       )}
 
-      {/* Formulario agregar / editar campo */}
+      {/* Formulario agregar / editar campo — solo actualiza el estado local */}
       <Dialog open={formAbierto} onClose={() => setFormAbierto(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>
           {editando ? 'Editar campo' : 'Nuevo campo'}
         </DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2.5} mt={0}>
-            {/* Sección — obligatoria */}
             <Grid size={12}>
               <Autocomplete freeSolo options={seccionesExistentes}
                 value={form.seccion}
@@ -593,7 +617,7 @@ function EditorCamposDialog({ programa, onCerrar }) {
                 renderInput={(params) => (
                   <TextField {...params} fullWidth size="small" label="Sección *" required
                     placeholder="Selecciona una existente o escribe una nueva…"
-                    error={seccionSimilar !== null || (seccionDigitada === '' && guardando)}
+                    error={seccionSimilar !== null}
                     helperText={
                       seccionSimilar !== null
                         ? `Ya existe "${seccionSimilar}" — selecciónala del listado`
@@ -626,7 +650,6 @@ function EditorCamposDialog({ programa, onCerrar }) {
                   value={form.opciones} onChange={set('opciones')} />
               </Grid>
             )}
-            {/* Ancho del campo */}
             <Grid size={12}>
               <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
                 Ancho en el formulario
@@ -634,12 +657,8 @@ function EditorCamposDialog({ programa, onCerrar }) {
               <ToggleButtonGroup exclusive size="small"
                 value={form.columnas}
                 onChange={(_, v) => { if (v !== null) setForm(p => ({ ...p, columnas: v })); }}>
-                <ToggleButton value={6} sx={{ px: 2, fontSize: 12 }}>
-                  ½ Media fila
-                </ToggleButton>
-                <ToggleButton value={12} sx={{ px: 2, fontSize: 12 }}>
-                  □ Fila completa
-                </ToggleButton>
+                <ToggleButton value={6} sx={{ px: 2, fontSize: 12 }}>½ Media fila</ToggleButton>
+                <ToggleButton value={12} sx={{ px: 2, fontSize: 12 }}>□ Fila completa</ToggleButton>
               </ToggleButtonGroup>
             </Grid>
             <Grid size={12}>
@@ -654,11 +673,11 @@ function EditorCamposDialog({ programa, onCerrar }) {
           </Grid>
         </DialogContent>
         <DialogActions sx={{ px: 2, py: 1.5 }}>
-          <Button onClick={() => setFormAbierto(false)} disabled={guardando}>Cancelar</Button>
-          <Button variant="contained" onClick={handleGuardar}
-            disabled={guardando || !form.etiqueta.trim() || !seccionDigitada || seccionSimilar !== null}
+          <Button onClick={() => setFormAbierto(false)}>Cancelar</Button>
+          <Button variant="contained" onClick={handleCampoFormGuardar}
+            disabled={!form.etiqueta.trim() || !seccionDigitada || seccionSimilar !== null}
             sx={{ bgcolor: COLOR }}>
-            {guardando ? 'Guardando...' : 'Guardar'}
+            {editando ? 'Actualizar' : 'Agregar'}
           </Button>
         </DialogActions>
       </Dialog>

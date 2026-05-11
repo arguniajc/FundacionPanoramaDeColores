@@ -44,6 +44,7 @@ const TIPOS_CAMPO = [
   { value: 'pais',         label: 'País (lista precargada)' },
   { value: 'departamento', label: 'Departamento de Colombia (lista precargada)' },
   { value: 'ciudad',       label: 'Ciudad de Colombia (lista precargada)' },
+  { value: 'firma',        label: 'Firma con el dedo / ratón' },
 ];
 
 function chipEstado(activo) {
@@ -156,6 +157,23 @@ function CampoPreview({ campo }) {
     );
   }
 
+  if (campo.tipo === 'firma') return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+        {label}
+      </Typography>
+      <Box sx={{
+        border: '2px dashed #d0c4f7', borderRadius: 2,
+        height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        bgcolor: '#fdfbff',
+      }}>
+        <Typography variant="caption" color="text.secondary">
+          ✍ Campo de firma — el acudiente firma aquí
+        </Typography>
+      </Box>
+    </Box>
+  );
+
   return (
     <TextField fullWidth size="small" label={label} disabled value=""
       type={campo.tipo === 'number' ? 'number' : campo.tipo === 'date' ? 'date' : 'text'}
@@ -201,7 +219,7 @@ function VistaPreviewDialog({ campos, programa, onCerrar }) {
                   <Grid container spacing={2.5}>
                     {grp.map(c => (
                       <Grid key={c.id}
-                        size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
+                        size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
                         <CampoPreview campo={c} />
                       </Grid>
                     ))}

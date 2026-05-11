@@ -20,6 +20,7 @@ import { inscripcionesRepository }  from '../../../../infrastructure/repositorie
 import { useInscripciones }         from '../../../../application/inscripciones/useInscripciones';
 import { archivosRepository }       from '../../../../infrastructure/repositories/archivosRepository';
 import { PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA } from '../../../../shared/utils/geodata';
+import FirmaPad from '../../../../shared/components/FirmaPad';
 
 const COLOR = '#4E1B95';
 
@@ -214,6 +215,17 @@ function CampoInput({ campo, value, onChange }) {
     );
   }
 
+  if (campo.tipo === 'firma') {
+    return (
+      <FirmaPad
+        label={campo.etiqueta}
+        value={value ?? ''}
+        onChange={onChange}
+        obligatorio={campo.obligatorio}
+      />
+    );
+  }
+
   if (campo.tipo === 'pais' || campo.tipo === 'departamento' || campo.tipo === 'ciudad') {
     const opciones = campo.tipo === 'pais' ? PAISES
       : campo.tipo === 'departamento' ? DEPARTAMENTOS_COLOMBIA
@@ -340,6 +352,15 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   // Formatea el valor crudo de un campo para visualización legible en modo vista (booleanos, rangos de fecha, unidades)
   const valorVista = (campo) => {
     const v = datos[campo.id];
+
+    if (campo.tipo === 'firma') {
+      if (v) return (
+        <Box component="img" src={v} alt="Firma"
+          sx={{ display: 'block', height: 56, maxWidth: 240, objectFit: 'contain',
+                border: '1px solid #e0d9f3', borderRadius: 1, bgcolor: 'white' }} />
+      );
+      return <Chip label="Sin firma" color="warning" size="small" variant="outlined" />;
+    }
 
     if (campo.tipo === 'document') {
       if (v) return (
@@ -546,7 +567,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                 <SeccionHeader titulo={sec} />
                 {grp.map(c => (
-                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
+                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
                     <CampoInput
                       campo={c}
                       value={datos[c.id]}
@@ -855,7 +876,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                   <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                     <SeccionHeader titulo={sec} />
                     {grp.map(c => (
-                      <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange') ? 12 : { xs: 12, sm: 6 }}>
+                      <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma') ? 12 : { xs: 12, sm: 6 }}>
                         <CampoInput
                           campo={c}
                           value={datos[c.id]}

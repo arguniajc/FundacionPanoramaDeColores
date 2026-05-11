@@ -73,6 +73,7 @@ function fmtFecha(iso) {
 
 function valorCampo(campo, datos) {
   const v = datos[campo.id];
+  if (campo.tipo === 'firma')    return v ? '✓  Firma capturada' : '☐  Sin firma';
   if (campo.tipo === 'document') return v ? '✓  Entregado' : '☐  PENDIENTE — no entregado';
   if (v === undefined || v === null || v === '') return '—';
   if (campo.tipo === 'boolean') return (v === 'true' || v === true) ? 'Sí' : 'No';
@@ -298,11 +299,46 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
 
       let i = 0;
       while (i < items.length) {
-        const c1      = items[i];
-        const esAncho1 = c1.tipo === 'document' || c1.tipo === 'daterange';
-        const c2      = items[i + 1];
-        const esAncho2 = c2 && (c2.tipo === 'document' || c2.tipo === 'daterange');
+        const c1       = items[i];
+        const c2       = items[i + 1];
+        const esAncho1 = c1.tipo === 'document' || c1.tipo === 'daterange' || c1.tipo === 'firma';
+        const esAncho2 = c2 && (c2.tipo === 'document' || c2.tipo === 'daterange' || c2.tipo === 'firma');
         const esDoc1   = c1.tipo === 'document';
+
+        // Firma: renderizar imagen de la firma en el PDF
+        if (c1.tipo === 'firma') {
+          const v = datos[c1.id];
+          const LABEL_H = 7, IMG_H = 22;
+          pageBreak(LABEL_H + IMG_H + 1);
+          doc.setFillColor(...LPURPLE);
+          doc.rect(ML, y, CW, LABEL_H, 'F');
+          doc.setDrawColor(...BORDER);
+          doc.rect(ML, y, CW, LABEL_H, 'S');
+          doc.setFontSize(6.5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...GRAY);
+          doc.text((c1.etiqueta + (c1.obligatorio ? ' *' : '')).toUpperCase(), ML + 3, y + 4.8);
+          y += LABEL_H;
+          doc.setFillColor(255, 255, 255);
+          doc.rect(ML, y, CW, IMG_H, 'F');
+          doc.setDrawColor(...BORDER);
+          doc.rect(ML, y, CW, IMG_H, 'S');
+          if (v && v.startsWith('data:image')) {
+            try { doc.addImage(v, 'PNG', ML + 5, y + 2, 65, IMG_H - 4); } catch {}
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(...GRAY);
+            doc.text('✓ Firma capturada digitalmente', ML + 75, y + IMG_H / 2 + 1);
+          } else {
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(200, 80, 0);
+            doc.text('— Sin firma', ML + 4, y + IMG_H / 2 + 1.5);
+          }
+          y += IMG_H;
+          i++;
+          continue;
+        }
 
         if (esAncho1 || !c2 || esAncho2) {
           fila([{ etiqueta: c1.etiqueta + (c1.obligatorio ? ' *' : ''), valor: valorCampo(c1, datos),

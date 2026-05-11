@@ -1,17 +1,27 @@
 import jsPDF from 'jspdf';
 
-// Carga una URL de imagen como data URL usando canvas; retorna null si falla (CORS, etc.)
-async function cargarImagenBase64(url) {
+// Carga una imagen desde URL, la recorta al centro en un cuadrado y aplica máscara circular.
+// Retorna un data URL PNG con fondo transparente, o null si falla.
+async function cargarImagenCircular(url) {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
+        const px  = 320; // tamaño en píxeles del canvas cuadrado
         const canvas = document.createElement('canvas');
-        canvas.width  = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
+        canvas.width  = px;
+        canvas.height = px;
+        const ctx = canvas.getContext('2d');
+        // Recortar al centro (cuadrado) y aplicar clip circular
+        ctx.beginPath();
+        ctx.arc(px / 2, px / 2, px / 2, 0, Math.PI * 2);
+        ctx.clip();
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        const sx   = (img.naturalWidth  - side) / 2;
+        const sy   = (img.naturalHeight - side) / 2;
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, px, px);
+        resolve(canvas.toDataURL('image/png'));
       } catch { resolve(null); }
     };
     img.onerror = () => resolve(null);
@@ -73,9 +83,9 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   const PW = 210, PH = 297, ML = 13, CW = PW - ML * 2;
   let y = ML;
 
-  // Cargar la foto del beneficiario antes de generar el PDF
+  // Cargar y recortar la foto del beneficiario en círculo antes de generar el PDF
   const fotoDataUrl = beneficiario.fotoMenorUrl
-    ? await cargarImagenBase64(beneficiario.fotoMenorUrl)
+    ? await cargarImagenCircular(beneficiario.fotoMenorUrl)
     : null;
 
   // ─── helpers ───────────────────────────────────────────────────────────────
@@ -146,34 +156,36 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   function esp(h = 3) { y += h; }
 
   // ─── Encabezado ────────────────────────────────────────────────────────────
-  // Foto: 19×25 mm dentro del banner púrpura (33 mm alto), borde blanco 1 mm
-  const PHOTO_W = 19, PHOTO_H = 25;
-  const BORD    = 1;  // grosor del borde en mm
-  const photoX  = ML + CW - PHOTO_W - BORD - 3;  // 3 mm margen derecho
-  const photoY  = y + (33 - PHOTO_H - BORD * 2) / 2;  // centrado verticalmente
+  // Foto circular: diámetro 15 mm (≈19 mm anterior × 0.8), centrada en el banner
+  const D      = 15;   // diámetro en mm
+  const BORD   = 1;    // grosor del borde circular en mm
+  const cx     = ML + CW - D / 2 - BORD - 3;   // centro X (3 mm margen derecho)
+  const cy     = y + 33 / 2;                     // centro Y (centrado en banner)
 
   doc.setFillColor(...PURPLE);
   doc.rect(ML, y, CW, 33, 'F');
   doc.setFillColor(...ACCENT);
   doc.rect(ML, y + 29, CW, 4, 'F');
 
-  // Foto del beneficiario — pequeña y dentro del banner, con borde blanco
+  // Foto circular del beneficiario — dentro del banner con borde blanco
   if (fotoDataUrl) {
     doc.setFillColor(...WHITE);
-    doc.rect(photoX - BORD, photoY - BORD, PHOTO_W + BORD * 2, PHOTO_H + BORD * 2, 'F');
-    doc.addImage(fotoDataUrl, 'JPEG', photoX, photoY, PHOTO_W, PHOTO_H);
+    doc.circle(cx, cy, D / 2 + BORD, 'F');
+    doc.addImage(fotoDataUrl, 'PNG', cx - D / 2, cy - D / 2, D, D);
   } else {
+    doc.setFillColor(...WHITE);
+    doc.circle(cx, cy, D / 2 + BORD, 'F');
     doc.setFillColor(100, 60, 170);
-    doc.rect(photoX - BORD, photoY - BORD, PHOTO_W + BORD * 2, PHOTO_H + BORD * 2, 'F');
+    doc.circle(cx, cy, D / 2, 'F');
     doc.setFontSize(5.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(200, 185, 235);
-    doc.text('SIN', photoX + PHOTO_W / 2, photoY + PHOTO_H / 2 - 2, { align: 'center' });
-    doc.text('FOTO', photoX + PHOTO_W / 2, photoY + PHOTO_H / 2 + 2, { align: 'center' });
+    doc.text('SIN',  cx, cy - 1.5, { align: 'center' });
+    doc.text('FOTO', cx, cy + 2.5, { align: 'center' });
   }
 
-  // Texto del encabezado — ancho ajustado para no solapar la foto
-  const textW = CW - PHOTO_W - BORD * 2 - 10;
+  // Texto del encabezado — ancho ajustado para no solapar la foto circular
+  const textW = CW - D - BORD * 2 - 10;
   doc.setTextColor(...WHITE);
   doc.setFontSize(9.5);
   doc.setFont('helvetica', 'normal');

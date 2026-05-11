@@ -582,6 +582,21 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                 multiline rows={2} value={observaciones}
                 onChange={e => setObservaciones(e.target.value)} />
             </Grid>
+            {/* Firma del padre/acudiente — siempre obligatoria */}
+            <Grid size={12}>
+              <Box sx={{ p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '2px solid #d0c4f7' }}>
+                <Typography variant="caption" color={COLOR} fontWeight={800} display="block" mb={1}
+                  sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.72rem' }}>
+                  Autorización del padre / acudiente
+                </Typography>
+                <FirmaPad
+                  label="Firma del padre / acudiente"
+                  value={datos.__firma_padre__ ?? ''}
+                  onChange={v => setDatos(prev => ({ ...prev, __firma_padre__: v }))}
+                  obligatorio
+                />
+              </Box>
+            </Grid>
           </Grid>
         ) : (
           /* ── Modo vista ────────────────────────────────────────── */
@@ -630,12 +645,27 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                 ))}
               </Box>
             )}
+            {/* Firma del padre/acudiente — siempre visible */}
+            <Box sx={{ mt: 1, p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '2px solid #d0c4f7' }}>
+              <Typography variant="caption" color={COLOR} fontWeight={800} display="block" mb={1}
+                sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.72rem' }}>
+                Autorización del padre / acudiente
+              </Typography>
+              {datos.__firma_padre__ ? (
+                <Box component="img" src={datos.__firma_padre__} alt="Firma del padre"
+                  sx={{ display: 'block', height: 60, maxWidth: 280, objectFit: 'contain',
+                        border: '1px solid #d0c4f7', borderRadius: 1, bgcolor: 'white' }} />
+              ) : (
+                <Chip label="Sin firma registrada" color="warning" size="small" variant="outlined" />
+              )}
+            </Box>
+
             {observaciones && (
               <Box sx={{
                 borderLeft: `5px solid ${COLOR}`,
                 bgcolor: 'rgba(78,27,149,0.07)',
                 borderRadius: '0 8px 8px 0',
-                px: 1.5, py: 1,
+                px: 1.5, py: 1, mt: 1,
               }}>
                 <Typography fontWeight={800} color={COLOR}
                   sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.5, display: 'block' }}>
@@ -740,15 +770,18 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const pasoValido = () => {
     if (paso === 0) return !!selBenef;
     if (paso === 1) return !!selPrograma;
-    if (paso === 2) return campos.every(c => {
-      if (!c.obligatorio) return true;
-      const v = datos[c.id];
-      if (!v) return false;
-      if (c.tipo === 'daterange') {
-        try { const r = JSON.parse(v); return !!(r.desde && r.hasta); } catch { return false; }
-      }
-      return true;
-    });
+    if (paso === 2) {
+      if (!datos.__firma_padre__) return false;
+      return campos.every(c => {
+        if (!c.obligatorio) return true;
+        const v = datos[c.id];
+        if (!v) return false;
+        if (c.tipo === 'daterange') {
+          try { const r = JSON.parse(v); return !!(r.desde && r.hasta); } catch { return false; }
+        }
+        return true;
+      });
+    }
     return true;
   };
 
@@ -893,6 +926,19 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                 </Grid>
               </Grid>
             )}
+            {/* Firma del padre/acudiente — siempre obligatoria */}
+            <Box sx={{ mt: campos.length === 0 ? 0 : 1, p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '2px solid #d0c4f7' }}>
+              <Typography variant="caption" color={COLOR} fontWeight={800} display="block" mb={1}
+                sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.72rem' }}>
+                Autorización del padre / acudiente
+              </Typography>
+              <FirmaPad
+                label="Firma del padre / acudiente"
+                value={datos.__firma_padre__ ?? ''}
+                onChange={v => setDatos(prev => ({ ...prev, __firma_padre__: v }))}
+                obligatorio
+              />
+            </Box>
           </Box>
         )}
       </DialogContent>

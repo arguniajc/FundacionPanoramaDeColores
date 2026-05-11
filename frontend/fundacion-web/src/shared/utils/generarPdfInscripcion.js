@@ -364,7 +364,9 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   }
 
   // ─── Firmas ─────────────────────────────────────────────────────────────────
-  pageBreak(conTercero ? 50 : 35);
+  const firmaPadre = datos.__firma_padre__;
+  const FIRMA_H = firmaPadre ? 48 : 35; // más alto si hay imagen
+  pageBreak(conTercero ? FIRMA_H + 15 : FIRMA_H);
   esp(6);
 
   // Encabezado de la sección de firmas
@@ -384,23 +386,32 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
 
   if (conTercero) {
     // ── 3 firmantes: Acudiente | Fundación | Entidad ejecutora ──────────────
-    const col = CW / 3;
-    const lineY = y + 18;
+    const col  = CW / 3;
+    const sigH = firmaPadre ? 22 : 0; // altura reservada para imagen de firma
+    const lineY = y + (firmaPadre ? sigH + 4 : 18);
     doc.setDrawColor(...BORDER);
-    doc.line(ML + 4,          lineY, ML + col - 4,       lineY);
-    doc.line(ML + col + 4,    lineY, ML + col * 2 - 4,   lineY);
-    doc.line(ML + col * 2 + 4, lineY, ML + CW - 4,       lineY);
 
+    if (firmaPadre) {
+      // Imagen digital de la firma del padre en col 1
+      try { doc.addImage(firmaPadre, 'PNG', ML + 4, y + 1, 50, sigH - 2); } catch {}
+      doc.setFontSize(6);
+      doc.setTextColor(...GRAY);
+      doc.text('✓ Firma digital capturada', ML + 4, y + sigH + 2);
+    }
+    doc.line(ML + 4,           lineY, ML + col - 4,       lineY);
+    doc.line(ML + col + 4,     lineY, ML + col * 2 - 4,   lineY);
+    doc.line(ML + col * 2 + 4, lineY, ML + CW - 4,        lineY);
+
+    doc.setFontSize(7);
+    doc.setTextColor(...GRAY);
     // Col 1 — Acudiente
     doc.text('Firma del Acudiente / Responsable', ML + 4,          lineY + 4);
     doc.text('CC / Documento: ________________',  ML + 4,          lineY + 9);
     doc.text('Fecha: _________________________',  ML + 4,          lineY + 14);
-
     // Col 2 — Fundación
     doc.text('Firma Fundación Panorama de Colores', ML + col + 4,  lineY + 4);
     doc.text('Cargo: ________________________',     ML + col + 4,  lineY + 9);
     doc.text('Fecha: ________________________',     ML + col + 4,  lineY + 14);
-
     // Col 3 — Tercero
     const etTercero = (nombreTercero || 'Entidad Ejecutora').slice(0, 28);
     doc.text(`Firma: ${etTercero}`,             ML + col * 2 + 4,  lineY + 4);
@@ -410,12 +421,23 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
     y = lineY + 19;
   } else {
     // ── 2 firmantes: Acudiente | Fundación ──────────────────────────────────
-    const mid   = ML + CW / 2;
-    const lineY = y + 18;
+    const mid  = ML + CW / 2;
+    const sigH = firmaPadre ? 22 : 0;
+    const lineY = y + (firmaPadre ? sigH + 4 : 18);
     doc.setDrawColor(...BORDER);
+
+    if (firmaPadre) {
+      // Imagen digital de la firma del padre
+      try { doc.addImage(firmaPadre, 'PNG', ML + 8, y + 1, 60, sigH - 2); } catch {}
+      doc.setFontSize(6);
+      doc.setTextColor(...GRAY);
+      doc.text('✓ Firma digital capturada', ML + 8, y + sigH + 2);
+    }
     doc.line(ML + 8,  lineY, mid - 8,     lineY);
     doc.line(mid + 8, lineY, ML + CW - 8, lineY);
 
+    doc.setFontSize(7);
+    doc.setTextColor(...GRAY);
     doc.text('Firma del Acudiente / Responsable',         ML + 8,  lineY + 4);
     doc.text('Firma Fundación Panorama de Colores',       mid + 8, lineY + 4);
     doc.text('CC / Documento: ________________________',  ML + 8,  lineY + 9);

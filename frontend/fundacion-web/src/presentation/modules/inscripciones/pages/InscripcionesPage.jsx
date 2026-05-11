@@ -93,7 +93,7 @@ function chipEstado(estado) {
 
 // ── Campo dinámico del formulario ─────────────────────────────────────────────
 
-function CampoInput({ campo, value, onChange }) {
+function CampoInput({ campo, value, onChange, activo = true, onToggle }) {
   const [subiendo, setSubiendo] = useState(false);
 
   if (campo.tipo === 'boolean') {
@@ -358,26 +358,57 @@ function CampoInput({ campo, value, onChange }) {
     let d = {};
     try { if (value) d = JSON.parse(value); } catch {}
     const setD = (k, v) => onChange(JSON.stringify({ ...d, [k]: v }));
-    const SC = '#7B3FC4';
+    const SC      = '#7B3FC4';
     const esTutor = campo.tipo === 'datos_tutor';
     const subcampos = esTutor ? '15 sub-campos' : '14 sub-campos';
+    const tieneToggle = !esTutor && !!onToggle; // solo padre/madre tienen switch
     return (
       <Box sx={{
-        border: `1.5px solid ${SC}40`, borderRadius: 2.5, overflow: 'hidden',
-        boxShadow: '0 3px 14px rgba(78,27,149,0.10)',
+        border: `1.5px solid ${activo ? SC + '40' : '#d0d0d0'}`,
+        borderRadius: 2.5, overflow: 'hidden',
+        boxShadow: activo ? '0 3px 14px rgba(78,27,149,0.10)' : 'none',
+        transition: 'all 0.2s',
       }}>
+        {/* ── Cabecera del panel ── */}
         <Box sx={{
-          bgcolor: `${SC}18`, borderBottom: `1.5px solid ${SC}30`,
-          borderLeft: `5px solid ${SC}`, px: 2, py: 1,
+          bgcolor: activo ? `${SC}18` : '#f0f0f0',
+          borderBottom: `1.5px solid ${activo ? SC + '30' : '#ddd'}`,
+          borderLeft: `5px solid ${activo ? SC : '#bbb'}`,
+          px: 2, py: 1,
           display: 'flex', alignItems: 'center', gap: 1.5,
+          transition: 'background 0.2s',
         }}>
-          <Typography sx={{ fontSize: '0.88rem', fontWeight: 800, color: SC, flex: 1 }}>
-            {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
+          <Typography sx={{
+            fontSize: '0.88rem', fontWeight: 800, flex: 1,
+            color: activo ? SC : '#aaa', transition: 'color 0.2s',
+          }}>
+            {campo.etiqueta}{campo.obligatorio && activo ? ' *' : ''}
           </Typography>
-          <Chip label={subcampos} size="small"
-            sx={{ bgcolor: `${SC}18`, color: SC, fontWeight: 700, fontSize: '0.68rem',
-                  border: `1px solid ${SC}40`, height: 22 }} />
+          {tieneToggle && (
+            <Tooltip title={activo ? 'No aplica — deshabilitar' : 'Habilitar este panel'}>
+              <Switch checked={activo} onChange={onToggle} size="small"
+                sx={{ '& .MuiSwitch-thumb': { bgcolor: activo ? SC : '#bbb' },
+                      '& .MuiSwitch-track': { bgcolor: activo ? `${SC}80 !important` : '#ccc !important' } }} />
+            </Tooltip>
+          )}
+          {activo && (
+            <Chip label={subcampos} size="small"
+              sx={{ bgcolor: `${SC}18`, color: SC, fontWeight: 700, fontSize: '0.68rem',
+                    border: `1px solid ${SC}40`, height: 22 }} />
+          )}
         </Box>
+
+        {/* ── Cuando está deshabilitado: placeholder ── */}
+        {!activo && (
+          <Box sx={{ bgcolor: '#fafafa', py: 2.5, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.disabled" fontStyle="italic">
+              No aplica para esta inscripción
+            </Typography>
+          </Box>
+        )}
+
+        {/* ── Cuando está habilitado: sub-campos ── */}
+        {activo && (
         <Box sx={{ bgcolor: '#f9f6ff', p: 2.5 }}>
           <Grid container spacing={2}>
             {esTutor && (
@@ -469,6 +500,7 @@ function CampoInput({ campo, value, onChange }) {
             </Grid>
           </Grid>
         </Box>
+        )}
       </Box>
     );
   }
@@ -971,6 +1003,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [campos,          setCampos]          = useState([]);
   const [cargandoCampos,  setCargandoCampos]  = useState(false);
   const [datos,           setDatos]           = useState({});
+  const [panelActivo,     setPanelActivo]     = useState({});
   const [observaciones,   setObservaciones]   = useState('');
   const [guardando,       setGuardando]       = useState(false);
   const [error,           setError]           = useState('');
@@ -1007,8 +1040,8 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     setCargandoCampos(true);
     sedesRepository.listarCampos(selPrograma.id).then(({ data }) => {
       setCampos(data);
-      // Auto-rellenar campos que se derivan del beneficiario seleccionado
       const auto = {};
+      const init = {};
       for (const c of data) {
         if (c.tipo === 'edad' && selBenef?.fechaNacimiento) {
           const e = calcEdad(selBenef.fechaNacimiento);
@@ -1016,10 +1049,36 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         }
         if (c.tipo === 'fecha_nac' && selBenef?.fechaNacimiento)
           auto[c.id] = selBenef.fechaNacimiento;
+        // Padre y madre activos por defecto; tutor inactivo hasta que ambos se apaguen
+        if (c.tipo === 'datos_padre' || c.tipo === 'datos_madre') init[c.id] = true;
+        if (c.tipo === 'datos_tutor') init[c.id] = false;
       }
       setDatos(auto);
+      setPanelActivo(init);
     }).catch(() => {}).finally(() => setCargandoCampos(false));
   }, [selPrograma, selBenef]);
+
+  // Alterna padre/madre; si ambos quedan apagados activa tutor automáticamente y viceversa
+  const handleTogglePanel = (campo) => {
+    const nuevoActivo = !panelActivo[campo.id];
+    const next = { ...panelActivo, [campo.id]: nuevoActivo };
+
+    if (!nuevoActivo) {
+      // Apagar padre/madre → limpiar sus datos
+      setDatos(prev => { const n = { ...prev }; delete n[campo.id]; return n; });
+      // Si todos los padres/madres quedan apagados → activar tutor automáticamente
+      const padresMadre = campos.filter(c => c.tipo === 'datos_padre' || c.tipo === 'datos_madre');
+      const todosApagados = padresMadre.every(c => (c.id === campo.id ? true : !next[c.id]));
+      if (todosApagados) campos.filter(c => c.tipo === 'datos_tutor').forEach(c => { next[c.id] = true; });
+    } else {
+      // Encender padre/madre → apagar tutor y limpiar sus datos
+      campos.filter(c => c.tipo === 'datos_tutor').forEach(c => {
+        next[c.id] = false;
+        setDatos(prev => { const n = { ...prev }; delete n[c.id]; return n; });
+      });
+    }
+    setPanelActivo(next);
+  };
 
   // Retorna verdadero cuando el paso actual del asistente tiene todos los datos obligatorios completos
   const pasoValido = () => {
@@ -1029,6 +1088,8 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
       if (!datos.__firma_padre__) return false;
       return campos.every(c => {
         if (!c.obligatorio) return true;
+        // Panel deshabilitado → no requiere datos
+        if ((c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor') && panelActivo[c.id] === false) return true;
         const v = datos[c.id];
         if (!v) return false;
         if (c.tipo === 'daterange') {
@@ -1175,15 +1236,23 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                 {agruparPorSeccion(campos).map(({ seccion: sec, campos: grp }) => (
                   <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                     <SeccionHeader titulo={sec} />
-                    {grp.map(c => (
-                      <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor') ? 12 : { xs: 12, sm: 6 }}>
-                        <CampoInput
-                          campo={c}
-                          value={datos[c.id]}
-                          onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
-                        />
-                      </Grid>
-                    ))}
+                    {grp.map(c => {
+                      const esPanel = c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor';
+                      const activo  = esPanel ? (panelActivo[c.id] !== false) : true;
+                      // Tutor oculto hasta que ambos padres se deshabiliten
+                      if (c.tipo === 'datos_tutor' && !activo) return null;
+                      return (
+                        <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || esPanel) ? 12 : { xs: 12, sm: 6 }}>
+                          <CampoInput
+                            campo={c}
+                            value={datos[c.id]}
+                            onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
+                            activo={esPanel ? activo : undefined}
+                            onToggle={(c.tipo === 'datos_padre' || c.tipo === 'datos_madre') ? () => handleTogglePanel(c) : undefined}
+                          />
+                        </Grid>
+                      );
+                    })}
                   </Grid>
                 ))}
                 <Grid size={12}>

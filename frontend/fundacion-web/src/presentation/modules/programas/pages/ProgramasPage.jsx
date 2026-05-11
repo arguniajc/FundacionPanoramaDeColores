@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Alert, Autocomplete, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, FormControl, FormControlLabel,
-  Grid, IconButton, InputAdornment, InputLabel, MenuItem, Select, Snackbar,
+  Grid, IconButton, InputAdornment, InputLabel, ListSubheader, MenuItem, Select, Snackbar,
   Switch, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
   useMediaQuery, useTheme,
 } from '@mui/material';
@@ -35,37 +35,55 @@ import {
 
 const COLOR = '#4E1B95';
 
+// _h:true marca separadores de grupo (no seleccionables)
 const TIPOS_CAMPO = [
-  { value: 'text',           label: 'Texto' },
-  { value: 'number',         label: 'Número' },
-  { value: 'date',           label: 'Fecha' },
-  { value: 'daterange',      label: 'Rango de fechas (Desde / Hasta)' },
-  { value: 'talla',          label: 'Talla / Estatura (cm)' },
-  { value: 'altura',         label: 'Altura (cm)' },
-  { value: 'edad',           label: 'Edad — auto del beneficiario' },
-  { value: 'fecha_nac',      label: 'Fecha de nacimiento — auto del beneficiario' },
-  { value: 'select',         label: 'Selección' },
-  { value: 'boolean',        label: 'Sí / No' },
-  { value: 'document',       label: 'Documento (PDF)' },
-  { value: 'documento_id',   label: 'Documento: tipo + número (campo combinado)' },
-  { value: 'tipo_documento', label: 'Tipo de documento solo (CC, TI, RC…)' },
-  { value: 'telefono',       label: 'Teléfono / Celular' },
+  { _h: true, label: 'Campos básicos' },
+  { value: 'text',     label: 'Texto libre' },
+  { value: 'number',   label: 'Número' },
+  { value: 'date',     label: 'Fecha' },
+  { value: 'daterange',label: 'Rango de fechas (Desde / Hasta)' },
+  { value: 'boolean',  label: 'Sí o No' },
+  { value: 'select',   label: 'Lista de opciones personalizadas' },
+  { value: 'document', label: 'Adjunto PDF' },
+
+  { _h: true, label: 'Identificación y contacto' },
+  { value: 'documento_id',   label: 'Documento de identidad (tipo + número)' },
+  { value: 'tipo_documento', label: 'Tipo de documento' },
   { value: 'email',          label: 'Correo electrónico' },
-  { value: 'peso',           label: 'Peso (kg)' },
-  { value: 'talla_ropa',     label: 'Talla de ropa (T2-T16, XS-XXXL)' },
-  { value: 'talla_zapatos',  label: 'Talla de zapatos (18-45)' },
-  { value: 'valoracion',     label: 'Valoración del 1 al 5' },
-  { value: 'genero',         label: 'Género (lista precargada)' },
-  { value: 'tipo_sangre',    label: 'Tipo de sangre (A+, O-…)' },
-  { value: 'estrato',        label: 'Estrato socioeconómico (1-6)' },
-  { value: 'nivel_educativo',    label: 'Nivel educativo (lista precargada)' },
-  { value: 'autoidentificacion', label: 'Autoidentificación étnica (indígena, afro, mestizo…)' },
-  { value: 'grado_escolar',      label: 'Grado escolar + jornada (Colombia)' },
-  { value: 'datos_padre',    label: 'Datos del padre / acudiente (panel 13 campos)' },
-  { value: 'datos_madre',    label: 'Datos de la madre (panel 13 campos)' },
-  { value: 'pais',           label: 'País (lista precargada)' },
-  { value: 'departamento',   label: 'Departamento de Colombia (lista precargada)' },
-  { value: 'ciudad',         label: 'Ciudad de Colombia (lista precargada)' },
+  { value: 'telefono',       label: 'Teléfono o celular' },
+
+  { _h: true, label: 'Ubicación geográfica' },
+  { value: 'pais',         label: 'País' },
+  { value: 'departamento', label: 'Departamento (Colombia)' },
+  { value: 'ciudad',       label: 'Ciudad (Colombia)' },
+
+  { _h: true, label: 'Datos personales' },
+  { value: 'genero',            label: 'Género' },
+  { value: 'tipo_sangre',       label: 'Grupo sanguíneo' },
+  { value: 'estrato',           label: 'Estrato socioeconómico' },
+  { value: 'nivel_educativo',   label: 'Nivel educativo' },
+  { value: 'autoidentificacion',label: 'Autoidentificación étnica' },
+
+  { _h: true, label: 'Medidas y tallas' },
+  { value: 'peso',         label: 'Peso (kg)' },
+  { value: 'talla',        label: 'Talla / Estatura (cm)' },
+  { value: 'altura',       label: 'Altura (cm)' },
+  { value: 'talla_ropa',   label: 'Talla de ropa' },
+  { value: 'talla_zapatos',label: 'Talla de zapatos' },
+
+  { _h: true, label: 'Escolaridad' },
+  { value: 'grado_escolar', label: 'Grado escolar y jornada' },
+
+  { _h: true, label: 'Automáticos del beneficiario' },
+  { value: 'edad',      label: 'Edad (calculada automáticamente)' },
+  { value: 'fecha_nac', label: 'Fecha de nacimiento (calculada automáticamente)' },
+
+  { _h: true, label: 'Otros' },
+  { value: 'valoracion', label: 'Valoración del 1 al 5' },
+
+  { _h: true, label: 'Paneles de información (sub-sección)' },
+  { value: 'datos_padre', label: 'Información del padre o acudiente' },
+  { value: 'datos_madre', label: 'Información de la madre' },
 ];
 
 
@@ -99,7 +117,7 @@ const toDto = (c, orden) => ({
 // ── Vista previa: campo individual (deshabilitado) ────────────────────────────
 function CampoPreview({ campo }) {
   const label = campo.etiqueta + (campo.obligatorio ? ' *' : '');
-  const tipoLabel = TIPOS_CAMPO.find(t => t.value === campo.tipo)?.label ?? campo.tipo;
+  const tipoLabel = TIPOS_CAMPO.find(t => !t._h && t.value === campo.tipo)?.label ?? campo.tipo;
 
   if (campo.tipo === 'boolean') return (
     <FormControlLabel
@@ -219,22 +237,23 @@ function CampoPreview({ campo }) {
   );
 
   if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre') {
-    const rol = campo.tipo === 'datos_padre' ? 'Padre / Acudiente' : 'Madre';
     return (
-      <Box sx={{ border: `1.5px solid ${COLOR}`, borderRadius: 2, overflow: 'hidden' }}>
-        <Box sx={{ bgcolor: COLOR, px: 1.5, py: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="caption" fontWeight={700} color="white"
-            sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>
-            {label} — {rol}
+      <Box>
+        <Box sx={{
+          borderLeft: `5px solid ${COLOR}`, bgcolor: 'rgba(78,27,149,0.07)',
+          borderRadius: '0 8px 8px 0', px: 1.5, py: 0.9, mb: 1.5,
+          display: 'flex', alignItems: 'center', gap: 1,
+        }}>
+          <Typography fontWeight={800} color={COLOR} flex={1}
+            sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            {label}
           </Typography>
-          <Chip label="14 campos" size="small"
-            sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontSize: 10, height: 20 }} />
+          <Chip label="14 sub-campos" size="small"
+            sx={{ bgcolor: 'rgba(78,27,149,0.12)', color: COLOR, fontSize: 10, height: 20 }} />
         </Box>
-        <Box sx={{ p: 1.5 }}>
-          <Typography variant="caption" color="text.secondary">
-            Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación · Autoidentificación étnica
-          </Typography>
-        </Box>
+        <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
+          Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación · Autoidentificación étnica
+        </Typography>
       </Box>
     );
   }
@@ -345,7 +364,7 @@ function SortableCampoRow({ campo, ci, grupoLength, onEditar, onEliminar, onAnch
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: campo.id });
 
-  const tipoLabel = TIPOS_CAMPO.find(t => t.value === campo.tipo)?.label ?? campo.tipo;
+  const tipoLabel = TIPOS_CAMPO.find(t => !t._h && t.value === campo.tipo)?.label ?? campo.tipo;
   const esFull    = (campo.columnas ?? 6) === 12;
 
   return (
@@ -762,9 +781,10 @@ function EditorCamposDialog({ programa, onCerrar }) {
               <FormControl fullWidth size="small">
                 <InputLabel>Tipo de campo</InputLabel>
                 <Select label="Tipo de campo" value={form.tipo} onChange={set('tipo')}>
-                  {TIPOS_CAMPO.map(t => (
-                    <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
-                  ))}
+                  {TIPOS_CAMPO.map((t, i) => t._h
+                    ? <ListSubheader key={`h-${i}`}>{t.label}</ListSubheader>
+                    : <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+                  )}
                 </Select>
               </FormControl>
             </Grid>

@@ -359,14 +359,17 @@ function CampoInput({ campo, value, onChange }) {
     try { if (value) d = JSON.parse(value); } catch {}
     const setD = (k, v) => onChange(JSON.stringify({ ...d, [k]: v }));
     return (
-      <Box sx={{ border: `1.5px solid ${COLOR}`, borderRadius: 2, overflow: 'hidden' }}>
-        <Box sx={{ bgcolor: COLOR, px: 1.5, py: 0.8 }}>
-          <Typography variant="caption" fontWeight={700} color="white"
-            sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <Box>
+        <Box sx={{
+          borderLeft: `5px solid ${COLOR}`, bgcolor: 'rgba(78,27,149,0.07)',
+          borderRadius: '0 8px 8px 0', px: 1.5, py: 0.9, mb: 2,
+        }}>
+          <Typography fontWeight={800} color={COLOR}
+            sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
           </Typography>
         </Box>
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ px: 1 }}>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField fullWidth size="small" label="Fecha de nacimiento" type="date"

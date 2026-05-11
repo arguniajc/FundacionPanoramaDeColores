@@ -68,7 +68,7 @@ function valorCampo(campo, datos) {
 }
 
 // ── Generador principal ───────────────────────────────────────────────────────
-export async function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos, observaciones }) {
+export async function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos, observaciones, conTercero = false, nombreTercero = '' }) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const PW = 210, PH = 297, ML = 13, CW = PW - ML * 2;
   let y = ML;
@@ -146,34 +146,34 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   function esp(h = 3) { y += h; }
 
   // ─── Encabezado ────────────────────────────────────────────────────────────
-  const PHOTO_W = 25, PHOTO_H = 31;
-  const photoX  = ML + CW - PHOTO_W - 2;
-  const photoY  = y + 1;
+  // Foto: 19×25 mm dentro del banner púrpura (33 mm alto), borde blanco 1 mm
+  const PHOTO_W = 19, PHOTO_H = 25;
+  const BORD    = 1;  // grosor del borde en mm
+  const photoX  = ML + CW - PHOTO_W - BORD - 3;  // 3 mm margen derecho
+  const photoY  = y + (33 - PHOTO_H - BORD * 2) / 2;  // centrado verticalmente
 
   doc.setFillColor(...PURPLE);
   doc.rect(ML, y, CW, 33, 'F');
   doc.setFillColor(...ACCENT);
   doc.rect(ML, y + 29, CW, 4, 'F');
 
-  // Foto del beneficiario (derecha del encabezado)
+  // Foto del beneficiario — pequeña y dentro del banner, con borde blanco
   if (fotoDataUrl) {
     doc.setFillColor(...WHITE);
-    doc.roundedRect(photoX - 1, photoY - 1, PHOTO_W + 2, PHOTO_H + 2, 1, 1, 'F');
+    doc.rect(photoX - BORD, photoY - BORD, PHOTO_W + BORD * 2, PHOTO_H + BORD * 2, 'F');
     doc.addImage(fotoDataUrl, 'JPEG', photoX, photoY, PHOTO_W, PHOTO_H);
   } else {
     doc.setFillColor(100, 60, 170);
-    doc.roundedRect(photoX, photoY, PHOTO_W, PHOTO_H, 1, 1, 'F');
-    doc.setDrawColor(...WHITE);
-    doc.setLineWidth(0.4);
-    doc.roundedRect(photoX, photoY, PHOTO_W, PHOTO_H, 1, 1, 'S');
-    doc.setFontSize(6);
+    doc.rect(photoX - BORD, photoY - BORD, PHOTO_W + BORD * 2, PHOTO_H + BORD * 2, 'F');
+    doc.setFontSize(5.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(200, 185, 235);
-    doc.text('SIN FOTO', photoX + PHOTO_W / 2, photoY + PHOTO_H / 2, { align: 'center' });
+    doc.text('SIN', photoX + PHOTO_W / 2, photoY + PHOTO_H / 2 - 2, { align: 'center' });
+    doc.text('FOTO', photoX + PHOTO_W / 2, photoY + PHOTO_H / 2 + 2, { align: 'center' });
   }
 
-  // Texto del encabezado (ajustado para no solapar la foto)
-  const textW = CW - PHOTO_W - 9;
+  // Texto del encabezado — ancho ajustado para no solapar la foto
+  const textW = CW - PHOTO_W - BORD * 2 - 10;
   doc.setTextColor(...WHITE);
   doc.setFontSize(9.5);
   doc.setFont('helvetica', 'normal');
@@ -307,21 +307,67 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   }
 
   // ─── Firmas ─────────────────────────────────────────────────────────────────
-  pageBreak(30);
-  esp(8);
-  const mid   = ML + CW / 2;
-  const lineY = y + 16;
-  doc.setDrawColor(...BORDER);
-  doc.line(ML + 8,      lineY, mid - 8,      lineY);
-  doc.line(mid + 8,     lineY, ML + CW - 8,  lineY);
-  doc.setFontSize(7.5);
+  pageBreak(conTercero ? 50 : 35);
+  esp(6);
+
+  // Encabezado de la sección de firmas
+  doc.setFillColor(...PURPLE);
+  doc.rect(ML, y, CW, 7, 'F');
+  doc.setFillColor(...ACCENT);
+  doc.rect(ML, y, 3, 7, 'F');
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('FIRMAS Y AUTORIZACIONES', ML + 6, y + 4.8);
+  y += 10;
+
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...GRAY);
-  doc.text('Firma del Acudiente / Responsable',          ML + 8,     lineY + 4);
-  doc.text('Firma Fundación Panorama de Colores',        mid + 8,    lineY + 4);
-  doc.text(`CC / Documento: ________________________`,   ML + 8,     lineY + 9);
-  doc.text(`Cargo: _________________________________`,   mid + 8,    lineY + 9);
-  y = lineY + 14;
+
+  if (conTercero) {
+    // ── 3 firmantes: Acudiente | Fundación | Entidad ejecutora ──────────────
+    const col = CW / 3;
+    const lineY = y + 18;
+    doc.setDrawColor(...BORDER);
+    doc.line(ML + 4,          lineY, ML + col - 4,       lineY);
+    doc.line(ML + col + 4,    lineY, ML + col * 2 - 4,   lineY);
+    doc.line(ML + col * 2 + 4, lineY, ML + CW - 4,       lineY);
+
+    // Col 1 — Acudiente
+    doc.text('Firma del Acudiente / Responsable', ML + 4,          lineY + 4);
+    doc.text('CC / Documento: ________________',  ML + 4,          lineY + 9);
+    doc.text('Fecha: _________________________',  ML + 4,          lineY + 14);
+
+    // Col 2 — Fundación
+    doc.text('Firma Fundación Panorama de Colores', ML + col + 4,  lineY + 4);
+    doc.text('Cargo: ________________________',     ML + col + 4,  lineY + 9);
+    doc.text('Fecha: ________________________',     ML + col + 4,  lineY + 14);
+
+    // Col 3 — Tercero
+    const etTercero = (nombreTercero || 'Entidad Ejecutora').slice(0, 28);
+    doc.text(`Firma: ${etTercero}`,             ML + col * 2 + 4,  lineY + 4);
+    doc.text('Cargo: ________________________', ML + col * 2 + 4,  lineY + 9);
+    doc.text('Fecha: ________________________', ML + col * 2 + 4,  lineY + 14);
+
+    y = lineY + 19;
+  } else {
+    // ── 2 firmantes: Acudiente | Fundación ──────────────────────────────────
+    const mid   = ML + CW / 2;
+    const lineY = y + 18;
+    doc.setDrawColor(...BORDER);
+    doc.line(ML + 8,  lineY, mid - 8,     lineY);
+    doc.line(mid + 8, lineY, ML + CW - 8, lineY);
+
+    doc.text('Firma del Acudiente / Responsable',         ML + 8,  lineY + 4);
+    doc.text('Firma Fundación Panorama de Colores',       mid + 8, lineY + 4);
+    doc.text('CC / Documento: ________________________',  ML + 8,  lineY + 9);
+    doc.text('Cargo: _________________________________',  mid + 8, lineY + 9);
+    doc.text('Fecha: _________________________________',  ML + 8,  lineY + 14);
+    doc.text('Fecha: _________________________________',  mid + 8, lineY + 14);
+
+    y = lineY + 19;
+  }
 
   // ─── Pie de página (todas las páginas) ─────────────────────────────────────
   addFooter();

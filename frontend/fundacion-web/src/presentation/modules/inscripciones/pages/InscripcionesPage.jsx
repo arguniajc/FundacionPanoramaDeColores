@@ -23,6 +23,7 @@ import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
   TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
+  GRADOS_COLOMBIA, JORNADAS_ESCOLARES,
 } from '../../../../shared/utils/geodata';
 import FirmaPad from '../../../../shared/components/FirmaPad';
 
@@ -282,6 +283,33 @@ function CampoInput({ campo, value, onChange }) {
     />
   );
 
+  if (campo.tipo === 'grado_escolar') {
+    let ge = { grado: '', jornada: '' };
+    try { if (value) ge = JSON.parse(value); } catch {}
+    const setGE = (k, v) => onChange(JSON.stringify({ ...ge, [k]: v }));
+    return (
+      <Box>
+        <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+          {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
+        </Typography>
+        <Box display="flex" gap={1.5}>
+          <FormControl size="small" sx={{ flex: 2 }} required={campo.obligatorio}>
+            <InputLabel>Grado</InputLabel>
+            <Select label="Grado" value={ge.grado} onChange={e => setGE('grado', e.target.value)}>
+              {GRADOS_COLOMBIA.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ flex: 1 }}>
+            <InputLabel>Jornada</InputLabel>
+            <Select label="Jornada" value={ge.jornada} onChange={e => setGE('jornada', e.target.value)}>
+              {JORNADAS_ESCOLARES.map(j => <MenuItem key={j} value={j}>{j}</MenuItem>)}
+            </Select>
+          </FormControl>
+        </Box>
+      </Box>
+    );
+  }
+
   if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero'  ||
       campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato' ||
       campo.tipo === 'nivel_educativo'|| campo.tipo === 'talla_ropa' ||
@@ -321,6 +349,93 @@ function CampoInput({ campo, value, onChange }) {
             required={campo.obligatorio} />
         )}
       />
+    );
+  }
+
+  if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre') {
+    let d = {};
+    try { if (value) d = JSON.parse(value); } catch {}
+    const setD = (k, v) => onChange(JSON.stringify({ ...d, [k]: v }));
+    return (
+      <Box sx={{ border: `1.5px solid ${COLOR}`, borderRadius: 2, overflow: 'hidden' }}>
+        <Box sx={{ bgcolor: COLOR, px: 1.5, py: 0.8 }}>
+          <Typography variant="caption" fontWeight={700} color="white"
+            sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
+          </Typography>
+        </Box>
+        <Box sx={{ p: 2 }}>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField fullWidth size="small" label="Fecha de nacimiento" type="date"
+                value={d.fechaNac ?? ''} onChange={e => setD('fechaNac', e.target.value)}
+                slotProps={{ inputLabel: { shrink: true } }} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Autocomplete freeSolo options={PAISES} value={d.pais ?? ''}
+                onInputChange={(_, v) => setD('pais', v)}
+                onChange={(_, v) => setD('pais', v ?? '')}
+                renderInput={p => <TextField {...p} size="small" label="País" fullWidth />} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Autocomplete freeSolo options={DEPARTAMENTOS_COLOMBIA} value={d.departamento ?? ''}
+                onInputChange={(_, v) => setD('departamento', v)}
+                onChange={(_, v) => setD('departamento', v ?? '')}
+                renderInput={p => <TextField {...p} size="small" label="Departamento" fullWidth />} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Autocomplete freeSolo options={CIUDADES_COLOMBIA} value={d.ciudad ?? ''}
+                onInputChange={(_, v) => setD('ciudad', v)}
+                onChange={(_, v) => setD('ciudad', v ?? '')}
+                renderInput={p => <TextField {...p} size="small" label="Ciudad" fullWidth />} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Tipo de doc.</InputLabel>
+                <Select label="Tipo de doc." value={d.tipoDoc ?? ''} onChange={e => setD('tipoDoc', e.target.value)}>
+                  {TIPOS_DOCUMENTO.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 8 }}>
+              <TextField fullWidth size="small" label="Número de documento"
+                value={d.numDoc ?? ''} onChange={e => setD('numDoc', e.target.value)} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 8 }}>
+              <TextField fullWidth size="small" label="Dirección"
+                value={d.direccion ?? ''} onChange={e => setD('direccion', e.target.value)} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField fullWidth size="small" label="Barrio"
+                value={d.barrio ?? ''} onChange={e => setD('barrio', e.target.value)} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField fullWidth size="small" label="EPS / Aseguradora"
+                value={d.eps ?? ''} onChange={e => setD('eps', e.target.value)} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField fullWidth size="small" label="Número de celular" type="tel"
+                value={d.celular ?? ''} onChange={e => setD('celular', e.target.value)} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Nivel de escolaridad</InputLabel>
+                <Select label="Nivel de escolaridad" value={d.escolaridad ?? ''} onChange={e => setD('escolaridad', e.target.value)}>
+                  {NIVELES_EDUCATIVOS.map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField fullWidth size="small" label="Ocupación"
+                value={d.ocupacion ?? ''} onChange={e => setD('ocupacion', e.target.value)} />
+            </Grid>
+            <Grid size={12}>
+              <TextField fullWidth size="small" label="Empresa / Lugar de trabajo"
+                value={d.empresa ?? ''} onChange={e => setD('empresa', e.target.value)} />
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
     );
   }
 
@@ -474,6 +589,25 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
     if (campo.tipo === 'talla' || campo.tipo === 'altura') return `${v} cm`;
     if (campo.tipo === 'edad')     return `${v} años`;
     if (campo.tipo === 'fecha_nac') return fmtFechaCorta(v);
+
+    if (campo.tipo === 'grado_escolar') {
+      try {
+        const ge = JSON.parse(v);
+        return [ge.grado, ge.jornada ? `Jornada ${ge.jornada}` : null].filter(Boolean).join(' — ') || String(v);
+      } catch { return String(v); }
+    }
+
+    if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre') {
+      try {
+        const d = JSON.parse(v);
+        const partes = [
+          d.tipoDoc && d.numDoc ? `${d.tipoDoc} ${d.numDoc}` : null,
+          d.celular ? `Cel: ${d.celular}` : null,
+          d.eps     ? `EPS: ${d.eps}`     : null,
+        ].filter(Boolean);
+        return partes.length ? partes.join(' · ') : '(datos registrados)';
+      } catch { return String(v); }
+    }
 
     return String(v);
   };
@@ -653,7 +787,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                 <SeccionHeader titulo={sec} />
                 {grp.map(c => (
-                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
+                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || c.tipo === 'datos_padre' || c.tipo === 'datos_madre') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
                     <CampoInput
                       campo={c}
                       value={datos[c.id]}
@@ -868,6 +1002,12 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         if (c.tipo === 'documento_id') {
           try { const d = JSON.parse(v); return !!(d.tipo && d.numero); } catch { return false; }
         }
+        if (c.tipo === 'grado_escolar') {
+          try { const ge = JSON.parse(v); return !!ge.grado; } catch { return false; }
+        }
+        if (c.tipo === 'datos_padre' || c.tipo === 'datos_madre') {
+          try { const d = JSON.parse(v); return !!(d.numDoc && d.celular); } catch { return false; }
+        }
         return true;
       });
     }
@@ -998,7 +1138,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                   <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                     <SeccionHeader titulo={sec} />
                     {grp.map(c => (
-                      <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id') ? 12 : { xs: 12, sm: 6 }}>
+                      <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || c.tipo === 'datos_padre' || c.tipo === 'datos_madre') ? 12 : { xs: 12, sm: 6 }}>
                         <CampoInput
                           campo={c}
                           value={datos[c.id]}

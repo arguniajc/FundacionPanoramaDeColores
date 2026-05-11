@@ -30,6 +30,7 @@ import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
   TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
+  GRADOS_COLOMBIA, JORNADAS_ESCOLARES,
 } from '../../../../shared/utils/geodata';
 
 const COLOR = '#4E1B95';
@@ -58,6 +59,9 @@ const TIPOS_CAMPO = [
   { value: 'tipo_sangre',    label: 'Tipo de sangre (A+, O-…)' },
   { value: 'estrato',        label: 'Estrato socioeconómico (1-6)' },
   { value: 'nivel_educativo',label: 'Nivel educativo (lista precargada)' },
+  { value: 'grado_escolar',  label: 'Grado escolar + jornada (Colombia)' },
+  { value: 'datos_padre',    label: 'Datos del padre / acudiente (panel 13 campos)' },
+  { value: 'datos_madre',    label: 'Datos de la madre (panel 13 campos)' },
   { value: 'pais',           label: 'País (lista precargada)' },
   { value: 'departamento',   label: 'Departamento de Colombia (lista precargada)' },
   { value: 'ciudad',         label: 'Ciudad de Colombia (lista precargada)' },
@@ -190,6 +194,49 @@ function CampoPreview({ campo }) {
       </Box>
     </Box>
   );
+
+  if (campo.tipo === 'grado_escolar') return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+        {label}
+      </Typography>
+      <Box display="flex" gap={1.5}>
+        <FormControl size="small" disabled sx={{ flex: 2 }}>
+          <InputLabel shrink>Grado</InputLabel>
+          <Select label="Grado" value="" displayEmpty>
+            {GRADOS_COLOMBIA.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
+          </Select>
+        </FormControl>
+        <FormControl size="small" disabled sx={{ flex: 1 }}>
+          <InputLabel shrink>Jornada</InputLabel>
+          <Select label="Jornada" value="" displayEmpty>
+            {JORNADAS_ESCOLARES.map(j => <MenuItem key={j} value={j}>{j}</MenuItem>)}
+          </Select>
+        </FormControl>
+      </Box>
+    </Box>
+  );
+
+  if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre') {
+    const rol = campo.tipo === 'datos_padre' ? 'Padre / Acudiente' : 'Madre';
+    return (
+      <Box sx={{ border: `1.5px solid ${COLOR}`, borderRadius: 2, overflow: 'hidden' }}>
+        <Box sx={{ bgcolor: COLOR, px: 1.5, py: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="caption" fontWeight={700} color="white"
+            sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>
+            {label} — {rol}
+          </Typography>
+          <Chip label="13 campos" size="small"
+            sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontSize: 10, height: 20 }} />
+        </Box>
+        <Box sx={{ p: 1.5 }}>
+          <Typography variant="caption" color="text.secondary">
+            Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
 
   if (campo.tipo === 'telefono') return (
     <TextField fullWidth size="small" label={label} type="tel" disabled value=""

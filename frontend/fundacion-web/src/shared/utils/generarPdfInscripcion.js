@@ -80,6 +80,13 @@ function valorCampo(campo, datos) {
     try { const d = JSON.parse(v); return `${d.tipo || '—'}  ${d.numero || '—'}`; } catch { return String(v); }
   }
   if (campo.tipo === 'peso') return v ? `${v} kg` : '—';
+  if (campo.tipo === 'grado_escolar') {
+    if (!v) return '—';
+    try {
+      const ge = JSON.parse(v);
+      return [ge.grado, ge.jornada ? `Jornada ${ge.jornada}` : null].filter(Boolean).join(' — ') || '—';
+    } catch { return String(v); }
+  }
   if (v === undefined || v === null || v === '') return '—';
   if (campo.tipo === 'boolean') return (v === 'true' || v === true) ? 'Sí' : 'No';
   if (campo.tipo === 'daterange') {
@@ -307,9 +314,57 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
       while (i < items.length) {
         const c1       = items[i];
         const c2       = items[i + 1];
-        const esAncho1 = c1.tipo === 'document' || c1.tipo === 'daterange' || c1.tipo === 'firma';
-        const esAncho2 = c2 && (c2.tipo === 'document' || c2.tipo === 'daterange' || c2.tipo === 'firma');
+        const esPanel1 = c1.tipo === 'datos_padre' || c1.tipo === 'datos_madre';
+        const esAncho1 = esPanel1 || c1.tipo === 'document' || c1.tipo === 'daterange' || c1.tipo === 'firma';
+        const esAncho2 = c2 && (c2.tipo === 'document' || c2.tipo === 'daterange' || c2.tipo === 'firma' || c2.tipo === 'datos_padre' || c2.tipo === 'datos_madre');
         const esDoc1   = c1.tipo === 'document';
+
+        // Panel de datos de padre/madre: sub-sección con todos sus campos
+        if (esPanel1) {
+          const v = datos[c1.id];
+          let d = {};
+          try { if (v) d = JSON.parse(v); } catch {}
+          const nd = (val) => val || '—';
+          const titulo = c1.tipo === 'datos_padre' ? 'DATOS DEL PADRE / ACUDIENTE' : 'DATOS DE LA MADRE';
+          pageBreak(9);
+          doc.setFillColor(200, 185, 235);
+          doc.rect(ML, y, CW, 6.5, 'F');
+          doc.setDrawColor(...BORDER);
+          doc.rect(ML, y, CW, 6.5, 'S');
+          doc.setTextColor(...PURPLE);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${titulo}  —  ${c1.etiqueta}`, ML + 4, y + 4.5);
+          y += 8;
+          doc.setTextColor(...DARK);
+          fila([
+            { etiqueta: 'Fecha de nacimiento', valor: d.fechaNac ? fmtFecha(d.fechaNac) : '—', flex: 1 },
+            { etiqueta: 'País',                valor: nd(d.pais),   flex: 1 },
+          ]);
+          fila([
+            { etiqueta: 'Departamento', valor: nd(d.departamento), flex: 1 },
+            { etiqueta: 'Ciudad',       valor: nd(d.ciudad),       flex: 1 },
+          ]);
+          fila([
+            { etiqueta: 'Tipo de documento',   valor: nd(d.tipoDoc), flex: 1 },
+            { etiqueta: 'Número de documento', valor: nd(d.numDoc),  flex: 2 },
+          ]);
+          fila([
+            { etiqueta: 'Dirección', valor: nd(d.direccion), flex: 2 },
+            { etiqueta: 'Barrio',    valor: nd(d.barrio),    flex: 1 },
+          ]);
+          fila([
+            { etiqueta: 'EPS / Aseguradora', valor: nd(d.eps),    flex: 1 },
+            { etiqueta: 'Celular',           valor: nd(d.celular), flex: 1 },
+          ]);
+          fila([
+            { etiqueta: 'Nivel de escolaridad', valor: nd(d.escolaridad), flex: 1 },
+            { etiqueta: 'Ocupación',            valor: nd(d.ocupacion),   flex: 1 },
+          ]);
+          if (d.empresa) fila([{ etiqueta: 'Empresa / Lugar de trabajo', valor: d.empresa }]);
+          i++;
+          continue;
+        }
 
         // Firma: renderizar imagen de la firma en el PDF
         if (c1.tipo === 'firma') {

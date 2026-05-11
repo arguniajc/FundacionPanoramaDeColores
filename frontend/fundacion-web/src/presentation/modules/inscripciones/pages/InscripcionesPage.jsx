@@ -65,13 +65,12 @@ function SeccionHeader({ titulo }) {
   return (
     <Grid size={12}>
       <Box sx={{
-        borderLeft: `5px solid ${COLOR}`,
-        bgcolor: 'rgba(78,27,149,0.07)',
-        borderRadius: '0 8px 8px 0',
-        px: 1.5, py: 0.9, mt: 1,
+        bgcolor: COLOR,
+        borderRadius: 1.5,
+        px: 2, py: 1.1, mt: 1,
       }}>
-        <Typography fontWeight={800} color={COLOR}
-          sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <Typography fontWeight={800} color="white"
+          sx={{ fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
           {titulo}
         </Typography>
       </Box>
@@ -940,14 +939,13 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                   <Box key={sec || '_root'} sx={{ mb: 2.5 }}>
                     {sec && (
                       <Box sx={{
-                        borderLeft: `5px solid ${COLOR}`,
-                        bgcolor: 'rgba(78,27,149,0.07)',
-                        px: 1.5, py: 0.8,
-                        borderRadius: '0 8px 8px 0',
+                        bgcolor: COLOR,
+                        borderRadius: 1.5,
+                        px: 2, py: 1.1,
                         mb: 1.2,
                       }}>
-                        <Typography fontWeight={800} color={COLOR}
-                          sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        <Typography fontWeight={800} color="white"
+                          sx={{ fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                           {sec}
                         </Typography>
                       </Box>

@@ -337,8 +337,31 @@ function EditorCamposDialog({ programa, onCerrar }) {
     if (!form.seccion.trim() || !form.etiqueta.trim()) return;
     setGuardando(true);
     try {
+      const seccion = form.seccion.trim();
+      let orden;
+
+      if (editando) {
+        orden = editando.orden;
+      } else {
+        const enSeccion = camposDeSeccion(campos, seccion);
+        if (enSeccion.length > 0) {
+          // Insertar al final de la sección existente
+          const maxOrden = Math.max(...enSeccion.map(c => c.orden));
+          orden = maxOrden + 1;
+          // Desplazar +1 todos los campos de otras secciones que vengan después
+          const aDesplazar = campos
+            .filter(c => c.orden >= orden && secDe(c) !== seccion)
+            .sort((a, b) => b.orden - a.orden); // desc para evitar colisiones
+          for (const c of aDesplazar)
+            await editarCampo(c.id, toDto(c, c.orden + 1));
+        } else {
+          // Sección nueva o vacía: poner al final de todo
+          orden = campos.length > 0 ? Math.max(...campos.map(c => c.orden)) + 1 : 0;
+        }
+      }
+
       const dto = {
-        seccion:     form.seccion.trim(),
+        seccion,
         etiqueta:    form.etiqueta.trim(),
         tipo:        form.tipo,
         obligatorio: form.obligatorio,
@@ -346,7 +369,7 @@ function EditorCamposDialog({ programa, onCerrar }) {
         opciones:    form.tipo === 'select'
           ? form.opciones.split(',').map(o => o.trim()).filter(Boolean)
           : null,
-        orden: editando ? editando.orden : campos.length,
+        orden,
       };
       if (editando) await editarCampo(editando.id, dto);
       else          await crearCampo(dto);

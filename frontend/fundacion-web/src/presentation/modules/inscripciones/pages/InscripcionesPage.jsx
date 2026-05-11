@@ -23,7 +23,7 @@ import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
   TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
-  GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION,
+  GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION, RELACIONES_TUTOR,
 } from '../../../../shared/utils/geodata';
 import FirmaPad from '../../../../shared/components/FirmaPad';
 
@@ -354,44 +354,43 @@ function CampoInput({ campo, value, onChange }) {
     );
   }
 
-  if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre') {
+  if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre' || campo.tipo === 'datos_tutor') {
     let d = {};
     try { if (value) d = JSON.parse(value); } catch {}
     const setD = (k, v) => onChange(JSON.stringify({ ...d, [k]: v }));
-    const SC = '#7B3FC4'; // color secundario: violeta medio, distinto del morado primario
+    const SC = '#7B3FC4';
+    const esTutor = campo.tipo === 'datos_tutor';
+    const subcampos = esTutor ? '15 sub-campos' : '14 sub-campos';
     return (
       <Box sx={{
-        border: `1.5px solid ${SC}40`,
-        borderRadius: 2.5,
-        overflow: 'hidden',
+        border: `1.5px solid ${SC}40`, borderRadius: 2.5, overflow: 'hidden',
         boxShadow: '0 3px 14px rgba(78,27,149,0.10)',
       }}>
-        {/* Cabecera de sub-sección: color secundario, visualmente diferente a las secciones principales */}
         <Box sx={{
-          bgcolor: `${SC}18`,
-          borderBottom: `1.5px solid ${SC}30`,
-          borderLeft: `5px solid ${SC}`,
-          px: 2, py: 1,
+          bgcolor: `${SC}18`, borderBottom: `1.5px solid ${SC}30`,
+          borderLeft: `5px solid ${SC}`, px: 2, py: 1,
           display: 'flex', alignItems: 'center', gap: 1.5,
         }}>
-          <Box flex={1}>
-            <Typography sx={{
-              fontSize: '0.65rem', fontWeight: 700, color: SC, letterSpacing: '0.15em',
-              textTransform: 'uppercase', lineHeight: 1,
-            }}>
-              Sub-sección
-            </Typography>
-            <Typography sx={{ fontSize: '0.88rem', fontWeight: 800, color: SC, mt: 0.3 }}>
-              {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
-            </Typography>
-          </Box>
-          <Chip label="14 campos" size="small"
+          <Typography sx={{ fontSize: '0.88rem', fontWeight: 800, color: SC, flex: 1 }}>
+            {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
+          </Typography>
+          <Chip label={subcampos} size="small"
             sx={{ bgcolor: `${SC}18`, color: SC, fontWeight: 700, fontSize: '0.68rem',
                   border: `1px solid ${SC}40`, height: 22 }} />
         </Box>
-        {/* Área de campos: fondo levemente sombreado para indicar agrupación */}
         <Box sx={{ bgcolor: '#f9f6ff', p: 2.5 }}>
           <Grid container spacing={2}>
+            {esTutor && (
+              <Grid size={12}>
+                <FormControl fullWidth size="small" required={campo.obligatorio}>
+                  <InputLabel>Relación / Parentesco *</InputLabel>
+                  <Select label="Relación / Parentesco *" value={d.relacion ?? ''}
+                    onChange={e => setD('relacion', e.target.value)}>
+                    {RELACIONES_TUTOR.map(r => <MenuItem key={r} value={r}>{r}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField fullWidth size="small" label="Fecha de nacimiento" type="date"
                 value={d.fechaNac ?? ''} onChange={e => setD('fechaNac', e.target.value)}
@@ -632,10 +631,11 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       } catch { return String(v); }
     }
 
-    if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre') {
+    if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre' || campo.tipo === 'datos_tutor') {
       try {
         const d = JSON.parse(v);
         const partes = [
+          campo.tipo === 'datos_tutor' && d.relacion ? `Relación: ${d.relacion}` : null,
           d.tipoDoc && d.numDoc ? `${d.tipoDoc} ${d.numDoc}` : null,
           d.celular ? `Cel: ${d.celular}` : null,
           d.eps     ? `EPS: ${d.eps}`     : null,
@@ -822,7 +822,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                 <SeccionHeader titulo={sec} />
                 {grp.map(c => (
-                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || c.tipo === 'datos_padre' || c.tipo === 'datos_madre') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
+                  <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor') ? 12 : { xs: 12, sm: c.columnas ?? 6 }}>
                     <CampoInput
                       campo={c}
                       value={datos[c.id]}
@@ -1043,6 +1043,9 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         if (c.tipo === 'datos_padre' || c.tipo === 'datos_madre') {
           try { const d = JSON.parse(v); return !!(d.numDoc && d.celular); } catch { return false; }
         }
+        if (c.tipo === 'datos_tutor') {
+          try { const d = JSON.parse(v); return !!(d.relacion && d.numDoc && d.celular); } catch { return false; }
+        }
         return true;
       });
     }
@@ -1173,7 +1176,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                   <Grid key={sec || '_root'} size={12} container spacing={2.5} sx={{ m: 0, p: 0 }}>
                     <SeccionHeader titulo={sec} />
                     {grp.map(c => (
-                      <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || c.tipo === 'datos_padre' || c.tipo === 'datos_madre') ? 12 : { xs: 12, sm: 6 }}>
+                      <Grid key={c.id} size={(c.tipo === 'document' || c.tipo === 'daterange' || c.tipo === 'firma' || c.tipo === 'documento_id' || c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor') ? 12 : { xs: 12, sm: 6 }}>
                         <CampoInput
                           campo={c}
                           value={datos[c.id]}

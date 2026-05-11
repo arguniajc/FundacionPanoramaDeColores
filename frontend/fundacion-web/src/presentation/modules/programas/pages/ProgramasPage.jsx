@@ -30,7 +30,7 @@ import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
   TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
-  GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION,
+  GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION, RELACIONES_TUTOR,
 } from '../../../../shared/utils/geodata';
 
 const COLOR = '#4E1B95';
@@ -84,6 +84,7 @@ const TIPOS_CAMPO = [
   { _h: true, label: 'Paneles de información (sub-sección)' },
   { value: 'datos_padre', label: 'Información del padre o acudiente' },
   { value: 'datos_madre', label: 'Información de la madre' },
+  { value: 'datos_tutor', label: 'Información del tutor legal (abuelo, tío, hermano…)' },
 ];
 
 
@@ -236,8 +237,10 @@ function CampoPreview({ campo }) {
     </Box>
   );
 
-  if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre') {
+  if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre' || campo.tipo === 'datos_tutor') {
     const SC = '#7B3FC4';
+    const subcampos = campo.tipo === 'datos_tutor' ? '15 sub-campos' : '14 sub-campos';
+    const extra     = campo.tipo === 'datos_tutor' ? ' · Relación / Parentesco' : '';
     return (
       <Box sx={{
         border: `1.5px solid ${SC}40`, borderRadius: 2.5, overflow: 'hidden',
@@ -248,21 +251,16 @@ function CampoPreview({ campo }) {
           borderLeft: `5px solid ${SC}`, px: 2, py: 1,
           display: 'flex', alignItems: 'center', gap: 1.5,
         }}>
-          <Box flex={1}>
-            <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: SC,
-              letterSpacing: '0.15em', textTransform: 'uppercase', lineHeight: 1 }}>
-              Sub-sección
-            </Typography>
-            <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: SC, mt: 0.3 }}>
-              {label}
-            </Typography>
-          </Box>
-          <Chip label="14 sub-campos" size="small"
+          <Typography sx={{ fontSize: '0.88rem', fontWeight: 800, color: SC, flex: 1 }}>
+            {label}
+          </Typography>
+          <Chip label={subcampos} size="small"
             sx={{ bgcolor: `${SC}18`, color: SC, fontWeight: 700, fontSize: '0.68rem',
                   border: `1px solid ${SC}40`, height: 22 }} />
         </Box>
         <Box sx={{ bgcolor: '#f9f6ff', px: 2, py: 1.5 }}>
           <Typography variant="caption" color="text.secondary">
+            {campo.tipo === 'datos_tutor' && 'Relación / Parentesco · '}
             Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación · Autoidentificación
           </Typography>
         </Box>

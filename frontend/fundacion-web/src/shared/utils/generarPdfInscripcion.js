@@ -314,9 +314,9 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
       while (i < items.length) {
         const c1       = items[i];
         const c2       = items[i + 1];
-        const esPanel1 = c1.tipo === 'datos_padre' || c1.tipo === 'datos_madre';
+        const esPanel1 = c1.tipo === 'datos_padre' || c1.tipo === 'datos_madre' || c1.tipo === 'datos_tutor';
         const esAncho1 = esPanel1 || c1.tipo === 'document' || c1.tipo === 'daterange' || c1.tipo === 'firma';
-        const esAncho2 = c2 && (c2.tipo === 'document' || c2.tipo === 'daterange' || c2.tipo === 'firma' || c2.tipo === 'datos_padre' || c2.tipo === 'datos_madre');
+        const esAncho2 = c2 && (c2.tipo === 'document' || c2.tipo === 'daterange' || c2.tipo === 'firma' || c2.tipo === 'datos_padre' || c2.tipo === 'datos_madre' || c2.tipo === 'datos_tutor');
         const esDoc1   = c1.tipo === 'document';
 
         // Panel de datos de padre/madre: sub-sección con todos sus campos
@@ -325,7 +325,9 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
           let d = {};
           try { if (v) d = JSON.parse(v); } catch {}
           const nd = (val) => val || '—';
-          const titulo = c1.tipo === 'datos_padre' ? 'DATOS DEL PADRE / ACUDIENTE' : 'DATOS DE LA MADRE';
+          const titulo = c1.tipo === 'datos_padre' ? 'DATOS DEL PADRE / ACUDIENTE'
+            : c1.tipo === 'datos_madre' ? 'DATOS DE LA MADRE'
+            : 'DATOS DEL TUTOR LEGAL';
           pageBreak(9);
           doc.setFillColor(200, 185, 235);
           doc.rect(ML, y, CW, 6.5, 'F');
@@ -337,6 +339,9 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
           doc.text(`${titulo}  —  ${c1.etiqueta}`, ML + 4, y + 4.5);
           y += 8;
           doc.setTextColor(...DARK);
+          if (c1.tipo === 'datos_tutor') {
+            fila([{ etiqueta: 'Relación / Parentesco con el menor', valor: nd(d.relacion) }]);
+          }
           fila([
             { etiqueta: 'Fecha de nacimiento', valor: d.fechaNac ? fmtFecha(d.fechaNac) : '—', flex: 1 },
             { etiqueta: 'País',                valor: nd(d.pais),   flex: 1 },

@@ -1,27 +1,38 @@
 import jsPDF from 'jspdf';
 
-// Carga una imagen desde URL, la recorta al centro en un cuadrado y aplica máscara circular.
-// Retorna un data URL PNG con fondo transparente, o null si falla.
+// Carga una imagen desde URL y devuelve un JPEG con fondo morado, aro blanco y foto circular recortada.
+// Usar JPEG (sin transparencia) garantiza que jsPDF renderice correctamente sobre cualquier fondo.
 async function cargarImagenCircular(url) {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
-        const px  = 320; // tamaño en píxeles del canvas cuadrado
+        const px   = 320;
+        const bord = 22; // ancho del aro blanco en píxeles
         const canvas = document.createElement('canvas');
         canvas.width  = px;
         canvas.height = px;
         const ctx = canvas.getContext('2d');
-        // Recortar al centro (cuadrado) y aplicar clip circular
+        // Fondo morado (igual que el banner del PDF)
+        ctx.fillStyle = 'rgb(78,27,149)';
+        ctx.fillRect(0, 0, px, px);
+        // Aro blanco
         ctx.beginPath();
-        ctx.arc(px / 2, px / 2, px / 2, 0, Math.PI * 2);
+        ctx.arc(px / 2, px / 2, px / 2 - 2, 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        // Clip circular para la foto
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(px / 2, px / 2, px / 2 - bord, 0, Math.PI * 2);
         ctx.clip();
         const side = Math.min(img.naturalWidth, img.naturalHeight);
         const sx   = (img.naturalWidth  - side) / 2;
         const sy   = (img.naturalHeight - side) / 2;
         ctx.drawImage(img, sx, sy, side, side, 0, 0, px, px);
-        resolve(canvas.toDataURL('image/png'));
+        ctx.restore();
+        resolve(canvas.toDataURL('image/jpeg', 0.95));
       } catch { resolve(null); }
     };
     img.onerror = () => resolve(null);
@@ -167,11 +178,10 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   doc.setFillColor(...ACCENT);
   doc.rect(ML, y + 29, CW, 4, 'F');
 
-  // Foto circular del beneficiario — dentro del banner con borde blanco
+  // Foto circular del beneficiario — dentro del banner; el JPEG ya incluye fondo morado + aro blanco
   if (fotoDataUrl) {
-    doc.setFillColor(...WHITE);
-    doc.circle(cx, cy, D / 2 + BORD, 'F');
-    doc.addImage(fotoDataUrl, 'PNG', cx - D / 2, cy - D / 2, D, D);
+    const TOTAL = D + BORD * 2;
+    doc.addImage(fotoDataUrl, 'JPEG', cx - TOTAL / 2, cy - TOTAL / 2, TOTAL, TOTAL);
   } else {
     doc.setFillColor(...WHITE);
     doc.circle(cx, cy, D / 2 + BORD, 'F');

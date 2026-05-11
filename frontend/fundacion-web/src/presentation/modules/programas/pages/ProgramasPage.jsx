@@ -626,11 +626,11 @@ export default function ProgramasPage() {
 
   // Inicializa el estado del formulario de programa para crear uno nuevo
   const abrirNuevoPrograma = () =>
-    setFormPrograma({ sedeId: sedes[0]?.id ?? '', nombre: '', descripcion: '', cupoMaximo: '' });
+    setFormPrograma({ sedeId: sedes[0]?.id ?? '', nombre: '', descripcion: '', cupoMaximo: '', tieneTercero: false, nombreTercero: '' });
 
   // Inicializa el estado del formulario de programa para editar uno existente
   const abrirEditarPrograma = (p) =>
-    setFormPrograma({ id: p.id, sedeId: p.sedeId, nombre: p.nombre, descripcion: p.descripcion ?? '', cupoMaximo: p.cupoMaximo ?? '' });
+    setFormPrograma({ id: p.id, sedeId: p.sedeId, nombre: p.nombre, descripcion: p.descripcion ?? '', cupoMaximo: p.cupoMaximo ?? '', tieneTercero: p.tieneTercero ?? false, nombreTercero: p.nombreTercero ?? '' });
 
   // Crea o actualiza un programa a través del hook useSedes según si formPrograma.id está definido
   const handleGuardarPrograma = async () => {
@@ -638,10 +638,12 @@ export default function ProgramasPage() {
     setGuardandoProg(true);
     setErrForm('');
     const dto = {
-      sedeId:      formPrograma.sedeId,
-      nombre:      formPrograma.nombre.trim(),
-      descripcion: formPrograma.descripcion.trim() || null,
-      cupoMaximo:  formPrograma.cupoMaximo ? Number(formPrograma.cupoMaximo) : null,
+      sedeId:        formPrograma.sedeId,
+      nombre:        formPrograma.nombre.trim(),
+      descripcion:   formPrograma.descripcion.trim() || null,
+      cupoMaximo:    formPrograma.cupoMaximo ? Number(formPrograma.cupoMaximo) : null,
+      tieneTercero:  formPrograma.tieneTercero,
+      nombreTercero: formPrograma.tieneTercero ? (formPrograma.nombreTercero.trim() || null) : null,
     };
     const ok = await guardarPrograma(dto, formPrograma.id);
     if (ok) { setFormPrograma(null); }
@@ -781,6 +783,27 @@ export default function ProgramasPage() {
                   value={formPrograma.cupoMaximo}
                   onChange={e => setFormPrograma(p => ({ ...p, cupoMaximo: e.target.value }))} />
               </Grid>
+              <Grid size={12}>
+                <FormControlLabel
+                  control={
+                    <Switch checked={formPrograma.tieneTercero}
+                      onChange={e => setFormPrograma(p => ({ ...p, tieneTercero: e.target.checked, nombreTercero: e.target.checked ? p.nombreTercero : '' }))} />
+                  }
+                  label={
+                    <Typography variant="body2">
+                      El programa es ejecutado por una entidad externa
+                    </Typography>
+                  }
+                />
+              </Grid>
+              {formPrograma.tieneTercero && (
+                <Grid size={12}>
+                  <TextField fullWidth size="small" label="Nombre de la entidad ejecutora"
+                    placeholder="Ej: Fundación XYZ, Empresa ABC…"
+                    value={formPrograma.nombreTercero}
+                    onChange={e => setFormPrograma(p => ({ ...p, nombreTercero: e.target.value }))} />
+                </Grid>
+              )}
             </Grid>
           </DialogContent>
           <DialogActions sx={{ px: 2, py: 1.5 }}>

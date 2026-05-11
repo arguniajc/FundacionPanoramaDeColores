@@ -237,8 +237,6 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [generandoPdf,  setGenerandoPdf]  = useState(false);
   const [error,         setError]         = useState('');
   const [beneficiario,  setBeneficiario]  = useState(null);
-  const [conTercero,    setConTercero]    = useState(false);
-  const [nombreTercero, setNombreTercero] = useState('');
   const theme   = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -284,15 +282,18 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const handleImprimir = async () => {
     setGenerandoPdf(true);
     try {
-      const { data: benef } = await beneficiariosRepository.obtener(inscripcion.beneficiarioId);
+      const [{ data: benef }, { data: programa }] = await Promise.all([
+        beneficiariosRepository.obtener(inscripcion.beneficiarioId),
+        sedesRepository.obtenerPrograma(inscripcion.programaId),
+      ]);
       const doc = await generarPdfInscripcion({
         inscripcion,
         beneficiario: benef,
         campos,
         datos,
         observaciones,
-        conTercero,
-        nombreTercero,
+        conTercero:    programa.tieneTercero ?? false,
+        nombreTercero: programa.nombreTercero ?? '',
       });
       // Abrir en nueva pestaña para imprimir desde el visor PDF
       const blob   = doc.output('blob');
@@ -600,35 +601,6 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                 </Typography>
                 <Typography variant="body2" color="text.primary">{observaciones}</Typography>
               </Box>
-            )}
-          </Box>
-        )}
-        {/* Opciones para el PDF — firma de entidad ejecutora */}
-        {!editando && (
-          <Box sx={{ mt: 2.5, p: 1.5, bgcolor: '#f8f5ff', borderRadius: 2, border: '1px solid #e2d9f3' }}>
-            <Typography variant="caption" color="text.secondary" fontWeight={700}
-              sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
-              Opciones del PDF
-            </Typography>
-            <FormControlLabel
-              control={
-                <Switch size="small" checked={conTercero}
-                  onChange={e => { setConTercero(e.target.checked); if (!e.target.checked) setNombreTercero(''); }} />
-              }
-              label={
-                <Typography variant="body2" sx={{ fontSize: '0.83rem' }}>
-                  Incluir firma de entidad ejecutora del programa
-                </Typography>
-              }
-            />
-            {conTercero && (
-              <TextField size="small" fullWidth
-                label="Nombre de la entidad ejecutora"
-                value={nombreTercero}
-                onChange={e => setNombreTercero(e.target.value)}
-                placeholder="Ej: Fundación XYZ, Empresa ABC…"
-                sx={{ mt: 1 }}
-              />
             )}
           </Box>
         )}

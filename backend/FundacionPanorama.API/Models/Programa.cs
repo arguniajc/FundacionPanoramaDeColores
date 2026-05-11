@@ -24,6 +24,12 @@ public class Programa
     [Column("activo")]
     public bool Activo { get; set; } = true;
 
+    [Column("tiene_tercero")]
+    public bool TieneTercero { get; set; } = false;
+
+    [Column("nombre_tercero"), MaxLength(200)]
+    public string? NombreTercero { get; set; }
+
     [Column("fecha_creacion")]
     public DateTime FechaCreacion { get; set; }
 

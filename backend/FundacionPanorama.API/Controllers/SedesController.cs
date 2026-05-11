@@ -10,9 +10,9 @@ using Npgsql;
 namespace FundacionPanorama.API.Controllers;
 
 public record SedeDto(Guid Id, string Nombre, string? Direccion, string? Ciudad, string? Telefono, bool Activo, DateTime FechaCreacion, DateTime FechaModificacion, List<ProgramaDto> Programas);
-public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, DateTime FechaCreacion, DateTime FechaModificacion);
+public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, bool TieneTercero, string? NombreTercero, DateTime FechaCreacion, DateTime FechaModificacion);
 public record CrearSedeDto(string Nombre, string? Direccion, string? Ciudad, string? Telefono);
-public record CrearProgramaDto(Guid SedeId, string Nombre, string? Descripcion, int? CupoMaximo);
+public record CrearProgramaDto(Guid SedeId, string Nombre, string? Descripcion, int? CupoMaximo, bool TieneTercero = false, string? NombreTercero = null);
 public record CampoDto(Guid Id, Guid ProgramaId, string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, bool Activo, string? Seccion, int Columnas, DateTime FechaCreacion, DateTime FechaModificacion);
 public record CrearCampoDto(string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, string? Seccion, int? Columnas);
 
@@ -95,6 +95,14 @@ public class SedesController : ControllerBase
 
     // ── Programas ─────────────────────────────────────────────────────────────
 
+    [HttpGet("programas/{id:guid}")]
+    public async Task<IActionResult> ObtenerPrograma(Guid id)
+    {
+        var p = await _db.Programas.Include(p => p.Sede).FirstOrDefaultAsync(p => p.Id == id);
+        if (p is null) return NotFound();
+        return Ok(MapearPrograma(p));
+    }
+
     [HttpGet("{sedeId:guid}/programas")]
     public async Task<IActionResult> ListarProgramas(Guid sedeId)
     {
@@ -114,11 +122,13 @@ public class SedesController : ControllerBase
 
         var programa = new Programa
         {
-            SedeId      = dto.SedeId,
-            Nombre      = dto.Nombre.Trim(),
-            Descripcion = dto.Descripcion?.Trim(),
-            CupoMaximo  = dto.CupoMaximo,
-            Activo      = true
+            SedeId        = dto.SedeId,
+            Nombre        = dto.Nombre.Trim(),
+            Descripcion   = dto.Descripcion?.Trim(),
+            CupoMaximo    = dto.CupoMaximo,
+            Activo        = true,
+            TieneTercero  = dto.TieneTercero,
+            NombreTercero = dto.NombreTercero?.Trim(),
         };
         _db.Programas.Add(programa);
         await _db.SaveChangesAsync();
@@ -135,6 +145,8 @@ public class SedesController : ControllerBase
         programa.Nombre             = dto.Nombre.Trim();
         programa.Descripcion        = dto.Descripcion?.Trim();
         programa.CupoMaximo         = dto.CupoMaximo;
+        programa.TieneTercero       = dto.TieneTercero;
+        programa.NombreTercero      = dto.NombreTercero?.Trim();
         programa.FechaModificacion  = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return Ok(MapearPrograma(programa));
@@ -271,10 +283,14 @@ public class SedesController : ControllerBase
 
     private static SedeDto MapearSede(Sede s) => new(
         s.Id, s.Nombre, s.Direccion, s.Ciudad, s.Telefono, s.Activo, s.FechaCreacion, s.FechaModificacion,
-        s.Programas.Select(p => new ProgramaDto(p.Id, p.SedeId, s.Nombre, p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo, p.FechaCreacion, p.FechaModificacion)).ToList()
+        s.Programas.Select(p => MapearProgramaConSede(p, s.Nombre)).ToList()
     );
 
-    private static ProgramaDto MapearPrograma(Programa p) => new(
-        p.Id, p.SedeId, p.Sede?.Nombre ?? "", p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo, p.FechaCreacion, p.FechaModificacion
+    private static ProgramaDto MapearPrograma(Programa p) =>
+        MapearProgramaConSede(p, p.Sede?.Nombre ?? "");
+
+    private static ProgramaDto MapearProgramaConSede(Programa p, string nombreSede) => new(
+        p.Id, p.SedeId, nombreSede, p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo,
+        p.TieneTercero, p.NombreTercero, p.FechaCreacion, p.FechaModificacion
     );
 }

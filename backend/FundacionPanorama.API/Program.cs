@@ -117,6 +117,8 @@ var app = builder.Build();
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT true", "programas.activo");
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW()", "programas.fecha_creacion");
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()", "programas.fecha_modificacion");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS tiene_tercero BOOLEAN NOT NULL DEFAULT FALSE",  "programas.tiene_tercero");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS nombre_tercero VARCHAR(200)",                   "programas.nombre_tercero");
 
     // ── Tablas nuevas ─────────────────────────────────────────────────────────
     await Migrar("""

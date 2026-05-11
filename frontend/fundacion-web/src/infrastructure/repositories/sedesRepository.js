@@ -13,6 +13,7 @@ export const sedesRepository = {
   eliminar:         (id)        => apiClient.delete(`/api/sedes/${id}`),
 
   listarProgramas:  (sedeId)    => apiClient.get(`/api/sedes/${sedeId}/programas`),
+  obtenerPrograma:  (id)        => apiClient.get(`/api/sedes/programas/${id}`),
   crearPrograma:    (datos)     => apiClient.post('/api/sedes/programas', datos),
   editarPrograma:   (id, datos) => apiClient.put(`/api/sedes/programas/${id}`, datos),
   togglePrograma:   (id)        => apiClient.patch(`/api/sedes/programas/${id}/toggle`),

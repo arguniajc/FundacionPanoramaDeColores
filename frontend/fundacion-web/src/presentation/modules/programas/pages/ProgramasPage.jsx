@@ -30,7 +30,7 @@ import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
   TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
-  GRADOS_COLOMBIA, JORNADAS_ESCOLARES,
+  GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION,
 } from '../../../../shared/utils/geodata';
 
 const COLOR = '#4E1B95';
@@ -58,8 +58,9 @@ const TIPOS_CAMPO = [
   { value: 'genero',         label: 'Género (lista precargada)' },
   { value: 'tipo_sangre',    label: 'Tipo de sangre (A+, O-…)' },
   { value: 'estrato',        label: 'Estrato socioeconómico (1-6)' },
-  { value: 'nivel_educativo',label: 'Nivel educativo (lista precargada)' },
-  { value: 'grado_escolar',  label: 'Grado escolar + jornada (Colombia)' },
+  { value: 'nivel_educativo',    label: 'Nivel educativo (lista precargada)' },
+  { value: 'autoidentificacion', label: 'Autoidentificación étnica (indígena, afro, mestizo…)' },
+  { value: 'grado_escolar',      label: 'Grado escolar + jornada (Colombia)' },
   { value: 'datos_padre',    label: 'Datos del padre / acudiente (panel 13 campos)' },
   { value: 'datos_madre',    label: 'Datos de la madre (panel 13 campos)' },
   { value: 'pais',           label: 'País (lista precargada)' },
@@ -226,12 +227,12 @@ function CampoPreview({ campo }) {
             sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>
             {label} — {rol}
           </Typography>
-          <Chip label="13 campos" size="small"
+          <Chip label="14 campos" size="small"
             sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontSize: 10, height: 20 }} />
         </Box>
         <Box sx={{ p: 1.5 }}>
           <Typography variant="caption" color="text.secondary">
-            Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación
+            Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación · Autoidentificación étnica
           </Typography>
         </Box>
       </Box>
@@ -253,14 +254,16 @@ function CampoPreview({ campo }) {
       slotProps={{ input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> } }} />
   );
 
-  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero'  ||
-      campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato' ||
-      campo.tipo === 'nivel_educativo'|| campo.tipo === 'talla_ropa' ||
-      campo.tipo === 'talla_zapatos'  || campo.tipo === 'valoracion') {
+  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero'       ||
+      campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato'      ||
+      campo.tipo === 'nivel_educativo'|| campo.tipo === 'talla_ropa'   ||
+      campo.tipo === 'talla_zapatos'  || campo.tipo === 'valoracion'   ||
+      campo.tipo === 'autoidentificacion') {
     const listas = {
       tipo_documento: TIPOS_DOCUMENTO, genero: GENEROS,
       tipo_sangre: TIPOS_SANGRE, estrato: ESTRATOS, nivel_educativo: NIVELES_EDUCATIVOS,
       talla_ropa: TALLAS_ROPA, talla_zapatos: TALLAS_ZAPATOS, valoracion: VALORACIONES,
+      autoidentificacion: AUTOIDENTIFICACION,
     };
     const ops = listas[campo.tipo];
     return (

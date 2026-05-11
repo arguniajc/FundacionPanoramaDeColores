@@ -362,6 +362,7 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
             { etiqueta: 'Ocupación',            valor: nd(d.ocupacion),   flex: 1 },
           ]);
           if (d.empresa) fila([{ etiqueta: 'Empresa / Lugar de trabajo', valor: d.empresa }]);
+          if (d.autoidentificacion) fila([{ etiqueta: 'Autoidentificación étnica', valor: d.autoidentificacion }]);
           i++;
           continue;
         }

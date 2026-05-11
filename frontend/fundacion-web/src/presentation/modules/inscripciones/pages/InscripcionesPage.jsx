@@ -23,7 +23,7 @@ import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
   TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
-  GRADOS_COLOMBIA, JORNADAS_ESCOLARES,
+  GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION,
 } from '../../../../shared/utils/geodata';
 import FirmaPad from '../../../../shared/components/FirmaPad';
 
@@ -310,14 +310,16 @@ function CampoInput({ campo, value, onChange }) {
     );
   }
 
-  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero'  ||
-      campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato' ||
-      campo.tipo === 'nivel_educativo'|| campo.tipo === 'talla_ropa' ||
-      campo.tipo === 'talla_zapatos'  || campo.tipo === 'valoracion') {
+  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero'       ||
+      campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato'      ||
+      campo.tipo === 'nivel_educativo'|| campo.tipo === 'talla_ropa'   ||
+      campo.tipo === 'talla_zapatos'  || campo.tipo === 'valoracion'   ||
+      campo.tipo === 'autoidentificacion') {
     const listas = {
       tipo_documento: TIPOS_DOCUMENTO, genero: GENEROS,
       tipo_sangre: TIPOS_SANGRE, estrato: ESTRATOS, nivel_educativo: NIVELES_EDUCATIVOS,
       talla_ropa: TALLAS_ROPA, talla_zapatos: TALLAS_ZAPATOS, valoracion: VALORACIONES,
+      autoidentificacion: AUTOIDENTIFICACION,
     };
     return (
       <FormControl fullWidth size="small" required={campo.obligatorio}>
@@ -432,6 +434,15 @@ function CampoInput({ campo, value, onChange }) {
             <Grid size={12}>
               <TextField fullWidth size="small" label="Empresa / Lugar de trabajo"
                 value={d.empresa ?? ''} onChange={e => setD('empresa', e.target.value)} />
+            </Grid>
+            <Grid size={12}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Autoidentificación étnica</InputLabel>
+                <Select label="Autoidentificación étnica" value={d.autoidentificacion ?? ''}
+                  onChange={e => setD('autoidentificacion', e.target.value)}>
+                  {AUTOIDENTIFICACION.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
         </Box>

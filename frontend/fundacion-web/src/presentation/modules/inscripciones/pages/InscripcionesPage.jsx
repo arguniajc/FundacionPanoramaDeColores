@@ -363,7 +363,7 @@ function CampoInput({ campo, value, onChange, activo = true, onToggle }) {
     const setD = (k, v) => onChange(JSON.stringify({ ...d, [k]: v }));
     const SC      = '#7B3FC4';
     const esTutor = campo.tipo === 'datos_tutor';
-    const subcampos = esTutor ? '15 sub-campos' : '14 sub-campos';
+    const subcampos = esTutor ? '17 sub-campos' : '16 sub-campos';
     const tieneToggle = !esTutor && !!onToggle; // solo padre/madre tienen switch
     return (
       <Box sx={{
@@ -425,6 +425,14 @@ function CampoInput({ campo, value, onChange, activo = true, onToggle }) {
                 </FormControl>
               </Grid>
             )}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField fullWidth size="small" label="Nombres"
+                value={d.nombres ?? ''} onChange={e => setD('nombres', e.target.value)} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField fullWidth size="small" label="Apellidos"
+                value={d.apellidos ?? ''} onChange={e => setD('apellidos', e.target.value)} />
+            </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField fullWidth size="small" label="Fecha de nacimiento" type="date"
                 value={d.fechaNac ?? ''} onChange={e => setD('fechaNac', e.target.value)}

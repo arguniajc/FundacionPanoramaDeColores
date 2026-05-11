@@ -343,6 +343,10 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
             fila([{ etiqueta: 'Relación / Parentesco con el menor', valor: nd(d.relacion) }]);
           }
           fila([
+            { etiqueta: 'Nombres',   valor: nd(d.nombres),   flex: 1 },
+            { etiqueta: 'Apellidos', valor: nd(d.apellidos), flex: 1 },
+          ]);
+          fila([
             { etiqueta: 'Fecha de nacimiento', valor: d.fechaNac ? fmtFecha(d.fechaNac) : '—', flex: 1 },
             { etiqueta: 'País',                valor: nd(d.pais),   flex: 1 },
           ]);

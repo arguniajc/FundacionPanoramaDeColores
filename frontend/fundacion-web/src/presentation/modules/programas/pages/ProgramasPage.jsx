@@ -239,7 +239,7 @@ function CampoPreview({ campo }) {
 
   if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre' || campo.tipo === 'datos_tutor') {
     const SC = '#7B3FC4';
-    const subcampos = campo.tipo === 'datos_tutor' ? '15 sub-campos' : '14 sub-campos';
+    const subcampos = campo.tipo === 'datos_tutor' ? '17 sub-campos' : '16 sub-campos';
     const extra     = campo.tipo === 'datos_tutor' ? ' · Relación / Parentesco' : '';
     return (
       <Box sx={{
@@ -261,7 +261,7 @@ function CampoPreview({ campo }) {
         <Box sx={{ bgcolor: '#f9f6ff', px: 2, py: 1.5 }}>
           <Typography variant="caption" color="text.secondary">
             {campo.tipo === 'datos_tutor' && 'Relación / Parentesco · '}
-            Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación · Autoidentificación
+            Nombres · Apellidos · Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación · Autoidentificación
           </Typography>
         </Box>
       </Box>

@@ -291,20 +291,24 @@ function CampoInput({ campo, value, onChange, activo = true, onToggle }) {
         <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
           {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
         </Typography>
-        <Box display="flex" gap={1.5}>
-          <FormControl size="small" sx={{ flex: 2 }} required={campo.obligatorio}>
-            <InputLabel>Grado</InputLabel>
-            <Select label="Grado" value={ge.grado} onChange={e => setGE('grado', e.target.value)}>
-              {GRADOS_COLOMBIA.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ flex: 1 }}>
-            <InputLabel>Jornada</InputLabel>
-            <Select label="Jornada" value={ge.jornada} onChange={e => setGE('jornada', e.target.value)}>
-              {JORNADAS_ESCOLARES.map(j => <MenuItem key={j} value={j}>{j}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </Box>
+        <Grid container spacing={1.5}>
+          <Grid size={{ xs: 12, sm: 7 }}>
+            <FormControl fullWidth size="small" required={campo.obligatorio}>
+              <InputLabel>Grado</InputLabel>
+              <Select label="Grado" value={ge.grado} onChange={e => setGE('grado', e.target.value)}>
+                {GRADOS_COLOMBIA.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 5 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Jornada</InputLabel>
+              <Select label="Jornada" value={ge.jornada} onChange={e => setGE('jornada', e.target.value)}>
+                {JORNADAS_ESCOLARES.map(j => <MenuItem key={j} value={j}>{j}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
       </Box>
     );
   }

@@ -22,7 +22,7 @@ import { archivosRepository }       from '../../../../infrastructure/repositorie
 
 const COLOR = '#4E1B95';
 
-// Returns age in full years calculated from an ISO birth-date string
+// Retorna la edad en años completos calculada a partir de una fecha de nacimiento ISO
 function calcEdad(fechaNac) {
   if (!fechaNac) return null;
   const nac = new Date(fechaNac + 'T00:00:00');
@@ -33,7 +33,7 @@ function calcEdad(fechaNac) {
   return e;
 }
 
-// Formats an ISO date to a long Spanish locale string (e.g. "08 de mayo de 2025")
+// Formatea una fecha ISO en texto largo con locale español (ej. "08 de mayo de 2025")
 function fmtFechaCorta(iso) {
   if (!iso) return '—';
   return new Date(iso + 'T00:00:00').toLocaleDateString('es-CO', {
@@ -41,7 +41,7 @@ function fmtFechaCorta(iso) {
   });
 }
 
-// Groups consecutive fields that share the same section name for sectioned rendering
+// Agrupa campos consecutivos con el mismo nombre de sección para el renderizado por secciones
 function agruparPorSeccion(campos) {
   const result = [];
   for (const c of campos) {
@@ -111,7 +111,7 @@ function CampoInput({ campo, value, onChange }) {
   }
 
   if (campo.tipo === 'document') {
-    // Uploads the selected PDF to S3 and stores the returned URL as the field value
+    // Sube el PDF seleccionado a S3 y guarda la URL retornada como valor del campo
     const handleFile = async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -237,7 +237,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [generandoPdf,  setGenerandoPdf]  = useState(false);
   const [error,         setError]         = useState('');
 
-  // Load field definitions and parse saved JSON data each time the inscription changes
+  // Carga las definiciones de campos y parsea el JSON guardado cada vez que cambia la inscripción
   useEffect(() => {
     setCargando(true);
     setEditando(false);
@@ -250,7 +250,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       .finally(() => setCargando(false));
   }, [inscripcion.id]);
 
-  // Saves the edited form data back to the backend and switches back to view mode
+  // Guarda los datos del formulario editado en el backend y vuelve al modo vista
   const handleGuardar = async () => {
     setGuardando(true);
     setError('');
@@ -268,7 +268,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
     }
   };
 
-  // Generates a PDF of the inscription form and opens it in a new browser tab for printing
+  // Genera un PDF del formulario de inscripción y lo abre en una nueva pestaña para imprimir
   const handleImprimir = async () => {
     setGenerandoPdf(true);
     try {
@@ -301,7 +301,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
     }
   };
 
-  // Formats a raw field value for human-readable display in view mode (e.g. booleans, date ranges, units)
+  // Formatea el valor crudo de un campo para visualización legible en modo vista (booleanos, rangos de fecha, unidades)
   const valorVista = (campo) => {
     const v = datos[campo.id];
 
@@ -518,7 +518,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [guardando,       setGuardando]       = useState(false);
   const [error,           setError]           = useState('');
 
-  // Debounced search for beneficiaries as the user types (fires 300 ms after last keystroke)
+  // Búsqueda diferida de beneficiarios mientras el usuario escribe (se dispara 300 ms tras el último tecleo)
   useEffect(() => {
     if (busqueda.length < 2) { setBeneficiarios([]); return; }
     const t = setTimeout(async () => {
@@ -532,7 +532,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     return () => clearTimeout(t);
   }, [busqueda]);
 
-  // Load all active programs from all sedes once on mount, for the program selection step
+  // Carga todos los programas activos de todas las sedes al montar, para el paso de selección de programa
   useEffect(() => {
     sedesRepository.listar({ soloActivas: true }).then(({ data }) => {
       const progs = data.flatMap(s =>
@@ -542,7 +542,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     }).catch(() => {});
   }, []);
 
-  // Load field definitions for the chosen program; auto-fills age and birth-date from the beneficiary
+  // Carga los campos del programa elegido; auto-rellena edad y fecha de nacimiento del beneficiario
   useEffect(() => {
     if (!selPrograma) { setCampos([]); return; }
     setCargandoCampos(true);
@@ -562,7 +562,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     }).catch(() => {}).finally(() => setCargandoCampos(false));
   }, [selPrograma, selBenef]);
 
-  // Returns true when the current wizard step has all required data filled in
+  // Retorna verdadero cuando el paso actual del asistente tiene todos los datos obligatorios completos
   const pasoValido = () => {
     if (paso === 0) return !!selBenef;
     if (paso === 1) return !!selPrograma;
@@ -578,7 +578,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     return true;
   };
 
-  // Submits the completed inscription (beneficiary + program + form data) to the backend
+  // Envía la inscripción completa (beneficiario + programa + datos del formulario) al backend
   const handleSubmit = async () => {
     setGuardando(true);
     setError('');
@@ -758,7 +758,7 @@ export default function InscripcionesPage() {
   const [cambiandoId,   setCambiandoId]   = useState(null);
   const [toast,         setToast]         = useState('');
 
-  // Load all programs once on mount so the "Programa" filter dropdown is populated
+  // Carga todos los programas al montar para poblar el selector de filtro "Programa"
   useEffect(() => {
     sedesRepository.listar().then(({ data }) => {
       setProgramas(data.flatMap(s =>
@@ -767,15 +767,15 @@ export default function InscripcionesPage() {
     }).catch(() => {});
   }, []);
 
-  // Reloads the inscription list applying the current program and status filters
+  // Recarga el listado de inscripciones aplicando los filtros actuales de programa y estado
   const recargar = useCallback(() => {
     cargar({ programaId: filtroProg || undefined, estado: filtroEstado || undefined });
   }, [cargar, filtroProg, filtroEstado]);
 
-  // Re-fetch inscriptions whenever the program or status filter changes
+  // Vuelve a obtener inscripciones cada vez que cambia el filtro de programa o estado
   useEffect(() => { recargar(); }, [recargar]);
 
-  // Client-side filter by beneficiary name or document number (applied on top of server filter)
+  // Filtro en cliente por nombre o número de documento del beneficiario (sobre el filtro del servidor)
   const filtradas = inscripciones.filter(i => {
     if (filtroBuscar) {
       const q = filtroBuscar.toLowerCase();
@@ -785,7 +785,7 @@ export default function InscripcionesPage() {
     return true;
   });
 
-  // Updates the status of an inscription via the API and shows a toast
+  // Actualiza el estado de una inscripción en la API y muestra un mensaje de confirmación
   const handleCambiarEstado = async (id, estado) => {
     setCambiandoId(id);
     try {
@@ -795,7 +795,7 @@ export default function InscripcionesPage() {
     finally  { setCambiandoId(null); }
   };
 
-  // Deletes an inscription via the API and shows a toast
+  // Elimina una inscripción en la API y muestra un mensaje de confirmación
   const handleEliminar = async (id) => {
     try {
       await eliminar(id);

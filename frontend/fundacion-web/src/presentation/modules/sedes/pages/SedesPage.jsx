@@ -22,16 +22,16 @@ function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
-  // Reset form fields and clear error whenever the dialog opens or initial data changes
+  // Reinicia los campos del formulario y limpia el error cada vez que el diálogo se abre o cambia la sede inicial
   useEffect(() => {
     if (abierto) setForm({ nombre: inicial?.nombre ?? '', direccion: inicial?.direccion ?? '', ciudad: inicial?.ciudad ?? '', telefono: inicial?.telefono ?? '' });
     setError('');
   }, [abierto, inicial]);
 
-  // Generic field-change handler — updates one key in the form state
+  // Manejador genérico de campo — actualiza una sola clave en el estado del formulario
   const set = campo => e => setForm(p => ({ ...p, [campo]: e.target.value }));
 
-  // Creates or updates a sede via API; passes the saved result upstream
+  // Crea o actualiza una sede en la API y pasa el resultado guardado al componente padre
   const handleGuardar = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
     setGuardando(true);
@@ -89,16 +89,16 @@ function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
-  // Reset form fields and clear error whenever the dialog opens or initial data changes
+  // Reinicia los campos del formulario y limpia el error cada vez que el diálogo se abre o cambia el programa inicial
   useEffect(() => {
     if (abierto) setForm({ nombre: inicial?.nombre ?? '', descripcion: inicial?.descripcion ?? '', cupoMaximo: inicial?.cupoMaximo ?? '' });
     setError('');
   }, [abierto, inicial]);
 
-  // Generic field-change handler — updates one key in the form state
+  // Manejador genérico de campo — actualiza una sola clave en el estado del formulario
   const set = campo => e => setForm(p => ({ ...p, [campo]: e.target.value }));
 
-  // Creates or updates a program via API; passes the saved result upstream
+  // Crea o actualiza un programa en la API y pasa el resultado guardado al componente padre
   const handleGuardar = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
     setGuardando(true);
@@ -279,7 +279,7 @@ export default function SedesPage() {
   const [confirmEliminar, setConfirmEliminar] = useState(null);
   const [eliminando,      setEliminando]      = useState(false);
 
-  // Fetches all sedes (with nested programs) from the API
+  // Obtiene todas las sedes (con sus programas anidados) desde la API
   const cargar = useCallback(async () => {
     setCargando(true);
     setError('');
@@ -293,10 +293,10 @@ export default function SedesPage() {
     }
   }, []);
 
-  // Load sedes once on mount
+  // Carga las sedes una sola vez al montar el componente
   useEffect(() => { cargar(); }, [cargar]);
 
-  // Upserts the saved sede into local state and closes the dialog
+  // Inserta o actualiza la sede guardada en el estado local y cierra el diálogo
   const handleGuardadoSede = (sedeActualizada) => {
     setSedes(prev => {
       const existe = prev.find(s => s.id === sedeActualizada.id);
@@ -307,7 +307,7 @@ export default function SedesPage() {
     setToast('Sede guardada correctamente');
   };
 
-  // Toggles a sede's active status via API and updates local state
+  // Cambia el estado activo/inactivo de una sede en la API y actualiza el estado local
   const handleToggleSede = async (sede) => {
     try {
       const { data } = await apiClient.patch(`/api/sedes/${sede.id}/toggle`);
@@ -315,7 +315,7 @@ export default function SedesPage() {
     } catch { setError('Error al cambiar estado de la sede.'); }
   };
 
-  // Deletes a sede from the API and removes it from local state
+  // Elimina una sede en la API y la quita del estado local
   const handleEliminarSede = async () => {
     if (!confirmEliminar) return;
     setEliminando(true);
@@ -328,7 +328,7 @@ export default function SedesPage() {
     finally { setEliminando(false); }
   };
 
-  // Upserts the saved program into its parent sede's program list
+  // Inserta o actualiza el programa guardado en la lista de programas de su sede
   const handleGuardadoPrograma = (prog) => {
     setSedes(prev => prev.map(s => {
       if (s.id !== prog.sedeId) return s;
@@ -342,7 +342,7 @@ export default function SedesPage() {
     setToast('Programa guardado correctamente');
   };
 
-  // Toggles a program's active status via API and updates local state
+  // Cambia el estado activo/inactivo de un programa en la API y actualiza el estado local
   const handleTogglePrograma = async (prog) => {
     try {
       const { data } = await apiClient.patch(`/api/sedes/programas/${prog.id}/toggle`);
@@ -353,7 +353,7 @@ export default function SedesPage() {
     } catch { setError('Error al cambiar estado del programa.'); }
   };
 
-  // Deletes a program from the API and removes it from its parent sede's list
+  // Elimina un programa en la API y lo quita de la lista de su sede padre
   const handleEliminarPrograma = async () => {
     if (!confirmEliminar) return;
     setEliminando(true);
@@ -369,7 +369,7 @@ export default function SedesPage() {
     finally { setEliminando(false); }
   };
 
-  // Dispatches to handleEliminarSede or handleEliminarPrograma based on confirmation type
+  // Delega en handleEliminarSede o handleEliminarPrograma según el tipo de confirmación
   const handleConfirmarEliminar = () => {
     if (confirmEliminar?.tipo === 'sede') return handleEliminarSede();
     if (confirmEliminar?.tipo === 'programa') return handleEliminarPrograma();

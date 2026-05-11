@@ -286,7 +286,7 @@ export default function BeneficiariosPage() {
   const [procesandoBaja, setProcesandoBaja] = useState(false);
   const [actualizando,   setActualizando]   = useState(false);
 
-  // Fetches aggregate statistics (totals, age/size distribution, etc.) for the stats modal
+  // Obtiene estadísticas agregadas (totales, distribución por edad/talla, etc.) para el modal de estadísticas
   const cargarStatsDetalle = useCallback(async () => {
     setCargandoStats(true);
     try {
@@ -297,7 +297,7 @@ export default function BeneficiariosPage() {
     finally { setCargandoStats(false); }
   }, []);
 
-  // Loads a page of beneficiaries; serves from session cache instantly then silently refreshes in the background
+  // Carga una página de beneficiarios; sirve desde caché instantáneamente y luego refresca en segundo plano
   const cargar = useCallback(async (forzar = false) => {
     const key    = cacheKey(estado, pagina, buscar);
     const cached = !forzar && leerCache(key);
@@ -331,14 +331,14 @@ export default function BeneficiariosPage() {
     } finally { setCargando(false); }
   }, [pagina, buscar, estado]);
 
-  // Load stats once on mount
+  // Carga las estadísticas una vez al montar el componente
   useEffect(() => { cargarStatsDetalle(); }, [cargarStatsDetalle]);
-  // Reload list whenever page, search text, or status tab changes
+  // Recarga el listado cuando cambia la página, el texto de búsqueda o la pestaña de estado
   useEffect(() => { cargar(); },     [cargar]);
-  // Reset to page 1 whenever search text or status tab changes
+  // Vuelve a la página 1 cuando cambia el texto de búsqueda o la pestaña de estado
   useEffect(() => { setPagina(1); }, [buscar, estado]);
 
-  // Marks the selected beneficiary as inactive with an optional written reason
+  // Marca al beneficiario seleccionado como inactivo con un motivo escrito opcional
   const handleDarDeBaja = async () => {
     if (!idBaja) return;
     setProcesandoBaja(true);
@@ -351,7 +351,7 @@ export default function BeneficiariosPage() {
     finally  { setProcesandoBaja(false); }
   };
 
-  // Reactivates an inactive beneficiary
+  // Reactiva a un beneficiario inactivo
   const handleReactivar = async (id) => {
     try {
       await apiClient.patch(`/api/beneficiarios/${id}/reactivar`);
@@ -360,21 +360,21 @@ export default function BeneficiariosPage() {
     } catch { setError('No se pudo reactivar el beneficiario.'); }
   };
 
-  // Called after a successful edit: closes editor and refreshes list + stats
+  // Llamado tras una edición exitosa: cierra el editor y refresca el listado y las estadísticas
   const handleGuardadoEdicion = () => {
     setEditando(null);
     setToast('Beneficiario actualizado correctamente');
     limpiarCache(); cargar(true); cargarStatsDetalle();
   };
 
-  // Called after a new beneficiary is created: closes form and refreshes list + stats
+  // Llamado tras crear un beneficiario nuevo: cierra el formulario y refresca el listado y las estadísticas
   const handleBeneficiarioCreado = () => {
     setCreando(false);
     setToast('Beneficiario inscrito correctamente');
     limpiarCache(); cargar(true); cargarStatsDetalle();
   };
 
-  // Downloads all beneficiaries (ignoring pagination) as an XLSX file with full field details
+  // Descarga todos los beneficiarios (sin paginación) como archivo XLSX con todos los campos
   const exportarExcel = async () => {
     setExportando(true);
     setToast('Preparando exportación completa…');
@@ -416,7 +416,7 @@ export default function BeneficiariosPage() {
     finally  { setExportando(false); }
   };
 
-  // Total pages derived from total count and the page size constant
+  // Total de páginas calculado a partir del total de registros y la constante de tamaño de página
   const totalPaginas = Math.ceil(total / POR_PAGINA);
   const TABS = [
     { value: 'activos', label: `Activos (${stats.activos})` },

@@ -19,7 +19,7 @@ export default function LogDescargasPage() {
   const [error,     setError]     = useState('');
   const [buscar,    setBuscar]    = useState('');
 
-  // Fetches one page of download log records from the API
+  // Obtiene una página de registros de descarga desde la API
   const cargar = useCallback(async (pag) => {
     setCargando(true);
     setError('');
@@ -36,10 +36,10 @@ export default function LogDescargasPage() {
     }
   }, []);
 
-  // Reload logs whenever the active page number changes
+  // Recarga los registros cuando cambia el número de página activa
   useEffect(() => { cargar(pagina); }, [cargar, pagina]);
 
-  // Client-side filter of current page by user email or beneficiary name
+  // Filtro en cliente por correo del usuario o nombre del beneficiario
   const filtrados = buscar.trim()
     ? registros.filter(r =>
         r.usuarioEmail?.toLowerCase().includes(buscar.toLowerCase()) ||

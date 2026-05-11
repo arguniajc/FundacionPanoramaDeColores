@@ -27,7 +27,7 @@ import { useDocumentosBeneficiario }    from '../../../../application/documentos
 const CATEGORIAS    = ['Actas', 'Políticas', 'Formularios', 'Informes', 'Certificados', 'Otros'];
 const HEADER_GRADIENT = 'linear-gradient(135deg, #4E1B95, #2D984F)';
 
-// Formats a date to a short es-CO locale string that includes time (e.g. "8 may 2025, 03:12 p. m.")
+// Formatea una fecha en texto corto con locale es-CO incluyendo hora (ej. "8 may. 2025, 03:12 p. m.")
 function fmt(fecha) {
   return new Date(fecha).toLocaleString('es-CO', {
     year: 'numeric', month: 'short', day: 'numeric',
@@ -35,7 +35,7 @@ function fmt(fecha) {
   });
 }
 
-// Strips the file extension from a filename (e.g. "informe.pdf" → "informe")
+// Quita la extensión del nombre de archivo (ej. "informe.pdf" → "informe")
 function sinExtension(nombre) {
   return nombre?.replace(/\.[^/.]+$/, '') ?? nombre;
 }
@@ -67,7 +67,7 @@ function ToastGlobal({ toast, onClose }) {
 // ── Confirmación antes de eliminar ───────────────────────────────────────────
 function ConfirmarEliminar({ nombre, onConfirmar, onCerrar }) {
   const [eliminando, setEliminando] = useState(false);
-  // Runs onConfirmar then closes the dialog
+  // Ejecuta onConfirmar y luego cierra el diálogo
   const handleConfirmar = async () => {
     setEliminando(true);
     await onConfirmar();
@@ -110,7 +110,7 @@ function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
   const [error,      setError]      = useState('');
   const inputRef = useRef();
 
-  // Adds PDF files from the given list to the upload queue, skipping duplicates by name
+  // Agrega archivos PDF al listado de carga, omitiendo duplicados por nombre de archivo
   const agregarArchivos = (lista) => {
     const nuevos = Array.from(lista).filter(f => f.type === 'application/pdf');
     setArchivos(prev => {
@@ -120,10 +120,10 @@ function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
     setError('');
   };
 
-  // Removes a file from the upload queue by its filename
+  // Elimina un archivo del listado de carga por su nombre
   const quitarArchivo = (nombre) => setArchivos(prev => prev.filter(f => f.name !== nombre));
 
-  // Uploads queued PDFs one by one with progress tracking; closes the modal on success
+  // Sube los PDFs en cola uno a uno con seguimiento de progreso; cierra el modal al terminar con éxito
   const handleSubir = async () => {
     if (archivos.length === 0) { setError('Selecciona al menos un PDF.'); return; }
     setSubiendo(true); setError('');
@@ -245,7 +245,7 @@ function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido, onToa
   const [error,    setError]    = useState('');
   const inputRef = useRef();
 
-  // Uploads a single file to the beneficiary's S3 folder and closes the modal on success
+  // Sube un solo archivo a la carpeta S3 del beneficiario y cierra el modal al terminar con éxito
   const handleSubir = async () => {
     if (!titulo.trim() || !archivo) { setError('El nombre y el archivo son obligatorios.'); return; }
     setSubiendo(true); setError('');
@@ -319,7 +319,7 @@ function TabInstitucionales({ onToast }) {
 
   const { documentos, cargando, error, crear, eliminar } = useDocumentosInstitucionales();
 
-  // Counts documents per category to show totals in the category filter chips
+  // Cuenta documentos por categoría para mostrar los totales en los chips de filtro
   const conteo = useMemo(() => {
     const m = {};
     CATEGORIAS.forEach(c => { m[c] = 0; });
@@ -327,14 +327,14 @@ function TabInstitucionales({ onToast }) {
     return m;
   }, [documentos]);
 
-  // Applies category chip and text search filters to the full document list
+  // Aplica los filtros de categoría y búsqueda de texto al listado completo de documentos
   const filtrados = useMemo(() => {
     let lista = categoriaFiltro ? documentos.filter(d => d.categoria === categoriaFiltro) : documentos;
     if (buscar.trim()) lista = lista.filter(d => d.titulo?.toLowerCase().includes(buscar.toLowerCase()));
     return lista;
   }, [documentos, categoriaFiltro, buscar]);
 
-  // Deletes an institutional document and shows a success toast
+  // Elimina un documento institucional y muestra un mensaje de éxito
   const handleEliminar = async (id) => {
     await eliminar(id);
     onToast('Documento eliminado', 'success');
@@ -480,7 +480,7 @@ function TabPorBeneficiario({ onToast }) {
 
   const { archivos, cargando, error, cargar, guardar, eliminar } = useDocumentosBeneficiario();
 
-  // Searches for beneficiaries by name as the user types in the autocomplete (min 2 chars)
+  // Busca beneficiarios por nombre mientras el usuario escribe en el autocompletado (mín. 2 caracteres)
   const buscarBeneficiarios = async (q) => {
     if (!q || q.length < 2) { setOpciones([]); return; }
     setBuscando(true);
@@ -491,14 +491,14 @@ function TabPorBeneficiario({ onToast }) {
     finally { setBuscando(false); }
   };
 
-  // Sets the selected beneficiary and loads their documents (or clears if null)
+  // Establece el beneficiario seleccionado y carga sus documentos (o limpia si es nulo)
   const seleccionar = (ben) => {
     setBeneficiario(ben);
     if (ben) cargar(ben.id);
     else cargar(null);
   };
 
-  // Deletes a beneficiary document and shows a success toast
+  // Elimina un documento de beneficiario y muestra un mensaje de éxito
   const handleEliminar = async (id) => {
     await eliminar(id, beneficiario?.id);
     onToast('Documento eliminado', 'success');

@@ -1,5 +1,24 @@
 import jsPDF from 'jspdf';
 
+// Carga una URL de imagen como data URL usando canvas; retorna null si falla (CORS, etc.)
+async function cargarImagenBase64(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width  = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
+      } catch { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
 // Paleta
 const PURPLE  = [78, 27, 149];
 const LPURPLE = [243, 240, 255];
@@ -49,10 +68,15 @@ function valorCampo(campo, datos) {
 }
 
 // ── Generador principal ───────────────────────────────────────────────────────
-export function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos, observaciones }) {
+export async function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos, observaciones }) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const PW = 210, PH = 297, ML = 13, CW = PW - ML * 2;
   let y = ML;
+
+  // Cargar la foto del beneficiario antes de generar el PDF
+  const fotoDataUrl = beneficiario.fotoMenorUrl
+    ? await cargarImagenBase64(beneficiario.fotoMenorUrl)
+    : null;
 
   // ─── helpers ───────────────────────────────────────────────────────────────
 
@@ -122,28 +146,50 @@ export function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos
   function esp(h = 3) { y += h; }
 
   // ─── Encabezado ────────────────────────────────────────────────────────────
+  const PHOTO_W = 25, PHOTO_H = 31;
+  const photoX  = ML + CW - PHOTO_W - 2;
+  const photoY  = y + 1;
+
   doc.setFillColor(...PURPLE);
   doc.rect(ML, y, CW, 33, 'F');
   doc.setFillColor(...ACCENT);
   doc.rect(ML, y + 29, CW, 4, 'F');
 
-  doc.setTextColor(...WHITE);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Fundación Panorama de Colores  ·  Formulario de Inscripción', ML + 5, y + 8);
+  // Foto del beneficiario (derecha del encabezado)
+  if (fotoDataUrl) {
+    doc.setFillColor(...WHITE);
+    doc.roundedRect(photoX - 1, photoY - 1, PHOTO_W + 2, PHOTO_H + 2, 1, 1, 'F');
+    doc.addImage(fotoDataUrl, 'JPEG', photoX, photoY, PHOTO_W, PHOTO_H);
+  } else {
+    doc.setFillColor(100, 60, 170);
+    doc.roundedRect(photoX, photoY, PHOTO_W, PHOTO_H, 1, 1, 'F');
+    doc.setDrawColor(...WHITE);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(photoX, photoY, PHOTO_W, PHOTO_H, 1, 1, 'S');
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(200, 185, 235);
+    doc.text('SIN FOTO', photoX + PHOTO_W / 2, photoY + PHOTO_H / 2, { align: 'center' });
+  }
 
-  // Nombre del programa — título grande
-  doc.setFontSize(16);
+  // Texto del encabezado (ajustado para no solapar la foto)
+  const textW = CW - PHOTO_W - 9;
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(9.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Fundación Panorama de Colores  ·  Formulario de Inscripción', ML + 5, y + 7);
+
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   const nombreProg = inscripcion.nombrePrograma ?? '';
-  const lineasProg = doc.splitTextToSize(nombreProg, CW - 10);
-  doc.text(lineasProg[0], ML + 5, y + 18);
-  if (lineasProg[1]) doc.text(lineasProg[1], ML + 5, y + 25);
+  const lineasProg = doc.splitTextToSize(nombreProg, textW);
+  doc.text(lineasProg[0], ML + 5, y + 17);
+  if (lineasProg[1]) doc.text(lineasProg[1], ML + 5, y + 24);
 
   const hoy = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
-  doc.setFontSize(7.5);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
-  doc.text(hoy, ML + CW - 3, y + 8, { align: 'right' });
+  doc.text(hoy, ML + 5, y + 28);
   y += 37;
 
   // ─── Datos del beneficiario ─────────────────────────────────────────────────

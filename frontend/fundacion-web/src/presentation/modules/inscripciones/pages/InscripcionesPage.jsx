@@ -275,7 +275,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
     setGenerandoPdf(true);
     try {
       const { data: benef } = await beneficiariosRepository.obtener(inscripcion.beneficiarioId);
-      const doc = generarPdfInscripcion({
+      const doc = await generarPdfInscripcion({
         inscripcion,
         beneficiario: benef,
         campos,

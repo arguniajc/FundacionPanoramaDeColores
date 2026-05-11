@@ -236,18 +236,26 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [guardando,     setGuardando]     = useState(false);
   const [generandoPdf,  setGenerandoPdf]  = useState(false);
   const [error,         setError]         = useState('');
+  const [beneficiario,  setBeneficiario]  = useState(null);
   const theme   = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Carga las definiciones de campos y parsea el JSON guardado cada vez que cambia la inscripción
+  // Carga campos del programa y datos personales del beneficiario cada vez que cambia la inscripción
   useEffect(() => {
     setCargando(true);
     setEditando(false);
     setError('');
+    setBeneficiario(null);
     try { setDatos(JSON.parse(inscripcion.datos || '{}')); } catch { setDatos({}); }
     setObservaciones(inscripcion.observaciones ?? '');
-    sedesRepository.listarCampos(inscripcion.programaId)
-      .then(({ data }) => setCampos(data))
+    Promise.all([
+      sedesRepository.listarCampos(inscripcion.programaId),
+      beneficiariosRepository.obtener(inscripcion.beneficiarioId),
+    ])
+      .then(([camposRes, benefRes]) => {
+        setCampos(camposRes.data);
+        setBeneficiario(benefRes.data);
+      })
       .catch(() => {})
       .finally(() => setCargando(false));
   }, [inscripcion.id]);
@@ -384,6 +392,120 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             </Grid>
           </Grid>
         </Box>
+
+        {/* Datos personales del beneficiario */}
+        {beneficiario && (
+          <Box sx={{ mb: 2.5, p: 2, bgcolor: '#fdfbff', borderRadius: 2, border: '1px solid #e2d9f3' }}>
+            <Box sx={{ borderLeft: `4px solid ${COLOR}`, pl: 1.5, mb: 1.5 }}>
+              <Typography fontWeight={800} color={COLOR}
+                sx={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                Datos del Beneficiario
+              </Typography>
+            </Box>
+
+            {/* Foto + nombre / documento / edad */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 1.5, alignItems: 'flex-start' }}>
+              {beneficiario.fotoMenorUrl ? (
+                <Box component="img" src={beneficiario.fotoMenorUrl} alt="Foto beneficiario"
+                  sx={{ width: 64, height: 72, objectFit: 'cover', borderRadius: 1.5,
+                        border: `2px solid ${COLOR}`, flexShrink: 0 }} />
+              ) : (
+                <Avatar sx={{ bgcolor: COLOR, width: 64, height: 64, flexShrink: 0,
+                              borderRadius: 1.5, fontSize: '1.5rem' }}>
+                  {(beneficiario.nombreMenor || '?')[0].toUpperCase()}
+                </Avatar>
+              )}
+              <Grid container spacing={0.8} sx={{ flex: 1 }}>
+                <Grid size={12}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}
+                    sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
+                    Nombre completo
+                  </Typography>
+                  <Typography variant="body2" fontWeight={700}>{beneficiario.nombreMenor}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}
+                    sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
+                    Documento
+                  </Typography>
+                  <Typography variant="body2">
+                    {beneficiario.tipoDocumento} {beneficiario.numeroDocumento ?? '—'}
+                  </Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}
+                    sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
+                    Edad / Nacimiento
+                  </Typography>
+                  <Typography variant="body2">
+                    {calcEdad(beneficiario.fechaNacimiento) != null
+                      ? `${calcEdad(beneficiario.fechaNacimiento)} años`
+                      : '—'}
+                    {beneficiario.fechaNacimiento
+                      ? ` · ${fmtFechaCorta(beneficiario.fechaNacimiento)}`
+                      : ''}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Box>
+
+            {/* Acudiente */}
+            <Grid container spacing={0.8} sx={{ mb: 1 }}>
+              <Grid size={{ xs: 12, sm: 5 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}
+                  sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
+                  Acudiente
+                </Typography>
+                <Typography variant="body2">{beneficiario.nombreAcudiente || '—'}</Typography>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}
+                  sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
+                  Parentesco
+                </Typography>
+                <Typography variant="body2">{beneficiario.parentesco || '—'}</Typography>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}
+                  sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
+                  WhatsApp / Teléfono
+                </Typography>
+                <Typography variant="body2">{beneficiario.whatsapp || '—'}</Typography>
+              </Grid>
+            </Grid>
+
+            {/* Salud */}
+            <Grid container spacing={0.8}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}
+                  sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
+                  EPS / Aseguradora
+                </Typography>
+                <Typography variant="body2">{beneficiario.eps || '—'}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700}
+                  sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
+                  Alergia
+                </Typography>
+                <Typography variant="body2">
+                  {beneficiario.tieneAlergia === 'si'
+                    ? `Sí — ${beneficiario.descripcionAlergia || 'sin descripción'}`
+                    : 'No'}
+                </Typography>
+              </Grid>
+              {beneficiario.observacionesSalud && (
+                <Grid size={12}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}
+                    sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>
+                    Observaciones de salud
+                  </Typography>
+                  <Typography variant="body2">{beneficiario.observacionesSalud}</Typography>
+                </Grid>
+              )}
+            </Grid>
+          </Box>
+        )}
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 

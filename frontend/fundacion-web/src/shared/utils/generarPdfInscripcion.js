@@ -9,7 +9,7 @@ async function cargarImagenCircular(url) {
     img.onload = () => {
       try {
         const px   = 320;
-        const bord = 8; // ancho del aro blanco en píxeles
+        const bord = 4; // ancho del aro en píxeles (delgado)
         const canvas = document.createElement('canvas');
         canvas.width  = px;
         canvas.height = px;
@@ -17,10 +17,10 @@ async function cargarImagenCircular(url) {
         // Fondo morado (igual que el banner del PDF)
         ctx.fillStyle = 'rgb(78,27,149)';
         ctx.fillRect(0, 0, px, px);
-        // Aro blanco
+        // Aro color secundario (lila claro)
         ctx.beginPath();
         ctx.arc(px / 2, px / 2, px / 2 - 2, 0, Math.PI * 2);
-        ctx.fillStyle = 'white';
+        ctx.fillStyle = 'rgb(200,185,235)';
         ctx.fill();
         // Clip circular para la foto
         ctx.save();
@@ -167,8 +167,8 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   function esp(h = 3) { y += h; }
 
   // ─── Encabezado ────────────────────────────────────────────────────────────
-  const D      = 16.5; // diámetro visible de la foto en mm (+10 % respecto al anterior)
-  const BORD   = 1;    // grosor del aro blanco en mm
+  const D      = 20;   // diámetro visible de la foto en mm (+20 %)
+  const BORD   = 0.8;  // grosor del aro en mm (delgado)
   const cx     = ML + CW - D / 2 - BORD - 3;   // centro X (3 mm margen derecho)
   const cy     = y + 33 / 2;                     // centro Y (centrado en banner)
 

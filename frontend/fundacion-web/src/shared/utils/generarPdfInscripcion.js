@@ -9,7 +9,7 @@ async function cargarImagenCircular(url) {
     img.onload = () => {
       try {
         const px   = 320;
-        const bord = 22; // ancho del aro blanco en píxeles
+        const bord = 8; // ancho del aro blanco en píxeles
         const canvas = document.createElement('canvas');
         canvas.width  = px;
         canvas.height = px;
@@ -167,9 +167,8 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   function esp(h = 3) { y += h; }
 
   // ─── Encabezado ────────────────────────────────────────────────────────────
-  // Foto circular: diámetro 15 mm (≈19 mm anterior × 0.8), centrada en el banner
-  const D      = 15;   // diámetro en mm
-  const BORD   = 1;    // grosor del borde circular en mm
+  const D      = 16.5; // diámetro visible de la foto en mm (+10 % respecto al anterior)
+  const BORD   = 1;    // grosor del aro blanco en mm
   const cx     = ML + CW - D / 2 - BORD - 3;   // centro X (3 mm margen derecho)
   const cy     = y + 33 / 2;                     // centro Y (centrado en banner)
 

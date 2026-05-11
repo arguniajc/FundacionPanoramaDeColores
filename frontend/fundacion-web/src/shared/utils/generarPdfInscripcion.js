@@ -272,14 +272,15 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   if (campos.length > 0) {
     seccion('Formulario del Programa');
 
-    // Agrupar campos consecutivos por sección
-    const grupos = [];
+    // Agrupar todos los campos de la misma sección juntos (tolerante a orden no consecutivo)
+    const grupoOrden = [];
+    const grupoMapa  = new Map();
     for (const c of campos) {
-      const sec  = c.seccion?.trim() || '';
-      const last = grupos[grupos.length - 1];
-      if (!last || last.sec !== sec) grupos.push({ sec, items: [c] });
-      else last.items.push(c);
+      const sec = c.seccion?.trim() || '';
+      if (!grupoMapa.has(sec)) { grupoMapa.set(sec, []); grupoOrden.push(sec); }
+      grupoMapa.get(sec).push(c);
     }
+    const grupos = grupoOrden.map(sec => ({ sec, items: grupoMapa.get(sec) }));
 
     for (const { sec, items } of grupos) {
       // Sub-encabezado de sección

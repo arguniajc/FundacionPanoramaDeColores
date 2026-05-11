@@ -43,16 +43,16 @@ function fmtFechaCorta(iso) {
   });
 }
 
-// Agrupa campos consecutivos con el mismo nombre de sección para el renderizado por secciones
+// Agrupa todos los campos de una misma sección juntos, independientemente del orden en el array
 function agruparPorSeccion(campos) {
-  const result = [];
+  const orden = [];
+  const mapa  = new Map();
   for (const c of campos) {
-    const sec  = c.seccion?.trim() || '';
-    const last = result[result.length - 1];
-    if (!last || last.seccion !== sec) result.push({ seccion: sec, campos: [c] });
-    else last.campos.push(c);
+    const sec = c.seccion?.trim() || '';
+    if (!mapa.has(sec)) { mapa.set(sec, []); orden.push(sec); }
+    mapa.get(sec).push(c);
   }
-  return result;
+  return orden.map(sec => ({ seccion: sec, campos: mapa.get(sec) }));
 }
 
 function SeccionHeader({ titulo }) {

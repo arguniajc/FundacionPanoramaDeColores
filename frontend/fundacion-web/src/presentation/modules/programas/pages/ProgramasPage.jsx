@@ -1,5 +1,5 @@
 // Gestión de proyectos/programas: CRUD de programas por sede y editor de campos de formulario dinámico.
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert, Autocomplete, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, FormControl, FormControlLabel,
@@ -296,12 +296,37 @@ function EditorCamposDialog({ programa, onCerrar }) {
   const [preview,      setPreview]      = useState(false);
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const normalizadoRef = React.useRef(false);
 
   const campoVacio = { seccion: '', etiqueta: '', tipo: 'text', obligatorio: false, opciones: '', columnas: 6 };
   const [form, setForm] = useState(campoVacio);
 
   // Carga los campos del programa cuando se abre el diálogo editor
   useEffect(() => { cargar(); }, [cargar]);
+
+  // Normaliza órdenes al primer cargar para corregir secciones no consecutivas
+  useEffect(() => {
+    if (cargando || campos.length === 0 || normalizadoRef.current) return;
+    normalizadoRef.current = true;
+    const secs = seccionesOrdenadas(campos);
+    let ord = 0;
+    const updates = [];
+    for (const sec of secs) {
+      for (const c of camposDeSeccion(campos, sec)) {
+        if (c.orden !== ord) updates.push({ campo: c, nuevaOrden: ord });
+        ord++;
+      }
+    }
+    if (updates.length === 0) return;
+    setReordenando(true);
+    (async () => {
+      try {
+        for (const { campo, nuevaOrden } of updates)
+          await editarCampo(campo.id, toDto(campo, nuevaOrden));
+      } catch { /* silencioso — no crítico */ }
+      finally { setReordenando(false); }
+    })();
+  }, [cargando, campos, editarCampo]);
 
   // Manejador genérico que actualiza una sola clave en el estado del formulario de campo
   const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));

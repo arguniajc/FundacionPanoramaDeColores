@@ -77,7 +77,7 @@ public class VoluntariosController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Listar(
         [FromQuery] string? buscar     = null,
-        [FromQuery] bool    soloActivos = false)
+        [FromQuery] bool    soloActivos = true)
     {
         await using var conn = AbrirConexion();
         await conn.OpenAsync();

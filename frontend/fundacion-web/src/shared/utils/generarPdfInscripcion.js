@@ -101,6 +101,8 @@ function valorCampo(campo, datos) {
   return String(v);
 }
 
+const QUIEN_PDF_LABEL = { padre: 'Padre', madre: 'Madre', tutor: 'Tutor legal' };
+
 // ── Generador principal ───────────────────────────────────────────────────────
 export async function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos, observaciones, conTercero = false, nombreTercero = '' }) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
@@ -110,6 +112,14 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   // Cargar y recortar la foto del beneficiario en círculo antes de generar el PDF
   const fotoDataUrl = beneficiario.fotoMenorUrl
     ? await cargarImagenCircular(beneficiario.fotoMenorUrl)
+    : null;
+
+  // Metadatos del firmante
+  let firmaMeta = {};
+  try { firmaMeta = JSON.parse(datos.__firma_meta__ || '{}'); } catch {}
+  const firmaQuienLabel = firmaMeta.quien ? (QUIEN_PDF_LABEL[firmaMeta.quien] ?? firmaMeta.quien) : null;
+  const firmaFechaHora  = firmaMeta.fechaHora
+    ? new Date(firmaMeta.fechaHora).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
     : null;
 
   // ─── helpers ───────────────────────────────────────────────────────────────
@@ -438,7 +448,7 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
 
   // ─── Firmas ─────────────────────────────────────────────────────────────────
   const firmaPadre = datos.__firma_padre__;
-  const FIRMA_H = firmaPadre ? 48 : 35; // más alto si hay imagen
+  const FIRMA_H = firmaPadre ? 55 : 42; // más alto para acomodar metadatos del firmante
   pageBreak(conTercero ? FIRMA_H + 15 : FIRMA_H);
   esp(6);
 
@@ -477,10 +487,16 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
 
     doc.setFontSize(7);
     doc.setTextColor(...GRAY);
-    // Col 1 — Acudiente
-    doc.text('Firma del Acudiente / Responsable', ML + 4,          lineY + 4);
-    doc.text('CC / Documento: ________________',  ML + 4,          lineY + 9);
-    doc.text('Fecha: _________________________',  ML + 4,          lineY + 14);
+    // Col 1 — Acudiente con metadatos del firmante
+    const acuLabel3 = firmaQuienLabel ? `Firma del ${firmaQuienLabel}` : 'Firma del Acudiente / Responsable';
+    doc.text(acuLabel3, ML + 4, lineY + 4);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    doc.text(firmaMeta.nombre || '________________________________', ML + 4, lineY + 9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GRAY);
+    doc.text(firmaMeta.documento ? `Doc: ${firmaMeta.documento}` : 'CC / Documento: ____________', ML + 4, lineY + 14);
+    doc.text(firmaFechaHora ? `Firmado: ${firmaFechaHora}` : 'Fecha y hora: ______________', ML + 4, lineY + 19);
     // Col 2 — Fundación
     doc.text('Firma Fundación Panorama de Colores', ML + col + 4,  lineY + 4);
     doc.text('Cargo: ________________________',     ML + col + 4,  lineY + 9);
@@ -491,7 +507,7 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
     doc.text('Cargo: ________________________', ML + col * 2 + 4,  lineY + 9);
     doc.text('Fecha: ________________________', ML + col * 2 + 4,  lineY + 14);
 
-    y = lineY + 19;
+    y = lineY + 24;
   } else {
     // ── 2 firmantes: Acudiente | Fundación ──────────────────────────────────
     const mid  = ML + CW / 2;
@@ -511,14 +527,22 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
 
     doc.setFontSize(7);
     doc.setTextColor(...GRAY);
-    doc.text('Firma del Acudiente / Responsable',         ML + 8,  lineY + 4);
-    doc.text('Firma Fundación Panorama de Colores',       mid + 8, lineY + 4);
-    doc.text('CC / Documento: ________________________',  ML + 8,  lineY + 9);
-    doc.text('Cargo: _________________________________',  mid + 8, lineY + 9);
-    doc.text('Fecha: _________________________________',  ML + 8,  lineY + 14);
-    doc.text('Fecha: _________________________________',  mid + 8, lineY + 14);
+    // Columna acudiente — datos del firmante
+    const acuLabel = firmaQuienLabel ? `Firma del ${firmaQuienLabel}` : 'Firma del Acudiente / Responsable';
+    doc.text(acuLabel, ML + 8, lineY + 4);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    doc.text(firmaMeta.nombre || '________________________________', ML + 8, lineY + 9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GRAY);
+    doc.text(firmaMeta.documento ? `Doc: ${firmaMeta.documento}` : 'CC / Documento: ____________', ML + 8, lineY + 14);
+    doc.text(firmaFechaHora ? `Firmado: ${firmaFechaHora}` : 'Fecha y hora: ______________', ML + 8, lineY + 19);
+    // Columna fundación
+    doc.text('Firma Fundación Panorama de Colores', mid + 8, lineY + 4);
+    doc.text('Cargo: _________________________________', mid + 8, lineY + 9);
+    doc.text('Fecha: _________________________________', mid + 8, lineY + 14);
 
-    y = lineY + 19;
+    y = lineY + 24;
   }
 
   // ─── Pie de página (todas las páginas) ─────────────────────────────────────

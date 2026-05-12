@@ -90,6 +90,110 @@ function chipEstado(estado) {
   return <Chip label={e.label} size="small" color={e.color} />;
 }
 
+// ── Firma con metadatos del firmante ─────────────────────────────────────────
+const QUIEN_FIRMA_LABEL = { padre: 'Padre', madre: 'Madre', tutor: 'Tutor legal' };
+
+function parseMeta(raw) {
+  try { return JSON.parse(raw || '{}'); } catch { return {}; }
+}
+
+function FirmaAutorizacion({ datos, setDatos, disabled = false, sx = {} }) {
+  const meta = parseMeta(datos.__firma_meta__);
+
+  const setMeta = (changes) =>
+    setDatos(prev => ({
+      ...prev,
+      __firma_meta__: JSON.stringify({ ...parseMeta(prev.__firma_meta__), ...changes }),
+    }));
+
+  const handleImagen = (v) =>
+    setDatos(prev => ({
+      ...prev,
+      __firma_padre__: v,
+      __firma_meta__: JSON.stringify({
+        ...parseMeta(prev.__firma_meta__),
+        fechaHora: v ? new Date().toISOString() : null,
+      }),
+    }));
+
+  const fmtFirmaFecha = meta.fechaHora
+    ? new Date(meta.fechaHora).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+    : null;
+
+  return (
+    <Box sx={{ p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '2px solid #d0c4f7', ...sx }}>
+      <Typography variant="caption" color={COLOR} fontWeight={800} display="block" mb={1.5}
+        sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.72rem' }}>
+        Autorización del padre / acudiente
+      </Typography>
+
+      {disabled ? (
+        datos.__firma_padre__ ? (
+          <Box>
+            <Box component="img" src={datos.__firma_padre__} alt="Firma"
+              sx={{ display: 'block', height: 60, maxWidth: 280, objectFit: 'contain',
+                    border: '1px solid #d0c4f7', borderRadius: 1, bgcolor: 'white', mb: 1 }} />
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+              {meta.quien && (
+                <Chip size="small" label={QUIEN_FIRMA_LABEL[meta.quien] ?? meta.quien}
+                  sx={{ bgcolor: `${COLOR}18`, color: COLOR, fontWeight: 700, fontSize: '0.72rem' }} />
+              )}
+              {meta.nombre && (
+                <Typography variant="caption" fontWeight={600}>{meta.nombre}</Typography>
+              )}
+              {meta.documento && (
+                <Typography variant="caption" color="text.secondary">Doc: {meta.documento}</Typography>
+              )}
+              {fmtFirmaFecha && (
+                <Typography variant="caption" color="text.secondary">{fmtFirmaFecha}</Typography>
+              )}
+            </Box>
+          </Box>
+        ) : (
+          <Chip label="Sin firma registrada" color="warning" size="small" variant="outlined" />
+        )
+      ) : (
+        <>
+          <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>¿Quién firma? *</InputLabel>
+                <Select value={meta.quien || ''} label="¿Quién firma? *"
+                  onChange={e => setMeta({ quien: e.target.value })}>
+                  <MenuItem value="padre">Padre</MenuItem>
+                  <MenuItem value="madre">Madre</MenuItem>
+                  <MenuItem value="tutor">Tutor legal</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField fullWidth size="small" label="Nombre completo *"
+                value={meta.nombre || ''}
+                onChange={e => setMeta({ nombre: e.target.value })} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField fullWidth size="small" label="Número de documento *"
+                value={meta.documento || ''}
+                onChange={e => setMeta({ documento: e.target.value })} />
+            </Grid>
+          </Grid>
+          <FirmaPad
+            label="Firma"
+            value={datos.__firma_padre__ ?? ''}
+            onChange={handleImagen}
+            obligatorio
+          />
+          {datos.__firma_padre__ && fmtFirmaFecha && (
+            <Typography variant="caption" color="text.secondary" display="block" mt={0.8}>
+              Firmado el {fmtFirmaFecha}
+            </Typography>
+          )}
+        </>
+      )}
+    </Box>
+  );
+}
+
 // ── Campo dinámico del formulario ─────────────────────────────────────────────
 
 function CampoInput({ campo, value, onChange, activo = true, onToggle }) {
@@ -924,18 +1028,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             </Grid>
             {/* Firma del padre/acudiente — siempre obligatoria */}
             <Grid size={12}>
-              <Box sx={{ p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '2px solid #d0c4f7' }}>
-                <Typography variant="caption" color={COLOR} fontWeight={800} display="block" mb={1}
-                  sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.72rem' }}>
-                  Autorización del padre / acudiente
-                </Typography>
-                <FirmaPad
-                  label="Firma del padre / acudiente"
-                  value={datos.__firma_padre__ ?? ''}
-                  onChange={v => setDatos(prev => ({ ...prev, __firma_padre__: v }))}
-                  obligatorio
-                />
-              </Box>
+              <FirmaAutorizacion datos={datos} setDatos={setDatos} />
             </Grid>
           </Grid>
         ) : (
@@ -985,19 +1078,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               </Box>
             )}
             {/* Firma del padre/acudiente — siempre visible */}
-            <Box sx={{ mt: 1, p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '2px solid #d0c4f7' }}>
-              <Typography variant="caption" color={COLOR} fontWeight={800} display="block" mb={1}
-                sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.72rem' }}>
-                Autorización del padre / acudiente
-              </Typography>
-              {datos.__firma_padre__ ? (
-                <Box component="img" src={datos.__firma_padre__} alt="Firma del padre"
-                  sx={{ display: 'block', height: 60, maxWidth: 280, objectFit: 'contain',
-                        border: '1px solid #d0c4f7', borderRadius: 1, bgcolor: 'white' }} />
-              ) : (
-                <Chip label="Sin firma registrada" color="warning" size="small" variant="outlined" />
-              )}
-            </Box>
+            <FirmaAutorizacion datos={datos} setDatos={setDatos} disabled sx={{ mt: 1 }} />
 
             {observaciones && (
               <Box sx={{
@@ -1140,6 +1221,8 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     if (paso === 1) return !!selPrograma;
     if (paso === 2) {
       if (!datos.__firma_padre__) return false;
+      const _m = parseMeta(datos.__firma_meta__);
+      if (!_m.quien || !_m.nombre?.trim() || !_m.documento?.trim()) return false;
       return campos.every(c => {
         if (!c.obligatorio) return true;
         // Panel deshabilitado → no requiere datos
@@ -1317,18 +1400,8 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
               </Grid>
             )}
             {/* Firma del padre/acudiente — siempre obligatoria */}
-            <Box sx={{ mt: campos.length === 0 ? 0 : 1, p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '2px solid #d0c4f7' }}>
-              <Typography variant="caption" color={COLOR} fontWeight={800} display="block" mb={1}
-                sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.72rem' }}>
-                Autorización del padre / acudiente
-              </Typography>
-              <FirmaPad
-                label="Firma del padre / acudiente"
-                value={datos.__firma_padre__ ?? ''}
-                onChange={v => setDatos(prev => ({ ...prev, __firma_padre__: v }))}
-                obligatorio
-              />
-            </Box>
+            <FirmaAutorizacion datos={datos} setDatos={setDatos}
+              sx={{ mt: campos.length === 0 ? 0 : 1 }} />
           </Box>
         )}
       </DialogContent>

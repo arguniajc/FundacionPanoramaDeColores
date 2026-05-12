@@ -110,9 +110,42 @@ export function useSedes() {
     }
   };
 
+  const actualizarPrograma = (data) => {
+    setSedes(prev => prev.map(s => {
+      if (s.id !== data.sedeId) return s;
+      return { ...s, programas: s.programas.map(p => p.id === data.id ? data : p) };
+    }));
+  };
+
+  const autorizarRepPrograma = async (id) => {
+    try {
+      const { data } = await sedesRepository.autorizarRepPrograma(id);
+      actualizarPrograma(data);
+      setToast('Representante legal autorizado en este proyecto');
+      return true;
+    } catch (err) {
+      const msg = err?.response?.data?.mensaje ?? 'Error al autorizar.';
+      setError(msg);
+      return false;
+    }
+  };
+
+  const revocarRepPrograma = async (id) => {
+    try {
+      const { data } = await sedesRepository.revocarRepPrograma(id);
+      actualizarPrograma(data);
+      setToast('Autorización revocada');
+      return true;
+    } catch {
+      setError('Error al revocar la autorización.');
+      return false;
+    }
+  };
+
   return {
     sedes, cargando, error, toast, setToast, setError,
     guardarSede, toggleSede, eliminarSede,
     guardarPrograma, togglePrograma, eliminarPrograma,
+    autorizarRepPrograma, revocarRepPrograma,
   };
 }

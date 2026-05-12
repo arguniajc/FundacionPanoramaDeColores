@@ -10,7 +10,7 @@ using Npgsql;
 namespace FundacionPanorama.API.Controllers;
 
 public record SedeDto(Guid Id, string Nombre, string? Direccion, string? Ciudad, string? Telefono, bool Activo, DateTime FechaCreacion, DateTime FechaModificacion, List<ProgramaDto> Programas);
-public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, bool TieneTercero, string? NombreTercero, DateTime FechaCreacion, DateTime FechaModificacion);
+public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, bool TieneTercero, string? NombreTercero, DateTime FechaCreacion, DateTime FechaModificacion, bool RepAutorizado, DateTime? RepAutorizacionFecha, string? RepFirma, string? RepNombre, string? RepDocumento, string? RepCargo);
 public record CrearSedeDto(string Nombre, string? Direccion, string? Ciudad, string? Telefono);
 public record CrearProgramaDto(Guid SedeId, string Nombre, string? Descripcion, int? CupoMaximo, bool TieneTercero = false, string? NombreTercero = null);
 public record CampoDto(Guid Id, Guid ProgramaId, string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, bool Activo, string? Seccion, int Columnas, DateTime FechaCreacion, DateTime FechaModificacion);
@@ -173,6 +173,55 @@ public class SedesController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("programas/{id:guid}/autorizar-rep")]
+    public async Task<IActionResult> AutorizarRepLegal(Guid id)
+    {
+        var programa = await _db.Programas.Include(p => p.Sede).FirstOrDefaultAsync(p => p.Id == id);
+        if (programa is null) return NotFound();
+
+        string? repNombre = null, repDocumento = null, repCargo = null, repFirma = null;
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT nombre_rep_legal, documento_rep, cargo_rep, firma_rep FROM configuracion LIMIT 1";
+        await using (var r = await cmd.ExecuteReaderAsync())
+        {
+            if (!await r.ReadAsync())
+                return BadRequest(new { mensaje = "No hay configuración de representante legal guardada. Ve a Configuración y completa los datos." });
+            repNombre    = r.IsDBNull(0) ? null : r.GetString(0);
+            repDocumento = r.IsDBNull(1) ? null : r.GetString(1);
+            repCargo     = r.IsDBNull(2) ? null : r.GetString(2);
+            repFirma     = r.IsDBNull(3) ? null : r.GetString(3);
+        }
+
+        programa.RepAutorizado        = true;
+        programa.RepAutorizacionFecha = DateTime.UtcNow;
+        programa.RepNombre            = repNombre;
+        programa.RepDocumento         = repDocumento;
+        programa.RepCargo             = repCargo;
+        programa.RepFirma             = repFirma;
+        programa.FechaModificacion    = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return Ok(MapearPrograma(programa));
+    }
+
+    [HttpDelete("programas/{id:guid}/autorizar-rep")]
+    public async Task<IActionResult> RevocarRepLegal(Guid id)
+    {
+        var programa = await _db.Programas.Include(p => p.Sede).FirstOrDefaultAsync(p => p.Id == id);
+        if (programa is null) return NotFound();
+
+        programa.RepAutorizado        = false;
+        programa.RepAutorizacionFecha = null;
+        programa.RepNombre            = null;
+        programa.RepDocumento         = null;
+        programa.RepCargo             = null;
+        programa.RepFirma             = null;
+        programa.FechaModificacion    = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return Ok(MapearPrograma(programa));
+    }
+
     // ── Campos dinámicos — Npgsql directo (sin EF Core DbSet) ─────────────────
 
     [HttpGet("programas/{programaId:guid}/campos")]
@@ -291,6 +340,7 @@ public class SedesController : ControllerBase
 
     private static ProgramaDto MapearProgramaConSede(Programa p, string nombreSede) => new(
         p.Id, p.SedeId, nombreSede, p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo,
-        p.TieneTercero, p.NombreTercero, p.FechaCreacion, p.FechaModificacion
+        p.TieneTercero, p.NombreTercero, p.FechaCreacion, p.FechaModificacion,
+        p.RepAutorizado, p.RepAutorizacionFecha, p.RepFirma, p.RepNombre, p.RepDocumento, p.RepCargo
     );
 }

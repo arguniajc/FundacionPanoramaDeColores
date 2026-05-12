@@ -7,14 +7,16 @@ import {
   Switch, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
   useMediaQuery, useTheme,
 } from '@mui/material';
-import AddIcon           from '@mui/icons-material/Add';
-import DeleteIcon        from '@mui/icons-material/Delete';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import EditIcon          from '@mui/icons-material/Edit';
-import TuneIcon          from '@mui/icons-material/Tune';
-import VisibilityIcon    from '@mui/icons-material/Visibility';
-import ArrowUpwardIcon   from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import AddIcon              from '@mui/icons-material/Add';
+import DeleteIcon           from '@mui/icons-material/Delete';
+import DragIndicatorIcon    from '@mui/icons-material/DragIndicator';
+import EditIcon             from '@mui/icons-material/Edit';
+import TuneIcon             from '@mui/icons-material/Tune';
+import VisibilityIcon       from '@mui/icons-material/Visibility';
+import ArrowUpwardIcon      from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon    from '@mui/icons-material/ArrowDownward';
+import GavelIcon            from '@mui/icons-material/Gavel';
+import CheckCircleIcon      from '@mui/icons-material/CheckCircle';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
   useSensor, useSensors,
@@ -850,6 +852,7 @@ export default function ProgramasPage() {
   const {
     sedes, cargando, error, toast, setToast, setError,
     guardarPrograma, togglePrograma, eliminarPrograma,
+    autorizarRepPrograma, revocarRepPrograma,
   } = useSedes();
 
   const [camposPrograma, setCamposPrograma] = useState(null);
@@ -958,6 +961,57 @@ export default function ProgramasPage() {
                 )}
 
                 <Divider sx={{ my: 0.5 }} />
+
+                {/* Autorización rep. legal */}
+                <Box sx={{
+                  border: `1px solid ${p.repAutorizado ? '#c8e6c9' : '#e2d9f3'}`,
+                  borderRadius: 2, p: 1.2,
+                  bgcolor: p.repAutorizado ? '#f1f8e9' : '#fdfbff',
+                }}>
+                  <Box display="flex" alignItems="center" gap={0.8} mb={p.repAutorizado ? 0.5 : 0}>
+                    <GavelIcon sx={{ fontSize: 15, color: p.repAutorizado ? '#388e3c' : '#aaa' }} />
+                    <Typography variant="caption" fontWeight={700}
+                      sx={{ color: p.repAutorizado ? '#388e3c' : 'text.secondary', flex: 1 }}>
+                      Rep. Legal
+                    </Typography>
+                    {p.repAutorizado ? (
+                      <Tooltip title="Revocar autorización">
+                        <Button size="small" color="error" variant="outlined"
+                          onClick={() => revocarRepPrograma(p.id)}
+                          sx={{ fontSize: '0.65rem', py: 0.2, px: 1, minWidth: 0 }}>
+                          Revocar
+                        </Button>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="Autorizar representante legal en este proyecto">
+                        <Button size="small" variant="outlined" startIcon={<CheckCircleIcon sx={{ fontSize: 13 }} />}
+                          onClick={() => autorizarRepPrograma(p.id)}
+                          sx={{ color: COLOR, borderColor: COLOR, fontSize: '0.65rem',
+                                py: 0.2, px: 1, minWidth: 0 }}>
+                          Autorizar
+                        </Button>
+                      </Tooltip>
+                    )}
+                  </Box>
+                  {p.repAutorizado && (
+                    <Box>
+                      <Typography variant="caption" sx={{ color: '#2e7d32', display: 'block', fontWeight: 600 }}>
+                        {p.repNombre ?? '—'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.62rem' }}>
+                        {p.repDocumento ? `${p.repDocumento}` : ''}
+                        {p.repCargo ? ` · ${p.repCargo}` : ''}
+                      </Typography>
+                      {p.repAutorizacionFecha && (
+                        <Typography variant="caption" color="text.secondary"
+                          sx={{ display: 'block', fontSize: '0.6rem' }}>
+                          Desde {new Date(p.repAutorizacionFecha).toLocaleDateString('es-CO',
+                            { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </Box>
 
                 <Box display="flex" gap={1} flexWrap="wrap">
                   <Button size="small" variant="outlined" startIcon={<TuneIcon />}

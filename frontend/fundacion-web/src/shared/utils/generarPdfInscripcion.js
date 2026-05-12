@@ -104,7 +104,7 @@ function valorCampo(campo, datos) {
 const QUIEN_PDF_LABEL = { padre: 'Padre', madre: 'Madre', tutor: 'Tutor legal' };
 
 // ── Generador principal ───────────────────────────────────────────────────────
-export async function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos, observaciones, conTercero = false, nombreTercero = '' }) {
+export async function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos, observaciones, conTercero = false, nombreTercero = '', programa = {} }) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const PW = 210, PH = 297, ML = 13, CW = PW - ML * 2;
   let y = ML;
@@ -120,6 +120,16 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   const firmaQuienLabel = firmaMeta.quien ? (QUIEN_PDF_LABEL[firmaMeta.quien] ?? firmaMeta.quien) : null;
   const firmaFechaHora  = firmaMeta.fechaHora
     ? new Date(firmaMeta.fechaHora).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+    : null;
+
+  // Datos del representante legal (snapshot autorizado en el programa)
+  const repAutorizado = programa.repAutorizado === true;
+  const repFirma      = programa.repFirma   ?? null;
+  const repNombre     = programa.repNombre  ?? null;
+  const repDocumento  = programa.repDocumento ?? null;
+  const repCargo      = programa.repCargo   ?? null;
+  const repFechaLabel = programa.repAutorizacionFecha
+    ? new Date(programa.repAutorizacionFecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })
     : null;
 
   // ─── helpers ───────────────────────────────────────────────────────────────
@@ -447,8 +457,9 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   }
 
   // ─── Firmas ─────────────────────────────────────────────────────────────────
-  const firmaPadre = datos.__firma_padre__;
-  const FIRMA_H = firmaPadre ? 55 : 42; // más alto para acomodar metadatos del firmante
+  const firmaPadre  = datos.__firma_padre__;
+  const tieneImagen = !!(firmaPadre || (repAutorizado && repFirma));
+  const FIRMA_H     = tieneImagen ? 55 : 42;
   pageBreak(conTercero ? FIRMA_H + 15 : FIRMA_H);
   esp(6);
 
@@ -469,17 +480,22 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
 
   if (conTercero) {
     // ── 3 firmantes: Acudiente | Fundación | Entidad ejecutora ──────────────
-    const col  = CW / 3;
-    const sigH = firmaPadre ? 22 : 0; // altura reservada para imagen de firma
-    const lineY = y + (firmaPadre ? sigH + 4 : 18);
+    const col   = CW / 3;
+    const sigH  = tieneImagen ? 22 : 0;
+    const lineY = y + (tieneImagen ? sigH + 4 : 18);
     doc.setDrawColor(...BORDER);
 
     if (firmaPadre) {
-      // Imagen digital de la firma del padre en col 1
       try { doc.addImage(firmaPadre, 'PNG', ML + 4, y + 1, 50, sigH - 2); } catch {}
       doc.setFontSize(6);
       doc.setTextColor(...GRAY);
       doc.text('✓ Firma digital capturada', ML + 4, y + sigH + 2);
+    }
+    if (repAutorizado && repFirma && sigH > 0) {
+      try { doc.addImage(repFirma, 'PNG', ML + col + 4, y + 1, 50, sigH - 2); } catch {}
+      doc.setFontSize(6);
+      doc.setTextColor(...GRAY);
+      doc.text('✓ Firma digital capturada', ML + col + 4, y + sigH + 2);
     }
     doc.line(ML + 4,           lineY, ML + col - 4,       lineY);
     doc.line(ML + col + 4,     lineY, ML + col * 2 - 4,   lineY);
@@ -487,7 +503,6 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
 
     doc.setFontSize(7);
     doc.setTextColor(...GRAY);
-    // Col 1 — Acudiente con metadatos del firmante
     const acuLabel3 = firmaQuienLabel ? `Firma del ${firmaQuienLabel}` : 'Firma del Acudiente / Responsable';
     doc.text(acuLabel3, ML + 4, lineY + 4);
     doc.setFont('helvetica', 'bold');
@@ -498,9 +513,19 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
     doc.text(firmaMeta.documento ? `Doc: ${firmaMeta.documento}` : 'CC / Documento: ____________', ML + 4, lineY + 14);
     doc.text(firmaFechaHora ? `Firmado: ${firmaFechaHora}` : 'Fecha y hora: ______________', ML + 4, lineY + 19);
     // Col 2 — Fundación
-    doc.text('Firma Fundación Panorama de Colores', ML + col + 4,  lineY + 4);
-    doc.text('Cargo: ________________________',     ML + col + 4,  lineY + 9);
-    doc.text('Fecha: ________________________',     ML + col + 4,  lineY + 14);
+    doc.text('Firma Fundación Panorama de Colores', ML + col + 4, lineY + 4);
+    if (repAutorizado && repNombre) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...DARK);
+      doc.text(repNombre, ML + col + 4, lineY + 9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      if (repDocumento) doc.text(`Doc: ${repDocumento}`, ML + col + 4, lineY + 14);
+      if (repCargo)     doc.text(repCargo,               ML + col + 4, lineY + 19);
+    } else {
+      doc.text('Cargo: ________________________', ML + col + 4, lineY + 9);
+      doc.text('Fecha: ________________________', ML + col + 4, lineY + 14);
+    }
     // Col 3 — Tercero
     const etTercero = (nombreTercero || 'Entidad Ejecutora').slice(0, 28);
     doc.text(`Firma: ${etTercero}`,             ML + col * 2 + 4,  lineY + 4);
@@ -510,24 +535,28 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
     y = lineY + 24;
   } else {
     // ── 2 firmantes: Acudiente | Fundación ──────────────────────────────────
-    const mid  = ML + CW / 2;
-    const sigH = firmaPadre ? 22 : 0;
-    const lineY = y + (firmaPadre ? sigH + 4 : 18);
+    const mid   = ML + CW / 2;
+    const sigH  = tieneImagen ? 22 : 0;
+    const lineY = y + (tieneImagen ? sigH + 4 : 18);
     doc.setDrawColor(...BORDER);
 
     if (firmaPadre) {
-      // Imagen digital de la firma del padre
       try { doc.addImage(firmaPadre, 'PNG', ML + 8, y + 1, 60, sigH - 2); } catch {}
       doc.setFontSize(6);
       doc.setTextColor(...GRAY);
       doc.text('✓ Firma digital capturada', ML + 8, y + sigH + 2);
+    }
+    if (repAutorizado && repFirma && sigH > 0) {
+      try { doc.addImage(repFirma, 'PNG', mid + 8, y + 1, 60, sigH - 2); } catch {}
+      doc.setFontSize(6);
+      doc.setTextColor(...GRAY);
+      doc.text('✓ Firma digital capturada', mid + 8, y + sigH + 2);
     }
     doc.line(ML + 8,  lineY, mid - 8,     lineY);
     doc.line(mid + 8, lineY, ML + CW - 8, lineY);
 
     doc.setFontSize(7);
     doc.setTextColor(...GRAY);
-    // Columna acudiente — datos del firmante
     const acuLabel = firmaQuienLabel ? `Firma del ${firmaQuienLabel}` : 'Firma del Acudiente / Responsable';
     doc.text(acuLabel, ML + 8, lineY + 4);
     doc.setFont('helvetica', 'bold');
@@ -539,8 +568,18 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
     doc.text(firmaFechaHora ? `Firmado: ${firmaFechaHora}` : 'Fecha y hora: ______________', ML + 8, lineY + 19);
     // Columna fundación
     doc.text('Firma Fundación Panorama de Colores', mid + 8, lineY + 4);
-    doc.text('Cargo: _________________________________', mid + 8, lineY + 9);
-    doc.text('Fecha: _________________________________', mid + 8, lineY + 14);
+    if (repAutorizado && repNombre) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...DARK);
+      doc.text(repNombre, mid + 8, lineY + 9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      if (repDocumento) doc.text(`Doc: ${repDocumento}`, mid + 8, lineY + 14);
+      if (repCargo)     doc.text(repCargo,               mid + 8, lineY + 19);
+    } else {
+      doc.text('Cargo: _________________________________', mid + 8, lineY + 9);
+      doc.text('Fecha: _________________________________', mid + 8, lineY + 14);
+    }
 
     y = lineY + 24;
   }

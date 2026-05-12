@@ -831,6 +831,7 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         observaciones,
         conTercero:    programa.tieneTercero ?? false,
         nombreTercero: programa.nombreTercero ?? '',
+        programa,
       });
       // Abrir en nueva pestaña para imprimir desde el visor PDF
       const blob   = doc.output('blob');

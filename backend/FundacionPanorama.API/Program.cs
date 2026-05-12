@@ -327,6 +327,30 @@ var app = builder.Build();
           AND voluntario_id IN (SELECT id FROM voluntarios WHERE activo = false)",
         "voluntario_programas.limpiar_huerfanas");
 
+    // ── Módulo Configuración / Representante Legal ────────────────────────────
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS configuracion (
+            id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+            nombre_fundacion VARCHAR(200),
+            nit              VARCHAR(50),
+            direccion        VARCHAR(300),
+            telefono         VARCHAR(30),
+            nombre_rep_legal VARCHAR(200),
+            tipo_doc_rep     VARCHAR(20),
+            documento_rep    VARCHAR(50),
+            cargo_rep        VARCHAR(100),
+            firma_rep        TEXT,
+            updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+        """, "configuracion");
+
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_autorizado         BOOLEAN     NOT NULL DEFAULT false", "programas.rep_autorizado");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_autorizacion_fecha TIMESTAMPTZ",                       "programas.rep_autorizacion_fecha");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_firma              TEXT",                               "programas.rep_firma");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_nombre             VARCHAR(200)",                      "programas.rep_nombre");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_documento          VARCHAR(50)",                       "programas.rep_documento");
+    await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_cargo              VARCHAR(100)",                      "programas.rep_cargo");
+
     // Columnas retroactivas voluntarios (por si la tabla existía vacía)
     await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS tipo_documento     VARCHAR(20)",  "voluntarios.tipo_documento");
     await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS documento          VARCHAR(50)",  "voluntarios.documento");

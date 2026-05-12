@@ -30,6 +30,24 @@ public class Programa
     [Column("nombre_tercero"), MaxLength(200)]
     public string? NombreTercero { get; set; }
 
+    [Column("rep_autorizado")]
+    public bool RepAutorizado { get; set; } = false;
+
+    [Column("rep_autorizacion_fecha")]
+    public DateTime? RepAutorizacionFecha { get; set; }
+
+    [Column("rep_firma")]
+    public string? RepFirma { get; set; }
+
+    [Column("rep_nombre"), MaxLength(200)]
+    public string? RepNombre { get; set; }
+
+    [Column("rep_documento"), MaxLength(50)]
+    public string? RepDocumento { get; set; }
+
+    [Column("rep_cargo"), MaxLength(100)]
+    public string? RepCargo { get; set; }
+
     [Column("fecha_creacion")]
     public DateTime FechaCreacion { get; set; }
 

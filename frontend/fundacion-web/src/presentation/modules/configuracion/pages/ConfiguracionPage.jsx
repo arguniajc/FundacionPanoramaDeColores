@@ -1,10 +1,11 @@
 // Configuración global de la fundación y representante legal.
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Divider, FormControl,
-  Grid, InputLabel, MenuItem, Select, Snackbar, TextField, Typography,
+  Grid, InputLabel, MenuItem, Select, Snackbar, TextField, Tooltip, Typography,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
+import SaveIcon        from '@mui/icons-material/Save';
+import UploadFileIcon  from '@mui/icons-material/UploadFile';
 import FirmaPad from '../../../../shared/components/FirmaPad';
 import { configuracionRepository } from '../../../../infrastructure/repositories/configuracionRepository';
 
@@ -22,6 +23,104 @@ const VACIO = {
   cargoRep:        '',
   firmaRep:        '',
 };
+
+// Convierte un archivo de imagen a data URL base64
+function leerArchivoComoDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = (e) => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Redimensiona un data URL a máximo 600px de ancho manteniendo proporción
+function redimensionarImagen(dataUrl, maxW = 600) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio  = Math.min(1, maxW / img.naturalWidth);
+      const w      = Math.round(img.naturalWidth  * ratio);
+      const h      = Math.round(img.naturalHeight * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+// Bloque de firma: dibujar con pad O subir imagen desde archivo
+function FirmaRepresentante({ value, onChange }) {
+  const inputRef            = useRef(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [errImg,   setErrImg]   = useState('');
+
+  const handleSubir = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    if (!file.type.startsWith('image/')) {
+      setErrImg('El archivo debe ser una imagen (JPG, PNG, GIF…)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrImg('La imagen no puede superar 5 MB');
+      return;
+    }
+    setErrImg('');
+    setSubiendo(true);
+    try {
+      const raw      = await leerArchivoComoDataUrl(file);
+      const reducida = await redimensionarImagen(raw, 600);
+      onChange(reducida);
+    } catch {
+      setErrImg('No se pudo procesar la imagen.');
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  return (
+    <Box>
+      {/* FirmaPad maneja: mostrar imagen existente + "Cambiar firma" (dibujar) + "Quitar" */}
+      <FirmaPad
+        label="Firma del representante legal"
+        value={value}
+        onChange={onChange}
+      />
+
+      {/* Opción adicional: subir imagen desde archivo */}
+      <Box mt={1} display="flex" alignItems="center" gap={1}>
+        <Tooltip title="Sube una foto o escaneo de la firma (JPG, PNG…)">
+          <Button size="small" variant="outlined" startIcon={<UploadFileIcon />}
+            onClick={() => inputRef.current?.click()} disabled={subiendo}
+            sx={{ color: COLOR, borderColor: COLOR, fontSize: '0.75rem' }}>
+            {subiendo ? 'Procesando…' : 'Subir imagen de firma'}
+          </Button>
+        </Tooltip>
+        <Typography variant="caption" color="text.secondary">
+          JPG · PNG · máx. 5 MB
+        </Typography>
+      </Box>
+
+      {errImg && (
+        <Typography variant="caption" color="error" display="block" mt={0.5}>{errImg}</Typography>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleSubir}
+      />
+    </Box>
+  );
+}
 
 export default function ConfiguracionPage() {
   const [form,      setForm]      = useState(VACIO);
@@ -100,9 +199,7 @@ export default function ConfiguracionPage() {
         <Box>
           {/* ── Datos de la fundación ──────────────────────────────── */}
           <Box sx={{ mb: 1 }}>
-            <Box sx={{
-              bgcolor: COLOR, borderRadius: '8px 8px 0 0', px: 2, py: 1,
-            }}>
+            <Box sx={{ bgcolor: COLOR, borderRadius: '8px 8px 0 0', px: 2, py: 1 }}>
               <Typography variant="caption" fontWeight={800} color="white"
                 sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
                 Datos de la Fundación
@@ -135,9 +232,7 @@ export default function ConfiguracionPage() {
 
           {/* ── Representante legal ────────────────────────────────── */}
           <Box sx={{ mb: 3 }}>
-            <Box sx={{
-              bgcolor: COLOR, borderRadius: '8px 8px 0 0', px: 2, py: 1,
-            }}>
+            <Box sx={{ bgcolor: COLOR, borderRadius: '8px 8px 0 0', px: 2, py: 1 }}>
               <Typography variant="caption" fontWeight={800} color="white"
                 sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
                 Representante Legal
@@ -160,8 +255,7 @@ export default function ConfiguracionPage() {
                   <FormControl fullWidth size="small">
                     <InputLabel>Tipo de documento</InputLabel>
                     <Select label="Tipo de documento"
-                      value={form.tipoDocRep}
-                      onChange={set('tipoDocRep')}>
+                      value={form.tipoDocRep} onChange={set('tipoDocRep')}>
                       {TIPOS_DOC.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                     </Select>
                   </FormControl>
@@ -176,8 +270,7 @@ export default function ConfiguracionPage() {
                     value={form.cargoRep} onChange={set('cargoRep')} />
                 </Grid>
                 <Grid size={12}>
-                  <FirmaPad
-                    label="Firma del representante legal"
+                  <FirmaRepresentante
                     value={form.firmaRep}
                     onChange={(v) => setForm(p => ({ ...p, firmaRep: v }))}
                   />

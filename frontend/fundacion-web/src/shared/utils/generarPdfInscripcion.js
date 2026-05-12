@@ -322,6 +322,8 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
         // Panel de datos de padre/madre: sub-sección con todos sus campos
         if (esPanel1) {
           const v = datos[c1.id];
+          // Panel deshabilitado (switch apagado) → sin datos → omitir del PDF
+          if (!v) { i++; continue; }
           let d = {};
           try { if (v) d = JSON.parse(v); } catch {}
           const nd = (val) => val || '—';

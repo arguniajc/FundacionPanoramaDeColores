@@ -229,10 +229,17 @@ public class VoluntariosController : ControllerBase
         chk.Parameters.AddWithValue("id", id);
         if (Convert.ToInt64(await chk.ExecuteScalarAsync()) > 0)
         {
-            await using var upd = conn.CreateCommand();
-            upd.CommandText = "UPDATE voluntarios SET activo=false, fecha_modificacion=NOW() WHERE id=@id";
-            upd.Parameters.AddWithValue("id", id);
-            await upd.ExecuteNonQueryAsync();
+            // Soft delete: desactivar voluntario Y sus asignaciones
+            await using var upd1 = conn.CreateCommand();
+            upd1.CommandText = "UPDATE voluntarios SET activo=false, fecha_modificacion=NOW() WHERE id=@id";
+            upd1.Parameters.AddWithValue("id", id);
+            await upd1.ExecuteNonQueryAsync();
+
+            await using var upd2 = conn.CreateCommand();
+            upd2.CommandText = "UPDATE voluntario_programas SET activo=false WHERE voluntario_id=@id";
+            upd2.Parameters.AddWithValue("id", id);
+            await upd2.ExecuteNonQueryAsync();
+
             return NoContent();
         }
         await using var del = conn.CreateCommand();

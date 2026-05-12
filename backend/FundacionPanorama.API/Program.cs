@@ -320,6 +320,12 @@ var app = builder.Build();
         )
         """, "voluntario_programas");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_vol_prog_voluntario ON voluntario_programas(voluntario_id)", "voluntario_programas.idx_voluntario");
+    // Limpiar asignaciones huérfanas de voluntarios inactivos
+    await Migrar(@"
+        UPDATE voluntario_programas SET activo = false
+        WHERE activo = true
+          AND voluntario_id IN (SELECT id FROM voluntarios WHERE activo = false)",
+        "voluntario_programas.limpiar_huerfanas");
 
     // Columnas retroactivas voluntarios (por si la tabla existía vacía)
     await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS tipo_documento     VARCHAR(20)",  "voluntarios.tipo_documento");

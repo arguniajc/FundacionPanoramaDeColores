@@ -664,7 +664,7 @@ export default function InventarioPage() {
 
   // Cargar sedes y tipos (una sola vez)
   useEffect(() => {
-    sedesRepository.listar({ activo: true })
+    sedesRepository.listar({ soloActivas: true })
       .then(r => {
         const lista = r.data;
         setSedes(lista);

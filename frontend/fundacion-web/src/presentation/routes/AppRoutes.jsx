@@ -14,6 +14,7 @@ import InscripcionesPage    from '../modules/inscripciones/pages/InscripcionesPa
 import InventarioPage       from '../modules/inventario/pages/InventarioPage';
 import DonantesPage         from '../modules/donantes/pages/DonantesPage';
 import DonacionesPage       from '../modules/donaciones/pages/DonacionesPage';
+import VoluntariosPage      from '../modules/voluntarios/pages/VoluntariosPage';
 
 function AdminConLayout({ children }) {
   return (
@@ -39,7 +40,7 @@ export default function AppRoutes() {
       <Route path="/sede/proyectos"      element={<AdminConLayout><ProgramasPage /></AdminConLayout>} />
       <Route path="/sede/inscripciones"  element={<AdminConLayout><InscripcionesPage /></AdminConLayout>} />
       <Route path="/sede/actividades"    element={<AdminConLayout><ModuloEnDesarrollo nombre="Actividades" /></AdminConLayout>} />
-      <Route path="/sede/voluntarios"    element={<AdminConLayout><ModuloEnDesarrollo nombre="Voluntarios" /></AdminConLayout>} />
+      <Route path="/sede/voluntarios"    element={<AdminConLayout><VoluntariosPage /></AdminConLayout>} />
       <Route path="/sede/talento-humano" element={<AdminConLayout><ModuloEnDesarrollo nombre="Talento Humano" /></AdminConLayout>} />
       <Route path="/sede/contabilidad"   element={<AdminConLayout><ModuloEnDesarrollo nombre="Contabilidad" /></AdminConLayout>} />
       <Route path="/sede/inventario"     element={<AdminConLayout><InventarioPage /></AdminConLayout>} />

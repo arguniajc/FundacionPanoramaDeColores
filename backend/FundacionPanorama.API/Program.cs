@@ -287,6 +287,40 @@ var app = builder.Build();
     await Migrar("CREATE INDEX IF NOT EXISTS idx_donaciones_programa ON donaciones(programa_id)",  "donaciones.idx_programa");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_donaciones_sede     ON donaciones(sede_id)",      "donaciones.idx_sede");
 
+    // ── Módulo Voluntarios ────────────────────────────────────────────────────
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS voluntarios (
+            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            nombre             VARCHAR(200) NOT NULL,
+            tipo_documento     VARCHAR(20),
+            documento          VARCHAR(50),
+            email              VARCHAR(200),
+            telefono           VARCHAR(30),
+            ciudad             VARCHAR(100),
+            fecha_nacimiento   DATE,
+            fecha_inicio       DATE,
+            profesion          VARCHAR(100),
+            notas              TEXT,
+            activo             BOOLEAN      NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        )
+        """, "voluntarios");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS voluntario_programas (
+            id                 UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+            voluntario_id      UUID           NOT NULL,
+            programa_id        UUID,
+            sede_id            UUID,
+            horas_semanales    NUMERIC(6,2)   NOT NULL DEFAULT 0,
+            fecha_inicio       DATE,
+            activo             BOOLEAN        NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ    NOT NULL DEFAULT NOW()
+        )
+        """, "voluntario_programas");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_vol_prog_voluntario ON voluntario_programas(voluntario_id)", "voluntario_programas.idx_voluntario");
+
     await Migrar("""
         CREATE TABLE IF NOT EXISTS programas_campos (
             id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

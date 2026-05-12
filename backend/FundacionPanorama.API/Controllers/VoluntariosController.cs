@@ -59,7 +59,7 @@ public record CrearAsignacionVolDto(
 
 public record StatsVoluntariosDto(
     int     TotalVoluntarios,
-    int     TotalActivos,
+    int     NuevosEsteMes,
     int     ProgramasCubiertos,
     decimal TotalHorasSemanales
 );
@@ -120,8 +120,8 @@ public class VoluntariosController : ControllerBase
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             SELECT
-                COUNT(*),
                 COUNT(*) FILTER (WHERE activo = true),
+                COUNT(*) FILTER (WHERE activo = true AND fecha_creacion >= date_trunc('month', NOW())),
                 (SELECT COUNT(DISTINCT programa_id) FROM voluntario_programas WHERE activo = true AND programa_id IS NOT NULL),
                 (SELECT COALESCE(SUM(horas_semanales), 0) FROM voluntario_programas WHERE activo = true)
             FROM voluntarios";

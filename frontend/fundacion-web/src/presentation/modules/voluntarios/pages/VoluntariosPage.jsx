@@ -272,7 +272,7 @@ function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
 }
 
 // ── AsignacionesDialog ────────────────────────────────────────────────────────
-function AsignacionesDialog({ open, voluntario, onClose }) {
+function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
   const [asignaciones, setAsignaciones] = useState([]);
   const [cargando,     setCargando]     = useState(false);
   const [sedes,        setSedes]        = useState([]);
@@ -315,6 +315,7 @@ function AsignacionesDialog({ open, voluntario, onClose }) {
       });
       setAsignaciones(prev => [data, ...prev]);
       setForm({ sedeId: '', programaId: '', horasSemanales: '', fechaInicio: '' });
+      onCambio?.(voluntario.id);
     } catch (e) {
       setError(e?.response?.data?.mensaje || 'Error al agregar.');
     } finally {
@@ -327,6 +328,7 @@ function AsignacionesDialog({ open, voluntario, onClose }) {
     try {
       await voluntariosRepository.eliminarAsignacion(asig.id);
       setAsignaciones(prev => prev.filter(a => a.id !== asig.id));
+      onCambio?.(voluntario.id);
     } catch {}
   };
 
@@ -466,6 +468,15 @@ export default function VoluntariosPage() {
     recargarStats();
   };
 
+  // Cuando cambia una asignación: actualizar la card del voluntario + stats globales
+  const handleAsignacionCambio = useCallback(async (id) => {
+    try {
+      const { data } = await voluntariosRepository.obtener(id);
+      setVoluntarios(prev => prev.map(v => v.id === id ? data : v));
+    } catch {}
+    recargarStats();
+  }, []);
+
   const handleEliminar = async (v) => {
     if (!window.confirm(`¿Eliminar a "${v.nombre}"? Si tiene asignaciones quedará inactivo.`)) return;
     try {
@@ -503,8 +514,8 @@ export default function VoluntariosPage() {
             value={stats?.totalVoluntarios ?? '—'} color={COLOR} loading={!stats} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard icon={<PersonIcon />} label="Activos"
-            value={stats?.totalActivos ?? '—'} color="#059669" loading={!stats} />
+          <StatCard icon={<PersonIcon />} label="Nuevos este mes"
+            value={stats?.nuevosEsteMes ?? '—'} color="#059669" loading={!stats} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard icon={<AssignmentIcon />} label="Programas cubiertos"
@@ -571,6 +582,7 @@ export default function VoluntariosPage() {
       <AsignacionesDialog
         open={dialAsig.open} voluntario={dialAsig.voluntario}
         onClose={() => setDialAsig({ open: false, voluntario: null })}
+        onCambio={handleAsignacionCambio}
       />
 
       <Snackbar open={snack.open} autoHideDuration={3500}

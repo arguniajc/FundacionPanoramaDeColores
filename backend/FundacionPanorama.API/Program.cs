@@ -258,6 +258,35 @@ var app = builder.Build();
         )
         """, "donantes");
 
+    // Columnas adicionales donantes
+    await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS ciudad   VARCHAR(100)",  "donantes.ciudad");
+    await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS notas    TEXT",           "donantes.notas");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS donaciones (
+            id                 UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+            donante_id         UUID           NOT NULL,
+            tipo               VARCHAR(20)    NOT NULL DEFAULT 'dinero',
+            monto              NUMERIC(14,2),
+            item_id            UUID,
+            nombre_item        VARCHAR(200),
+            cantidad           NUMERIC(12,2),
+            unidad_medida      VARCHAR(50),
+            programa_id        UUID,
+            sede_id            UUID,
+            descripcion        TEXT,
+            fecha_donacion     DATE           NOT NULL DEFAULT CURRENT_DATE,
+            recibo_numero      VARCHAR(50),
+            activo             BOOLEAN        NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ    NOT NULL DEFAULT NOW()
+        )
+        """, "donaciones");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_donaciones_donante  ON donaciones(donante_id)",   "donaciones.idx_donante");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_donaciones_fecha    ON donaciones(fecha_donacion)", "donaciones.idx_fecha");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_donaciones_programa ON donaciones(programa_id)",  "donaciones.idx_programa");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_donaciones_sede     ON donaciones(sede_id)",      "donaciones.idx_sede");
+
     await Migrar("""
         CREATE TABLE IF NOT EXISTS programas_campos (
             id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -12,6 +12,8 @@ import DocumentosPage       from '../modules/documentos/pages/DocumentosPage';
 import ProgramasPage        from '../modules/programas/pages/ProgramasPage';
 import InscripcionesPage    from '../modules/inscripciones/pages/InscripcionesPage';
 import InventarioPage       from '../modules/inventario/pages/InventarioPage';
+import DonantesPage         from '../modules/donantes/pages/DonantesPage';
+import DonacionesPage       from '../modules/donaciones/pages/DonacionesPage';
 
 function AdminConLayout({ children }) {
   return (
@@ -32,8 +34,8 @@ export default function AppRoutes() {
       <Route path="/sede/sedes"          element={<AdminConLayout><SedesPage /></AdminConLayout>} />
       <Route path="/sede/log-descargas"  element={<AdminConLayout><LogDescargasPage /></AdminConLayout>} />
 
-      <Route path="/sede/donantes"       element={<AdminConLayout><ModuloEnDesarrollo nombre="Donantes" /></AdminConLayout>} />
-      <Route path="/sede/donaciones"     element={<AdminConLayout><ModuloEnDesarrollo nombre="Donaciones" /></AdminConLayout>} />
+      <Route path="/sede/donantes"       element={<AdminConLayout><DonantesPage /></AdminConLayout>} />
+      <Route path="/sede/donaciones"     element={<AdminConLayout><DonacionesPage /></AdminConLayout>} />
       <Route path="/sede/proyectos"      element={<AdminConLayout><ProgramasPage /></AdminConLayout>} />
       <Route path="/sede/inscripciones"  element={<AdminConLayout><InscripcionesPage /></AdminConLayout>} />
       <Route path="/sede/actividades"    element={<AdminConLayout><ModuloEnDesarrollo nombre="Actividades" /></AdminConLayout>} />

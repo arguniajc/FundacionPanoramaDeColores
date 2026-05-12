@@ -1473,64 +1473,67 @@ export default function InscripcionesPage() {
       ) : filtradas.length === 0 ? (
         <Alert severity="info">No hay inscripciones que coincidan con los filtros.</Alert>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Grid container spacing={2}>
           {filtradas.map(i => (
-            <Box key={i.id} sx={{
-              border: '1.5px solid #e2d9f3', borderRadius: 2, p: 2, bgcolor: '#fdfbff',
-              display: 'flex', gap: 2, alignItems: 'center',
-            }}>
-              {/* Avatar */}
-              <Avatar sx={{ bgcolor: COLOR, width: 46, height: 46, flexShrink: 0, fontWeight: 800 }}>
-                {(i.nombreBeneficiario || '?')[0].toUpperCase()}
-              </Avatar>
+            <Grid key={i.id} size={{ xs: 12, sm: 6, lg: 4 }}>
+              <Box sx={{
+                border: '1.5px solid #e2d9f3', borderRadius: 2, p: 2, bgcolor: '#fdfbff',
+                display: 'flex', flexDirection: 'column', height: '100%',
+              }}>
+                {/* Cabecera: avatar + nombre + documento */}
+                <Box display="flex" gap={1.5} alignItems="center" mb={1.2}>
+                  <Avatar sx={{ bgcolor: COLOR, width: 42, height: 42, flexShrink: 0, fontWeight: 800 }}>
+                    {(i.nombreBeneficiario || '?')[0].toUpperCase()}
+                  </Avatar>
+                  <Box minWidth={0} flex={1}>
+                    <Typography fontWeight={800} noWrap sx={{ fontSize: '0.93rem' }}>
+                      {i.nombreBeneficiario}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {i.documentoBeneficiario ?? 'Sin documento'}
+                    </Typography>
+                  </Box>
+                </Box>
 
-              {/* Info — ocupa todo el espacio disponible */}
-              <Box flex={1} minWidth={0}>
-                <Typography fontWeight={800} noWrap sx={{ fontSize: '0.97rem', mb: 0.3 }}>
-                  {i.nombreBeneficiario}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" display="block" mb={0.7}>
-                  {i.documentoBeneficiario ?? 'Sin documento'}
-                </Typography>
-                <Box display="flex" gap={1} flexWrap="wrap" alignItems="center" mb={0.7}>
+                {/* Chips: programa + estado */}
+                <Box display="flex" gap={0.8} flexWrap="wrap" alignItems="center" mb={1}>
                   <Chip label={i.nombrePrograma} size="small"
-                    sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600 }} />
+                    sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600, maxWidth: '100%' }} />
                   {chipEstado(i.estado)}
                 </Box>
-                <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
-                  <Typography variant="caption" color="text.secondary">{i.nombreSede}</Typography>
-                  <Typography variant="caption" color="text.disabled">·</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {new Date(i.fechaInscripcion).toLocaleDateString('es-CO')}
-                  </Typography>
-                </Box>
-              </Box>
 
-              {/* Controles — siempre columna, pegados a la derecha */}
-              <Box display="flex" flexDirection="column" gap={1} alignItems="flex-end" flexShrink={0}>
-                <FormControl size="small" sx={{ minWidth: 130 }}>
-                  <Select value={i.estado} size="small"
-                    disabled={cambiandoId === i.id}
-                    onChange={e => handleCambiarEstado(i.id, e.target.value)}>
-                    {ESTADOS.map(e => <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>)}
-                  </Select>
-                </FormControl>
-                <Box display="flex" gap={0.5}>
-                  <Tooltip title="Ver / Editar formulario">
-                    <IconButton size="small" onClick={() => setVerInscripcion(i)}>
-                      <VisibilityIcon fontSize="small" sx={{ color: COLOR }} />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Eliminar inscripción">
-                    <IconButton size="small" onClick={() => handleEliminar(i.id)}>
-                      <DeleteIcon fontSize="small" color="error" />
-                    </IconButton>
-                  </Tooltip>
+                {/* Sede · Fecha */}
+                <Typography variant="caption" color="text.secondary" mb={1.5}>
+                  {i.nombreSede} · {new Date(i.fechaInscripcion).toLocaleDateString('es-CO')}
+                </Typography>
+
+                {/* Footer con controles — empuja hacia el fondo */}
+                <Box display="flex" alignItems="center" justifyContent="space-between"
+                  mt="auto" pt={1.2} sx={{ borderTop: '1px solid #ede7f6' }}>
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <Select value={i.estado} size="small"
+                      disabled={cambiandoId === i.id}
+                      onChange={e => handleCambiarEstado(i.id, e.target.value)}>
+                      {ESTADOS.map(e => <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                  <Box display="flex" gap={0.5}>
+                    <Tooltip title="Ver / Editar formulario">
+                      <IconButton size="small" onClick={() => setVerInscripcion(i)}>
+                        <VisibilityIcon fontSize="small" sx={{ color: COLOR }} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Eliminar inscripción">
+                      <IconButton size="small" onClick={() => handleEliminar(i.id)}>
+                        <DeleteIcon fontSize="small" color="error" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </Box>
               </Box>
-            </Box>
+            </Grid>
           ))}
-        </Box>
+        </Grid>
       )}
 
       {nuevaAbierta && (

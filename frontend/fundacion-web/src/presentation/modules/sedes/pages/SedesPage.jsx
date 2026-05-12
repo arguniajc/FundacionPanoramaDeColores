@@ -160,7 +160,7 @@ function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarPrograma, o
   const [expandida, setExpandida] = useState(false);
 
   return (
-    <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', mb: 3 }}>
+    <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
       <Box
         sx={{
           display: 'flex', alignItems: 'center', gap: 2,
@@ -426,19 +426,22 @@ export default function SedesPage() {
           </Button>
         </Paper>
       ) : (
-        sedes.map(sede => (
-          <TarjetaSede
-            key={sede.id}
-            sede={sede}
-            onEditar={s    => setDialogSede({ abierto: true, inicial: s })}
-            onEliminar={s  => setConfirmEliminar({ tipo: 'sede', item: s })}
-            onToggle={handleToggleSede}
-            onNuevoPrograma={s => setDialogPrograma({ abierto: true, sedeId: s.id, inicial: null })}
-            onEditarPrograma={(s, p) => setDialogPrograma({ abierto: true, sedeId: s.id, inicial: p })}
-            onEliminarPrograma={p => setConfirmEliminar({ tipo: 'programa', item: p })}
-            onTogglePrograma={handleTogglePrograma}
-          />
-        ))
+        <Grid container spacing={2} alignItems="flex-start">
+          {sedes.map(sede => (
+            <Grid key={sede.id} size={{ xs: 12, lg: 6 }}>
+              <TarjetaSede
+                sede={sede}
+                onEditar={s    => setDialogSede({ abierto: true, inicial: s })}
+                onEliminar={s  => setConfirmEliminar({ tipo: 'sede', item: s })}
+                onToggle={handleToggleSede}
+                onNuevoPrograma={s => setDialogPrograma({ abierto: true, sedeId: s.id, inicial: null })}
+                onEditarPrograma={(s, p) => setDialogPrograma({ abierto: true, sedeId: s.id, inicial: p })}
+                onEliminarPrograma={p => setConfirmEliminar({ tipo: 'programa', item: p })}
+                onTogglePrograma={handleTogglePrograma}
+              />
+            </Grid>
+          ))}
+        </Grid>
       )}
 
       <DialogSede

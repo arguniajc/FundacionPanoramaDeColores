@@ -11,6 +11,7 @@ import LogDescargasPage     from '../modules/auditoria/pages/LogDescargasPage';
 import DocumentosPage       from '../modules/documentos/pages/DocumentosPage';
 import ProgramasPage        from '../modules/programas/pages/ProgramasPage';
 import InscripcionesPage    from '../modules/inscripciones/pages/InscripcionesPage';
+import InventarioPage       from '../modules/inventario/pages/InventarioPage';
 
 function AdminConLayout({ children }) {
   return (
@@ -39,7 +40,7 @@ export default function AppRoutes() {
       <Route path="/sede/voluntarios"    element={<AdminConLayout><ModuloEnDesarrollo nombre="Voluntarios" /></AdminConLayout>} />
       <Route path="/sede/talento-humano" element={<AdminConLayout><ModuloEnDesarrollo nombre="Talento Humano" /></AdminConLayout>} />
       <Route path="/sede/contabilidad"   element={<AdminConLayout><ModuloEnDesarrollo nombre="Contabilidad" /></AdminConLayout>} />
-      <Route path="/sede/inventario"     element={<AdminConLayout><ModuloEnDesarrollo nombre="Inventario" /></AdminConLayout>} />
+      <Route path="/sede/inventario"     element={<AdminConLayout><InventarioPage /></AdminConLayout>} />
       <Route path="/sede/reportes"       element={<AdminConLayout><ModuloEnDesarrollo nombre="Reportes" /></AdminConLayout>} />
       <Route path="/sede/documentos"     element={<AdminConLayout><DocumentosPage /></AdminConLayout>} />
       <Route path="/sede/seguridad"      element={<AdminConLayout><ModuloEnDesarrollo nombre="Seguridad" /></AdminConLayout>} />

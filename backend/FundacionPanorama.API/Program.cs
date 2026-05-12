@@ -171,6 +171,61 @@ var app = builder.Build();
     await Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_programa      ON inscripciones(programa_id)",      "inscripciones.idx_programa");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_beneficiario  ON inscripciones(beneficiario_id)",  "inscripciones.idx_beneficiario");
 
+    // ── Módulo Inventario ─────────────────────────────────────────────────────
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS cat_tipo_movimiento_inv (
+            id           SERIAL      PRIMARY KEY,
+            codigo       VARCHAR(50) NOT NULL UNIQUE,
+            nombre       VARCHAR(100) NOT NULL,
+            descripcion  TEXT,
+            afecta_stock CHAR(1)     NOT NULL DEFAULT '+'
+        )
+        """, "cat_tipo_movimiento_inv");
+
+    await Migrar("""
+        INSERT INTO cat_tipo_movimiento_inv (codigo, nombre, descripcion, afecta_stock) VALUES
+            ('ENTRADA',            'Entrada',              'Artículo recibido o comprado',                '+'),
+            ('SALIDA',             'Salida para uso',       'Artículo usado internamente',                '-'),
+            ('DONACION_RECIBIDA',  'Donación recibida',     'Artículo recibido como donación',            '+'),
+            ('DONACION_ENTREGADA', 'Donación entregada',    'Artículo entregado a programa/beneficiario', '-'),
+            ('AJUSTE_POSITIVO',    'Ajuste positivo',       'Corrección de inventario hacia arriba',      '+'),
+            ('AJUSTE_NEGATIVO',    'Ajuste negativo',       'Corrección de inventario hacia abajo',       '-')
+        ON CONFLICT (codigo) DO NOTHING
+        """, "cat_tipo_movimiento_inv.seed");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS inventario_items (
+            id                 UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+            codigo             VARCHAR(50),
+            nombre             VARCHAR(200)   NOT NULL,
+            descripcion        TEXT,
+            unidad_medida      VARCHAR(50)    NOT NULL DEFAULT 'unidad',
+            stock_actual       NUMERIC(12,2)  NOT NULL DEFAULT 0,
+            stock_minimo       NUMERIC(12,2)  NOT NULL DEFAULT 0,
+            activo             BOOLEAN        NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ    NOT NULL DEFAULT NOW()
+        )
+        """, "inventario_items");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS inventario_movimientos (
+            id                 UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+            item_id            UUID           NOT NULL,
+            tipo_movimiento_id INT            NOT NULL,
+            cantidad           NUMERIC(12,2)  NOT NULL,
+            stock_resultante   NUMERIC(12,2)  NOT NULL,
+            motivo             TEXT,
+            donante            VARCHAR(200),
+            usuario_email      VARCHAR(255),
+            fecha_movimiento   TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+            fecha_creacion     TIMESTAMPTZ    NOT NULL DEFAULT NOW()
+        )
+        """, "inventario_movimientos");
+
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_inv_mov_item  ON inventario_movimientos(item_id)",         "inventario_movimientos.idx_item");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_inv_mov_fecha ON inventario_movimientos(fecha_movimiento)", "inventario_movimientos.idx_fecha");
+
     await Migrar("""
         CREATE TABLE IF NOT EXISTS programas_campos (
             id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

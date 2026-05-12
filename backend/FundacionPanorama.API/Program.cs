@@ -226,6 +226,38 @@ var app = builder.Build();
     await Migrar("CREATE INDEX IF NOT EXISTS idx_inv_mov_item  ON inventario_movimientos(item_id)",         "inventario_movimientos.idx_item");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_inv_mov_fecha ON inventario_movimientos(fecha_movimiento)", "inventario_movimientos.idx_fecha");
 
+    // Columnas adicionales inventario (retroactivas)
+    await Migrar("ALTER TABLE inventario_items ADD COLUMN IF NOT EXISTS sede_id     UUID",                                        "inventario_items.sede_id");
+    await Migrar("ALTER TABLE inventario_items ADD COLUMN IF NOT EXISTS categoria   VARCHAR(50) NOT NULL DEFAULT 'Otros'",        "inventario_items.categoria");
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS sede_destino_id     UUID",                          "inventario_movimientos.sede_destino_id");
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS donante_id          UUID",                          "inventario_movimientos.donante_id");
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS transferencia_grupo UUID",                          "inventario_movimientos.transferencia_grupo");
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS beneficiario_id     UUID",                          "inventario_movimientos.beneficiario_id");
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS programa_id         UUID",                          "inventario_movimientos.programa_id");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_inv_mov_sede_destino ON inventario_movimientos(sede_destino_id)", "inventario_movimientos.idx_sede_destino");
+
+    await Migrar("""
+        INSERT INTO cat_tipo_movimiento_inv (codigo, nombre, descripcion, afecta_stock) VALUES
+            ('TRANSFERENCIA_SALIDA',  'Transferencia salida',  'Artículo enviado a otra sede', '-'),
+            ('TRANSFERENCIA_ENTRADA', 'Transferencia entrada', 'Artículo recibido de otra sede', '+')
+        ON CONFLICT (codigo) DO NOTHING
+        """, "cat_tipo_movimiento_inv.transfers");
+
+    // Tabla donantes (si no existe aún)
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS donantes (
+            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            nombre             VARCHAR(200) NOT NULL,
+            tipo               VARCHAR(20)  NOT NULL DEFAULT 'persona',
+            documento          VARCHAR(50),
+            email              VARCHAR(200),
+            telefono           VARCHAR(30),
+            activo             BOOLEAN      NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        )
+        """, "donantes");
+
     await Migrar("""
         CREATE TABLE IF NOT EXISTS programas_campos (
             id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -9,12 +9,18 @@ export const inventarioRepository = {
   eliminarItem:    (id)        => apiClient.delete(`/api/inventario/items/${id}`),
 
   // Movimientos
-  listarMovimientos: (params)  => apiClient.get('/api/inventario/movimientos', { params }),
-  registrarMovimiento: (datos) => apiClient.post('/api/inventario/movimientos', datos),
+  listarMovimientos:   (params) => apiClient.get('/api/inventario/movimientos', { params }),
+  registrarMovimiento: (datos)  => apiClient.post('/api/inventario/movimientos', datos),
+
+  // Transferencia entre sedes
+  transferir: (datos) => apiClient.post('/api/inventario/transferencia', datos),
 
   // Catálogo de tipos
-  listarTipos: ()              => apiClient.get('/api/inventario/tipos'),
+  listarTipos: () => apiClient.get('/api/inventario/tipos'),
 
-  // Estadísticas
-  stats: ()                    => apiClient.get('/api/inventario/stats'),
+  // Donantes (autocomplete)
+  buscarDonantes: (buscar) => apiClient.get('/api/inventario/donantes', { params: buscar ? { buscar } : {} }),
+
+  // Estadísticas (opcional: filtrar por sedeId)
+  stats: (params) => apiClient.get('/api/inventario/stats', { params }),
 };

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Autocomplete, Avatar, Box, Button, Chip, CircularProgress,
-  Dialog, DialogActions, DialogContent, DialogTitle,
+  Dialog, DialogActions, DialogContent, DialogTitle, Divider,
   FormControl, FormControlLabel, Grid, IconButton, InputAdornment, InputLabel,
   MenuItem, Select, Snackbar, Step, StepLabel, Stepper, Switch,
   TextField, Tooltip, Typography, useMediaQuery, useTheme,
@@ -1477,16 +1477,17 @@ export default function InscripcionesPage() {
           {filtradas.map(i => (
             <Grid key={i.id} size={{ xs: 12, sm: 6, lg: 4 }}>
               <Box sx={{
-                border: '1.5px solid #e2d9f3', borderRadius: 2, p: 2, bgcolor: '#fdfbff',
-                display: 'flex', flexDirection: 'column', height: '100%',
+                border: '1.5px solid #e2d9f3', borderRadius: 2, overflow: 'hidden',
+                bgcolor: '#fdfbff', display: 'flex', flexDirection: 'column', height: '100%',
               }}>
-                {/* Cabecera: avatar + nombre + documento */}
-                <Box display="flex" gap={1.5} alignItems="center" mb={1.2}>
-                  <Avatar sx={{ bgcolor: COLOR, width: 42, height: 42, flexShrink: 0, fontWeight: 800 }}>
+
+                {/* ── Cabecera: avatar + nombre + documento ── */}
+                <Box sx={{ px: 2, pt: 2, pb: 1.5, display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <Avatar sx={{ bgcolor: COLOR, width: 44, height: 44, flexShrink: 0, fontWeight: 800 }}>
                     {(i.nombreBeneficiario || '?')[0].toUpperCase()}
                   </Avatar>
                   <Box minWidth={0} flex={1}>
-                    <Typography fontWeight={800} noWrap sx={{ fontSize: '0.93rem' }}>
+                    <Typography fontWeight={800} noWrap sx={{ fontSize: '0.95rem' }}>
                       {i.nombreBeneficiario}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" display="block">
@@ -1495,21 +1496,45 @@ export default function InscripcionesPage() {
                   </Box>
                 </Box>
 
-                {/* Chips: programa + estado */}
-                <Box display="flex" gap={0.8} flexWrap="wrap" alignItems="center" mb={1}>
-                  <Chip label={i.nombrePrograma} size="small"
-                    sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600, maxWidth: '100%' }} />
-                  {chipEstado(i.estado)}
+                <Divider />
+
+                {/* ── Cuerpo: programa / sede / fecha ── */}
+                <Box sx={{ px: 2, py: 2, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}
+                      sx={{ textTransform: 'uppercase', fontSize: '0.62rem', letterSpacing: '0.07em' }}>
+                      Programa
+                    </Typography>
+                    <Chip label={i.nombrePrograma} size="small"
+                      sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600 }} />
+                  </Box>
+                  <Grid container spacing={1.5}>
+                    <Grid size={6}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}
+                        sx={{ textTransform: 'uppercase', fontSize: '0.62rem', letterSpacing: '0.07em' }}>
+                        Sede
+                      </Typography>
+                      <Typography variant="body2" noWrap>{i.nombreSede}</Typography>
+                    </Grid>
+                    <Grid size={6}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}
+                        sx={{ textTransform: 'uppercase', fontSize: '0.62rem', letterSpacing: '0.07em' }}>
+                        Inscripción
+                      </Typography>
+                      <Typography variant="body2">
+                        {new Date(i.fechaInscripcion).toLocaleDateString('es-CO')}
+                      </Typography>
+                    </Grid>
+                  </Grid>
                 </Box>
 
-                {/* Sede · Fecha */}
-                <Typography variant="caption" color="text.secondary" mb={1.5}>
-                  {i.nombreSede} · {new Date(i.fechaInscripcion).toLocaleDateString('es-CO')}
-                </Typography>
-
-                {/* Footer con controles — empuja hacia el fondo */}
-                <Box display="flex" alignItems="center" justifyContent="space-between"
-                  mt="auto" pt={1.2} sx={{ borderTop: '1px solid #ede7f6' }}>
+                {/* ── Pie: selector de estado + acciones ── */}
+                <Box sx={{
+                  px: 2, py: 1.5,
+                  bgcolor: 'rgba(78,27,149,0.04)',
+                  borderTop: '1.5px solid #e2d9f3',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
                   <FormControl size="small" sx={{ minWidth: 120 }}>
                     <Select value={i.estado} size="small"
                       disabled={cambiandoId === i.id}
@@ -1530,6 +1555,7 @@ export default function InscripcionesPage() {
                     </Tooltip>
                   </Box>
                 </Box>
+
               </Box>
             </Grid>
           ))}

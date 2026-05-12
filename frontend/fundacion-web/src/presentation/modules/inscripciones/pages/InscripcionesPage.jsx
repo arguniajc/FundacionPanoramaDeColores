@@ -96,15 +96,78 @@ const QUIEN_FIRMA_LABEL = { padre: 'Padre', madre: 'Madre', tutor: 'Tutor legal'
 function parseMeta(raw) {
   try { return JSON.parse(raw || '{}'); } catch { return {}; }
 }
+function parsePanelData(raw) {
+  try { return JSON.parse(raw || '{}'); } catch { return {}; }
+}
 
-function FirmaAutorizacion({ datos, setDatos, disabled = false, sx = {} }) {
+// Determina automáticamente quien firma según los paneles activos y pre-carga nombre/documento.
+// panelActivo: { [campoId]: bool }  |  campos: array de campos del formulario dinámico
+function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = [], disabled = false, sx = {} }) {
   const meta = parseMeta(datos.__firma_meta__);
+
+  // Identificar los campos de tipo panel
+  const campoPadre = campos.find(c => c.tipo === 'datos_padre');
+  const campoMadre = campos.find(c => c.tipo === 'datos_madre');
+  const campoTutor = campos.find(c => c.tipo === 'datos_tutor');
+
+  const padrOn  = !!(campoPadre && panelActivo[campoPadre.id] !== false);
+  const madreOn = !!(campoMadre && panelActivo[campoMadre.id] !== false);
+  const tutorOn = !!(campoTutor && panelActivo[campoTutor.id] !== false);
+
+  // Opciones de quien puede firmar según paneles activos
+  const opcionesQuien = [
+    padrOn  && 'padre',
+    madreOn && 'madre',
+    tutorOn && 'tutor',
+  ].filter(Boolean);
+
+  // Si solo hay un panel activo, el quien se determina solo
+  const quienAuto = opcionesQuien.length === 1 ? opcionesQuien[0] : null;
+
+  // Quien efectivo: auto (1 panel) o el que el usuario seleccionó (2 paneles)
+  const quienEfectivo = quienAuto || meta.quien || '';
+
+  // Datos del panel correspondiente al quien efectivo
+  const campoEfectivo =
+    quienEfectivo === 'padre' ? campoPadre :
+    quienEfectivo === 'madre' ? campoMadre :
+    quienEfectivo === 'tutor' ? campoTutor : null;
+  const dPanel     = parsePanelData(campoEfectivo ? datos[campoEfectivo.id] : null);
+  const nombreAuto = [dPanel.nombres, dPanel.apellidos].filter(Boolean).join(' ').trim();
+  const docAuto    = dPanel.numDoc || '';
+
+  // Sincronizar meta cuando hay auto-fill (efecto estable por clave primitiva)
+  const autoKey = `${quienEfectivo}|${nombreAuto}|${docAuto}`;
+  useEffect(() => {
+    if (disabled || !quienEfectivo || !campoEfectivo) return;
+    const curr = parseMeta(datos.__firma_meta__);
+    const updates = {};
+    if (quienAuto && curr.quien !== quienAuto) updates.quien = quienAuto;
+    if (nombreAuto && curr.nombre !== nombreAuto) updates.nombre = nombreAuto;
+    if (docAuto    && curr.documento !== docAuto) updates.documento = docAuto;
+    if (!Object.keys(updates).length) return;
+    setDatos(prev => ({
+      ...prev,
+      __firma_meta__: JSON.stringify({ ...parseMeta(prev.__firma_meta__), ...updates }),
+    }));
+  }, [autoKey, disabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setMeta = (changes) =>
     setDatos(prev => ({
       ...prev,
       __firma_meta__: JSON.stringify({ ...parseMeta(prev.__firma_meta__), ...changes }),
     }));
+
+  // Al seleccionar quien (caso 2 paneles), pre-llenar nombre y documento
+  const handleQuien = (v) => {
+    const campo = v === 'padre' ? campoPadre : v === 'madre' ? campoMadre : v === 'tutor' ? campoTutor : null;
+    const d = parsePanelData(campo ? datos[campo.id] : null);
+    setMeta({
+      quien:     v,
+      nombre:    [d.nombres, d.apellidos].filter(Boolean).join(' ').trim() || meta.nombre || '',
+      documento: d.numDoc || meta.documento || '',
+    });
+  };
 
   const handleImagen = (v) =>
     setDatos(prev => ({
@@ -120,6 +183,14 @@ function FirmaAutorizacion({ datos, setDatos, disabled = false, sx = {} }) {
     ? new Date(meta.fechaHora).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
     : null;
 
+  // Valores a mostrar (prioriza auto-fill sobre meta)
+  const nombreMostrar   = nombreAuto || meta.nombre   || '';
+  const documentoMostrar = docAuto   || meta.documento || '';
+
+  // Campos deshabilitados cuando hay datos del panel para ese campo
+  const nombreDisabled   = !!nombreAuto;
+  const documentoDisabled = !!docAuto;
+
   return (
     <Box sx={{ p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '2px solid #d0c4f7', ...sx }}>
       <Typography variant="caption" color={COLOR} fontWeight={800} display="block" mb={1.5}
@@ -128,6 +199,7 @@ function FirmaAutorizacion({ datos, setDatos, disabled = false, sx = {} }) {
       </Typography>
 
       {disabled ? (
+        /* ── Vista ── */
         datos.__firma_padre__ ? (
           <Box>
             <Box component="img" src={datos.__firma_padre__} alt="Firma"
@@ -138,45 +210,68 @@ function FirmaAutorizacion({ datos, setDatos, disabled = false, sx = {} }) {
                 <Chip size="small" label={QUIEN_FIRMA_LABEL[meta.quien] ?? meta.quien}
                   sx={{ bgcolor: `${COLOR}18`, color: COLOR, fontWeight: 700, fontSize: '0.72rem' }} />
               )}
-              {meta.nombre && (
-                <Typography variant="caption" fontWeight={600}>{meta.nombre}</Typography>
-              )}
-              {meta.documento && (
-                <Typography variant="caption" color="text.secondary">Doc: {meta.documento}</Typography>
-              )}
-              {fmtFirmaFecha && (
-                <Typography variant="caption" color="text.secondary">{fmtFirmaFecha}</Typography>
-              )}
+              {meta.nombre    && <Typography variant="caption" fontWeight={600}>{meta.nombre}</Typography>}
+              {meta.documento && <Typography variant="caption" color="text.secondary">Doc: {meta.documento}</Typography>}
+              {fmtFirmaFecha  && <Typography variant="caption" color="text.secondary">{fmtFirmaFecha}</Typography>}
             </Box>
           </Box>
         ) : (
           <Chip label="Sin firma registrada" color="warning" size="small" variant="outlined" />
         )
       ) : (
+        /* ── Edición / creación ── */
         <>
           <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+            {/* Quien firma */}
             <Grid size={{ xs: 12, sm: 4 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>¿Quién firma? *</InputLabel>
-                <Select value={meta.quien || ''} label="¿Quién firma? *"
-                  onChange={e => setMeta({ quien: e.target.value })}>
-                  <MenuItem value="padre">Padre</MenuItem>
-                  <MenuItem value="madre">Madre</MenuItem>
-                  <MenuItem value="tutor">Tutor legal</MenuItem>
-                </Select>
-              </FormControl>
+              {quienAuto ? (
+                /* Solo 1 panel activo — auto-detectado, se muestra como chip */
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, height: '40px',
+                            px: 1.5, bgcolor: `${COLOR}10`, borderRadius: 1.5 }}>
+                  <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                    Firma:
+                  </Typography>
+                  <Chip size="small" label={QUIEN_FIRMA_LABEL[quienAuto]}
+                    sx={{ bgcolor: `${COLOR}20`, color: COLOR, fontWeight: 700, fontSize: '0.72rem' }} />
+                </Box>
+              ) : (
+                /* 2 paneles o ninguno — el usuario elige */
+                <FormControl fullWidth size="small">
+                  <InputLabel>¿Quién firma? *</InputLabel>
+                  <Select value={meta.quien || ''} label="¿Quién firma? *"
+                    onChange={e => handleQuien(e.target.value)}>
+                    {opcionesQuien.length > 0
+                      ? opcionesQuien.map(q => (
+                          <MenuItem key={q} value={q}>{QUIEN_FIRMA_LABEL[q]}</MenuItem>
+                        ))
+                      : [
+                          <MenuItem key="padre" value="padre">Padre</MenuItem>,
+                          <MenuItem key="madre" value="madre">Madre</MenuItem>,
+                          <MenuItem key="tutor" value="tutor">Tutor legal</MenuItem>,
+                        ]
+                    }
+                  </Select>
+                </FormControl>
+              )}
             </Grid>
+
+            {/* Nombre completo */}
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField fullWidth size="small" label="Nombre completo *"
-                value={meta.nombre || ''}
+                value={nombreMostrar}
+                disabled={nombreDisabled}
                 onChange={e => setMeta({ nombre: e.target.value })} />
             </Grid>
+
+            {/* Documento */}
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField fullWidth size="small" label="Número de documento *"
-                value={meta.documento || ''}
+                value={documentoMostrar}
+                disabled={documentoDisabled}
                 onChange={e => setMeta({ documento: e.target.value })} />
             </Grid>
           </Grid>
+
           <FirmaPad
             label="Firma"
             value={datos.__firma_padre__ ?? ''}
@@ -1028,7 +1123,8 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             </Grid>
             {/* Firma del padre/acudiente — siempre obligatoria */}
             <Grid size={12}>
-              <FirmaAutorizacion datos={datos} setDatos={setDatos} />
+              <FirmaAutorizacion datos={datos} setDatos={setDatos}
+                panelActivo={panelActivo} campos={campos} />
             </Grid>
           </Grid>
         ) : (
@@ -1078,7 +1174,8 @@ function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               </Box>
             )}
             {/* Firma del padre/acudiente — siempre visible */}
-            <FirmaAutorizacion datos={datos} setDatos={setDatos} disabled sx={{ mt: 1 }} />
+            <FirmaAutorizacion datos={datos} setDatos={setDatos}
+              panelActivo={panelActivo} campos={campos} disabled sx={{ mt: 1 }} />
 
             {observaciones && (
               <Box sx={{
@@ -1401,6 +1498,7 @@ function NuevaInscripcionDialog({ onCerrar, onCreada }) {
             )}
             {/* Firma del padre/acudiente — siempre obligatoria */}
             <FirmaAutorizacion datos={datos} setDatos={setDatos}
+              panelActivo={panelActivo} campos={campos}
               sx={{ mt: campos.length === 0 ? 0 : 1 }} />
           </Box>
         )}

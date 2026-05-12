@@ -321,6 +321,20 @@ var app = builder.Build();
         """, "voluntario_programas");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_vol_prog_voluntario ON voluntario_programas(voluntario_id)", "voluntario_programas.idx_voluntario");
 
+    // Columnas retroactivas voluntarios (por si la tabla existía vacía)
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS tipo_documento     VARCHAR(20)",  "voluntarios.tipo_documento");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS documento          VARCHAR(50)",  "voluntarios.documento");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS email              VARCHAR(200)", "voluntarios.email");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS telefono           VARCHAR(30)",  "voluntarios.telefono");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS ciudad             VARCHAR(100)", "voluntarios.ciudad");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS fecha_nacimiento   DATE",         "voluntarios.fecha_nacimiento");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS fecha_inicio       DATE",         "voluntarios.fecha_inicio");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS profesion          VARCHAR(100)", "voluntarios.profesion");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS notas              TEXT",         "voluntarios.notas");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS activo             BOOLEAN NOT NULL DEFAULT true",              "voluntarios.activo");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS fecha_creacion     TIMESTAMPTZ NOT NULL DEFAULT NOW()",         "voluntarios.fecha_creacion");
+    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()",         "voluntarios.fecha_modificacion");
+
     await Migrar("""
         CREATE TABLE IF NOT EXISTS programas_campos (
             id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

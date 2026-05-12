@@ -5,6 +5,7 @@ import {
   Chip, Avatar, Divider, CircularProgress, Snackbar, Alert, InputAdornment,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper,
 } from '@mui/material';
+// FormControl, InputLabel, Select, MenuItem siguen usándose en AsignacionesDialog
 import AddIcon             from '@mui/icons-material/Add';
 import EditIcon            from '@mui/icons-material/Edit';
 import DeleteIcon          from '@mui/icons-material/Delete';
@@ -20,6 +21,7 @@ import AssignmentIcon      from '@mui/icons-material/Assignment';
 import AccessTimeIcon      from '@mui/icons-material/AccessTime';
 import { voluntariosRepository } from '../../../../infrastructure/repositories/voluntariosRepository';
 import { sedesRepository }        from '../../../../infrastructure/repositories/sedesRepository';
+import { CampoFecha, CampoDocumento, CampoCiudad } from '../../../../shared/components/form/FormControles';
 
 const COLOR = '#7c3aed';
 
@@ -222,21 +224,12 @@ function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
             <TextField fullWidth size="small" label="Nombre completo *" value={form.nombre}
               onChange={e => set('nombre', e.target.value)} />
           </Grid>
-          <Grid size={5}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Tipo documento</InputLabel>
-              <Select value={form.tipoDocumento} label="Tipo documento" onChange={e => set('tipoDocumento', e.target.value)}>
-                <MenuItem value=""><em>—</em></MenuItem>
-                <MenuItem value="CC">Cédula</MenuItem>
-                <MenuItem value="CE">Cédula extranjería</MenuItem>
-                <MenuItem value="TI">Tarjeta identidad</MenuItem>
-                <MenuItem value="PP">Pasaporte</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={7}>
-            <TextField fullWidth size="small" label="Número documento" value={form.documento}
-              onChange={e => set('documento', e.target.value)} />
+          <Grid size={12}>
+            <CampoDocumento
+              tipoDocumento={form.tipoDocumento} documento={form.documento}
+              onChangeTipo={v => set('tipoDocumento', v)}
+              onChangeNumero={v => set('documento', v)}
+            />
           </Grid>
           <Grid size={6}>
             <TextField fullWidth size="small" label="Email" type="email" value={form.email}
@@ -247,22 +240,19 @@ function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
               onChange={e => set('telefono', e.target.value)} />
           </Grid>
           <Grid size={6}>
-            <TextField fullWidth size="small" label="Ciudad" value={form.ciudad}
-              onChange={e => set('ciudad', e.target.value)} />
+            <CampoCiudad value={form.ciudad} onChange={v => set('ciudad', v)} />
           </Grid>
           <Grid size={6}>
             <TextField fullWidth size="small" label="Profesión / Oficio" value={form.profesion}
               onChange={e => set('profesion', e.target.value)} />
           </Grid>
           <Grid size={6}>
-            <TextField fullWidth size="small" label="Fecha nacimiento" type="date"
-              value={form.fechaNacimiento} onChange={e => set('fechaNacimiento', e.target.value)}
-              InputLabelProps={{ shrink: true }} />
+            <CampoFecha label="Fecha nacimiento" value={form.fechaNacimiento}
+              onChange={v => set('fechaNacimiento', v)} />
           </Grid>
           <Grid size={6}>
-            <TextField fullWidth size="small" label="Fecha inicio voluntariado" type="date"
-              value={form.fechaInicio} onChange={e => set('fechaInicio', e.target.value)}
-              InputLabelProps={{ shrink: true }} />
+            <CampoFecha label="Inicio voluntariado" value={form.fechaInicio}
+              onChange={v => set('fechaInicio', v)} />
           </Grid>
           <Grid size={12}>
             <TextField fullWidth size="small" label="Notas" multiline rows={2} value={form.notas}

@@ -57,6 +57,13 @@ public record CrearAsignacionVolDto(
     DateTime? FechaInicio
 );
 
+public record EditarAsignacionVolDto(
+    Guid?     ProgramaId,
+    Guid?     SedeId,
+    decimal   HorasSemanales,
+    DateTime? FechaInicio
+);
+
 public record StatsVoluntariosDto(
     int     TotalVoluntarios,
     int     NuevosEsteMes,
@@ -303,6 +310,39 @@ public class VoluntariosController : ControllerBase
             LEFT JOIN sedes     s ON s.id = vp.sede_id
             WHERE vp.id = @id";
         sel.Parameters.AddWithValue("id", newId);
+        await using var r = await sel.ExecuteReaderAsync();
+        await r.ReadAsync();
+        return Ok(LeerAsignacion(r));
+    }
+
+    [HttpPut("asignaciones/{asigId:guid}")]
+    public async Task<IActionResult> EditarAsignacion(Guid asigId, [FromBody] EditarAsignacionVolDto dto)
+    {
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var upd = conn.CreateCommand();
+        upd.CommandText = @"
+            UPDATE voluntario_programas
+            SET programa_id=@pid, sede_id=@sid, horas_semanales=@hs, fecha_inicio=@fi
+            WHERE id=@id";
+        upd.Parameters.AddWithValue("id",  asigId);
+        upd.Parameters.AddWithValue("pid", (object?)dto.ProgramaId        ?? DBNull.Value);
+        upd.Parameters.AddWithValue("sid", (object?)dto.SedeId            ?? DBNull.Value);
+        upd.Parameters.AddWithValue("hs",  dto.HorasSemanales);
+        upd.Parameters.AddWithValue("fi",  (object?)dto.FechaInicio?.Date ?? DBNull.Value);
+        if (await upd.ExecuteNonQueryAsync() == 0) return NotFound();
+
+        await using var sel = conn.CreateCommand();
+        sel.CommandText = @"
+            SELECT vp.id, vp.voluntario_id,
+                   vp.programa_id, COALESCE(p.nombre,'') AS nombre_programa,
+                   vp.sede_id,    COALESCE(s.nombre,'') AS nombre_sede,
+                   vp.horas_semanales, vp.fecha_inicio, vp.activo
+            FROM voluntario_programas vp
+            LEFT JOIN programas p ON p.id = vp.programa_id
+            LEFT JOIN sedes     s ON s.id = vp.sede_id
+            WHERE vp.id = @id";
+        sel.Parameters.AddWithValue("id", asigId);
         await using var r = await sel.ExecuteReaderAsync();
         await r.ReadAsync();
         return Ok(LeerAsignacion(r));

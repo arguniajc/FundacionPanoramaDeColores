@@ -10,5 +10,6 @@ export const voluntariosRepository = {
   stats:              ()          => apiClient.get('/api/voluntarios/stats'),
   listarAsignaciones: (id)        => apiClient.get(`/api/voluntarios/${id}/asignaciones`),
   agregarAsignacion:  (id, datos) => apiClient.post(`/api/voluntarios/${id}/asignaciones`, datos),
-  eliminarAsignacion: (asigId)    => apiClient.delete(`/api/voluntarios/asignaciones/${asigId}`),
+  editarAsignacion:   (asigId, datos) => apiClient.put(`/api/voluntarios/asignaciones/${asigId}`, datos),
+  eliminarAsignacion: (asigId)        => apiClient.delete(`/api/voluntarios/asignaciones/${asigId}`),
 };

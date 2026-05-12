@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Typography, Grid, Button, TextField, Dialog, DialogTitle, DialogContent,
   DialogActions, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip,
@@ -272,19 +272,24 @@ function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
 }
 
 // ── AsignacionesDialog ────────────────────────────────────────────────────────
+const FORM_VACIO_ASIG = { sedeId: '', programaId: '', horasSemanales: '', fechaInicio: '' };
+
 function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
   const [asignaciones, setAsignaciones] = useState([]);
   const [cargando,     setCargando]     = useState(false);
   const [sedes,        setSedes]        = useState([]);
   const [programas,    setProgramas]    = useState([]);
-  const [form,         setForm]         = useState({ sedeId: '', programaId: '', horasSemanales: '', fechaInicio: '' });
+  const [form,         setForm]         = useState(FORM_VACIO_ASIG);
+  const [editandoId,   setEditandoId]   = useState(null);
   const [guardando,    setGuardando]    = useState(false);
   const [error,        setError]        = useState('');
+  const programaIdParaRestaurar         = useRef(null);
 
   useEffect(() => {
     if (!open || !voluntario) return;
     setCargando(true);
-    setForm({ sedeId: '', programaId: '', horasSemanales: '', fechaInicio: '' });
+    setForm(FORM_VACIO_ASIG);
+    setEditandoId(null);
     setError('');
     voluntariosRepository.listarAsignaciones(voluntario.id)
       .then(({ data }) => setAsignaciones(data))
@@ -295,29 +300,59 @@ function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
 
   useEffect(() => {
     if (!form.sedeId) { setProgramas([]); setForm(p => ({ ...p, programaId: '' })); return; }
-    sedesRepository.listarProgramas(form.sedeId)
-      .then(({ data }) => setProgramas(data))
-      .catch(() => setProgramas([]));
+    const restoreId = programaIdParaRestaurar.current;
+    programaIdParaRestaurar.current = null;
     setForm(p => ({ ...p, programaId: '' }));
+    sedesRepository.listarProgramas(form.sedeId)
+      .then(({ data }) => {
+        setProgramas(data);
+        if (restoreId) setForm(p => ({ ...p, programaId: restoreId }));
+      })
+      .catch(() => setProgramas([]));
   }, [form.sedeId]);
 
   const setF = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  const agregar = async () => {
+  const iniciarEdicion = (asig) => {
+    programaIdParaRestaurar.current = asig.programaId ?? '';
+    setEditandoId(asig.id);
+    setError('');
+    setForm({
+      sedeId:         asig.sedeId ?? '',
+      programaId:     asig.programaId ?? '',
+      horasSemanales: String(asig.horasSemanales || ''),
+      fechaInicio:    asig.fechaInicio ? toInputDate(asig.fechaInicio) : '',
+    });
+  };
+
+  const cancelarEdicion = () => {
+    setEditandoId(null);
+    setForm(FORM_VACIO_ASIG);
+    setError('');
+  };
+
+  const guardar = async () => {
     if (!form.sedeId && !form.programaId) { setError('Selecciona al menos una sede o programa.'); return; }
     setGuardando(true); setError('');
     try {
-      const { data } = await voluntariosRepository.agregarAsignacion(voluntario.id, {
+      const payload = {
         programaId:     form.programaId || null,
         sedeId:         form.sedeId || null,
         horasSemanales: Number(form.horasSemanales) || 0,
         fechaInicio:    form.fechaInicio || null,
-      });
-      setAsignaciones(prev => [data, ...prev]);
-      setForm({ sedeId: '', programaId: '', horasSemanales: '', fechaInicio: '' });
+      };
+      if (editandoId) {
+        const { data } = await voluntariosRepository.editarAsignacion(editandoId, payload);
+        setAsignaciones(prev => prev.map(a => a.id === editandoId ? data : a));
+        setEditandoId(null);
+      } else {
+        const { data } = await voluntariosRepository.agregarAsignacion(voluntario.id, payload);
+        setAsignaciones(prev => [data, ...prev]);
+      }
+      setForm(FORM_VACIO_ASIG);
       onCambio?.(voluntario.id);
     } catch (e) {
-      setError(e?.response?.data?.mensaje || 'Error al agregar.');
+      setError(e?.response?.data?.mensaje || (editandoId ? 'Error al guardar.' : 'Error al agregar.'));
     } finally {
       setGuardando(false);
     }
@@ -328,6 +363,7 @@ function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
     try {
       await voluntariosRepository.eliminarAsignacion(asig.id);
       setAsignaciones(prev => prev.filter(a => a.id !== asig.id));
+      if (editandoId === asig.id) cancelarEdicion();
       onCambio?.(voluntario.id);
     } catch {}
   };
@@ -360,12 +396,19 @@ function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
               </TableHead>
               <TableBody>
                 {asignaciones.map(a => (
-                  <TableRow key={a.id} hover>
+                  <TableRow key={a.id} hover selected={editandoId === a.id}
+                    sx={editandoId === a.id ? { bgcolor: `${COLOR}0d` } : {}}>
                     <TableCell sx={{ fontSize: '0.82rem' }}>{a.nombreSede || '—'}</TableCell>
                     <TableCell sx={{ fontSize: '0.82rem' }}>{a.nombrePrograma || '—'}</TableCell>
                     <TableCell sx={{ fontSize: '0.82rem' }}>{a.horasSemanales > 0 ? `${a.horasSemanales}h` : '—'}</TableCell>
                     <TableCell sx={{ fontSize: '0.82rem' }}>{fmtFecha(a.fechaInicio) || '—'}</TableCell>
                     <TableCell align="right">
+                      <Tooltip title="Editar">
+                        <IconButton size="small" onClick={() => iniciarEdicion(a)}
+                          sx={{ color: editandoId === a.id ? COLOR : 'text.secondary' }}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title="Eliminar">
                         <IconButton size="small" color="error" onClick={() => eliminar(a)}>
                           <DeleteIcon fontSize="small" />
@@ -379,9 +422,9 @@ function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
           </TableContainer>
         )}
 
-        {/* Agregar nueva asignación */}
+        {/* Formulario agregar / editar */}
         <Typography fontWeight={700} sx={{ mb: 1.5, color: COLOR, fontSize: '0.85rem' }}>
-          Agregar asignación
+          {editandoId ? 'Editando asignación' : 'Agregar asignación'}
         </Typography>
         {error && <Alert severity="error" sx={{ mb: 1.5 }}>{error}</Alert>}
         <Grid container spacing={2} alignItems="center">
@@ -412,12 +455,16 @@ function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
               value={form.fechaInicio} onChange={e => setF('fechaInicio', e.target.value)}
               InputLabelProps={{ shrink: true }} />
           </Grid>
-          <Grid size={12}>
-            <Button variant="contained" startIcon={guardando ? <CircularProgress size={16} color="inherit" /> : <AddIcon />}
-              onClick={agregar} disabled={guardando}
+          <Grid size={12} sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="contained"
+              startIcon={guardando ? <CircularProgress size={16} color="inherit" /> : editandoId ? <EditIcon /> : <AddIcon />}
+              onClick={guardar} disabled={guardando}
               sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: '#5b21b6' } }}>
-              Agregar
+              {guardando ? '…' : editandoId ? 'Guardar cambios' : 'Agregar'}
             </Button>
+            {editandoId && (
+              <Button onClick={cancelarEdicion} disabled={guardando}>Cancelar</Button>
+            )}
           </Grid>
         </Grid>
       </DialogContent>

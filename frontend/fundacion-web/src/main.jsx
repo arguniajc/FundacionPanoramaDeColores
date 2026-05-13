@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './application/auth/AuthContext';
 import { AppThemeProvider } from './shared/theme/ThemeContext';
+import { ConfiguracionProvider } from './shared/context/ConfiguracionContext';
 import ErrorBoundary from './presentation/components/ErrorBoundary';
 import logger from './shared/utils/logger';
 import App from './App.jsx';
@@ -20,13 +21,15 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <HashRouter>
-        <AppThemeProvider>
-          <AuthProvider>
-            <ErrorBoundary>
-              <App />
-            </ErrorBoundary>
-          </AuthProvider>
-        </AppThemeProvider>
+        <ConfiguracionProvider>
+          <AppThemeProvider>
+            <AuthProvider>
+              <ErrorBoundary>
+                <App />
+              </ErrorBoundary>
+            </AuthProvider>
+          </AppThemeProvider>
+        </ConfiguracionProvider>
       </HashRouter>
     </GoogleOAuthProvider>
   </StrictMode>

@@ -1,4 +1,4 @@
-// Gestión de proyectos/programas: CRUD de programas por sede y editor de campos de formulario dinámico.
+﻿// Gestión de proyectos/programas: CRUD de programas por sede y editor de campos de formulario dinámico.
 import React, { useState, useEffect } from 'react';
 import {
   Alert, Autocomplete, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
@@ -35,7 +35,7 @@ import {
   GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION, RELACIONES_TUTOR,
 } from '../../../../shared/utils/geodata';
 
-const COLOR = '#4E1B95';
+const COLOR = 'var(--color-primario)';
 
 // _h:true marca separadores de grupo (no seleccionables)
 const TIPOS_CAMPO = [

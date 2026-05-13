@@ -344,6 +344,17 @@ var app = builder.Build();
         )
         """, "configuracion");
 
+    // ── Columnas adicionales configuracion ───────────────────────────────────
+    await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_primario      VARCHAR(7)   NOT NULL DEFAULT '#4E1B95'", "configuracion.color_primario");
+    await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_sidebar       VARCHAR(7)   NOT NULL DEFAULT '#150830'", "configuracion.color_sidebar");
+    await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS tagline             VARCHAR(500)",                            "configuracion.tagline");
+    await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS mision              TEXT",                                    "configuracion.mision");
+    await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS vision              TEXT",                                    "configuracion.vision");
+    await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS email_contacto      VARCHAR(200)",                            "configuracion.email_contacto");
+    await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS sitio_web           VARCHAR(300)",                            "configuracion.sitio_web");
+    await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS mensaje_bienvenida  TEXT",                                    "configuracion.mensaje_bienvenida");
+    await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS footer_texto        VARCHAR(500)",                            "configuracion.footer_texto");
+
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_autorizado         BOOLEAN     NOT NULL DEFAULT false", "programas.rep_autorizado");
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_autorizacion_fecha TIMESTAMPTZ",                       "programas.rep_autorizacion_fecha");
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_firma              TEXT",                               "programas.rep_firma");

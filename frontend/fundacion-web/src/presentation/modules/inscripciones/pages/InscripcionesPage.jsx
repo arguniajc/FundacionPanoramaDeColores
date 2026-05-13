@@ -1,4 +1,4 @@
-// Gestión de inscripciones: listado con filtros, alta por stepper y edición/PDF del formulario dinámico.
+﻿// Gestión de inscripciones: listado con filtros, alta por stepper y edición/PDF del formulario dinámico.
 import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Autocomplete, Avatar, Box, Button, Chip, CircularProgress,
@@ -27,7 +27,7 @@ import {
 } from '../../../../shared/utils/geodata';
 import FirmaPad from '../../../../shared/components/FirmaPad';
 
-const COLOR = '#4E1B95';
+const COLOR = 'var(--color-primario)';
 
 // Retorna la edad en años completos calculada a partir de una fecha de nacimiento ISO
 function calcEdad(fechaNac) {
@@ -208,7 +208,7 @@ function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = [], dis
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
               {meta.quien && (
                 <Chip size="small" label={QUIEN_FIRMA_LABEL[meta.quien] ?? meta.quien}
-                  sx={{ bgcolor: `${COLOR}18`, color: COLOR, fontWeight: 700, fontSize: '0.72rem' }} />
+                  sx={{ bgcolor: 'color-mix(in srgb, var(--color-primario) 9%, transparent)', color: COLOR, fontWeight: 700, fontSize: '0.72rem' }} />
               )}
               {meta.nombre    && <Typography variant="caption" fontWeight={600}>{meta.nombre}</Typography>}
               {meta.documento && <Typography variant="caption" color="text.secondary">Doc: {meta.documento}</Typography>}
@@ -227,12 +227,12 @@ function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = [], dis
               {quienAuto ? (
                 /* Solo 1 panel activo — auto-detectado, se muestra como chip */
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, height: '40px',
-                            px: 1.5, bgcolor: `${COLOR}10`, borderRadius: 1.5 }}>
+                            px: 1.5, bgcolor: 'color-mix(in srgb, var(--color-primario) 6%, transparent)', borderRadius: 1.5 }}>
                   <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', whiteSpace: 'nowrap' }}>
                     Firma:
                   </Typography>
                   <Chip size="small" label={QUIEN_FIRMA_LABEL[quienAuto]}
-                    sx={{ bgcolor: `${COLOR}20`, color: COLOR, fontWeight: 700, fontSize: '0.72rem' }} />
+                    sx={{ bgcolor: 'color-mix(in srgb, var(--color-primario) 12%, transparent)', color: COLOR, fontWeight: 700, fontSize: '0.72rem' }} />
                 </Box>
               ) : (
                 /* 2 paneles o ninguno — el usuario elige */

@@ -1,4 +1,4 @@
-// Dashboard de inicio del panel: saludo al usuario y acceso rápido a los módulos principales.
+﻿// Dashboard de inicio del panel: saludo al usuario y acceso rápido a los módulos principales.
 import { Box, Typography, Grid, Card, CardActionArea } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ChildCareIcon        from '@mui/icons-material/ChildCare';
@@ -15,7 +15,7 @@ const MODULOS = [
     label: 'Beneficiarios',
     desc:  'Niños inscritos en la fundación',
     icon:  <ChildCareIcon sx={{ fontSize: 36 }} />,
-    grad:  'linear-gradient(135deg, #4E1B95 0%, #7c3aed 100%)',
+    grad:  'linear-gradient(135deg, var(--color-primario) 0%, #7c3aed 100%)',
     ruta:  '/sede/beneficiarios',
   },
   {
@@ -76,7 +76,7 @@ export default function DashboardPage() {
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-        <Box sx={{ width: 4, height: 22, borderRadius: 1, bgcolor: '#4E1B95' }} />
+        <Box sx={{ width: 4, height: 22, borderRadius: 1, bgcolor: 'var(--color-primario)' }} />
         <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: 'text.primary' }}>
           Acceso rápido
         </Typography>

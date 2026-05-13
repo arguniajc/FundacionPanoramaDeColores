@@ -1,4 +1,4 @@
-// Formulario de inscripción de un nuevo beneficiario.
+﻿// Formulario de inscripción de un nuevo beneficiario.
 import { useState } from 'react';
 import {
   Box, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -41,7 +41,7 @@ function SeccionTitulo({ children }) {
   return (
     <>
       <Grid size={12}>
-        <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={1.5}>
+        <Typography variant="subtitle2" color="var(--color-primario)" fontWeight={700} mt={1.5}>
           {children}
         </Typography>
         <Divider sx={{ mb: 1, mt: 0.75 }} />
@@ -137,7 +137,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
     <Dialog open onClose={onCerrar} maxWidth="md" fullWidth
       PaperProps={{ sx: { borderRadius: 3 } }}>
       <DialogTitle sx={{
-        background: 'linear-gradient(135deg, #4E1B95 0%, #2D984F 100%)',
+        background: 'linear-gradient(135deg, var(--color-primario) 0%, #2D984F 100%)',
         color: '#fff', fontWeight: 700, py: 2, px: 3,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
@@ -415,7 +415,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           onClick={handleGuardar}
           disabled={!puedeGuardar}
           startIcon={guardando ? <CircularProgress size={16} color="inherit" /> : <PersonAddIcon />}
-          sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, minWidth: 160 }}
+          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, minWidth: 160 }}
         >
           {guardando ? 'Registrando…' : 'Inscribir beneficiario'}
         </Button>

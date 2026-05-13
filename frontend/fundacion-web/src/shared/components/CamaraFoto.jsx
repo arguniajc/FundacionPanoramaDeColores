@@ -1,4 +1,4 @@
-// Modal que abre la cámara via getUserMedia (funciona en móvil y escritorio).
+﻿// Modal que abre la cámara via getUserMedia (funciona en móvil y escritorio).
 // Props: open, onCerrar, onCaptura(file: File)
 import { useRef, useState, useEffect } from 'react';
 import {
@@ -106,7 +106,7 @@ export default function CamaraFoto({ open, onCerrar, onCaptura }) {
             variant="contained"
             onClick={handleCapturar}
             startIcon={<PhotoCameraIcon />}
-            sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, borderRadius: 3, px: 4, fontWeight: 700, fontSize: 15 }}
+            sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, borderRadius: 3, px: 4, fontWeight: 700, fontSize: 15 }}
           >
             Capturar
           </Button>

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useMemo } from 'react';
 import { createTheme, ThemeProvider, CssBaseline } from '@mui/material';
+import { useConfiguracion } from '../context/ConfiguracionContext';
 
 const ThemeCtx = createContext({ mode: 'light', toggleMode: () => {} });
 export const useThemeMode = () => useContext(ThemeCtx);
@@ -8,6 +9,7 @@ export function AppThemeProvider({ children }) {
   const [mode, setMode] = useState(
     () => localStorage.getItem('themeMode') || 'light'
   );
+  const { colorPrimario } = useConfiguracion();
 
   const toggleMode = () =>
     setMode(prev => {
@@ -19,7 +21,7 @@ export function AppThemeProvider({ children }) {
   const theme = useMemo(() => createTheme({
     palette: {
       mode,
-      primary:   { main: '#4E1B95' },
+      primary:   { main: colorPrimario || '#4E1B95' },
       secondary: { main: '#2D984F' },
       background: {
         default: mode === 'light' ? '#f5f5f5' : '#0f0f0f',
@@ -80,7 +82,7 @@ export function AppThemeProvider({ children }) {
         },
       },
     },
-  }), [mode]);
+  }), [mode, colorPrimario]);
 
   return (
     <ThemeCtx.Provider value={{ mode, toggleMode }}>

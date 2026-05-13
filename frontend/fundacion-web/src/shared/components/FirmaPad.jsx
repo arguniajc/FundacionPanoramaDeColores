@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+﻿import { useRef, useEffect, useState } from 'react';
 import SignaturePad from 'signature_pad';
 import {
   Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Typography,
@@ -6,7 +6,7 @@ import {
 import DrawIcon   from '@mui/icons-material/Draw';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const COLOR = '#4E1B95';
+const COLOR = 'var(--color-primario)';
 
 export default function FirmaPad({ label, value, onChange, obligatorio = false, disabled = false }) {
   const [open, setOpen]   = useState(false);

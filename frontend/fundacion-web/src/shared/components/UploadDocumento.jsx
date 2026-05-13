@@ -1,4 +1,4 @@
-// Sube el documento de identidad del beneficiario.
+﻿// Sube el documento de identidad del beneficiario.
 // Tres modos: ver PDF guardado, subir PDF directo, o fotografiar frente+reverso (genera PDF con jsPDF).
 // Props: value (URL guardada), onChange(url), beneficiarioId (para log de descarga).
 import { useRef, useState, useEffect, useCallback } from 'react';
@@ -192,14 +192,14 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
             </Tooltip>
             <Box component="button" type="button"
               onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
-              sx={{ mt: 0.5, display: 'block', width: '100%', fontSize: 11, color: '#4E1B95', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0 }}>
+              sx={{ mt: 0.5, display: 'block', width: '100%', fontSize: 11, color: 'var(--color-primario)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0 }}>
               Cambiar
             </Box>
           </Box>
         ) : (
           <Box component="button" type="button"
             onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
-            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 110, height: 82, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', transition: 'border-color .2s, background .2s', '&:hover': { borderColor: '#4E1B95', bgcolor: '#f3effe' }, gap: 0.5, p: 0 }}>
+            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 110, height: 82, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' }, gap: 0.5, p: 0 }}>
             <CameraAltIcon sx={{ color: '#bdbdbd', fontSize: 26 }} />
             <Typography variant="caption" color="text.disabled" fontSize={10}>{label}</Typography>
           </Box>
@@ -256,7 +256,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
             <Button
               size="small" variant="outlined"
               onClick={() => setModo('elegir')}
-              sx={{ borderColor: '#4E1B95', color: '#4E1B95', borderRadius: 2, fontSize: 12 }}
+              sx={{ borderColor: 'var(--color-primario)', color: 'var(--color-primario)', borderRadius: 2, fontSize: 12 }}
             >
               Reemplazar
             </Button>
@@ -268,13 +268,13 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
           <Box component="button" type="button"
             onClick={() => { setModo('subirPdf'); setTimeout(() => inputPdfRef.current?.click(), 50); }}
-            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 90, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', gap: 0.5, p: 0, transition: 'border-color .2s, background .2s', '&:hover': { borderColor: '#4E1B95', bgcolor: '#f3effe' } }}>
+            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 90, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', gap: 0.5, p: 0, transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' } }}>
             <UploadFileIcon sx={{ color: '#bdbdbd', fontSize: 28 }} />
             <Typography variant="caption" color="text.disabled" fontSize={10}>Subir PDF</Typography>
           </Box>
           <Box component="button" type="button"
             onClick={() => setModo('fotografiar')}
-            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 90, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', gap: 0.5, p: 0, transition: 'border-color .2s, background .2s', '&:hover': { borderColor: '#4E1B95', bgcolor: '#f3effe' } }}>
+            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 90, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', gap: 0.5, p: 0, transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' } }}>
             <CameraAltIcon sx={{ color: '#bdbdbd', fontSize: 28 }} />
             <Typography variant="caption" color="text.disabled" fontSize={10} textAlign="center">Fotografiar{'\n'}frente y reverso</Typography>
           </Box>
@@ -286,15 +286,15 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 1 }}>
             <Box component="button" type="button"
               onClick={() => { setModo('subirPdf'); setTimeout(() => inputPdfRef.current?.click(), 50); }}
-              sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 80, border: '2px dashed #4E1B95', borderRadius: 2, bgcolor: '#f3effe', cursor: 'pointer', gap: 0.5, p: 0 }}>
-              <UploadFileIcon sx={{ color: '#4E1B95', fontSize: 26 }} />
-              <Typography variant="caption" color="#4E1B95" fontSize={10} fontWeight={600}>Subir PDF</Typography>
+              sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 80, border: '2px dashed var(--color-primario)', borderRadius: 2, bgcolor: '#f3effe', cursor: 'pointer', gap: 0.5, p: 0 }}>
+              <UploadFileIcon sx={{ color: 'var(--color-primario)', fontSize: 26 }} />
+              <Typography variant="caption" color="var(--color-primario)" fontSize={10} fontWeight={600}>Subir PDF</Typography>
             </Box>
             <Box component="button" type="button"
               onClick={() => setModo('fotografiar')}
-              sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 80, border: '2px dashed #4E1B95', borderRadius: 2, bgcolor: '#f3effe', cursor: 'pointer', gap: 0.5, p: 0 }}>
-              <CameraAltIcon sx={{ color: '#4E1B95', fontSize: 26 }} />
-              <Typography variant="caption" color="#4E1B95" fontSize={10} fontWeight={600} textAlign="center">Fotografiar{'\n'}frente y reverso</Typography>
+              sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 80, border: '2px dashed var(--color-primario)', borderRadius: 2, bgcolor: '#f3effe', cursor: 'pointer', gap: 0.5, p: 0 }}>
+              <CameraAltIcon sx={{ color: 'var(--color-primario)', fontSize: 26 }} />
+              <Typography variant="caption" color="var(--color-primario)" fontSize={10} fontWeight={600} textAlign="center">Fotografiar{'\n'}frente y reverso</Typography>
             </Box>
           </Box>
           <Button size="small" onClick={cancelar} sx={{ color: 'text.secondary', fontSize: 11 }}>
@@ -311,7 +311,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
           </Box>
           {generando && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-              <CircularProgress size={14} sx={{ color: '#4E1B95' }} />
+              <CircularProgress size={14} sx={{ color: 'var(--color-primario)' }} />
               <Typography fontSize={12} color="text.secondary">Generando PDF…</Typography>
             </Box>
           )}
@@ -333,7 +333,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
         <Box>
           {subiendo ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CircularProgress size={16} sx={{ color: '#4E1B95' }} />
+              <CircularProgress size={16} sx={{ color: 'var(--color-primario)' }} />
               <Typography fontSize={12} color="text.secondary">Subiendo PDF…</Typography>
             </Box>
           ) : (

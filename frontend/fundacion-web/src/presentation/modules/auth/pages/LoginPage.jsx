@@ -1,4 +1,4 @@
-// Página de inicio de sesión del panel admin.
+﻿// Página de inicio de sesión del panel admin.
 // Usa Google OAuth: el id_token se valida en el backend y retorna un JWT propio.
 // Solo correos en la lista blanca (appsettings Admin:EmailsAutorizados) pueden entrar.
 import { useEffect, useState } from 'react';
@@ -50,7 +50,7 @@ export default function LoginPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #4E1B95 0%, #2D984F 100%)',
+        background: 'linear-gradient(135deg, var(--color-primario) 0%, #2D984F 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -59,7 +59,7 @@ export default function LoginPage() {
     >
       <Card sx={{ maxWidth: 420, width: '100%', borderRadius: 4, p: 2 }}>
         <CardContent sx={{ textAlign: 'center' }}>
-          <Typography variant="h5" fontWeight={800} color="#4E1B95" gutterBottom>
+          <Typography variant="h5" fontWeight={800} color="var(--color-primario)" gutterBottom>
             Panel Administrativo
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={4}>
@@ -74,7 +74,7 @@ export default function LoginPage() {
 
           {cargando ? (
             <Box display="flex" justifyContent="center" py={2}>
-              <CircularProgress size={32} sx={{ color: '#4E1B95' }} />
+              <CircularProgress size={32} sx={{ color: 'var(--color-primario)' }} />
             </Box>
           ) : (
             <Box display="flex" justifyContent="center">

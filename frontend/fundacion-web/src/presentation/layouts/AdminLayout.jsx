@@ -30,14 +30,14 @@ import LightModeIcon         from '@mui/icons-material/LightMode';
 import DownloadIcon          from '@mui/icons-material/Download';
 import LocationOnIcon        from '@mui/icons-material/LocationOn';
 import HowToRegIcon          from '@mui/icons-material/HowToReg';
-import { useAuth }      from '../../application/auth/AuthContext';
-import { useThemeMode } from '../../shared/theme/ThemeContext';
-import useInactividad   from '../../shared/hooks/useInactividad';
+import { useAuth }           from '../../application/auth/AuthContext';
+import { useThemeMode }      from '../../shared/theme/ThemeContext';
+import { useConfiguracion }  from '../../shared/context/ConfiguracionContext';
+import useInactividad        from '../../shared/hooks/useInactividad';
 
 const SIDEBAR_WIDTH = 260;
 const CYAN  = '#B4E8E8';
 const WHITE = '#FFFFFF';
-const BG    = '#150830';
 
 const MENU = [
   {
@@ -115,6 +115,7 @@ function ItemLabel({ texto, activo }) {
 function SidebarContent({
   user, mode, toggleMode, location,
   collapsed, onToggleGrupo, onNavegar, onCerrarSesion,
+  bg,
 }) {
   const esActivo = (ruta) =>
     ruta === '/sede'
@@ -122,13 +123,13 @@ function SidebarContent({
       : location.pathname.startsWith(ruta);
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: BG }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: bg }}>
 
       <Box sx={{ px: 2.5, py: 2.5, borderBottom: `1px solid rgba(180,232,232,0.1)` }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
           <Box sx={{
             width: 5, height: 32, borderRadius: 1, flexShrink: 0,
-            background: `linear-gradient(180deg, ${CYAN} 0%, #4E1B95 100%)`,
+            background: `linear-gradient(180deg, ${CYAN} 0%, var(--color-primario) 100%)`,
           }} />
           <Box>
             <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: WHITE, lineHeight: 1.25 }}>
@@ -151,7 +152,7 @@ function SidebarContent({
       }}>
         <Avatar
           src={user?.avatarUrl}
-          sx={{ width: 34, height: 34, bgcolor: '#4E1B95', border: `2px solid ${CYAN}` }}
+          sx={{ width: 34, height: 34, bgcolor: 'var(--color-primario)', border: `2px solid ${CYAN}` }}
         />
         <Box sx={{ overflow: 'hidden', flex: 1 }}>
           <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: WHITE }} noWrap>
@@ -246,12 +247,14 @@ function SidebarContent({
 }
 
 export default function AdminLayout({ children }) {
-  const { user, logout }     = useAuth();
-  const { mode, toggleMode } = useThemeMode();
-  const navigate             = useNavigate();
-  const location             = useLocation();
+  const { user, logout }         = useAuth();
+  const { mode, toggleMode }     = useThemeMode();
+  const { colorSidebar }         = useConfiguracion();
+  const navigate                 = useNavigate();
+  const location                 = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed,  setCollapsed]  = useState({});
+  const BG = colorSidebar || '#150830';
 
   const handleCerrarSesion = useCallback(() => {
     logout();
@@ -274,7 +277,7 @@ export default function AdminLayout({ children }) {
 
   const sidebarProps = {
     user, mode, toggleMode, location,
-    collapsed,
+    collapsed, bg: BG,
     onToggleGrupo: toggleGrupo,
     onNavegar:     handleNavegar,
     onCerrarSesion: handleCerrarSesion,
@@ -308,7 +311,7 @@ export default function AdminLayout({ children }) {
 
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
-        <AppBar position="static" elevation={0} sx={{ bgcolor: BG, display: { md: 'none' } }}>
+        <AppBar position="static" elevation={0} sx={{ bgcolor: BG, display: { md: 'none' } }} style={{ backgroundColor: BG }}>
           <Toolbar sx={{ minHeight: '52px !important' }}>
             <IconButton edge="start" sx={{ mr: 1, color: WHITE }} onClick={() => setMobileOpen(true)}>
               <MenuIcon />

@@ -1,4 +1,4 @@
-// CRUD de sedes y sus programas. Cada sede es una tarjeta expandible con su tabla de programas.
+﻿// CRUD de sedes y sus programas. Cada sede es una tarjeta expandible con su tabla de programas.
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Paper, Button, IconButton, Chip, Tooltip,
@@ -57,7 +57,7 @@ function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   return (
     <Dialog open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
       PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2 } }}>
-      <DialogTitle sx={{ bgcolor: '#4E1B95', color: 'white', fontWeight: 700 }}>
+      <DialogTitle sx={{ bgcolor: 'var(--color-primario)', color: 'white', fontWeight: 700 }}>
         {inicial?.id ? 'Editar sede' : 'Nueva sede'}
       </DialogTitle>
       <DialogContent dividers>
@@ -80,7 +80,7 @@ function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={handleGuardar} disabled={guardando || !form.nombre.trim()}
-          sx={{ bgcolor: '#4E1B95' }}>
+          sx={{ bgcolor: 'var(--color-primario)' }}>
           {guardando ? 'Guardando…' : 'Guardar'}
         </Button>
       </DialogActions>
@@ -168,7 +168,7 @@ function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarPrograma, o
           borderBottom: expandida ? '1px solid' : 'none', borderColor: 'divider',
         }}
       >
-        <LocationOnIcon sx={{ color: '#4E1B95', flexShrink: 0 }} />
+        <LocationOnIcon sx={{ color: 'var(--color-primario)', flexShrink: 0 }} />
         <Box flex={1} minWidth={0}>
           <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
             <Typography fontWeight={700} noWrap>{sede.nombre}</Typography>
@@ -226,9 +226,9 @@ function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarPrograma, o
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#4E1B95' }}>Programa</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#4E1B95' }}>Cupo</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#4E1B95' }}>Estado</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario)' }}>Programa</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario)' }}>Cupo</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario)' }}>Estado</TableCell>
                     <TableCell align="right" />
                   </TableRow>
                 </TableHead>
@@ -386,7 +386,7 @@ export default function SedesPage() {
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #4E1B95, #2D984F)',
+          background: 'linear-gradient(135deg, var(--color-primario), #2D984F)',
           borderRadius: 3, p: { xs: 2, sm: 3 }, mb: 3, color: 'white',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2,
         }}
@@ -414,14 +414,14 @@ export default function SedesPage() {
 
       {cargando ? (
         <Box display="flex" justifyContent="center" py={6}>
-          <CircularProgress sx={{ color: '#4E1B95' }} />
+          <CircularProgress sx={{ color: 'var(--color-primario)' }} />
         </Box>
       ) : sedes.length === 0 ? (
         <Paper elevation={0} sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 2, p: 5, textAlign: 'center' }}>
           <LocationOnIcon sx={{ fontSize: 48, color: '#ccc', mb: 1 }} />
           <Typography color="text.secondary">No hay sedes registradas.</Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogSede({ abierto: true, inicial: null })}
-            sx={{ mt: 2, bgcolor: '#4E1B95' }}>
+            sx={{ mt: 2, bgcolor: 'var(--color-primario)' }}>
             Crear primera sede
           </Button>
         </Paper>

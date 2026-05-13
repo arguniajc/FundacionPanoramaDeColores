@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   Box, Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, TextField, MenuItem, FormControl,
@@ -17,7 +17,7 @@ function SeccionTitulo({ children }) {
   return (
     <>
       <Grid size={12}>
-        <Typography variant="subtitle2" color="#4E1B95" fontWeight={700} mt={1.5}>
+        <Typography variant="subtitle2" color="var(--color-primario)" fontWeight={700} mt={1.5}>
           {children}
         </Typography>
         <Divider sx={{ mb: 1, mt: 0.75 }} />
@@ -124,7 +124,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
 
   return (
     <Dialog open onClose={onCerrar} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ bgcolor: '#4E1B95', color: 'white', fontWeight: 700 }}>
+      <DialogTitle sx={{ bgcolor: 'var(--color-primario)', color: 'white', fontWeight: 700 }}>
         Editar inscripción
       </DialogTitle>
 
@@ -373,7 +373,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           variant="contained"
           onClick={handleGuardar}
           disabled={guardando || !form.nombreMenor || !form.nombreAcudiente}
-          sx={{ bgcolor: '#4E1B95' }}
+          sx={{ bgcolor: 'var(--color-primario)' }}
         >
           {guardando ? 'Guardando...' : 'Guardar cambios'}
         </Button>

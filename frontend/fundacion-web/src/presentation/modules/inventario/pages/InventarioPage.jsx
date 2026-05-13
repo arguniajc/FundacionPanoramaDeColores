@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Typography, Grid, Button, TextField, Dialog, DialogTitle, DialogContent,
   DialogActions, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip,
@@ -22,7 +22,7 @@ import RemoveCircleIcon  from '@mui/icons-material/RemoveCircle';
 import { inventarioRepository } from '../../../../infrastructure/repositories/inventarioRepository';
 import { sedesRepository }      from '../../../../infrastructure/repositories/sedesRepository';
 
-const COLOR = '#4E1B95';
+const COLOR = 'var(--color-primario)';
 
 const CATEGORIAS = [
   'Material escolar', 'Equipos electrónicos', 'Deportivo',

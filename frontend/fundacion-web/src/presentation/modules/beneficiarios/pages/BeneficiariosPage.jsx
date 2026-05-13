@@ -1,4 +1,4 @@
-// Pantalla de gestión de beneficiarios: tabla paginada con búsqueda, estadísticas,
+﻿// Pantalla de gestión de beneficiarios: tabla paginada con búsqueda, estadísticas,
 // exportación Excel, y diálogos de alta / edición / baja / reactivación.
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -60,7 +60,7 @@ function StatCard({ icon, label, value, color }) {
   );
 }
 
-function BaraStat({ label, count, total, color = '#4E1B95', icon }) {
+function BaraStat({ label, count, total, color = 'var(--color-primario)', icon }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <Box sx={{ mb: 1.2 }}>
@@ -95,7 +95,7 @@ function StatSection({ title, children }) {
       borderRadius: 3,
       height: '100%',
     }}>
-      <Typography variant="subtitle2" fontWeight={700} color="#4E1B95"
+      <Typography variant="subtitle2" fontWeight={700} color="var(--color-primario)"
         sx={{ mb: 1.8, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 0.7 }}>
         {title}
       </Typography>
@@ -130,7 +130,7 @@ function ModalEstadisticas({ open, onClose, stats, cargando }) {
   const content = () => {
     if (cargando) return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8, gap: 2 }}>
-        <CircularProgress size={32} sx={{ color: '#4E1B95' }} />
+        <CircularProgress size={32} sx={{ color: 'var(--color-primario)' }} />
         <Typography color="text.secondary">Calculando estadísticas…</Typography>
       </Box>
     );
@@ -167,7 +167,7 @@ function ModalEstadisticas({ open, onClose, stats, cargando }) {
         <StatSection title="📊 Resumen general">
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 1 }}>
             {[
-              { label: 'Total',    val: total,      bg: '#ede7f6', color: '#4E1B95' },
+              { label: 'Total',    val: total,      bg: '#ede7f6', color: 'var(--color-primario)' },
               { label: 'Activos',  val: activos,    bg: '#e8f5e9', color: '#2e7d32' },
               { label: 'En baja',  val: baja,       bg: '#fce4ec', color: '#c62828' },
               { label: 'Alergias', val: conAlergia, bg: '#fff3e0', color: '#e65100' },
@@ -181,7 +181,7 @@ function ModalEstadisticas({ open, onClose, stats, cargando }) {
         </StatSection>
 
         <StatSection title="👶 Distribución por edad">
-          {renderBarras(edadItems, maxEdad, '#4E1B95')}
+          {renderBarras(edadItems, maxEdad, 'var(--color-primario)')}
         </StatSection>
 
         <StatSection title="📋 Datos por completar">
@@ -197,11 +197,11 @@ function ModalEstadisticas({ open, onClose, stats, cargando }) {
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', height: 90, mt: 1 }}>
             {mesItems.map(m => (
               <Box key={m.key} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                <Typography variant="caption" fontWeight={700} color="#4E1B95">{m.val}</Typography>
+                <Typography variant="caption" fontWeight={700} color="var(--color-primario)">{m.val}</Typography>
                 <Box sx={{
                   width: '100%', borderRadius: '4px 4px 0 0',
                   height: `${Math.max((m.val / maxMes) * 60, m.val > 0 ? 8 : 2)}px`,
-                  background: m.val > 0 ? 'linear-gradient(180deg, #7C3AED, #4E1B95)' : 'rgba(0,0,0,0.08)',
+                  background: m.val > 0 ? 'linear-gradient(180deg, #7C3AED, var(--color-primario))' : 'rgba(0,0,0,0.08)',
                   transition: 'height 0.5s ease',
                 }} />
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textAlign: 'center' }}>
@@ -244,7 +244,7 @@ function ModalEstadisticas({ open, onClose, stats, cargando }) {
     >
       <DialogTitle sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: 'linear-gradient(135deg, #4E1B95 0%, #3a1470 100%)',
+        background: 'linear-gradient(135deg, var(--color-primario) 0%, #3a1470 100%)',
         color: '#fff', py: 2, px: 3,
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -435,7 +435,7 @@ export default function BeneficiariosPage() {
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
 
       <Box sx={{
-        background: 'linear-gradient(135deg, #4E1B95 0%, #3a1470 60%, #2D984F 100%)',
+        background: 'linear-gradient(135deg, var(--color-primario) 0%, #3a1470 60%, #2D984F 100%)',
         px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 },
       }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
@@ -502,7 +502,7 @@ export default function BeneficiariosPage() {
                   startIcon={cargandoStats ? <CircularProgress size={14} color="inherit" /> : <BarChartIcon />}
                   onClick={() => setModalStats(true)}
                   disabled={cargandoStats}
-                  sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2 }}
+                  sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2 }}
                 >
                   Estadísticas
                 </Button>
@@ -526,8 +526,8 @@ export default function BeneficiariosPage() {
             sx={{
               mb: 2,
               '& .MuiTab-root':       { fontWeight: 600, textTransform: 'none', minHeight: 40, fontSize: '0.85rem' },
-              '& .Mui-selected':      { color: '#4E1B95' },
-              '& .MuiTabs-indicator': { bgcolor: '#4E1B95', height: 3, borderRadius: 2 },
+              '& .Mui-selected':      { color: 'var(--color-primario)' },
+              '& .MuiTabs-indicator': { bgcolor: 'var(--color-primario)', height: 3, borderRadius: 2 },
             }}
           >
             {TABS.map(t => <Tab key={t.value} value={t.value} label={t.label} />)}
@@ -537,7 +537,7 @@ export default function BeneficiariosPage() {
 
           {actualizando && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 1, opacity: 0.6 }}>
-              <SyncIcon sx={{ fontSize: '0.85rem', color: '#4E1B95', animation: 'spin 1.2s linear infinite',
+              <SyncIcon sx={{ fontSize: '0.85rem', color: 'var(--color-primario)', animation: 'spin 1.2s linear infinite',
                 '@keyframes spin': { '100%': { transform: 'rotate(360deg)' } } }} />
               <Typography variant="caption" color="text.secondary">Actualizando…</Typography>
             </Box>
@@ -547,7 +547,7 @@ export default function BeneficiariosPage() {
             <Table size="small" sx={{ minWidth: 650 }}>
               <TableHead>
                 <TableRow sx={{
-                  background: 'linear-gradient(90deg, #4E1B95, #3a1470)',
+                  background: 'linear-gradient(90deg, var(--color-primario), #3a1470)',
                   '& .MuiTableCell-root': { color: '#fff', fontWeight: 700, fontSize: '0.8rem', py: 1.5, borderBottom: 'none', whiteSpace: 'nowrap' },
                 }}>
                   <TableCell>Nombre del menor</TableCell>
@@ -562,7 +562,7 @@ export default function BeneficiariosPage() {
 
               <TableBody>
                 {cargando ? (
-                  <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6 }}><CircularProgress size={32} sx={{ color: '#4E1B95' }} /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6 }}><CircularProgress size={32} sx={{ color: 'var(--color-primario)' }} /></TableCell></TableRow>
                 ) : inscripciones.length === 0 ? (
                   <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>No se encontraron beneficiarios.</TableCell></TableRow>
                 ) : (
@@ -651,7 +651,7 @@ export default function BeneficiariosPage() {
                       </TableCell>
                       <TableCell onClick={e => e.stopPropagation()} sx={{ whiteSpace: 'nowrap', pr: 0.5 }}>
                         <Tooltip title="Ver detalle">
-                          <IconButton size="small" sx={{ color: '#4E1B95', '&:hover': { bgcolor: 'rgba(78,27,149,0.1)' } }} onClick={() => setSeleccionada(ins)}>
+                          <IconButton size="small" sx={{ color: 'var(--color-primario)', '&:hover': { bgcolor: 'rgba(78,27,149,0.1)' } }} onClick={() => setSeleccionada(ins)}>
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -684,16 +684,16 @@ export default function BeneficiariosPage() {
           {totalPaginas > 1 && (
             <Box display="flex" justifyContent="center" mt={3}>
               <Pagination count={totalPaginas} page={pagina} onChange={(_, v) => setPagina(v)} size="small"
-                sx={{ '& .Mui-selected': { bgcolor: '#4E1B95 !important', color: '#fff' }, '& .MuiPaginationItem-root': { fontWeight: 600 } }}
+                sx={{ '& .Mui-selected': { bgcolor: 'var(--color-primario) !important', color: '#fff' }, '& .MuiPaginationItem-root': { fontWeight: 600 } }}
               />
             </Box>
           )}
 
           <Box sx={{ mt: 5, pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
-              <LockIcon sx={{ fontSize: '1rem', color: '#4E1B95', mt: '2px', flexShrink: 0 }} />
+              <LockIcon sx={{ fontSize: '1rem', color: 'var(--color-primario)', mt: '2px', flexShrink: 0 }} />
               <Box>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#4E1B95', display: 'block', mb: 0.3 }}>Aviso de confidencialidad</Typography>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'var(--color-primario)', display: 'block', mb: 0.3 }}>Aviso de confidencialidad</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                   La información contenida en este panel es de carácter <strong>estrictamente confidencial</strong> y de uso exclusivo del personal autorizado de la fundación.
                   Queda prohibida su reproducción, divulgación o uso no autorizado. El acceso indebido a estos datos puede constituir una infracción a la <strong>Ley 1581 de 2012</strong>.

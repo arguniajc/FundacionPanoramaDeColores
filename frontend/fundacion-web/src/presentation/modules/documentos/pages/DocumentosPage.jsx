@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+﻿import { useState, useRef, useCallback, useMemo } from 'react';
 import {
   Box, Typography, Tabs, Tab, Paper, Button, Chip, Stack,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -25,7 +25,7 @@ import { useDocumentosInstitucionales } from '../../../../application/documentos
 import { useDocumentosBeneficiario }    from '../../../../application/documentos/useDocumentosBeneficiario';
 
 const CATEGORIAS    = ['Actas', 'Políticas', 'Formularios', 'Informes', 'Certificados', 'Otros'];
-const HEADER_GRADIENT = 'linear-gradient(135deg, #4E1B95, #2D984F)';
+const HEADER_GRADIENT = 'linear-gradient(135deg, var(--color-primario), #2D984F)';
 
 // Formatea una fecha en texto corto con locale es-CO incluyendo hora (ej. "8 may. 2025, 03:12 p. m.")
 function fmt(fecha) {
@@ -179,14 +179,14 @@ function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
           onDragOver={e => e.preventDefault()}
           onDrop={e => { e.preventDefault(); agregarArchivos(e.dataTransfer.files); }}
           sx={{
-            border: '2px dashed', borderColor: archivos.length ? '#4E1B95' : 'divider',
+            border: '2px dashed', borderColor: archivos.length ? 'var(--color-primario)' : 'divider',
             borderRadius: 2, p: 2.5, textAlign: 'center', cursor: 'pointer',
             bgcolor: archivos.length ? '#f5f0ff' : 'transparent',
-            '&:hover': { borderColor: '#4E1B95', bgcolor: '#f5f0ff' },
+            '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f5f0ff' },
           }}
         >
-          <InsertDriveFileIcon sx={{ fontSize: 36, color: archivos.length ? '#4E1B95' : 'text.disabled', mb: 0.5 }} />
-          <Typography variant="body2" color={archivos.length ? '#4E1B95' : 'text.secondary'} fontWeight={600}>
+          <InsertDriveFileIcon sx={{ fontSize: 36, color: archivos.length ? 'var(--color-primario)' : 'text.disabled', mb: 0.5 }} />
+          <Typography variant="body2" color={archivos.length ? 'var(--color-primario)' : 'text.secondary'} fontWeight={600}>
             {archivos.length
               ? `${archivos.length} archivo${archivos.length > 1 ? 's' : ''} seleccionado${archivos.length > 1 ? 's' : ''}`
               : 'Haz clic o arrastra PDFs aquí (máx. 10 MB c/u)'}
@@ -205,11 +205,11 @@ function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
             {archivos.map(f => (
               <Box key={f.name} display="flex" alignItems="center" justifyContent="space-between"
                 sx={{ bgcolor: '#f5f0ff', borderRadius: 1, px: 1.5, py: 0.5 }}>
-                <Typography variant="caption" sx={{ color: '#4E1B95', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 320 }}>
+                <Typography variant="caption" sx={{ color: 'var(--color-primario)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 320 }}>
                   {f.name}
                 </Typography>
                 <IconButton size="small" onClick={() => quitarArchivo(f.name)} disabled={subiendo}>
-                  <CloseIcon sx={{ fontSize: 14, color: '#4E1B95' }} />
+                  <CloseIcon sx={{ fontSize: 14, color: 'var(--color-primario)' }} />
                 </IconButton>
               </Box>
             ))}
@@ -221,7 +221,7 @@ function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
             <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
               Subiendo… {progreso}%
             </Typography>
-            <LinearProgress variant="determinate" value={progreso} sx={{ borderRadius: 1, '& .MuiLinearProgress-bar': { bgcolor: '#4E1B95' } }} />
+            <LinearProgress variant="determinate" value={progreso} sx={{ borderRadius: 1, '& .MuiLinearProgress-bar': { bgcolor: 'var(--color-primario)' } }} />
           </Box>
         )}
       </DialogContent>
@@ -231,7 +231,7 @@ function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
           variant="contained" onClick={handleSubir}
           disabled={subiendo || archivos.length === 0}
           startIcon={subiendo ? <CircularProgress size={16} color="inherit" /> : <UploadFileIcon />}
-          sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, minWidth: 140 }}
+          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, minWidth: 140 }}
         >
           {subiendo ? `Subiendo ${progreso}%` : `Subir ${archivos.length > 1 ? `${archivos.length} archivos` : 'archivo'}`}
         </Button>
@@ -287,14 +287,14 @@ function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido, onToa
         <Box
           onClick={() => inputRef.current.click()}
           sx={{
-            border: '2px dashed', borderColor: archivo ? '#4E1B95' : 'divider',
+            border: '2px dashed', borderColor: archivo ? 'var(--color-primario)' : 'divider',
             borderRadius: 2, p: 2.5, textAlign: 'center', cursor: 'pointer',
             bgcolor: archivo ? '#f5f0ff' : 'transparent',
-            '&:hover': { borderColor: '#4E1B95', bgcolor: '#f5f0ff' },
+            '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f5f0ff' },
           }}
         >
-          <InsertDriveFileIcon sx={{ fontSize: 36, color: archivo ? '#4E1B95' : 'text.disabled', mb: 0.5 }} />
-          <Typography variant="body2" color={archivo ? '#4E1B95' : 'text.secondary'} fontWeight={archivo ? 600 : 400}>
+          <InsertDriveFileIcon sx={{ fontSize: 36, color: archivo ? 'var(--color-primario)' : 'text.disabled', mb: 0.5 }} />
+          <Typography variant="body2" color={archivo ? 'var(--color-primario)' : 'text.secondary'} fontWeight={archivo ? 600 : 400}>
             {archivo ? archivo.name : 'Haz clic para seleccionar un PDF (máx. 10 MB)'}
           </Typography>
           <input ref={inputRef} type="file" accept="application/pdf" hidden
@@ -307,7 +307,7 @@ function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido, onToa
           variant="contained" onClick={handleSubir}
           disabled={subiendo || !titulo.trim() || !archivo}
           startIcon={subiendo ? <CircularProgress size={16} color="inherit" /> : <UploadFileIcon />}
-          sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, minWidth: 140 }}
+          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, minWidth: 140 }}
         >
           {subiendo ? 'Subiendo…' : 'Subir documento'}
         </Button>
@@ -353,21 +353,21 @@ function TabInstitucionales({ onToast }) {
           <Chip
             label={`Todos (${documentos.length})`}
             onClick={() => setCategoriaFiltro('')}
-            sx={{ fontWeight: 600, bgcolor: categoriaFiltro === '' ? '#4E1B95' : undefined, color: categoriaFiltro === '' ? '#fff' : undefined }}
+            sx={{ fontWeight: 600, bgcolor: categoriaFiltro === '' ? 'var(--color-primario)' : undefined, color: categoriaFiltro === '' ? '#fff' : undefined }}
           />
           {CATEGORIAS.map(c => (
             <Chip
               key={c}
               label={`${c}${conteo[c] > 0 ? ` (${conteo[c]})` : ''}`}
               onClick={() => setCategoriaFiltro(prev => prev === c ? '' : c)}
-              sx={{ fontWeight: 600, bgcolor: categoriaFiltro === c ? '#4E1B95' : undefined, color: categoriaFiltro === c ? '#fff' : undefined }}
+              sx={{ fontWeight: 600, bgcolor: categoriaFiltro === c ? 'var(--color-primario)' : undefined, color: categoriaFiltro === c ? '#fff' : undefined }}
             />
           ))}
         </Stack>
         <Button
           variant="contained" startIcon={<AddIcon />}
           onClick={() => setModalAbierto(true)}
-          sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700 }}
+          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700 }}
         >
           Subir documentos
         </Button>
@@ -384,17 +384,17 @@ function TabInstitucionales({ onToast }) {
 
       <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         {cargando ? (
-          <Box display="flex" justifyContent="center" py={5}><CircularProgress sx={{ color: '#4E1B95' }} /></Box>
+          <Box display="flex" justifyContent="center" py={5}><CircularProgress sx={{ color: 'var(--color-primario)' }} /></Box>
         ) : (
           <TableContainer>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ bgcolor: '#fdfbff' }}>
-                  <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Título / Descripción</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#4E1B95', display: { xs: 'none', sm: 'table-cell' } }}>Categoría</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#4E1B95', display: { xs: 'none', md: 'table-cell' } }}>Subido por</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Fecha</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, color: '#4E1B95' }}>Acciones</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Título / Descripción</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)', display: { xs: 'none', sm: 'table-cell' } }}>Categoría</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)', display: { xs: 'none', md: 'table-cell' } }}>Subido por</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Fecha</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -425,7 +425,7 @@ function TabInstitucionales({ onToast }) {
                     </TableCell>
                     <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                       <Chip label={doc.categoria} size="small"
-                        sx={{ bgcolor: '#f0eaff', color: '#4E1B95', fontWeight: 600, fontSize: '0.72rem' }} />
+                        sx={{ bgcolor: '#f0eaff', color: 'var(--color-primario)', fontWeight: 600, fontSize: '0.72rem' }} />
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.78rem', color: 'text.secondary', display: { xs: 'none', md: 'table-cell' } }}>
                       {doc.subidoPorEmail}
@@ -441,7 +441,7 @@ function TabInstitucionales({ onToast }) {
                       </Tooltip>
                       <Tooltip title="Descargar">
                         <IconButton size="small" component="a" href={doc.url} target="_blank" rel="noopener noreferrer">
-                          <DownloadIcon fontSize="small" sx={{ color: '#4E1B95' }} />
+                          <DownloadIcon fontSize="small" sx={{ color: 'var(--color-primario)' }} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Eliminar">
@@ -536,7 +536,7 @@ function TabPorBeneficiario({ onToast }) {
           <Button
             variant="contained" startIcon={<AddIcon />}
             onClick={() => setModalAbierto(true)}
-            sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, height: 40 }}
+            sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, height: 40 }}
           >
             Subir documento
           </Button>
@@ -555,15 +555,15 @@ function TabPorBeneficiario({ onToast }) {
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
             {cargando ? (
-              <Box display="flex" justifyContent="center" py={5}><CircularProgress sx={{ color: '#4E1B95' }} /></Box>
+              <Box display="flex" justifyContent="center" py={5}><CircularProgress sx={{ color: 'var(--color-primario)' }} /></Box>
             ) : (
               <TableContainer>
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ bgcolor: '#fdfbff' }}>
-                      <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Nombre del archivo</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Fecha</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: '#4E1B95' }}>Acciones</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Nombre del archivo</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Fecha</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Acciones</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -577,7 +577,7 @@ function TabPorBeneficiario({ onToast }) {
                       <TableRow key={a.id} hover>
                         <TableCell>
                           <Box display="flex" alignItems="center" gap={1}>
-                            <InsertDriveFileIcon fontSize="small" sx={{ color: '#4E1B95' }} />
+                            <InsertDriveFileIcon fontSize="small" sx={{ color: 'var(--color-primario)' }} />
                             <Typography variant="body2" fontWeight={600}>{a.nombreOriginal ?? 'Documento'}</Typography>
                           </Box>
                         </TableCell>
@@ -592,7 +592,7 @@ function TabPorBeneficiario({ onToast }) {
                           </Tooltip>
                           <Tooltip title="Descargar">
                             <IconButton size="small" component="a" href={a.url} target="_blank" rel="noopener noreferrer">
-                              <DownloadIcon fontSize="small" sx={{ color: '#4E1B95' }} />
+                              <DownloadIcon fontSize="small" sx={{ color: 'var(--color-primario)' }} />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Eliminar">
@@ -653,7 +653,7 @@ export default function DocumentosPage() {
         <Tabs
           value={tabValue}
           onChange={(_, v) => setTabValue(v)}
-          sx={{ px: 2, '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', minWidth: 160 }, '& .Mui-selected': { color: '#4E1B95' }, '& .MuiTabs-indicator': { bgcolor: '#4E1B95' } }}
+          sx={{ px: 2, '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', minWidth: 160 }, '& .Mui-selected': { color: 'var(--color-primario)' }, '& .MuiTabs-indicator': { bgcolor: 'var(--color-primario)' } }}
         >
           <Tab label="Institucionales" />
           <Tab label="Por beneficiario" />

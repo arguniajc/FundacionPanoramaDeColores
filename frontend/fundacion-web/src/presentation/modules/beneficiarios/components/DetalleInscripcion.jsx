@@ -1,4 +1,4 @@
-/**
+﻿/**
  * DetalleInscripcion
  * Modal que muestra todos los datos de un beneficiario.
  */
@@ -40,7 +40,7 @@ import apiClient           from '../../../../infrastructure/http/apiClient';
 import { calcularEdad }    from '../../../../shared/utils/fecha';
 import { abrirHojaDeVida } from '../../../../shared/utils/pdf';
 
-const COLOR_PRIMARIO = '#4E1B95';
+const COLOR_PRIMARIO = 'var(--color-primario)';
 const COLOR_HOVER    = '#3a1470';
 
 function Seccion({ titulo, icono, mt = 1 }) {

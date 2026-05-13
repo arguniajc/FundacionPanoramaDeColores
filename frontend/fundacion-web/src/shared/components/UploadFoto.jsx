@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+﻿import { useRef, useState } from 'react';
 import {
   Box, Typography, CircularProgress, IconButton,
   Tooltip, Menu, MenuItem, ListItemIcon, ListItemText,
@@ -87,7 +87,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
             onClick={abrirMenu}
             sx={{
               mt: 0.5, display: 'block', width: '100%',
-              fontSize: 11, color: '#4E1B95', background: 'none',
+              fontSize: 11, color: 'var(--color-primario)', background: 'none',
               border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0,
             }}
           >
@@ -103,12 +103,12 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
             width: 120, height: 90, border: '2px dashed #bdbdbd', borderRadius: 2,
             bgcolor: '#fafafa', cursor: subiendo ? 'default' : 'pointer',
             transition: 'border-color .2s, background .2s',
-            '&:hover': !subiendo ? { borderColor: '#4E1B95', bgcolor: '#f3effe' } : {},
+            '&:hover': !subiendo ? { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' } : {},
             gap: 0.5, p: 0,
           }}
         >
           {subiendo
-            ? <CircularProgress size={22} sx={{ color: '#4E1B95' }} />
+            ? <CircularProgress size={22} sx={{ color: 'var(--color-primario)' }} />
             : <CloudUploadIcon sx={{ color: '#bdbdbd', fontSize: 28 }} />
           }
           <Typography variant="caption" color="text.disabled" fontSize={10}>

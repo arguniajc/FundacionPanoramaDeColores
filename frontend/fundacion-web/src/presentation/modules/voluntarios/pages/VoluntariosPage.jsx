@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Typography, Grid, Button, TextField, Dialog, DialogTitle, DialogContent,
   DialogActions, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip,
@@ -23,7 +23,7 @@ import { voluntariosRepository } from '../../../../infrastructure/repositories/v
 import { sedesRepository }        from '../../../../infrastructure/repositories/sedesRepository';
 import { CampoFecha, CampoDocumento, CampoCiudad } from '../../../../shared/components/form/FormControles';
 
-const COLOR = '#7c3aed';
+const COLOR = 'var(--color-primario)';
 
 function fmtFecha(d) {
   if (!d) return null;
@@ -70,7 +70,7 @@ function VoluntarioCard({ voluntario: v, onEditar, onEliminar, onAsignaciones })
             {v.profesion && (
               <Chip icon={<WorkIcon sx={{ fontSize: '11px !important' }} />}
                 label={v.profesion} size="small"
-                sx={{ fontSize: '0.68rem', height: 20, bgcolor: `${COLOR}18`, color: COLOR, fontWeight: 700, border: 'none' }}
+                sx={{ fontSize: '0.68rem', height: 20, bgcolor: 'color-mix(in srgb, var(--color-primario) 9%, transparent)', color: COLOR, fontWeight: 700, border: 'none' }}
               />
             )}
             {!v.activo && (
@@ -135,10 +135,10 @@ function VoluntarioCard({ voluntario: v, onEditar, onEliminar, onAsignaciones })
       </Box>
 
       {/* Footer */}
-      <Box sx={{ px: 1.5, py: 1, bgcolor: `${COLOR}08`, borderTop: '1.5px solid #ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box sx={{ px: 1.5, py: 1, bgcolor: 'color-mix(in srgb, var(--color-primario) 3%, transparent)', borderTop: '1.5px solid #ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Button size="small" variant="outlined" startIcon={<AssignmentIcon />}
           onClick={() => onAsignaciones(v)}
-          sx={{ fontWeight: 700, fontSize: '0.7rem', px: 1, color: COLOR, borderColor: COLOR, '&:hover': { borderColor: COLOR, bgcolor: `${COLOR}10` } }}>
+          sx={{ fontWeight: 700, fontSize: '0.7rem', px: 1, color: COLOR, borderColor: COLOR, '&:hover': { borderColor: COLOR, bgcolor: 'color-mix(in srgb, var(--color-primario) 6%, transparent)' } }}>
           Programas
         </Button>
         <Box display="flex" gap={0.3}>
@@ -397,7 +397,7 @@ function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
               <TableBody>
                 {asignaciones.map(a => (
                   <TableRow key={a.id} hover selected={editandoId === a.id}
-                    sx={editandoId === a.id ? { bgcolor: `${COLOR}0d` } : {}}>
+                    sx={editandoId === a.id ? { bgcolor: 'color-mix(in srgb, var(--color-primario) 5%, transparent)' } : {}}>
                     <TableCell sx={{ fontSize: '0.82rem' }}>{a.nombreSede || '—'}</TableCell>
                     <TableCell sx={{ fontSize: '0.82rem' }}>{a.nombrePrograma || '—'}</TableCell>
                     <TableCell sx={{ fontSize: '0.82rem' }}>{a.horasSemanales > 0 ? `${a.horasSemanales}h` : '—'}</TableCell>

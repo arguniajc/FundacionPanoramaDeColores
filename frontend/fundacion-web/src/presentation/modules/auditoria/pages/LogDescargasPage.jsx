@@ -1,4 +1,4 @@
-// Auditoría de descargas de documentos: muestra quién descargó qué y cuándo.
+﻿// Auditoría de descargas de documentos: muestra quién descargó qué y cuándo.
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Paper,
@@ -52,7 +52,7 @@ export default function LogDescargasPage() {
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #4E1B95, #2D984F)',
+          background: 'linear-gradient(135deg, var(--color-primario), #2D984F)',
           borderRadius: 3, p: { xs: 2, sm: 3 }, mb: 3, color: 'white',
         }}
       >
@@ -85,17 +85,17 @@ export default function LogDescargasPage() {
 
         {cargando ? (
           <Box display="flex" justifyContent="center" py={5}>
-            <CircularProgress sx={{ color: '#4E1B95' }} />
+            <CircularProgress sx={{ color: 'var(--color-primario)' }} />
           </Box>
         ) : (
           <TableContainer sx={{ overflowX: 'auto' }}>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ bgcolor: '#fdfbff' }}>
-                  <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Usuario</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Beneficiario</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#4E1B95', display: { xs: 'none', sm: 'table-cell' } }}>Tipo</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#4E1B95' }}>Fecha y hora</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Usuario</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Beneficiario</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)', display: { xs: 'none', sm: 'table-cell' } }}>Tipo</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Fecha y hora</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -112,7 +112,7 @@ export default function LogDescargasPage() {
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{r.nombreBeneficiario}</TableCell>
                     <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                      <Chip label={r.tipoArchivo} size="small" sx={{ bgcolor: '#f0eaff', color: '#4E1B95', fontWeight: 600, fontSize: '0.72rem' }} />
+                      <Chip label={r.tipoArchivo} size="small" sx={{ bgcolor: '#f0eaff', color: 'var(--color-primario)', fontWeight: 600, fontSize: '0.72rem' }} />
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.78rem', color: 'text.secondary', whiteSpace: 'nowrap' }}>
                       {new Date(r.descargadoEn).toLocaleString('es-CO', {

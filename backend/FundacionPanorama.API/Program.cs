@@ -354,6 +354,7 @@ var app = builder.Build();
     await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS sitio_web           VARCHAR(300)",                            "configuracion.sitio_web");
     await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS mensaje_bienvenida  TEXT",                                    "configuracion.mensaje_bienvenida");
     await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS footer_texto        VARCHAR(500)",                            "configuracion.footer_texto");
+    await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS web_contenido       TEXT",                                    "configuracion.web_contenido");
 
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_autorizado         BOOLEAN     NOT NULL DEFAULT false", "programas.rep_autorizado");
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_autorizacion_fecha TIMESTAMPTZ",                       "programas.rep_autorizacion_fecha");

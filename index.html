@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FUNDACIÓN PANORAMA DE COLORES | Transformamos vidas a través del arte, el deporte y la conciencia ambiental</title>
+    <title id="page-title">FUNDACIÓN PANORAMA DE COLORES | Transformamos vidas a través del arte, el deporte y la conciencia ambiental</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/responsive.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,7 +15,7 @@
         <div class="nav-container">
            <div class="logo-container">
                 <a href="#inicio" class="logo">
-                    <img src="images/logo.png" alt="Logo Fundación Panorama de Colores">
+                    <img id="nav-logo" src="images/logo.png" alt="Logo Fundación Panorama de Colores">
                 </a>
            </div>
             <button class="menu-toggle" id="menuToggle">
@@ -25,9 +25,8 @@
                 <li class="nav-item"><a href="#inicio" class="nav-link">Inicio</a></li>
                 <li class="nav-item"><a href="#quienes-somos" class="nav-link">Quiénes Somos</a></li>
                 <li class="nav-item"><a href="#que-hacemos" class="nav-link">Qué Hacemos</a></li>
-               <!-- <li class="nav-item"><a href="#impacto" class="nav-link">Nuestro Impacto</a></li>-->
+                <li class="nav-item" id="nav-impacto-item" style="display:none"><a href="#impacto" class="nav-link">Nuestro Impacto</a></li>
                 <li class="nav-item"><a href="#galeria" class="nav-link">Galería</a></li>
-               <!-- <li class="nav-item"><a href="#alianzas" class="nav-link">Alianzas</a></li>-->
                 <li class="nav-item"><a href="#donaciones" class="nav-link">¿Cómo ayudar?</a></li>
                 <li class="nav-item"><a href="#contacto" class="nav-link">Contacto</a></li>
                 <li class="nav-item">
@@ -35,7 +34,6 @@
                         <i class="fas fa-lock"></i> Admin
                     </a>
                 </li>
-                
             </ul>
         </div>
     </nav>
@@ -44,21 +42,21 @@
     <section class="slider-section" id="inicio">
         <div class="slider-container">
             <div class="slider">
-                <div class="slide active">
+                <div class="slide active" data-slide-idx="0">
                     <div class="slide-content">
                         <h1 class="slide-title">Transformando vidas a través del arte</h1>
                         <p class="slide-text">Descubre el potencial creativo de niños y niñas del barrio Panorama Comuna 1</p>
                         <a href="#que-hacemos" class="btn-slide">Conoce nuestros programas</a>
                     </div>
                 </div>
-                <div class="slide">
+                <div class="slide" data-slide-idx="1">
                     <div class="slide-content">
                         <h1 class="slide-title">Deporte para el desarrollo integral</h1>
                         <p class="slide-text">Fomentamos valores y habilidades a través de actividades deportivas</p>
                         <a href="#galeria" class="btn-slide">Ver nuestras actividades</a>
                     </div>
                 </div>
-                <div class="slide">
+                <div class="slide" data-slide-idx="2">
                     <div class="slide-content">
                         <h1 class="slide-title">Conciencia ambiental para un futuro mejor</h1>
                         <p class="slide-text">Educamos y actuamos por un entorno más sostenible</p>
@@ -84,21 +82,20 @@
             <h2 class="section-title">QUIÉNES SOMOS</h2>
             <div class="about-content">
                 <div class="about-image">
-                    <!-- Imagen por numeración para fácil escalabilidad -->
-                    <img src="images/imagen1.jpg" alt="Equipo de la Fundación Panorama de Colores">
+                    <img id="qs-imagen" src="images/imagen1.jpg" alt="Equipo de la Fundación Panorama de Colores">
                 </div>
                 <div class="about-text">
                     <div class="about-card">
                         <h3 class="card-title">Nuestra Misión</h3>
-                        <p class="card-text">Transformar vidas de niños, niñas y familias en el barrio Panorama Comuna 1 a través del arte, el deporte y la conciencia ambiental, promoviendo el desarrollo integral y la construcción de un futuro sostenible.</p>
+                        <p id="qs-mision" class="card-text">Transformar vidas de niños, niñas y familias en el barrio Panorama Comuna 1 a través del arte, el deporte y la conciencia ambiental, promoviendo el desarrollo integral y la construcción de un futuro sostenible.</p>
                     </div>
                     <div class="about-card">
                         <h3 class="card-title">Nuestra Visión</h3>
-                        <p class="card-text">Ser una fundación líder en la transformación social del barrio Panorama Comuna 1, reconocida por nuestro compromiso con el desarrollo integral de la niñez y la promoción de entornos sostenibles y saludables.</p>
+                        <p id="qs-vision" class="card-text">Ser una fundación líder en la transformación social del barrio Panorama Comuna 1, reconocida por nuestro compromiso con el desarrollo integral de la niñez y la promoción de entornos sostenibles y saludables.</p>
                     </div>
                     <div class="about-card">
                         <h3 class="card-title">Nuestra Historia</h3>
-                        <p class="card-text">Fundación Panorama de Colores nació hace más de 2 años como una iniciativa comunitaria para brindar oportunidades a niños y niñas en situación de vulnerabilidad. Desde entonces, hemos crecido y transformado la vida de más de 18 niños y sus familias.</p>
+                        <p id="qs-historia" class="card-text">Fundación Panorama de Colores nació hace más de 2 años como una iniciativa comunitaria para brindar oportunidades a niños y niñas en situación de vulnerabilidad. Desde entonces, hemos crecido y transformado la vida de más de 18 niños y sus familias.</p>
                     </div>
                 </div>
             </div>
@@ -110,32 +107,24 @@
         <div class="container">
             <h2 class="section-title">QUÉ HACEMOS</h2>
             <p class="section-subtitle">Nuestros programas transformadores</p>
-            <div class="programs-grid">
+            <div id="programas-grid" class="programs-grid">
                 <div class="program-card">
-                    <div class="program-icon">
-                        <i class="fas fa-palette"></i>
-                    </div>
+                    <div class="program-icon"><i class="fas fa-palette"></i></div>
                     <h3 class="program-title">Arte y Creatividad</h3>
                     <p class="program-description"></p>
                 </div>
                 <div class="program-card">
-                    <div class="program-icon">
-                        <i class="fas fa-futbol"></i>
-                    </div>
+                    <div class="program-icon"><i class="fas fa-futbol"></i></div>
                     <h3 class="program-title">Deporte y Recreación</h3>
                     <p class="program-description"></p>
                 </div>
                 <div class="program-card">
-                    <div class="program-icon">
-                        <i class="fas fa-leaf"></i>
-                    </div>
+                    <div class="program-icon"><i class="fas fa-leaf"></i></div>
                     <h3 class="program-title">Conciencia Ambiental</h3>
                     <p class="program-description"></p>
                 </div>
                 <div class="program-card">
-                    <div class="program-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
+                    <div class="program-icon"><i class="fas fa-users"></i></div>
                     <h3 class="program-title">Apoyo</h3>
                     <p class="program-description"></p>
                 </div>
@@ -143,10 +132,10 @@
         </div>
     </section>
 
-    <!-- Sección Nuestro Impacto 
-    <section class="section" id="impacto">
+    <!-- Sección Nuestro Impacto (oculta por defecto, se activa desde configuración) -->
+    <section class="section" id="impacto" style="display:none">
         <div class="container">
-            <h2 class="section-title">NUESTRO IMPACTO EN EL BARRIO PANORAMA</h2>
+            <h2 id="impacto-titulo" class="section-title">NUESTRO IMPACTO EN EL BARRIO PANORAMA</h2>
             <div class="impact-grid">
                 <div class="impact-card">
                     <div class="impact-number" data-count="20">0</div>
@@ -167,32 +156,19 @@
             </div>
         </div>
     </section>
--->
+
     <!-- Sección Galería -->
     <section class="section bg-light" id="galeria">
         <div class="container">
             <h2 class="section-title">GALERÍA DE EVENTOS</h2>
             <p class="section-subtitle">Momentos que inspiran y transforman</p>
-            <div class="gallery-grid">
-                <!-- Imágenes por numeración para fácil escalabilidad -->
-                <div class="gallery-item">
-                    <img src="images/imagen2.jpg" alt="Taller de arte infantil">
-                </div>
-                <div class="gallery-item">
-                    <img src="images/imagen3.jpg" alt="Actividad deportiva con niños">
-                </div>
-                <div class="gallery-item">
-                    <img src="images/imagen4.jpg" alt="Taller de conciencia ambiental">
-                </div>
-                <div class="gallery-item">
-                    <img src="images/imagen5.jpg" alt="Niños mostrando sus creaciones">
-                </div>
-                <div class="gallery-item">
-                    <img src="images/imagen6.jpg" alt="Familia participando en actividades">
-                </div>
-                <div class="gallery-item">
-                    <img src="images/imagen7.jpg" alt="Evento comunitario de la fundación">
-                </div>
+            <div id="galeria-grid" class="gallery-grid">
+                <div class="gallery-item"><img src="images/imagen2.jpg" alt="Taller de arte infantil"></div>
+                <div class="gallery-item"><img src="images/imagen3.jpg" alt="Actividad deportiva con niños"></div>
+                <div class="gallery-item"><img src="images/imagen4.jpg" alt="Taller de conciencia ambiental"></div>
+                <div class="gallery-item"><img src="images/imagen5.jpg" alt="Niños mostrando sus creaciones"></div>
+                <div class="gallery-item"><img src="images/imagen6.jpg" alt="Familia participando en actividades"></div>
+                <div class="gallery-item"><img src="images/imagen7.jpg" alt="Evento comunitario de la fundación"></div>
             </div>
             <div class="gallery-modal">
                 <div class="modal-content">
@@ -204,44 +180,6 @@
         </div>
     </section>
 
-    <!-- Sección Alianzas 
-    <section class="section" id="alianzas">
-        <div class="container">
-            <h2 class="section-title">ALIANZAS</h2>
-            <p class="section-subtitle">Trabajamos con organizaciones que comparten nuestra visión</p>
-            <div class="alliances-grid">
-                <div class="alliance-item">
-                    <div class="alliance-logo">
-                        <i class="fas fa-hands-helping"></i>
-                    </div>
-                    <h3 class="alliance-name">Barrio Panorama</h3>
-                    <p class="alliance-desc">Apoyo institucional y logístico</p>
-                </div>
-                <div class="alliance-item">
-                    <div class="alliance-logo">
-                        <i class="fas fa-school"></i>
-                    </div>
-                    <h3 class="alliance-name">Colegios Locales</h3>
-                    <p class="alliance-desc">Espacios para nuestras actividades</p>
-                </div>
-                <div class="alliance-item">
-                    <div class="alliance-logo">
-                        <i class="fas fa-store"></i>
-                    </div>
-                    <h3 class="alliance-name">Comercios Locales</h3>
-                    <p class="alliance-desc">Donaciones de materiales e insumos</p>
-                </div>
-                <div class="alliance-item">
-                    <div class="alliance-logo">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h3 class="alliance-name">Voluntarios</h3>
-                    <p class="alliance-desc">Profesionales que aportan su tiempo</p>
-                </div>
-            </div>
-        </div>
-    </section>
-        -->
     <!-- Sección Cómo Ayudar -->
     <section class="section bg-light" id="donaciones">
         <div class="container">
@@ -249,42 +187,35 @@
             <p class="section-subtitle">Tu apoyo puede transformar vidas</p>
             <div class="donation-options">
                 <div class="donation-card">
-                    <div class="donation-icon">
-                        <i class="fas fa-hands"></i>
-                    </div>
+                    <div class="donation-icon"><i class="fas fa-hands"></i></div>
                     <h3 class="donation-title">Voluntariado</h3>
-                    <p class="donation-text">Únete como voluntario y comparte tus habilidades con nuestra comunidad.</p>
+                    <p id="don-voluntariado" class="donation-text">Únete como voluntario y comparte tus habilidades con nuestra comunidad.</p>
                     <a href="#contacto" class="btn-donation">Ser Voluntario</a>
                 </div>
                 <div class="donation-card">
-                    <div class="donation-icon">
-                        <i class="fas fa-gift"></i>
-                    </div>
-                    <h class="donation-title">Donaciones en Especie</h3>
-                    <p class="donation-text">Materiales de arte, deportivos o recursos para nuestros talleres.</p>
+                    <div class="donation-icon"><i class="fas fa-gift"></i></div>
+                    <h3 class="donation-title">Donaciones en Especie</h3>
+                    <p id="don-especie" class="donation-text">Materiales de arte, deportivos o recursos para nuestros talleres.</p>
                     <a href="#contacto" class="btn-donation">Donar Materiales</a>
                 </div>
                 <div class="donation-card highlight">
-                    <div class="donation-icon">
-                        <i class="fas fa-donate"></i>
-                    </div>
+                    <div class="donation-icon"><i class="fas fa-donate"></i></div>
                     <h3 class="donation-title">Donaciones Monetarias</h3>
-                    <p class="donation-text">Si deseas realizar una donación monetaria y recibir la información necesaria, puedes escribirnos por WhatsApp o correo. Con tu aporte seguimos ampliando nuestro impacto</p>
+                    <p id="don-monetario" class="donation-text">Si deseas realizar una donación monetaria y recibir la información necesaria, puedes escribirnos por WhatsApp o correo. Con tu aporte seguimos ampliando nuestro impacto</p>
                     <div class="contact-info">
                         <p>
-                            <a href="https://wa.me/573226012056" target="_blank" rel="noopener noreferrer">
+                            <a id="don-whatsapp" href="https://wa.me/573226012056" target="_blank" rel="noopener noreferrer">
                                 <i class="fab fa-whatsapp"></i>
-                                <strong style="margin-left:5px;">WhatsApp: +57 322 601 2056</strong>
+                                <strong id="don-whatsapp-texto" style="margin-left:5px;">WhatsApp: +57 322 601 2056</strong>
                             </a>
                         </p>
-                     <p>
-                        <a href="mailto:Panoramadecolores@gmail.com"
-                        style="display:flex; align-items:center; white-space:nowrap; gap:5px;">
-                            <i class="fas fa-envelope"></i>
-                            <strong>Panoramadecolores@gmail.com</strong>
-                        </a>
-                    </p>
-
+                        <p>
+                            <a id="don-email" href="mailto:Panoramadecolores@gmail.com"
+                               style="display:flex;align-items:center;white-space:nowrap;gap:5px;">
+                                <i class="fas fa-envelope"></i>
+                                <strong id="don-email-texto">Panoramadecolores@gmail.com</strong>
+                            </a>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -316,31 +247,22 @@
                 </div>
                 <div class="contact-info">
                     <h3 class="contact-title">Información de contacto</h3>
-                    <p><i class="fas fa-map-marker-alt"></i> <strong>Ubicación:</strong> Carrera 7F 16H-10 Barrio Panorama Comuna 1- Yumbo Valle del Cauca, Colombia</p>
-                    <p><i class="fas fa-phone"></i> <strong>Teléfono:</strong> +57 322 602 2056</p>
-                    <p><i class="fas fa-envelope"></i> <strong>Correo:</strong> Panoramadecolores@gmail.com</p>
+                    <p><i class="fas fa-map-marker-alt"></i> <strong>Ubicación:</strong> <span id="contact-direccion">Carrera 7F 16H-10 Barrio Panorama Comuna 1- Yumbo Valle del Cauca, Colombia</span></p>
+                    <p><i class="fas fa-phone"></i> <strong>Teléfono:</strong> <span id="contact-telefono">+57 322 602 2056</span></p>
+                    <p><i class="fas fa-envelope"></i> <strong>Correo:</strong> <a id="contact-email-link" href="mailto:Panoramadecolores@gmail.com"><span id="contact-email">Panoramadecolores@gmail.com</span></a></p>
                     <div class="contact-social">
                         <h3>Síguenos en redes sociales</h3>
                         <div class="social-icons">
-                           <!-- <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>-->
-                            <a href="https://www.instagram.com/fundacionpanoramadecolores/" 
-                            class="social-link" 
-                            target="_blank" 
-                            rel="noopener noreferrer">
+                            <a id="contact-instagram" href="https://www.instagram.com/fundacionpanoramadecolores/"
+                               class="social-link" target="_blank" rel="noopener noreferrer">
                                 <i class="fab fa-instagram"></i>
                             </a>
-
-                            <a href="https://www.tiktok.com/@fundapanoramadecolores" 
-                            class="social-link" 
-                            target="_blank" 
-                            rel="noopener noreferrer">
+                            <a id="contact-tiktok" href="https://www.tiktok.com/@fundapanoramadecolores"
+                               class="social-link" target="_blank" rel="noopener noreferrer">
                                 <i class="fab fa-tiktok"></i>
                             </a>
-
-                            <a href="https://wa.me/573226012056" 
-                            class="social-link" 
-                            target="_blank" 
-                            rel="noopener noreferrer">
+                            <a id="contact-whatsapp" href="https://wa.me/573226012056"
+                               class="social-link" target="_blank" rel="noopener noreferrer">
                                 <i class="fab fa-whatsapp"></i>
                             </a>
                         </div>
@@ -355,8 +277,8 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-logo">
-                    <h3>FUNDACIÓN PANORAMA DE COLORES</h3>
-                    <p>Transformamos vidas a través del arte, el deporte y la conciencia ambiental.</p>
+                    <h3 id="footer-nombre">FUNDACIÓN PANORAMA DE COLORES</h3>
+                    <p id="footer-eslogan">Transformamos vidas a través del arte, el deporte y la conciencia ambiental.</p>
                 </div>
                 <div class="footer-links">
                     <h3>Enlaces rápidos</h3>
@@ -370,30 +292,20 @@
                 <div class="footer-social">
                     <h3>Síguenos</h3>
                     <div class="social-icons">
-                       <!---  <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>-->
-                        <a href="https://www.instagram.com/fundacionpanoramadecolores/" 
-                        class="social-link" 
-                        target="_blank" 
-                        rel="noopener noreferrer">
+                        <a id="footer-instagram" href="https://www.instagram.com/fundacionpanoramadecolores/"
+                           class="social-link" target="_blank" rel="noopener noreferrer">
                             <i class="fab fa-instagram"></i>
                         </a>
-
-                        <a href="https://www.tiktok.com/@fundapanoramadecolores" 
-                        class="social-link" 
-                        target="_blank" 
-                        rel="noopener noreferrer">
+                        <a id="footer-tiktok" href="https://www.tiktok.com/@fundapanoramadecolores"
+                           class="social-link" target="_blank" rel="noopener noreferrer">
                             <i class="fab fa-tiktok"></i>
                         </a>
-
-                        <a href="https://wa.me/573226012056" 
-                        class="social-link" 
-                        target="_blank" 
-                        rel="noopener noreferrer">
+                        <a id="footer-whatsapp" href="https://wa.me/573226012056"
+                           class="social-link" target="_blank" rel="noopener noreferrer">
                             <i class="fab fa-whatsapp"></i>
                         </a>
-
                     </div>
-                    <p class="footer-copyright">© 2025 Fundación Panorama de Colores. Todos los derechos reservados.</p>
+                    <p id="footer-copyright" class="footer-copyright">© 2025 Fundación Panorama de Colores. Todos los derechos reservados.</p>
                 </div>
             </div>
         </div>
@@ -401,17 +313,230 @@
 
     <script src="js/script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-    <script> emailjs.init("AQUI_TU_PUBLIC_KEY");</script>
+    <script>emailjs.init("AQUI_TU_PUBLIC_KEY");</script>
 
-    <!-- Enlace Admin: local → Vite dev server | producción → /panel/ -->
+    <!-- Enlace Admin -->
     <script>
       (function () {
-        var isLocal = window.location.hostname === 'localhost' ||
-                      window.location.hostname === '127.0.0.1';
-        document.getElementById('admin-link').href = isLocal
-          ? 'http://localhost:5173/panel/'
-          : '/panel/';
+        var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        document.getElementById('admin-link').href = isLocal ? 'http://localhost:5173/panel/' : '/panel/';
       })();
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         CONTENIDO DINÁMICO DESDE CONFIGURACIÓN
+         Carga datos desde el API y actualiza toda la página sin recargar.
+    ═══════════════════════════════════════════════════════════════════ -->
+    <script>
+    (function () {
+      var API = 'https://fundacionpanoramadecolores-nez4.onrender.com';
+
+      // Contenido por defecto (idéntico al HTML estático actual)
+      var DEFAULTS = {
+        slider: [
+          { titulo: 'Transformando vidas a través del arte',     subtitulo: 'Descubre el potencial creativo de niños y niñas del barrio Panorama Comuna 1', cta: 'Conoce nuestros programas', ctaHref: '#que-hacemos',  imagen: '' },
+          { titulo: 'Deporte para el desarrollo integral',       subtitulo: 'Fomentamos valores y habilidades a través de actividades deportivas',           cta: 'Ver nuestras actividades',  ctaHref: '#galeria',      imagen: '' },
+          { titulo: 'Conciencia ambiental para un futuro mejor', subtitulo: 'Educamos y actuamos por un entorno más sostenible',                               cta: 'Únete a nuestra causa',     ctaHref: '#donaciones',   imagen: '' }
+        ],
+        quienesSomos: {
+          imagen:   'images/imagen1.jpg',
+          mision:   'Transformar vidas de niños, niñas y familias en el barrio Panorama Comuna 1 a través del arte, el deporte y la conciencia ambiental, promoviendo el desarrollo integral y la construcción de un futuro sostenible.',
+          vision:   'Ser una fundación líder en la transformación social del barrio Panorama Comuna 1, reconocida por nuestro compromiso con el desarrollo integral de la niñez y la promoción de entornos sostenibles y saludables.',
+          historia: 'Fundación Panorama de Colores nació hace más de 2 años como una iniciativa comunitaria para brindar oportunidades a niños y niñas en situación de vulnerabilidad. Desde entonces, hemos crecido y transformado la vida de más de 18 niños y sus familias.'
+        },
+        programas: [
+          { icono: 'fa-palette', titulo: 'Arte y Creatividad',   descripcion: '' },
+          { icono: 'fa-futbol',  titulo: 'Deporte y Recreación', descripcion: '' },
+          { icono: 'fa-leaf',    titulo: 'Conciencia Ambiental', descripcion: '' },
+          { icono: 'fa-users',   titulo: 'Apoyo',                descripcion: '' }
+        ],
+        impacto: {
+          visible: false,
+          titulo: 'NUESTRO IMPACTO EN EL BARRIO PANORAMA',
+          items: [
+            { numero: 20, label: 'Niñas y niños formados en nuestros programas' },
+            { numero: 20, label: 'Familias beneficiadas' },
+            { numero: 1,  label: 'Año trabajando por la niñez del barrio Panorama de Yumbo Valle' },
+            { numero: 15, label: 'Talleres realizados' }
+          ]
+        },
+        galeria: [
+          { imagen: 'images/imagen2.jpg', titulo: 'Taller de arte infantil' },
+          { imagen: 'images/imagen3.jpg', titulo: 'Actividad deportiva con niños' },
+          { imagen: 'images/imagen4.jpg', titulo: 'Taller de conciencia ambiental' },
+          { imagen: 'images/imagen5.jpg', titulo: 'Niños mostrando sus creaciones' },
+          { imagen: 'images/imagen6.jpg', titulo: 'Familia participando en actividades' },
+          { imagen: 'images/imagen7.jpg', titulo: 'Evento comunitario de la fundación' }
+        ],
+        donaciones: {
+          whatsapp: '573226012056',
+          email: 'Panoramadecolores@gmail.com',
+          textoVoluntariado: 'Únete como voluntario y comparte tus habilidades con nuestra comunidad.',
+          textoEspecie: 'Materiales de arte, deportivos o recursos para nuestros talleres.',
+          textoMonetario: 'Si deseas realizar una donación monetaria y recibir la información necesaria, puedes escribirnos por WhatsApp o correo. Con tu aporte seguimos ampliando nuestro impacto'
+        },
+        contacto: {
+          direccion: 'Carrera 7F 16H-10 Barrio Panorama Comuna 1- Yumbo Valle del Cauca, Colombia',
+          telefono:  '+57 322 602 2056',
+          email:     'Panoramadecolores@gmail.com',
+          instagram: 'https://www.instagram.com/fundacionpanoramadecolores/',
+          tiktok:    'https://www.tiktok.com/@fundapanoramadecolores',
+          whatsapp:  '573226012056'
+        },
+        footer: {
+          nombre:    'FUNDACIÓN PANORAMA DE COLORES',
+          eslogan:   'Transformamos vidas a través del arte, el deporte y la conciencia ambiental.',
+          copyright: '© 2025 Fundación Panorama de Colores. Todos los derechos reservados.'
+        }
+      };
+
+      function txt(id, val) {
+        var el = document.getElementById(id);
+        if (el && val != null && val !== '') el.textContent = val;
+      }
+      function href(id, url) {
+        var el = document.getElementById(id);
+        if (el && url) el.href = url;
+      }
+      function esc(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+      function merge(def, over) {
+        if (!over || typeof over !== 'object') return def;
+        var r = {};
+        for (var k in def) r[k] = def[k];
+        for (var k in over) {
+          if (over[k] === null || over[k] === undefined) continue;
+          if (Array.isArray(over[k]))              r[k] = over[k];
+          else if (typeof over[k] === 'object')    r[k] = merge(def[k] || {}, over[k]);
+          else                                     r[k] = over[k];
+        }
+        return r;
+      }
+
+      function aplicar(w) {
+        // ── Slider ──────────────────────────────────────────────────────
+        var slides = document.querySelectorAll('.slide');
+        for (var i = 0; i < w.slider.length && i < slides.length; i++) {
+          var s = w.slider[i];
+          var titleEl = slides[i].querySelector('.slide-title');
+          var textEl  = slides[i].querySelector('.slide-text');
+          var ctaEl   = slides[i].querySelector('.btn-slide');
+          if (titleEl && s.titulo)   titleEl.textContent = s.titulo;
+          if (textEl  && s.subtitulo) textEl.textContent = s.subtitulo;
+          if (ctaEl) {
+            if (s.cta)     ctaEl.textContent = s.cta;
+            if (s.ctaHref) ctaEl.href        = s.ctaHref;
+          }
+          if (s.imagen) {
+            slides[i].style.backgroundImage  = 'url(' + s.imagen + ')';
+            slides[i].style.backgroundSize   = 'cover';
+            slides[i].style.backgroundPosition = 'center';
+          }
+        }
+
+        // ── Quiénes Somos ────────────────────────────────────────────────
+        var qs = w.quienesSomos;
+        var qsImg = document.getElementById('qs-imagen');
+        if (qsImg && qs.imagen) qsImg.src = qs.imagen;
+        txt('qs-mision',   qs.mision);
+        txt('qs-vision',   qs.vision);
+        txt('qs-historia', qs.historia);
+
+        // ── Programas ────────────────────────────────────────────────────
+        var cards = document.querySelectorAll('#programas-grid .program-card');
+        for (var i = 0; i < w.programas.length && i < cards.length; i++) {
+          var p   = w.programas[i];
+          var ico = cards[i].querySelector('.program-icon i');
+          var tit = cards[i].querySelector('.program-title');
+          var des = cards[i].querySelector('.program-description');
+          if (ico && p.icono) ico.className = 'fas ' + p.icono;
+          if (tit && p.titulo)      tit.textContent = p.titulo;
+          if (des && p.descripcion) des.textContent = p.descripcion;
+        }
+
+        // ── Impacto ──────────────────────────────────────────────────────
+        var impactoSec = document.getElementById('impacto');
+        var navImpacto = document.getElementById('nav-impacto-item');
+        if (impactoSec) {
+          impactoSec.style.display = w.impacto.visible ? '' : 'none';
+          if (navImpacto) navImpacto.style.display = w.impacto.visible ? '' : 'none';
+          if (w.impacto.visible) {
+            txt('impacto-titulo', w.impacto.titulo);
+            var numEls = impactoSec.querySelectorAll('.impact-number');
+            var labEls = impactoSec.querySelectorAll('.impact-text');
+            for (var i = 0; i < w.impacto.items.length; i++) {
+              var it = w.impacto.items[i];
+              if (numEls[i]) { numEls[i].textContent = it.numero; numEls[i].setAttribute('data-count', it.numero); }
+              if (labEls[i] && it.label) labEls[i].textContent = it.label;
+            }
+          }
+        }
+
+        // ── Galería ──────────────────────────────────────────────────────
+        var grid = document.getElementById('galeria-grid');
+        if (grid && w.galeria && w.galeria.length) {
+          grid.innerHTML = w.galeria.map(function(g) {
+            return '<div class="gallery-item"><img src="' + esc(g.imagen) + '" alt="' + esc(g.titulo) + '" loading="lazy"></div>';
+          }).join('');
+          // Re-adjuntar eventos de modal con delegación
+          grid.addEventListener('click', function(e) {
+            var item = e.target.closest('.gallery-item img');
+            if (!item) return;
+            var modal    = document.querySelector('.gallery-modal');
+            var modalImg = modal && modal.querySelector('.modal-image');
+            var caption  = modal && modal.querySelector('.modal-caption');
+            if (modal)   modal.style.display    = 'flex';
+            if (modalImg) modalImg.src           = item.src;
+            if (caption)  caption.textContent    = item.alt;
+          });
+        }
+
+        // ── Cómo Ayudar ──────────────────────────────────────────────────
+        var d = w.donaciones;
+        txt('don-voluntariado', d.textoVoluntariado);
+        txt('don-especie',      d.textoEspecie);
+        txt('don-monetario',    d.textoMonetario);
+        var donWa = document.getElementById('don-whatsapp');
+        if (donWa && d.whatsapp) donWa.href = 'https://wa.me/' + d.whatsapp;
+        txt('don-whatsapp-texto', 'WhatsApp: +' + (d.whatsapp || '').replace(/^57/, '57 ').replace(/(\d{3})(\d{3})(\d{4})$/, '$1 $2 $3'));
+        var donEm = document.getElementById('don-email');
+        if (donEm && d.email) donEm.href = 'mailto:' + d.email;
+        txt('don-email-texto', d.email);
+
+        // ── Contacto ─────────────────────────────────────────────────────
+        var c = w.contacto;
+        txt('contact-direccion', c.direccion);
+        txt('contact-telefono',  c.telefono);
+        txt('contact-email',     c.email);
+        var cemailLink = document.getElementById('contact-email-link');
+        if (cemailLink && c.email) cemailLink.href = 'mailto:' + c.email;
+        href('contact-instagram', c.instagram);
+        href('contact-tiktok',    c.tiktok);
+        href('contact-whatsapp',  c.whatsapp ? 'https://wa.me/' + c.whatsapp : null);
+        href('footer-instagram',  c.instagram);
+        href('footer-tiktok',     c.tiktok);
+        href('footer-whatsapp',   c.whatsapp ? 'https://wa.me/' + c.whatsapp : null);
+
+        // ── Footer ───────────────────────────────────────────────────────
+        txt('footer-nombre',    w.footer.nombre);
+        txt('footer-eslogan',   w.footer.eslogan);
+        txt('footer-copyright', w.footer.copyright);
+      }
+
+      // Aplicar defaults inmediatamente (sin esperar al API)
+      aplicar(DEFAULTS);
+
+      // Luego sobrescribir con datos del servidor
+      fetch(API + '/api/configuracion/publica')
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (!data || !data.webContenido) return;
+          var parsed = JSON.parse(data.webContenido);
+          aplicar(merge(DEFAULTS, parsed));
+        })
+        .catch(function() { /* silencioso — los defaults ya están aplicados */ });
+    })();
     </script>
 </body>
 </html>

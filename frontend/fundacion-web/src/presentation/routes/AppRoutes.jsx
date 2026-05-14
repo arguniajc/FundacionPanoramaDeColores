@@ -18,6 +18,7 @@ import DonacionesPage       from '../modules/donaciones/pages/DonacionesPage';
 import VoluntariosPage      from '../modules/voluntarios/pages/VoluntariosPage';
 import ConfiguracionPage    from '../modules/configuracion/pages/ConfiguracionPage';
 import EquipoPage           from '../modules/equipo/pages/EquipoPage';
+import ActividadesPage      from '../modules/actividades/pages/ActividadesPage';
 
 // Envuelve en layout + auth + permiso de módulo
 function Pagina({ modulo, children }) {
@@ -46,7 +47,7 @@ export default function AppRoutes() {
       <Route path="/sede/donaciones"    element={<Pagina modulo="donaciones"><DonacionesPage /></Pagina>} />
       <Route path="/sede/proyectos"     element={<Pagina modulo="programas"><ProgramasPage /></Pagina>} />
       <Route path="/sede/inscripciones" element={<Pagina modulo="inscripciones"><InscripcionesPage /></Pagina>} />
-      <Route path="/sede/actividades"   element={<Pagina modulo="actividades"><ModuloEnDesarrollo nombre="Actividades" /></Pagina>} />
+      <Route path="/sede/actividades"   element={<Pagina modulo="actividades"><ActividadesPage /></Pagina>} />
       <Route path="/sede/voluntarios"   element={<Pagina modulo="voluntarios"><VoluntariosPage /></Pagina>} />
       <Route path="/sede/talento-humano" element={<Pagina modulo="talento_humano"><ModuloEnDesarrollo nombre="Talento Humano" /></Pagina>} />
       <Route path="/sede/contabilidad"  element={<Pagina modulo="contabilidad"><ModuloEnDesarrollo nombre="Contabilidad" /></Pagina>} />

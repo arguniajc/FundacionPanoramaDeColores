@@ -542,6 +542,30 @@ var app = builder.Build();
           ('auditor','equipo','ver',true)
         ON CONFLICT (rol, modulo, accion) DO NOTHING
         """, "roles_permisos.seed");
+
+    // ── Módulo Actividades ────────────────────────────────────────────────────
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS actividades (
+            id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            titulo       VARCHAR(200) NOT NULL,
+            descripcion  TEXT,
+            programa_id  UUID         REFERENCES programas(id) ON DELETE SET NULL,
+            fecha_inicio TIMESTAMPTZ  NOT NULL,
+            fecha_fin    TIMESTAMPTZ,
+            lugar        VARCHAR(200),
+            estado       VARCHAR(20)  NOT NULL DEFAULT 'programada',
+            created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        )
+        """, "actividades");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS actividad_asistencia (
+            actividad_id    UUID    NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
+            beneficiario_id UUID    NOT NULL REFERENCES beneficiarios(id) ON DELETE CASCADE,
+            asistio         BOOLEAN NOT NULL DEFAULT false,
+            PRIMARY KEY (actividad_id, beneficiario_id)
+        )
+        """, "actividad_asistencia");
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────

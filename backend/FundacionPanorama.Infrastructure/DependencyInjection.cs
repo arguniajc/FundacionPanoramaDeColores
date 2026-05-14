@@ -1,3 +1,5 @@
+using FundacionPanorama.Application.Features.Actividades;
+using FundacionPanorama.Application.Features.Actividades.Interfaces;
 using FundacionPanorama.Application.Features.Configuracion;
 using FundacionPanorama.Application.Features.Configuracion.Interfaces;
 using FundacionPanorama.Application.Features.Permisos;
@@ -22,11 +24,13 @@ public static class DependencyInjection
         services.AddScoped<IConfiguracionRepository, ConfiguracionRepository>();
         services.AddScoped<IUsuariosRepository, UsuariosRepository>();
         services.AddScoped<IPermisosRepository, PermisosRepository>();
+        services.AddScoped<IActividadesRepository, ActividadesRepository>();
 
         // Services
         services.AddScoped<ConfiguracionService>();
         services.AddScoped<UsuariosService>();
         services.AddScoped<PermisosService>();
+        services.AddScoped<ActividadesService>();
 
         return services;
     }

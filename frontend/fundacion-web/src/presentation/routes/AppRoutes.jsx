@@ -13,7 +13,6 @@ import DocumentosPage       from '../modules/documentos/pages/DocumentosPage';
 import ProgramasPage        from '../modules/programas/pages/ProgramasPage';
 import InscripcionesPage    from '../modules/inscripciones/pages/InscripcionesPage';
 import InventarioPage       from '../modules/inventario/pages/InventarioPage';
-import DonantesPage         from '../modules/donantes/pages/DonantesPage';
 import DonacionesPage       from '../modules/donaciones/pages/DonacionesPage';
 import VoluntariosPage      from '../modules/voluntarios/pages/VoluntariosPage';
 import ConfiguracionPage    from '../modules/configuracion/pages/ConfiguracionPage';
@@ -47,7 +46,7 @@ export default function AppRoutes() {
       <Route path="/sede/beneficiarios" element={<Pagina modulo="beneficiarios"><BeneficiariosPage /></Pagina>} />
       <Route path="/sede/sedes"         element={<Pagina modulo="sedes"><SedesPage /></Pagina>} />
       <Route path="/sede/log-descargas" element={<Pagina modulo="log_descargas"><LogDescargasPage /></Pagina>} />
-      <Route path="/sede/donantes"      element={<Pagina modulo="donantes"><DonantesPage /></Pagina>} />
+      <Route path="/sede/donantes"      element={<Navigate to="/sede/donaciones" replace />} />
       <Route path="/sede/donaciones"    element={<Pagina modulo="donaciones"><DonacionesPage /></Pagina>} />
       <Route path="/sede/proyectos"     element={<Pagina modulo="programas"><ProgramasPage /></Pagina>} />
       <Route path="/sede/inscripciones" element={<Pagina modulo="inscripciones"><InscripcionesPage /></Pagina>} />

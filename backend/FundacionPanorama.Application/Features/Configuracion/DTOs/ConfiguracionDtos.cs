@@ -48,4 +48,6 @@ public record ConfiguracionPublicaDto(
     string? EmailContacto,
     string? SitioWeb,
     string? FooterTexto,
-    string? WebContenido);
+    string? WebContenido,
+    string? ColorPrimario,
+    string? ColorSidebar);

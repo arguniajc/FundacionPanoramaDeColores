@@ -24,6 +24,8 @@ public class ConfiguracionController(ConfiguracionService svc) : ControllerBase
             sitioWeb        = data.SitioWeb,
             footerTexto     = data.FooterTexto,
             webContenido    = data.WebContenido,
+            colorPrimario   = data.ColorPrimario,
+            colorSidebar    = data.ColorSidebar,
         });
     }
 

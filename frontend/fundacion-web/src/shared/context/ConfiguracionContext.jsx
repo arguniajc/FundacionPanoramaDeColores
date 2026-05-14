@@ -71,9 +71,10 @@ export function ConfiguracionProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    configuracionRepository.obtener()
+    // Usa el endpoint público para cargar colores sin requerir auth (sirve en login también)
+    configuracionRepository.obtenerPublica()
       .then(({ data }) => actualizar(data))
-      .catch(() => { /* sin sesión — usar defaults/cache */ });
+      .catch(() => { /* sin configuración guardada — usar defaults/cache */ });
   }, [actualizar]);
 
   return (

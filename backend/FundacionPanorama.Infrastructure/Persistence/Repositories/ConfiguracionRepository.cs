@@ -52,7 +52,8 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
         await conn.OpenAsync(ct);
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            SELECT nombre_fundacion, email_contacto, sitio_web, footer_texto, web_contenido
+            SELECT nombre_fundacion, email_contacto, sitio_web, footer_texto, web_contenido,
+                   color_primario, color_sidebar
             FROM configuracion LIMIT 1";
 
         await using var r = await cmd.ExecuteReaderAsync(ct);
@@ -63,7 +64,9 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
             r.IsDBNull(1) ? null : r.GetString(1),
             r.IsDBNull(2) ? null : r.GetString(2),
             r.IsDBNull(3) ? null : r.GetString(3),
-            r.IsDBNull(4) ? null : r.GetString(4));
+            r.IsDBNull(4) ? null : r.GetString(4),
+            r.IsDBNull(5) ? null : r.GetString(5),
+            r.IsDBNull(6) ? null : r.GetString(6));
     }
 
     public async Task<ConfiguracionDto> GuardarAsync(GuardarConfiguracionDto dto, CancellationToken ct = default)

@@ -452,7 +452,6 @@ var app = builder.Build();
           ('representante_legal','reportes','ver',true),('representante_legal','reportes','exportar',true),
           ('representante_legal','documentos','ver',true),('representante_legal','documentos','crear',true),
           ('representante_legal','documentos','editar',true),('representante_legal','documentos','eliminar',true),
-          ('representante_legal','equipo','ver',true),
           -- sistemas
           ('sistemas','dashboard','ver',true),
           ('sistemas','sedes','ver',true),('sistemas','sedes','crear',true),('sistemas','sedes','editar',true),('sistemas','sedes','eliminar',true),
@@ -460,7 +459,6 @@ var app = builder.Build();
           ('sistemas','documentos','ver',true),
           ('sistemas','log_descargas','ver',true),
           ('sistemas','seguridad','ver',true),('sistemas','seguridad','crear',true),('sistemas','seguridad','editar',true),('sistemas','seguridad','eliminar',true),
-          ('sistemas','equipo','ver',true),('sistemas','equipo','crear',true),('sistemas','equipo','editar',true),('sistemas','equipo','eliminar',true),
           ('sistemas','configuracion','ver',true),('sistemas','configuracion','editar',true),
           -- coordinador_programas
           ('coordinador_programas','dashboard','ver',true),
@@ -513,7 +511,6 @@ var app = builder.Build();
           ('secretario','talento_humano','ver',true),
           ('secretario','reportes','ver',true),
           ('secretario','documentos','ver',true),('secretario','documentos','crear',true),('secretario','documentos','editar',true),
-          ('secretario','equipo','ver',true),
           -- talento_humano
           ('talento_humano','dashboard','ver',true),
           ('talento_humano','voluntarios','ver',true),('talento_humano','voluntarios','crear',true),('talento_humano','voluntarios','editar',true),
@@ -523,7 +520,6 @@ var app = builder.Build();
           ('talento_humano','sedes','ver',true),
           ('talento_humano','reportes','ver',true),
           ('talento_humano','documentos','ver',true),
-          ('talento_humano','equipo','ver',true),
           -- auditor
           ('auditor','dashboard','ver',true),
           ('auditor','beneficiarios','ver',true),
@@ -539,10 +535,12 @@ var app = builder.Build();
           ('auditor','inventario','ver',true),
           ('auditor','reportes','ver',true),('auditor','reportes','exportar',true),
           ('auditor','documentos','ver',true),
-          ('auditor','log_descargas','ver',true),
-          ('auditor','equipo','ver',true)
+          ('auditor','log_descargas','ver',true)
         ON CONFLICT (rol, modulo, accion) DO NOTHING
         """, "roles_permisos.seed");
+
+    // Módulo equipo: acceso exclusivo para administrador (eliminar filas de otros roles)
+    await Migrar("DELETE FROM roles_permisos WHERE modulo = 'equipo' AND rol <> 'administrador'", "roles_permisos.equipo_solo_admin");
 
     // ── Módulo Actividades ────────────────────────────────────────────────────
     await Migrar("""

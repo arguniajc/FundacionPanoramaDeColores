@@ -2,7 +2,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY ["FundacionPanorama.API/FundacionPanorama.API.csproj", "FundacionPanorama.API/"]
+COPY ["FundacionPanorama.API/FundacionPanorama.API.csproj",             "FundacionPanorama.API/"]
+COPY ["FundacionPanorama.Domain/FundacionPanorama.Domain.csproj",       "FundacionPanorama.Domain/"]
+COPY ["FundacionPanorama.Application/FundacionPanorama.Application.csproj", "FundacionPanorama.Application/"]
+COPY ["FundacionPanorama.Infrastructure/FundacionPanorama.Infrastructure.csproj", "FundacionPanorama.Infrastructure/"]
 RUN dotnet restore "FundacionPanorama.API/FundacionPanorama.API.csproj"
 
 COPY . .

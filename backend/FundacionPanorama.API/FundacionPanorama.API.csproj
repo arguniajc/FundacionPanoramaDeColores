@@ -22,4 +22,9 @@
     <PackageReference Include="Scalar.AspNetCore" Version="2.13.22" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FundacionPanorama.Application\FundacionPanorama.Application.csproj" />
+    <ProjectReference Include="..\FundacionPanorama.Infrastructure\FundacionPanorama.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>

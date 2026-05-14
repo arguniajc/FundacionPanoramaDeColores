@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="FundacionPanorama.API/FundacionPanorama.API.csproj" />
+  <Project Path="FundacionPanorama.Domain/FundacionPanorama.Domain.csproj" />
+  <Project Path="FundacionPanorama.Application/FundacionPanorama.Application.csproj" />
+  <Project Path="FundacionPanorama.Infrastructure/FundacionPanorama.Infrastructure.csproj" />
+</Solution>

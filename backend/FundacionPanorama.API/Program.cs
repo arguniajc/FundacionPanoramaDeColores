@@ -1,6 +1,7 @@
 using System.Text;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Services;
+using FundacionPanorama.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -58,6 +59,10 @@ builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection("Su
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<SupabaseStorageService>();
 
+// ── Capas de arquitectura (Infrastructure + Application) ─────────────────────
+var connStr = builder.Configuration.GetConnectionString("DefaultConnection")!;
+builder.Services.AddInfrastructure(connStr);
+
 // ── Controllers + OpenAPI ────────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -66,10 +71,10 @@ var app = builder.Build();
 
 // ── Auto-migración via Npgsql directo (sin EF Core) ──────────────────────────
 {
-    var migLogger = app.Services.GetRequiredService<ILogger<Program>>();
-    var connStr   = app.Configuration.GetConnectionString("DefaultConnection")!;
+    var migLogger  = app.Services.GetRequiredService<ILogger<Program>>();
+    var migConnStr = app.Configuration.GetConnectionString("DefaultConnection")!;
 
-    await using var conn = new NpgsqlConnection(connStr);
+    await using var conn = new NpgsqlConnection(migConnStr);
     await conn.OpenAsync();
 
     async Task Migrar(string sql, string etiqueta)

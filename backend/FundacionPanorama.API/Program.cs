@@ -242,6 +242,27 @@ var app = builder.Build();
     await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS programa_id         UUID",                          "inventario_movimientos.programa_id");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_inv_mov_sede_destino ON inventario_movimientos(sede_destino_id)", "inventario_movimientos.idx_sede_destino");
 
+    // Fix: cat_tipo_movimiento_inv puede existir sin columna 'codigo' (tabla creada antes de la migración actual)
+    await Migrar("ALTER TABLE cat_tipo_movimiento_inv ADD COLUMN IF NOT EXISTS codigo VARCHAR(50)", "cat_tipo_movimiento_inv.add_codigo");
+    await Migrar("""
+        UPDATE cat_tipo_movimiento_inv SET codigo =
+          CASE
+            WHEN nombre ILIKE '%transferencia%' AND afecta_stock = '-' THEN 'TRANSFERENCIA_SALIDA'
+            WHEN nombre ILIKE '%transferencia%' AND afecta_stock = '+' THEN 'TRANSFERENCIA_ENTRADA'
+            WHEN nombre ILIKE '%donaci%' AND nombre ILIKE '%entregada%' THEN 'DONACION_ENTREGADA'
+            WHEN nombre ILIKE '%donaci%'                                THEN 'DONACION_RECIBIDA'
+            WHEN nombre ILIKE '%ajuste%' AND afecta_stock = '-'         THEN 'AJUSTE_NEGATIVO'
+            WHEN nombre ILIKE '%ajuste%'                                THEN 'AJUSTE_POSITIVO'
+            WHEN afecta_stock = '-'                                     THEN 'SALIDA'
+            ELSE                                                             'ENTRADA'
+          END
+        WHERE codigo IS NULL
+        """, "cat_tipo_movimiento_inv.set_codigos");
+    await Migrar("CREATE UNIQUE INDEX IF NOT EXISTS idx_cat_tipo_mov_codigo ON cat_tipo_movimiento_inv(codigo) WHERE codigo IS NOT NULL", "cat_tipo_movimiento_inv.unique_codigo");
+
+    // Fix: inventario_movimientos puede existir sin columna 'fecha_movimiento'
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS fecha_movimiento TIMESTAMPTZ DEFAULT NOW()", "inventario_movimientos.add_fecha_movimiento");
+
     await Migrar("""
         INSERT INTO cat_tipo_movimiento_inv (codigo, nombre, descripcion, afecta_stock) VALUES
             ('TRANSFERENCIA_SALIDA',  'Transferencia salida',  'Artículo enviado a otra sede', '-'),

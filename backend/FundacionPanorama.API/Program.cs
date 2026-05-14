@@ -326,6 +326,7 @@ var app = builder.Build();
         """, "donantes");
 
     // Columnas adicionales donantes
+    await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS tipo     VARCHAR(20)  NOT NULL DEFAULT 'persona'", "donantes.tipo");
     await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS ciudad   VARCHAR(100)",  "donantes.ciudad");
     await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS notas    TEXT",           "donantes.notas");
 

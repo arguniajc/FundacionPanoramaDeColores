@@ -93,6 +93,47 @@ var app = builder.Build();
         }
     }
 
+    // Tabla de control para migraciones que solo deben ejecutarse una vez
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS _migraciones_ejecutadas (
+            etiqueta VARCHAR(200) PRIMARY KEY,
+            ejecutado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+        """, "_migraciones_ejecutadas.create");
+
+    async Task MigrarUnaVez(string sql, string etiqueta)
+    {
+        try
+        {
+            await using var migConn = new NpgsqlConnection(migConnStr);
+            await migConn.OpenAsync();
+            // Verificar si ya se ejecutó
+            await using var chk = migConn.CreateCommand();
+            chk.CommandText = "SELECT 1 FROM _migraciones_ejecutadas WHERE etiqueta = @e";
+            chk.Parameters.AddWithValue("e", etiqueta);
+            if (await chk.ExecuteScalarAsync() is not null) return;
+            // Ejecutar
+            await using var cmd = migConn.CreateCommand();
+            cmd.CommandText = sql;
+            await cmd.ExecuteNonQueryAsync();
+            // Registrar
+            await using var reg = migConn.CreateCommand();
+            reg.CommandText = "INSERT INTO _migraciones_ejecutadas (etiqueta) VALUES (@e)";
+            reg.Parameters.AddWithValue("e", etiqueta);
+            await reg.ExecuteNonQueryAsync();
+            migLogger.LogInformation("✅ Migración única OK: {E}", etiqueta);
+        }
+        catch (Exception ex)
+        {
+            migLogger.LogWarning(ex, "⚠️  Migración única omitida [{E}]: {M}", etiqueta, ex.Message);
+        }
+    }
+
+    // Recrear tablas de inventario si fueron creadas con esquema incompleto (sin datos = seguro)
+    await MigrarUnaVez("DROP TABLE IF EXISTS cat_tipo_movimiento_inv CASCADE", "inventario.drop_cat_tipo_v2");
+    await MigrarUnaVez("DROP TABLE IF EXISTS inventario_movimientos CASCADE",  "inventario.drop_movimientos_v2");
+    await MigrarUnaVez("DROP TABLE IF EXISTS inventario_items CASCADE",        "inventario.drop_items_v2");
+
     // ── Columnas retroactivas en tablas que ya existían ───────────────────────
     await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS motivo_baja VARCHAR(500)",                                    "beneficiarios.motivo_baja");
     await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS pais_nacimiento VARCHAR(100)",                                "beneficiarios.pais_nacimiento");

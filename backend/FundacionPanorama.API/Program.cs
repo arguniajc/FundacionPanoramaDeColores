@@ -410,6 +410,7 @@ var app = builder.Build();
         """, "programas_campos.rename_opciones");
 
     // ── Módulo Roles y Permisos ───────────────────────────────────────────────
+    await Migrar("ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check", "usuarios.drop_rol_check");
     await Migrar("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

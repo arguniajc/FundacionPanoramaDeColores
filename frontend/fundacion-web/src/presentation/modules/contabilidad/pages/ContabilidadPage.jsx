@@ -15,6 +15,9 @@ import TrendingDownIcon   from '@mui/icons-material/TrendingDown';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import BalanceIcon        from '@mui/icons-material/Balance';
 import PrintIcon          from '@mui/icons-material/Print';
+import SyncAltIcon        from '@mui/icons-material/SyncAlt';
+import FactCheckIcon      from '@mui/icons-material/FactCheck';
+import SavingsIcon        from '@mui/icons-material/Savings';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip,
   ResponsiveContainer, Legend,
@@ -81,10 +84,20 @@ export default function ContabilidadPage() {
   const [repAnio, setRepAnio] = useState(now.getFullYear());
 
   // Dialogs
-  const [dlgMov,  setDlgMov]  = useState({ open: false, modo: 'crear', data: null, tipoPreset: 'ingreso' });
+  const [dlgMov,  setDlgMov]  = useState({ open: false, modo: 'crear', data: null, tipoPreset: 'ingreso', cuentaPreset: null });
   const [dlgCuenta, setDlgCuenta] = useState({ open: false, modo: 'crear', data: null });
   const [dlgPres,   setDlgPres]   = useState({ open: false, modo: 'crear', data: null });
   const [guardando, setGuardando] = useState(false);
+
+  // ── Estado Tab Caja Menor ───────────────────────────────────────────────────
+  const [cajaCuentaId,  setCajaCuentaId]  = useState('');
+  const [cajaMes,       setCajaMes]       = useState(now.getMonth() + 1);
+  const [cajaAnio,      setCajaAnio]      = useState(now.getFullYear());
+  const [libroAuxiliar, setLibroAuxiliar] = useState([]);
+  const [arqueos,       setArqueos]       = useState([]);
+  const [cargandoCaja,  setCargandoCaja]  = useState(false);
+  const [dlgArqueo,     setDlgArqueo]     = useState({ open: false });
+  const [dlgReposicion, setDlgReposicion] = useState({ open: false });
 
   // ── Carga inicial ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -143,6 +156,36 @@ export default function ContabilidadPage() {
     setCuentas(data);
   };
 
+  const cargarCajaMenor = useCallback(async () => {
+    if (!cajaCuentaId) return;
+    setCargandoCaja(true);
+    try {
+      const params = { cuentaId: cajaCuentaId, anio: cajaAnio };
+      if (cajaMes) params.mes = cajaMes;
+      const [libroRes, arqueosRes] = await Promise.all([
+        apiClient.get('/api/contabilidad/caja-menor/libro',   { params }),
+        apiClient.get('/api/contabilidad/caja-menor/arqueos', { params: { cuentaId: cajaCuentaId } }),
+      ]);
+      setLibroAuxiliar(libroRes.data);
+      setArqueos(arqueosRes.data);
+    } catch { /* silencioso */ } finally {
+      setCargandoCaja(false);
+    }
+  }, [cajaCuentaId, cajaMes, cajaAnio]);
+
+  // Auto-seleccionar primera caja al abrir el tab
+  useEffect(() => {
+    if (tab === 5 && !cajaCuentaId) {
+      const primera = cuentas.find(c => c.tipo !== 'cuenta_bancaria');
+      if (primera) setCajaCuentaId(primera.id);
+    }
+  }, [tab, cuentas]);
+
+  // Cargar datos cuando cambia la cuenta seleccionada
+  useEffect(() => {
+    if (cajaCuentaId) cargarCajaMenor();
+  }, [cajaCuentaId]);
+
   const generarReporte = async () => {
     const { data } = await apiClient.get('/api/contabilidad/reporte', {
       params: { mes: repMes, anio: repAnio },
@@ -157,6 +200,7 @@ export default function ContabilidadPage() {
       if (dlgMov.modo === 'crear') await apiClient.post('/api/contabilidad/movimientos', form);
       else await apiClient.put(`/api/contabilidad/movimientos/${dlgMov.data.id}`, form);
       await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
+      if (tab === 5) await cargarCajaMenor();
       setDlgMov(d => ({ ...d, open: false }));
     } finally {
       setGuardando(false);
@@ -167,6 +211,36 @@ export default function ContabilidadPage() {
     if (!confirm('¿Eliminar este movimiento? El saldo de la cuenta se ajustará automáticamente.')) return;
     await apiClient.delete(`/api/contabilidad/movimientos/${id}`);
     await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
+    if (tab === 5) await cargarCajaMenor();
+  };
+
+  // ── Caja Menor CRUD ──────────────────────────────────────────────────────────
+  const guardarArqueo = async (form) => {
+    setGuardando(true);
+    try {
+      await apiClient.post('/api/contabilidad/caja-menor/arqueos', form);
+      await cargarCajaMenor();
+      setDlgArqueo({ open: false });
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const eliminarArqueo = async (id) => {
+    if (!confirm('¿Eliminar este arqueo?')) return;
+    await apiClient.delete(`/api/contabilidad/caja-menor/arqueos/${id}`);
+    await cargarCajaMenor();
+  };
+
+  const guardarReposicion = async (form) => {
+    setGuardando(true);
+    try {
+      await apiClient.post('/api/contabilidad/caja-menor/reposicion', form);
+      await Promise.all([cargarStats(), cargarCuentas(), cargarCajaMenor()]);
+      setDlgReposicion({ open: false });
+    } finally {
+      setGuardando(false);
+    }
   };
 
   // ── Cuentas CRUD ────────────────────────────────────────────────────────────
@@ -271,6 +345,7 @@ export default function ContabilidadPage() {
         <Tab label="Cuentas" />
         <Tab label="Presupuesto" />
         <Tab label="Reporte Contador" />
+        <Tab label="Caja Menor" icon={<SavingsIcon fontSize="small" />} iconPosition="start" />
       </Tabs>
 
       {/* ── Tab 0: Resumen ───────────────────────────────────────────────────── */}
@@ -310,7 +385,7 @@ export default function ContabilidadPage() {
                       <Box>
                         <Typography variant="body2">{c.nombre}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {c.tipo === 'cuenta_bancaria' ? `${c.banco ?? ''} · ${c.numeroCuenta ?? ''}` : 'Caja efectivo'}
+                          {c.tipo === 'cuenta_bancaria' ? `${c.banco ?? ''} · ${c.numeroCuenta ?? ''}` : c.tipo === 'caja_menor' ? 'Caja menor' : 'Caja efectivo'}
                         </Typography>
                       </Box>
                       <Typography variant="body2" fontWeight="bold"
@@ -496,7 +571,8 @@ export default function ContabilidadPage() {
                       <Box>
                         <Typography variant="subtitle1" fontWeight="bold">{c.nombre}</Typography>
                         <Chip
-                          label={c.tipo === 'cuenta_bancaria' ? 'Banco' : 'Caja'}
+                          label={c.tipo === 'cuenta_bancaria' ? 'Banco' : c.tipo === 'caja_menor' ? 'Caja Menor' : 'Caja'}
+                          color={c.tipo === 'caja_menor' ? 'warning' : 'default'}
                           size="small" sx={{ mt: .5 }} />
                         {c.banco && (
                           <Typography variant="caption" display="block" color="text.secondary">{c.banco}</Typography>
@@ -821,18 +897,267 @@ export default function ContabilidadPage() {
         </Box>
       )}
 
+      {/* ── Tab 5: Caja Menor ───────────────────────────────────────────────── */}
+      {tab === 5 && (
+        <Box>
+          {/* Selector de cuenta + filtros */}
+          <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+            <FormControl size="small" sx={{ minWidth: 220 }}>
+              <InputLabel>Cuenta de caja</InputLabel>
+              <Select value={cajaCuentaId} label="Cuenta de caja"
+                onChange={e => setCajaCuentaId(e.target.value)}>
+                {cuentas.filter(c => c.tipo !== 'cuenta_bancaria').map(c =>
+                  <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>
+                )}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>Mes</InputLabel>
+              <Select value={cajaMes} label="Mes" onChange={e => setCajaMes(e.target.value)}>
+                <MenuItem value="">Todo el año</MenuItem>
+                {MESES.map((m, i) => <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <InputLabel>Año</InputLabel>
+              <Select value={cajaAnio} label="Año" onChange={e => setCajaAnio(e.target.value)}>
+                {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <Button variant="outlined" size="small" onClick={cargarCajaMenor}>Filtrar</Button>
+          </Box>
+
+          {!cajaCuentaId
+            ? <Alert severity="info">
+                Crea una cuenta de tipo <strong>Caja Menor</strong> en la pestaña "Cuentas" para usar este módulo.
+              </Alert>
+            : (() => {
+                const cuenta = cuentas.find(c => c.id === cajaCuentaId);
+                const totalIng = libroAuxiliar.reduce((s, r) => s + r.ingreso, 0);
+                const totalEgr = libroAuxiliar.reduce((s, r) => s + r.egreso,  0);
+                const ultimoArqueo = arqueos[0];
+                return (
+                  <>
+                    {/* KPIs */}
+                    <Grid container spacing={2} mb={3}>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <KpiCard label="Saldo actual" value={fmt(cuenta?.saldoActual)}
+                          icon={<AccountBalanceWalletIcon fontSize="inherit" />} color="#4E1B95" />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <KpiCard label={`Ingresos${cajaMes ? ` ${MESES[cajaMes - 1]}` : ''}`}
+                          value={fmt(totalIng)} icon={<TrendingUpIcon fontSize="inherit" />} color="#16a34a" />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <KpiCard label={`Egresos${cajaMes ? ` ${MESES[cajaMes - 1]}` : ''}`}
+                          value={fmt(totalEgr)} icon={<TrendingDownIcon fontSize="inherit" />} color="#dc2626" />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <KpiCard
+                          label="Último arqueo"
+                          value={ultimoArqueo ? fmtFecha(ultimoArqueo.fecha) : 'Sin arqueos'}
+                          icon={<BalanceIcon fontSize="inherit" />}
+                          color={ultimoArqueo
+                            ? (ultimoArqueo.diferencia === 0 ? '#16a34a' : '#dc2626')
+                            : '#64748b'}
+                        />
+                      </Grid>
+                    </Grid>
+
+                    {/* Acciones */}
+                    {puedeCrear && (
+                      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+                        <Button variant="contained" color="success" size="small" startIcon={<AddIcon />}
+                          onClick={() => setDlgMov({ open: true, modo: 'crear', data: null, tipoPreset: 'ingreso', cuentaPreset: cajaCuentaId })}>
+                          Registrar Ingreso
+                        </Button>
+                        <Button variant="contained" color="error" size="small" startIcon={<AddIcon />}
+                          onClick={() => setDlgMov({ open: true, modo: 'crear', data: null, tipoPreset: 'egreso', cuentaPreset: cajaCuentaId })}>
+                          Registrar Gasto
+                        </Button>
+                        <Button variant="outlined" color="primary" size="small" startIcon={<SyncAltIcon />}
+                          onClick={() => setDlgReposicion({ open: true })}>
+                          Reponer Caja
+                        </Button>
+                        <Button variant="outlined" size="small" startIcon={<FactCheckIcon />}
+                          onClick={() => setDlgArqueo({ open: true })}>
+                          Arquear Caja
+                        </Button>
+                      </Box>
+                    )}
+
+                    {/* Libro auxiliar */}
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                      Libro Auxiliar — {cuenta?.nombre}
+                    </Typography>
+                    {cargandoCaja
+                      ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={28} /></Box>
+                      : (
+                        <TableContainer component={Paper} sx={{ mb: 4 }}>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow sx={{ bgcolor: 'grey.50' }}>
+                                <TableCell>Fecha</TableCell>
+                                <TableCell>Tipo</TableCell>
+                                <TableCell>Concepto</TableCell>
+                                <TableCell>Categoría PUC</TableCell>
+                                <TableCell>Programa</TableCell>
+                                <TableCell>Tercero / Soporte</TableCell>
+                                <TableCell align="right" sx={{ color: 'success.main' }}>Ingreso</TableCell>
+                                <TableCell align="right" sx={{ color: 'error.main' }}>Egreso</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Saldo</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {libroAuxiliar.map(row => (
+                                <TableRow key={row.id} hover>
+                                  <TableCell sx={{ whiteSpace: 'nowrap' }}>{fmtFecha(row.fecha)}</TableCell>
+                                  <TableCell>
+                                    <Chip label={row.tipo === 'ingreso' ? 'Ingreso' : 'Gasto'}
+                                      color={row.tipo === 'ingreso' ? 'success' : 'error'} size="small" />
+                                  </TableCell>
+                                  <TableCell>{row.concepto}</TableCell>
+                                  <TableCell>
+                                    <Tooltip title={row.categoriaNombre}>
+                                      <Typography variant="caption">{row.codigoPuc}</Typography>
+                                    </Tooltip>
+                                  </TableCell>
+                                  <TableCell>{row.programaNombre ?? '—'}</TableCell>
+                                  <TableCell>
+                                    {row.terceroNombre && (
+                                      <Typography variant="body2">{row.terceroNombre}</Typography>
+                                    )}
+                                    {row.numeroSoporte && (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {row.numeroSoporte}
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography sx={{ color: 'success.main', fontWeight: row.ingreso > 0 ? 'bold' : 'normal' }}>
+                                      {row.ingreso > 0 ? fmt(row.ingreso) : '—'}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography sx={{ color: 'error.main', fontWeight: row.egreso > 0 ? 'bold' : 'normal' }}>
+                                      {row.egreso > 0 ? fmt(row.egreso) : '—'}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography fontWeight="bold"
+                                      color={row.saldoAcumulado >= 0 ? 'success.main' : 'error.main'}>
+                                      {fmt(row.saldoAcumulado)}
+                                    </Typography>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                              {libroAuxiliar.length === 0 && (
+                                <TableRow>
+                                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                                    <Typography color="text.secondary">
+                                      No hay movimientos en este período
+                                    </Typography>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      )
+                    }
+
+                    {/* Arqueos */}
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                      Arqueos de Caja
+                    </Typography>
+                    <TableContainer component={Paper}>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow sx={{ bgcolor: 'grey.50' }}>
+                            <TableCell>Fecha</TableCell>
+                            <TableCell align="right">Saldo Sistema</TableCell>
+                            <TableCell align="right">Conteo Físico</TableCell>
+                            <TableCell align="right">Diferencia</TableCell>
+                            <TableCell>Responsable</TableCell>
+                            <TableCell>Observación</TableCell>
+                            {puedeEditar && <TableCell />}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {arqueos.map(a => (
+                            <TableRow key={a.id} hover>
+                              <TableCell sx={{ whiteSpace: 'nowrap' }}>{fmtFecha(a.fecha)}</TableCell>
+                              <TableCell align="right">{fmt(a.saldoSistema)}</TableCell>
+                              <TableCell align="right">{fmt(a.saldoFisico)}</TableCell>
+                              <TableCell align="right">
+                                <Typography fontWeight="bold"
+                                  color={a.diferencia === 0 ? 'success.main' : a.diferencia > 0 ? 'primary.main' : 'error.main'}>
+                                  {a.diferencia > 0 ? '+' : ''}{fmt(a.diferencia)}
+                                  {a.diferencia === 0 && ' ✓'}
+                                  {a.diferencia > 0 && ' (Sobrante)'}
+                                  {a.diferencia < 0 && ' (Faltante)'}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>{a.responsable ?? '—'}</TableCell>
+                              <TableCell sx={{ maxWidth: 200 }}>
+                                <Typography variant="body2" noWrap>{a.observacion ?? '—'}</Typography>
+                              </TableCell>
+                              {puedeEditar && (
+                                <TableCell>
+                                  <IconButton size="small" color="error" onClick={() => eliminarArqueo(a.id)}>
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                          {arqueos.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={puedeEditar ? 7 : 6} align="center" sx={{ py: 3 }}>
+                                <Typography color="text.secondary">
+                                  No hay arqueos registrados para esta cuenta
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </>
+                );
+              })()
+          }
+        </Box>
+      )}
+
       {/* ── Dialogs ──────────────────────────────────────────────────────────── */}
       <DialogMovimiento
         open={dlgMov.open}
         modo={dlgMov.modo}
         data={dlgMov.data}
         tipoPreset={dlgMov.tipoPreset}
+        cuentaPreset={dlgMov.cuentaPreset}
         cuentas={cuentas}
         categorias={categorias}
         programas={programas}
         guardando={guardando}
         onClose={() => setDlgMov(d => ({ ...d, open: false }))}
         onGuardar={guardarMovimiento}
+      />
+      <DialogArqueo
+        open={dlgArqueo.open}
+        cuenta={cuentas.find(c => c.id === cajaCuentaId)}
+        guardando={guardando}
+        onClose={() => setDlgArqueo({ open: false })}
+        onGuardar={guardarArqueo}
+      />
+      <DialogReposicion
+        open={dlgReposicion.open}
+        cuentaCajaId={cajaCuentaId}
+        cuentas={cuentas}
+        guardando={guardando}
+        onClose={() => setDlgReposicion({ open: false })}
+        onGuardar={guardarReposicion}
       />
       <DialogCuenta
         open={dlgCuenta.open}
@@ -858,7 +1183,7 @@ export default function ContabilidadPage() {
 }
 
 // ── Dialog Movimiento ─────────────────────────────────────────────────────────
-function DialogMovimiento({ open, modo, data, tipoPreset, cuentas, categorias, programas, guardando, onClose, onGuardar }) {
+function DialogMovimiento({ open, modo, data, tipoPreset, cuentaPreset, cuentas, categorias, programas, guardando, onClose, onGuardar }) {
   const EMPTY = {
     tipo: tipoPreset ?? 'ingreso',
     fecha: hoy(),
@@ -891,7 +1216,7 @@ function DialogMovimiento({ open, modo, data, tipoPreset, cuentas, categorias, p
         descripcion: data.descripcion ?? '',
       });
     } else {
-      setForm({ ...EMPTY, tipo: tipoPreset ?? 'ingreso', cuentaId: cuentas[0]?.id ?? '' });
+      setForm({ ...EMPTY, tipo: tipoPreset ?? 'ingreso', cuentaId: cuentaPreset ?? cuentas[0]?.id ?? '' });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -1033,7 +1358,8 @@ function DialogCuenta({ open, modo, data, guardando, onClose, onGuardar }) {
             <FormControl fullWidth size="small">
               <InputLabel>Tipo *</InputLabel>
               <Select value={form.tipo} label="Tipo *" onChange={set('tipo')}>
-                <MenuItem value="caja">Caja (efectivo)</MenuItem>
+                <MenuItem value="caja_menor">Caja Menor</MenuItem>
+                <MenuItem value="caja">Caja efectivo (general)</MenuItem>
                 <MenuItem value="cuenta_bancaria">Cuenta bancaria</MenuItem>
               </Select>
             </FormControl>
@@ -1139,6 +1465,155 @@ function DialogPresupuesto({ open, modo, data, categorias, programas, presAnio, 
             montoPresupuestado: parseFloat(form.montoPresupuestado),
           })}>
           {guardando ? 'Guardando…' : (modo === 'crear' ? 'Agregar' : 'Guardar')}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ── Dialog Arqueo de Caja ──────────────────────────────────────────────────────
+function DialogArqueo({ open, cuenta, guardando, onClose, onGuardar }) {
+  const [form, setForm] = useState({ fecha: hoy(), saldoFisico: '', observacion: '', responsable: '' });
+
+  useEffect(() => {
+    if (open) setForm({ fecha: hoy(), saldoFisico: '', observacion: '', responsable: '' });
+  }, [open]);
+
+  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const saldoFisicoNum = parseFloat(form.saldoFisico) || 0;
+  const diferencia     = form.saldoFisico !== '' ? saldoFisicoNum - (cuenta?.saldoActual ?? 0) : null;
+  const canSave = form.fecha && form.saldoFisico !== '';
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Arqueo de Caja — {cuenta?.nombre}</DialogTitle>
+      <DialogContent sx={{ pt: 2 }}>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Saldo registrado en sistema: <strong>
+            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(cuenta?.saldoActual ?? 0)}
+          </strong>
+        </Alert>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Fecha del arqueo *" type="date" size="small"
+              value={form.fecha} onChange={set('fecha')} InputLabelProps={{ shrink: true }} />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Conteo físico (efectivo) *" type="number" size="small"
+              value={form.saldoFisico} onChange={set('saldoFisico')}
+              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+              helperText="Cuente el efectivo físico en caja" />
+          </Grid>
+          {diferencia !== null && (
+            <Grid item xs={12}>
+              <Alert severity={diferencia === 0 ? 'success' : diferencia > 0 ? 'warning' : 'error'}>
+                <strong>Diferencia: {diferencia > 0 ? '+' : ''}
+                  {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(diferencia)}
+                </strong>
+                {diferencia === 0 && ' — Cuadre exacto ✓'}
+                {diferencia > 0 && ' — Sobrante de caja'}
+                {diferencia < 0 && ' — Faltante de caja'}
+              </Alert>
+            </Grid>
+          )}
+          <Grid item xs={12}>
+            <TextField fullWidth label="Responsable del arqueo" size="small"
+              value={form.responsable} onChange={set('responsable')} />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField fullWidth label="Observaciones" size="small" multiline rows={2}
+              value={form.observacion} onChange={set('observacion')} />
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancelar</Button>
+        <Button variant="contained" disabled={!canSave || guardando}
+          onClick={() => onGuardar({
+            cuentaId:    cuenta?.id,
+            fecha:       form.fecha,
+            saldoFisico: saldoFisicoNum,
+            observacion: form.observacion || null,
+            responsable: form.responsable || null,
+          })}>
+          {guardando ? 'Guardando…' : 'Registrar Arqueo'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ── Dialog Reposición de Caja ──────────────────────────────────────────────────
+function DialogReposicion({ open, cuentaCajaId, cuentas, guardando, onClose, onGuardar }) {
+  const fmt2 = v => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v ?? 0);
+  const bancos = cuentas.filter(c => c.tipo === 'cuenta_bancaria');
+  const cajaNombre = cuentas.find(c => c.id === cuentaCajaId)?.nombre ?? 'Caja';
+
+  const [form, setForm] = useState({ cuentaOrigenId: '', fecha: hoy(), monto: '', numeroSoporte: '', observacion: '' });
+
+  useEffect(() => {
+    if (open) setForm({ cuentaOrigenId: bancos[0]?.id ?? '', fecha: hoy(), monto: '', numeroSoporte: '', observacion: '' });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const canSave = form.cuentaOrigenId && form.fecha && form.monto;
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Reposición de Caja Menor</DialogTitle>
+      <DialogContent sx={{ pt: 2 }}>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Se trasladarán fondos hacia <strong>{cajaNombre}</strong>. Se registrará un egreso
+          en la cuenta bancaria y un ingreso en la caja.
+        </Alert>
+        {bancos.length === 0 && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            No hay cuentas bancarias configuradas. Créalas en la pestaña "Cuentas".
+          </Alert>
+        )}
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Transferir desde *</InputLabel>
+              <Select value={form.cuentaOrigenId} label="Transferir desde *" onChange={set('cuentaOrigenId')}>
+                {bancos.map(b => (
+                  <MenuItem key={b.id} value={b.id}>{b.nombre} — {fmt2(b.saldoActual)}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Fecha *" type="date" size="small"
+              value={form.fecha} onChange={set('fecha')} InputLabelProps={{ shrink: true }} />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField fullWidth label="Monto a reponer *" type="number" size="small"
+              value={form.monto} onChange={set('monto')}
+              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField fullWidth label="N° transferencia / comprobante" size="small"
+              value={form.numeroSoporte} onChange={set('numeroSoporte')} />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField fullWidth label="Observación" size="small" multiline rows={2}
+              value={form.observacion} onChange={set('observacion')} />
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancelar</Button>
+        <Button variant="contained" color="primary" disabled={!canSave || !bancos.length || guardando}
+          onClick={() => onGuardar({
+            cuentaCajaId,
+            cuentaOrigenId: form.cuentaOrigenId,
+            fecha:          form.fecha,
+            monto:          parseFloat(form.monto),
+            numeroSoporte:  form.numeroSoporte  || null,
+            observacion:    form.observacion    || null,
+          })}>
+          {guardando ? 'Procesando…' : 'Registrar Reposición'}
         </Button>
       </DialogActions>
     </Dialog>

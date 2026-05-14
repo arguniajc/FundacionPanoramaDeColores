@@ -584,6 +584,27 @@ var app = builder.Build();
         """, "presupuesto_contable");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_presupuesto_anio ON presupuesto_contable(anio)", "presupuesto_contable.idx_anio");
 
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS arqueos_caja (
+            id            SERIAL        PRIMARY KEY,
+            cuenta_id     UUID          NOT NULL,
+            fecha         DATE          NOT NULL,
+            saldo_sistema NUMERIC(14,2) NOT NULL,
+            saldo_fisico  NUMERIC(14,2) NOT NULL,
+            observacion   TEXT,
+            responsable   VARCHAR(200),
+            creado_en     TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+        )
+        """, "arqueos_caja");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_arqueos_cuenta ON arqueos_caja(cuenta_id, fecha)", "arqueos_caja.idx_cuenta");
+
+    await Migrar("""
+        INSERT INTO cat_contable (tipo, codigo_puc, nombre, descripcion) VALUES
+            ('ingreso', 'TR-01', 'Reposición / Traslado entrada', 'Transferencia entrante entre cuentas propias'),
+            ('egreso',  'TR-02', 'Reposición / Traslado salida',  'Transferencia saliente entre cuentas propias')
+        ON CONFLICT (codigo_puc) DO NOTHING
+        """, "cat_contable.traslados");
+
     // ── Módulo Roles y Permisos ───────────────────────────────────────────────
     await Migrar("ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check", "usuarios.drop_rol_check");
     await Migrar("""

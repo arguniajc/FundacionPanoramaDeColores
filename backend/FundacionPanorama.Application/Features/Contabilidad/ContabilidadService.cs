@@ -53,4 +53,19 @@ public class ContabilidadService(IContabilidadRepository repo)
 
     public Task<ReporteContadorDto> ReporteAsync(int mes, int anio, CancellationToken ct = default)
         => repo.ReporteAsync(mes, anio, ct);
+
+    public Task<IReadOnlyList<LibroAuxiliarItemDto>> LibroAuxiliarAsync(Guid cuentaId, int? mes, int? anio, CancellationToken ct = default)
+        => repo.LibroAuxiliarAsync(cuentaId, mes, anio, ct);
+
+    public Task<IReadOnlyList<ArqueoCajaDto>> ListarArqueosAsync(Guid cuentaId, CancellationToken ct = default)
+        => repo.ListarArqueosAsync(cuentaId, ct);
+
+    public Task<ArqueoCajaDto> CrearArqueoAsync(CrearArqueoDto dto, CancellationToken ct = default)
+        => repo.CrearArqueoAsync(dto, ct);
+
+    public Task<bool> EliminarArqueoAsync(int id, CancellationToken ct = default)
+        => repo.EliminarArqueoAsync(id, ct);
+
+    public Task<(MovimientoDto Entrada, MovimientoDto Salida)> ReponerCajaAsync(CrearReposicionDto dto, CancellationToken ct = default)
+        => repo.ReponerCajaAsync(dto, ct);
 }

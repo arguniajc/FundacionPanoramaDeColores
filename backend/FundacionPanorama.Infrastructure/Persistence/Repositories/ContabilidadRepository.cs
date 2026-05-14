@@ -451,6 +451,208 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
             porCuenta, porPrograma, movimientos);
     }
 
+    // ── Caja Menor ────────────────────────────────────────────────────────────
+
+    public async Task<IReadOnlyList<LibroAuxiliarItemDto>> LibroAuxiliarAsync(
+        Guid cuentaId, int? mes, int? anio, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+
+        var outerWhere = new List<string>();
+        if (mes.HasValue)  outerWhere.Add("EXTRACT(MONTH FROM fecha) = @mes");
+        if (anio.HasValue) outerWhere.Add("EXTRACT(YEAR  FROM fecha) = @anio");
+        var filterClause = outerWhere.Count > 0 ? "WHERE " + string.Join(" AND ", outerWhere) : "";
+
+        cmd.CommandText = $"""
+            WITH libro AS (
+                SELECT
+                    m.id, m.tipo, m.fecha, m.concepto,
+                    c.codigo_puc, c.nombre AS cat_nombre,
+                    p.nombre   AS prog_nombre,
+                    m.tercero_nombre, m.numero_soporte,
+                    CASE WHEN m.tipo = 'ingreso' THEN m.monto ELSE 0    END AS ingreso,
+                    CASE WHEN m.tipo = 'egreso'  THEN m.monto ELSE 0    END AS egreso,
+                    cc.saldo_inicial + SUM(
+                        CASE WHEN m.tipo = 'ingreso' THEN m.monto ELSE -m.monto END
+                    ) OVER (ORDER BY m.fecha, m.id ROWS UNBOUNDED PRECEDING) AS saldo_acumulado
+                FROM movimientos_contables m
+                JOIN  cat_contable c  ON c.id  = m.categoria_id
+                LEFT JOIN programas p ON p.id  = m.programa_id
+                JOIN  cuentas_caja cc ON cc.id = m.cuenta_id
+                WHERE m.cuenta_id = @cuentaId
+            )
+            SELECT * FROM libro {filterClause}
+            ORDER BY fecha, id
+            """;
+        cmd.Parameters.AddWithValue("cuentaId", cuentaId);
+        if (mes.HasValue)  cmd.Parameters.AddWithValue("mes",  mes.Value);
+        if (anio.HasValue) cmd.Parameters.AddWithValue("anio", anio.Value);
+
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        var list = new List<LibroAuxiliarItemDto>();
+        while (await r.ReadAsync(ct))
+            list.Add(new LibroAuxiliarItemDto(
+                r.GetGuid(0), r.GetString(1), r.GetFieldValue<DateOnly>(2), r.GetString(3),
+                r.GetString(4), r.GetString(5),
+                r.IsDBNull(6) ? null : r.GetString(6),
+                r.IsDBNull(7) ? null : r.GetString(7),
+                r.IsDBNull(8) ? null : r.GetString(8),
+                (decimal)r[9], (decimal)r[10], (decimal)r[11]));
+        return list;
+    }
+
+    public async Task<IReadOnlyList<ArqueoCajaDto>> ListarArqueosAsync(Guid cuentaId, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT a.id, a.cuenta_id, c.nombre, a.fecha,
+                   a.saldo_sistema, a.saldo_fisico,
+                   a.observacion, a.responsable, a.creado_en
+            FROM arqueos_caja a
+            JOIN cuentas_caja c ON c.id = a.cuenta_id
+            WHERE a.cuenta_id = @cuentaId
+            ORDER BY a.fecha DESC, a.creado_en DESC
+            """;
+        cmd.Parameters.AddWithValue("cuentaId", cuentaId);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        var list = new List<ArqueoCajaDto>();
+        while (await r.ReadAsync(ct))
+        {
+            var sis = (decimal)r[4];
+            var fis = (decimal)r[5];
+            list.Add(new ArqueoCajaDto(
+                r.GetInt32(0), r.GetGuid(1), r.GetString(2), r.GetFieldValue<DateOnly>(3),
+                sis, fis, fis - sis,
+                r.IsDBNull(6) ? null : r.GetString(6),
+                r.IsDBNull(7) ? null : r.GetString(7),
+                r.GetDateTime(8)));
+        }
+        return list;
+    }
+
+    public async Task<ArqueoCajaDto> CrearArqueoAsync(CrearArqueoDto dto, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+
+        await using var cmdSaldo = conn.CreateCommand();
+        cmdSaldo.CommandText = "SELECT saldo_actual FROM cuentas_caja WHERE id = @id";
+        cmdSaldo.Parameters.AddWithValue("id", dto.CuentaId);
+        var saldoSistema = (decimal)(await cmdSaldo.ExecuteScalarAsync(ct))!;
+
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO arqueos_caja
+                (cuenta_id, fecha, saldo_sistema, saldo_fisico, observacion, responsable)
+            VALUES (@cuentaId, @fecha, @saldoSistema, @saldoFisico, @obs, @resp)
+            RETURNING id
+            """;
+        cmd.Parameters.AddWithValue("cuentaId",     dto.CuentaId);
+        cmd.Parameters.AddWithValue("fecha",        dto.Fecha);
+        cmd.Parameters.AddWithValue("saldoSistema", saldoSistema);
+        cmd.Parameters.AddWithValue("saldoFisico",  dto.SaldoFisico);
+        cmd.Parameters.AddWithValue("obs",  (object?)dto.Observacion ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("resp", (object?)dto.Responsable ?? DBNull.Value);
+        var newId = (int)(await cmd.ExecuteScalarAsync(ct))!;
+
+        return (await ListarArqueosAsync(dto.CuentaId, ct)).First(a => a.Id == newId);
+    }
+
+    public async Task<bool> EliminarArqueoAsync(int id, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM arqueos_caja WHERE id = @id";
+        cmd.Parameters.AddWithValue("id", id);
+        return await cmd.ExecuteNonQueryAsync(ct) > 0;
+    }
+
+    public async Task<(MovimientoDto Entrada, MovimientoDto Salida)> ReponerCajaAsync(
+        CrearReposicionDto dto, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+
+        // IDs de las categorías de traslado
+        await using var cmdCat = conn.CreateCommand();
+        cmdCat.CommandText = "SELECT id, codigo_puc FROM cat_contable WHERE codigo_puc IN ('TR-01','TR-02')";
+        await using var rCat = await cmdCat.ExecuteReaderAsync(ct);
+        int catEntrada = 0, catSalida = 0;
+        while (await rCat.ReadAsync(ct))
+        {
+            if (rCat.GetString(1) == "TR-01") catEntrada = rCat.GetInt32(0);
+            else                              catSalida  = rCat.GetInt32(0);
+        }
+        await rCat.CloseAsync();
+
+        // Nombres de las cuentas para el concepto
+        await using var cmdNom = conn.CreateCommand();
+        cmdNom.CommandText = "SELECT id, nombre FROM cuentas_caja WHERE id = @cajaId OR id = @origenId";
+        cmdNom.Parameters.AddWithValue("cajaId",   dto.CuentaCajaId);
+        cmdNom.Parameters.AddWithValue("origenId", dto.CuentaOrigenId);
+        await using var rNom = await cmdNom.ExecuteReaderAsync(ct);
+        string cajaNombre = "", origenNombre = "";
+        while (await rNom.ReadAsync(ct))
+        {
+            var rowId = rNom.GetGuid(0);
+            var nom   = rNom.GetString(1);
+            if (rowId == dto.CuentaCajaId)   cajaNombre   = nom;
+            if (rowId == dto.CuentaOrigenId) origenNombre = nom;
+        }
+        await rNom.CloseAsync();
+
+        await using var tx = await conn.BeginTransactionAsync(ct);
+
+        // Egreso desde la cuenta bancaria origen
+        await using var cmdEgr = conn.CreateCommand();
+        cmdEgr.Transaction = tx;
+        cmdEgr.CommandText = """
+            INSERT INTO movimientos_contables
+                (tipo, fecha, concepto, monto, cuenta_id, categoria_id, numero_soporte, descripcion)
+            VALUES ('egreso', @fecha, @concepto, @monto, @cuentaId, @catId, @soporte, @desc)
+            RETURNING id
+            """;
+        cmdEgr.Parameters.AddWithValue("fecha",    dto.Fecha);
+        cmdEgr.Parameters.AddWithValue("concepto", $"Reposición caja — {cajaNombre}");
+        cmdEgr.Parameters.AddWithValue("monto",    dto.Monto);
+        cmdEgr.Parameters.AddWithValue("cuentaId", dto.CuentaOrigenId);
+        cmdEgr.Parameters.AddWithValue("catId",    catSalida);
+        cmdEgr.Parameters.AddWithValue("soporte",  (object?)dto.NumeroSoporte ?? DBNull.Value);
+        cmdEgr.Parameters.AddWithValue("desc",     (object?)dto.Observacion   ?? DBNull.Value);
+        var idEgreso = (Guid)(await cmdEgr.ExecuteScalarAsync(ct))!;
+        await ActualizarSaldoAsync(conn, tx, dto.CuentaOrigenId, "egreso", dto.Monto, ct);
+
+        // Ingreso en la caja menor
+        await using var cmdIng = conn.CreateCommand();
+        cmdIng.Transaction = tx;
+        cmdIng.CommandText = """
+            INSERT INTO movimientos_contables
+                (tipo, fecha, concepto, monto, cuenta_id, categoria_id, numero_soporte, descripcion)
+            VALUES ('ingreso', @fecha, @concepto, @monto, @cuentaId, @catId, @soporte, @desc)
+            RETURNING id
+            """;
+        cmdIng.Parameters.AddWithValue("fecha",    dto.Fecha);
+        cmdIng.Parameters.AddWithValue("concepto", $"Reposición desde {origenNombre}");
+        cmdIng.Parameters.AddWithValue("monto",    dto.Monto);
+        cmdIng.Parameters.AddWithValue("cuentaId", dto.CuentaCajaId);
+        cmdIng.Parameters.AddWithValue("catId",    catEntrada);
+        cmdIng.Parameters.AddWithValue("soporte",  (object?)dto.NumeroSoporte ?? DBNull.Value);
+        cmdIng.Parameters.AddWithValue("desc",     (object?)dto.Observacion   ?? DBNull.Value);
+        var idIngreso = (Guid)(await cmdIng.ExecuteScalarAsync(ct))!;
+        await ActualizarSaldoAsync(conn, tx, dto.CuentaCajaId, "ingreso", dto.Monto, ct);
+
+        await tx.CommitAsync(ct);
+
+        var movEntrada = (await ObtenerMovimientoInternoAsync(conn, idIngreso, ct))!;
+        var movSalida  = (await ObtenerMovimientoInternoAsync(conn, idEgreso,  ct))!;
+        return (movEntrada, movSalida);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     static async Task<CuentaCajaDto?> ObtenerCuentaAsync(NpgsqlConnection conn, Guid id, CancellationToken ct)

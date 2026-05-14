@@ -29,4 +29,11 @@ public interface IContabilidadRepository
     // Dashboard y reportes
     Task<ContabilidadStatsDto> StatsAsync(CancellationToken ct);
     Task<ReporteContadorDto>   ReporteAsync(int mes, int anio, CancellationToken ct);
+
+    // Caja Menor
+    Task<IReadOnlyList<LibroAuxiliarItemDto>>          LibroAuxiliarAsync(Guid cuentaId, int? mes, int? anio, CancellationToken ct);
+    Task<IReadOnlyList<ArqueoCajaDto>>                 ListarArqueosAsync(Guid cuentaId, CancellationToken ct);
+    Task<ArqueoCajaDto>                                CrearArqueoAsync(CrearArqueoDto dto, CancellationToken ct);
+    Task<bool>                                         EliminarArqueoAsync(int id, CancellationToken ct);
+    Task<(MovimientoDto Entrada, MovimientoDto Salida)> ReponerCajaAsync(CrearReposicionDto dto, CancellationToken ct);
 }

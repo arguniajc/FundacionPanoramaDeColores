@@ -107,6 +107,40 @@ public class ContabilidadController(ContabilidadService svc) : ControllerBase
     public async Task<IActionResult> EliminarPresupuesto(Guid id, CancellationToken ct)
         => await svc.EliminarPresupuestoAsync(id, ct) ? NoContent() : NotFound();
 
+    // ── Caja Menor ─────────────────────────────────────────────────────────────
+
+    [HttpGet("caja-menor/libro")]
+    [RequierePermiso("contabilidad", "ver")]
+    public async Task<IActionResult> LibroAuxiliar(
+        [FromQuery] Guid cuentaId,
+        [FromQuery] int? mes  = null,
+        [FromQuery] int? anio = null,
+        CancellationToken ct = default)
+        => Ok(await svc.LibroAuxiliarAsync(cuentaId, mes, anio, ct));
+
+    [HttpGet("caja-menor/arqueos")]
+    [RequierePermiso("contabilidad", "ver")]
+    public async Task<IActionResult> ListarArqueos([FromQuery] Guid cuentaId, CancellationToken ct)
+        => Ok(await svc.ListarArqueosAsync(cuentaId, ct));
+
+    [HttpPost("caja-menor/arqueos")]
+    [RequierePermiso("contabilidad", "crear")]
+    public async Task<IActionResult> CrearArqueo([FromBody] CrearArqueoDto dto, CancellationToken ct)
+        => Ok(await svc.CrearArqueoAsync(dto, ct));
+
+    [HttpDelete("caja-menor/arqueos/{id:int}")]
+    [RequierePermiso("contabilidad", "editar")]
+    public async Task<IActionResult> EliminarArqueo(int id, CancellationToken ct)
+        => await svc.EliminarArqueoAsync(id, ct) ? NoContent() : NotFound();
+
+    [HttpPost("caja-menor/reposicion")]
+    [RequierePermiso("contabilidad", "crear")]
+    public async Task<IActionResult> ReponerCaja([FromBody] CrearReposicionDto dto, CancellationToken ct)
+    {
+        var (entrada, salida) = await svc.ReponerCajaAsync(dto, ct);
+        return Ok(new { entrada, salida });
+    }
+
     // ── Dashboard / Reporte ────────────────────────────────────────────────────
 
     [HttpGet("stats")]

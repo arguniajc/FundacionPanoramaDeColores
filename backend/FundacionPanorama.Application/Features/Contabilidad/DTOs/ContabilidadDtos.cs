@@ -125,3 +125,45 @@ public record ResumenProgramaDto(
     decimal Ingresos,
     decimal Egresos,
     decimal Balance);
+
+// ── Caja Menor ────────────────────────────────────────────────────────────────
+public record LibroAuxiliarItemDto(
+    Guid     Id,
+    string   Tipo,
+    DateOnly Fecha,
+    string   Concepto,
+    string   CodigoPuc,
+    string   CategoriaNombre,
+    string?  ProgramaNombre,
+    string?  TerceroNombre,
+    string?  NumeroSoporte,
+    decimal  Ingreso,
+    decimal  Egreso,
+    decimal  SaldoAcumulado);
+
+public record ArqueoCajaDto(
+    int      Id,
+    Guid     CuentaId,
+    string   CuentaNombre,
+    DateOnly Fecha,
+    decimal  SaldoSistema,
+    decimal  SaldoFisico,
+    decimal  Diferencia,
+    string?  Observacion,
+    string?  Responsable,
+    DateTime CreadoEn);
+
+public record CrearArqueoDto(
+    Guid     CuentaId,
+    DateOnly Fecha,
+    decimal  SaldoFisico,
+    string?  Observacion,
+    string?  Responsable);
+
+public record CrearReposicionDto(
+    Guid     CuentaCajaId,
+    Guid     CuentaOrigenId,
+    DateOnly Fecha,
+    decimal  Monto,
+    string?  NumeroSoporte,
+    string?  Observacion);

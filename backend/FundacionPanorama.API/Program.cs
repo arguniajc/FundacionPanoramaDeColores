@@ -242,7 +242,8 @@ var app = builder.Build();
     await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS programa_id         UUID",                          "inventario_movimientos.programa_id");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_inv_mov_sede_destino ON inventario_movimientos(sede_destino_id)", "inventario_movimientos.idx_sede_destino");
 
-    // Fix: cat_tipo_movimiento_inv puede existir sin columna 'codigo' (tabla creada antes de la migración actual)
+    // Fix: cat_tipo_movimiento_inv puede existir sin columnas añadidas después de la creación inicial
+    await Migrar("ALTER TABLE cat_tipo_movimiento_inv ADD COLUMN IF NOT EXISTS descripcion TEXT",   "cat_tipo_movimiento_inv.add_descripcion");
     await Migrar("ALTER TABLE cat_tipo_movimiento_inv ADD COLUMN IF NOT EXISTS codigo VARCHAR(50)", "cat_tipo_movimiento_inv.add_codigo");
     await Migrar("""
         UPDATE cat_tipo_movimiento_inv SET codigo =
@@ -260,8 +261,12 @@ var app = builder.Build();
         """, "cat_tipo_movimiento_inv.set_codigos");
     await Migrar("CREATE UNIQUE INDEX IF NOT EXISTS idx_cat_tipo_mov_codigo ON cat_tipo_movimiento_inv(codigo) WHERE codigo IS NOT NULL", "cat_tipo_movimiento_inv.unique_codigo");
 
-    // Fix: inventario_movimientos puede existir sin columna 'fecha_movimiento'
-    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS fecha_movimiento TIMESTAMPTZ DEFAULT NOW()", "inventario_movimientos.add_fecha_movimiento");
+    // Fix: inventario_movimientos puede existir sin columnas añadidas después de la creación inicial
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS stock_resultante   NUMERIC(12,2) NOT NULL DEFAULT 0", "inventario_movimientos.add_stock_resultante");
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS motivo             TEXT",                             "inventario_movimientos.add_motivo");
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS donante            VARCHAR(200)",                    "inventario_movimientos.add_donante");
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS usuario_email      VARCHAR(255)",                    "inventario_movimientos.add_usuario_email");
+    await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS fecha_movimiento   TIMESTAMPTZ DEFAULT NOW()",       "inventario_movimientos.add_fecha_movimiento");
 
     await Migrar("""
         INSERT INTO cat_tipo_movimiento_inv (codigo, nombre, descripcion, afecta_stock) VALUES

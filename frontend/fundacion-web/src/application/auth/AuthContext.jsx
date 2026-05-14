@@ -36,10 +36,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   // puedo('beneficiarios', 'crear') → true/false
+  // Si rol está vacío (sesión creada antes del sistema de roles), da acceso total
+  // hasta que el usuario haga logout y vuelva a entrar
   const puedo = useCallback((modulo, accion) => {
-    if (rol === 'administrador') return true;
+    if (!user) return false;
+    if (rol === 'administrador' || !rol) return true;
     return permisos[modulo]?.includes(accion) ?? false;
-  }, [rol, permisos]);
+  }, [rol, permisos, user]);
 
   const esAdmin = rol === 'administrador';
 

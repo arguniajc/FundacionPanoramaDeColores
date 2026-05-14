@@ -18,7 +18,7 @@ public class RequierePermisoAttribute(string modulo, string accion) : Attribute,
         }
 
         var rol = user.FindFirst(ClaimTypes.Role)?.Value ?? "";
-        if (rol == "administrador") return;
+        if (rol is "administrador" or "Admin") return; // "Admin" = JWTs emitidos antes del sistema de roles
 
         var svc = context.HttpContext.RequestServices.GetRequiredService<PermisosService>();
         if (!await svc.TienePermisoAsync(rol, modulo, accion))

@@ -75,14 +75,14 @@ var app = builder.Build();
     var migLogger  = app.Services.GetRequiredService<ILogger<Program>>();
     var migConnStr = app.Configuration.GetConnectionString("DefaultConnection")!;
 
-    await using var conn = new NpgsqlConnection(migConnStr);
-    await conn.OpenAsync();
-
+    // Cada migración abre su propia conexión para que un fallo no bloquee las siguientes
     async Task Migrar(string sql, string etiqueta)
     {
         try
         {
-            await using var cmd = conn.CreateCommand();
+            await using var migConn = new NpgsqlConnection(migConnStr);
+            await migConn.OpenAsync();
+            await using var cmd = migConn.CreateCommand();
             cmd.CommandText = sql;
             await cmd.ExecuteNonQueryAsync();
             migLogger.LogInformation("✅ Migración OK: {E}", etiqueta);
@@ -90,8 +90,6 @@ var app = builder.Build();
         catch (Exception ex)
         {
             migLogger.LogWarning(ex, "⚠️  Migración omitida [{E}]: {M}", etiqueta, ex.Message);
-            // Reset connection state after a failed statement
-            try { await conn.CloseAsync(); await conn.OpenAsync(); } catch { /* ignored */ }
         }
     }
 

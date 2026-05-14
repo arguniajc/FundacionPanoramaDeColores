@@ -456,6 +456,51 @@ var app = builder.Build();
         END $$
         """, "programas_campos.rename_opciones");
 
+    // ── Módulo Talento Humano ─────────────────────────────────────────────────
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS empleados (
+            id                  UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            nombres             VARCHAR(200) NOT NULL,
+            apellidos           VARCHAR(200) NOT NULL,
+            tipo_documento      VARCHAR(20),
+            numero_documento    VARCHAR(50),
+            email               VARCHAR(200),
+            telefono            VARCHAR(30),
+            celular             VARCHAR(30),
+            cargo               VARCHAR(100),
+            area                VARCHAR(100),
+            sede_id             UUID,
+            tipo_contrato       VARCHAR(50),
+            fecha_ingreso       DATE,
+            fecha_fin_contrato  DATE,
+            salario             NUMERIC(14,2),
+            eps                 VARCHAR(100),
+            pension             VARCHAR(100),
+            activo              BOOLEAN      NOT NULL DEFAULT true,
+            foto_url            TEXT,
+            notas               TEXT,
+            fecha_creacion      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            fecha_modificacion  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        )
+        """, "empleados");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_empleados_sede  ON empleados(sede_id)",  "empleados.idx_sede");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_empleados_activo ON empleados(activo)", "empleados.idx_activo");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS novedades_empleado (
+            id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+            empleado_id  UUID        NOT NULL,
+            tipo         VARCHAR(50) NOT NULL,
+            fecha_inicio DATE        NOT NULL,
+            fecha_fin    DATE,
+            dias         INT,
+            descripcion  TEXT,
+            estado       VARCHAR(30) NOT NULL DEFAULT 'pendiente',
+            fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+        """, "novedades_empleado");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_novedades_empleado ON novedades_empleado(empleado_id)", "novedades_empleado.idx_empleado");
+
     // ── Módulo Roles y Permisos ───────────────────────────────────────────────
     await Migrar("ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check", "usuarios.drop_rol_check");
     await Migrar("""

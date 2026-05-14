@@ -21,6 +21,7 @@ import EquipoPage           from '../modules/equipo/pages/EquipoPage';
 import ActividadesPage      from '../modules/actividades/pages/ActividadesPage';
 import SeguridadPage        from '../modules/seguridad/pages/SeguridadPage';
 import ReportesPage         from '../modules/reportes/pages/ReportesPage';
+import TalentoHumanoPage    from '../modules/talento_humano/pages/TalentoHumanoPage';
 
 // Envuelve en layout + auth + permiso de módulo
 function Pagina({ modulo, children }) {
@@ -51,7 +52,7 @@ export default function AppRoutes() {
       <Route path="/sede/inscripciones" element={<Pagina modulo="inscripciones"><InscripcionesPage /></Pagina>} />
       <Route path="/sede/actividades"   element={<Pagina modulo="actividades"><ActividadesPage /></Pagina>} />
       <Route path="/sede/voluntarios"   element={<Pagina modulo="voluntarios"><VoluntariosPage /></Pagina>} />
-      <Route path="/sede/talento-humano" element={<Pagina modulo="talento_humano"><ModuloEnDesarrollo nombre="Talento Humano" /></Pagina>} />
+      <Route path="/sede/talento-humano" element={<Pagina modulo="talento_humano"><TalentoHumanoPage /></Pagina>} />
       <Route path="/sede/contabilidad"  element={<Pagina modulo="contabilidad"><ModuloEnDesarrollo nombre="Contabilidad" /></Pagina>} />
       <Route path="/sede/inventario"    element={<Pagina modulo="inventario"><InventarioPage /></Pagina>} />
       <Route path="/sede/reportes"      element={<Pagina modulo="reportes"><ReportesPage /></Pagina>} />

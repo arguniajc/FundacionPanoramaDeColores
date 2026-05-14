@@ -501,6 +501,88 @@ var app = builder.Build();
         """, "novedades_empleado");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_novedades_empleado ON novedades_empleado(empleado_id)", "novedades_empleado.idx_empleado");
 
+    // ── Módulo Contabilidad ───────────────────────────────────────────────────
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS cat_contable (
+            id          SERIAL       PRIMARY KEY,
+            tipo        VARCHAR(20)  NOT NULL,
+            codigo_puc  VARCHAR(20)  NOT NULL UNIQUE,
+            nombre      VARCHAR(100) NOT NULL,
+            descripcion TEXT,
+            icono       VARCHAR(50)
+        )
+        """, "cat_contable");
+
+    await Migrar("""
+        INSERT INTO cat_contable (tipo, codigo_puc, nombre, descripcion) VALUES
+            ('ingreso', '4110', 'Cuotas y aportes',           'Cuotas de socios o aportes de asociados'),
+            ('ingreso', '4120', 'Donaciones en dinero',        'Auxilios y donaciones en dinero recibidos'),
+            ('ingreso', '4130', 'Donaciones en especie',       'Auxilios y donaciones en especie valorizadas'),
+            ('ingreso', '4140', 'Convenios y contratos',       'Ingresos por convenios y contratos de cooperación'),
+            ('ingreso', '4215', 'Ingresos por actividades',    'Ingresos de actividades propias de la entidad'),
+            ('ingreso', '4810', 'Rendimientos financieros',    'Intereses y rendimientos de inversiones'),
+            ('ingreso', '4295', 'Otros ingresos',              'Ingresos ordinarios no clasificados'),
+            ('egreso',  '5105', 'Honorarios y consultorías',   'Pagos a profesionales independientes'),
+            ('egreso',  '5110', 'Arrendamientos',              'Alquiler de instalaciones y equipos'),
+            ('egreso',  '5120', 'Seguros',                     'Pólizas de seguros'),
+            ('egreso',  '5130', 'Servicios públicos',          'Agua, energía, internet, teléfono'),
+            ('egreso',  '5145', 'Mantenimiento',               'Mantenimiento de instalaciones y equipos'),
+            ('egreso',  '5155', 'Transporte y viáticos',       'Gastos de desplazamiento y viáticos'),
+            ('egreso',  '5205', 'Gastos de personal',          'Salarios, prestaciones y seguridad social'),
+            ('egreso',  '5270', 'Materiales y suministros',    'Útiles, papelería y materiales'),
+            ('egreso',  '5290', 'Gastos en beneficiarios',     'Gastos directos en atención de beneficiarios'),
+            ('egreso',  '5330', 'Impuestos y tasas',           'Impuestos locales y tasas'),
+            ('egreso',  '5195', 'Otros gastos',                'Gastos no clasificados en otras categorías')
+        ON CONFLICT (codigo_puc) DO NOTHING
+        """, "cat_contable.seed");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS cuentas_caja (
+            id             UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+            nombre         VARCHAR(100)   NOT NULL,
+            tipo           VARCHAR(20)    NOT NULL DEFAULT 'caja',
+            banco          VARCHAR(100),
+            numero_cuenta  VARCHAR(50),
+            saldo_inicial  NUMERIC(14,2)  NOT NULL DEFAULT 0,
+            saldo_actual   NUMERIC(14,2)  NOT NULL DEFAULT 0,
+            activo         BOOLEAN        NOT NULL DEFAULT true,
+            fecha_creacion TIMESTAMPTZ    NOT NULL DEFAULT NOW()
+        )
+        """, "cuentas_caja");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS movimientos_contables (
+            id                 UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+            tipo               VARCHAR(20)   NOT NULL,
+            fecha              DATE          NOT NULL,
+            concepto           VARCHAR(200)  NOT NULL,
+            monto              NUMERIC(14,2) NOT NULL,
+            cuenta_id          UUID          NOT NULL,
+            categoria_id       INT           NOT NULL,
+            programa_id        UUID,
+            tercero_nombre     VARCHAR(200),
+            tercero_documento  VARCHAR(50),
+            numero_soporte     VARCHAR(100),
+            descripcion        TEXT,
+            fecha_creacion     TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+        )
+        """, "movimientos_contables");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_mov_cont_fecha    ON movimientos_contables(fecha)",        "movimientos_contables.idx_fecha");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_mov_cont_cuenta   ON movimientos_contables(cuenta_id)",    "movimientos_contables.idx_cuenta");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_mov_cont_programa ON movimientos_contables(programa_id)",  "movimientos_contables.idx_programa");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS presupuesto_contable (
+            id                  UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+            anio                INT           NOT NULL,
+            programa_id         UUID,
+            categoria_id        INT           NOT NULL,
+            monto_presupuestado NUMERIC(14,2) NOT NULL,
+            fecha_creacion      TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+        )
+        """, "presupuesto_contable");
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_presupuesto_anio ON presupuesto_contable(anio)", "presupuesto_contable.idx_anio");
+
     // ── Módulo Roles y Permisos ───────────────────────────────────────────────
     await Migrar("ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check", "usuarios.drop_rol_check");
     await Migrar("""

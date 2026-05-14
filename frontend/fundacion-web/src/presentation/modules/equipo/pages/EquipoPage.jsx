@@ -8,6 +8,7 @@ import {
 import AddIcon    from '@mui/icons-material/Add';
 import EditIcon   from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import Alert      from '@mui/material/Alert';
 import apiClient  from '../../../../infrastructure/http/apiClient';
 import usePermisos from '../../../../shared/hooks/usePermisos';
 
@@ -47,12 +48,19 @@ export default function EquipoPage() {
   const [form,     setForm]     = useState(EMPTY);
   const [saving,   setSaving]   = useState(false);
   const [error,    setError]    = useState('');
+  const [errorCarga, setErrorCarga] = useState('');
 
   const cargar = useCallback(async () => {
+    setErrorCarga('');
     try {
       const { data } = await apiClient.get('/api/equipo');
       setUsuarios(data);
-    } catch { /* silencioso */ }
+    } catch (e) {
+      const status = e.response?.status;
+      if (status === 403) setErrorCarga('Sin permiso para ver el equipo (403). Cierra sesión y vuelve a entrar.');
+      else if (status === 401) setErrorCarga('Sesión expirada (401). Cierra sesión y vuelve a entrar.');
+      else setErrorCarga(`Error al cargar usuarios: ${status ?? e.message}`);
+    }
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -127,6 +135,8 @@ export default function EquipoPage() {
           </Button>
         )}
       </Box>
+
+      {errorCarga && <Alert severity="error" sx={{ mb: 2 }}>{errorCarga}</Alert>}
 
       <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         <Table size="small">

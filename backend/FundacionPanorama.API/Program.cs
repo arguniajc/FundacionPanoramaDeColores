@@ -148,6 +148,7 @@ var app = builder.Build();
     await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS descripcion_discapacidad TEXT",                               "beneficiarios.descripcion_discapacidad");
     await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS vive_con_nino BOOLEAN",                                       "beneficiarios.vive_con_nino");
     await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS autorizacion BOOLEAN NOT NULL DEFAULT false",                 "beneficiarios.autorizacion");
+    await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS genero VARCHAR(20)",                                          "beneficiarios.genero");
     await Migrar("ALTER TABLE beneficiario_talla ADD COLUMN IF NOT EXISTS peso_kg DECIMAL(5,2)",                                   "beneficiario_talla.peso_kg");
     await Migrar("ALTER TABLE beneficiario_talla ADD COLUMN IF NOT EXISTS talla_cm INT",                                           "beneficiario_talla.talla_cm");
     await Migrar("ALTER TABLE sedes ADD COLUMN IF NOT EXISTS direccion VARCHAR(300)",            "sedes.direccion");

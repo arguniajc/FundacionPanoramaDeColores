@@ -208,11 +208,6 @@ var app = builder.Build();
             fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
         """, "inscripciones");
-    await Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS estado            VARCHAR(30)  NOT NULL DEFAULT 'activa'", "inscripciones.estado");
-    await Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS fecha_inscripcion TIMESTAMPTZ NOT NULL DEFAULT NOW()",     "inscripciones.fecha_inscripcion");
-    await Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS datos             TEXT        NOT NULL DEFAULT '{}'",      "inscripciones.datos");
-    await Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS observaciones     TEXT",                                   "inscripciones.observaciones");
-    await Migrar("ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS activo            BOOLEAN     NOT NULL DEFAULT true",      "inscripciones.activo");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_programa      ON inscripciones(programa_id)",      "inscripciones.idx_programa");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_beneficiario  ON inscripciones(beneficiario_id)",  "inscripciones.idx_beneficiario");
 
@@ -433,20 +428,6 @@ var app = builder.Build();
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_nombre             VARCHAR(200)",                      "programas.rep_nombre");
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_documento          VARCHAR(50)",                       "programas.rep_documento");
     await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS rep_cargo              VARCHAR(100)",                      "programas.rep_cargo");
-
-    // Columnas retroactivas voluntarios (por si la tabla existía vacía)
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS tipo_documento     VARCHAR(20)",  "voluntarios.tipo_documento");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS documento          VARCHAR(50)",  "voluntarios.documento");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS email              VARCHAR(200)", "voluntarios.email");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS telefono           VARCHAR(30)",  "voluntarios.telefono");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS ciudad             VARCHAR(100)", "voluntarios.ciudad");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS fecha_nacimiento   DATE",         "voluntarios.fecha_nacimiento");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS fecha_inicio       DATE",         "voluntarios.fecha_inicio");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS profesion          VARCHAR(100)", "voluntarios.profesion");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS notas              TEXT",         "voluntarios.notas");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS activo             BOOLEAN NOT NULL DEFAULT true",              "voluntarios.activo");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS fecha_creacion     TIMESTAMPTZ NOT NULL DEFAULT NOW()",         "voluntarios.fecha_creacion");
-    await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()",         "voluntarios.fecha_modificacion");
 
     await Migrar("""
         CREATE TABLE IF NOT EXISTS programas_campos (

@@ -1,8 +1,9 @@
-// Árbol de rutas de la app. Todas las rutas /sede/* requieren autenticación (RutaProtegida).
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout          from '../layouts/AdminLayout';
 import RutaProtegida        from '../../shared/components/RutaProtegida';
+import SinAcceso            from '../../shared/components/SinAcceso';
 import ModuloEnDesarrollo   from '../../shared/components/ModuloEnDesarrollo';
+import { useAuth }          from '../../application/auth/AuthContext';
 import LoginPage            from '../modules/auth/pages/LoginPage';
 import DashboardPage        from '../modules/dashboard/pages/DashboardPage';
 import BeneficiariosPage    from '../modules/beneficiarios/pages/BeneficiariosPage';
@@ -16,11 +17,17 @@ import DonantesPage         from '../modules/donantes/pages/DonantesPage';
 import DonacionesPage       from '../modules/donaciones/pages/DonacionesPage';
 import VoluntariosPage      from '../modules/voluntarios/pages/VoluntariosPage';
 import ConfiguracionPage    from '../modules/configuracion/pages/ConfiguracionPage';
+import EquipoPage           from '../modules/equipo/pages/EquipoPage';
 
-function AdminConLayout({ children }) {
+// Envuelve en layout + auth + permiso de módulo
+function Pagina({ modulo, children }) {
+  const { puedo, cargando } = useAuth();
+  if (cargando) return null;
   return (
     <RutaProtegida>
-      <AdminLayout>{children}</AdminLayout>
+      <AdminLayout>
+        {!modulo || puedo(modulo, 'ver') ? children : <SinAcceso modulo={modulo} />}
+      </AdminLayout>
     </RutaProtegida>
   );
 }
@@ -28,28 +35,27 @@ function AdminConLayout({ children }) {
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/sede" replace />} />
+      <Route path="/"    element={<Navigate to="/sede" replace />} />
       <Route path="/acceso" element={<LoginPage />} />
 
-      <Route path="/sede"                element={<AdminConLayout><DashboardPage /></AdminConLayout>} />
-      <Route path="/sede/beneficiarios"  element={<AdminConLayout><BeneficiariosPage /></AdminConLayout>} />
-      <Route path="/sede/sedes"          element={<AdminConLayout><SedesPage /></AdminConLayout>} />
-      <Route path="/sede/log-descargas"  element={<AdminConLayout><LogDescargasPage /></AdminConLayout>} />
-
-      <Route path="/sede/donantes"       element={<AdminConLayout><DonantesPage /></AdminConLayout>} />
-      <Route path="/sede/donaciones"     element={<AdminConLayout><DonacionesPage /></AdminConLayout>} />
-      <Route path="/sede/proyectos"      element={<AdminConLayout><ProgramasPage /></AdminConLayout>} />
-      <Route path="/sede/inscripciones"  element={<AdminConLayout><InscripcionesPage /></AdminConLayout>} />
-      <Route path="/sede/actividades"    element={<AdminConLayout><ModuloEnDesarrollo nombre="Actividades" /></AdminConLayout>} />
-      <Route path="/sede/voluntarios"    element={<AdminConLayout><VoluntariosPage /></AdminConLayout>} />
-      <Route path="/sede/talento-humano" element={<AdminConLayout><ModuloEnDesarrollo nombre="Talento Humano" /></AdminConLayout>} />
-      <Route path="/sede/contabilidad"   element={<AdminConLayout><ModuloEnDesarrollo nombre="Contabilidad" /></AdminConLayout>} />
-      <Route path="/sede/inventario"     element={<AdminConLayout><InventarioPage /></AdminConLayout>} />
-      <Route path="/sede/reportes"       element={<AdminConLayout><ModuloEnDesarrollo nombre="Reportes" /></AdminConLayout>} />
-      <Route path="/sede/documentos"     element={<AdminConLayout><DocumentosPage /></AdminConLayout>} />
-      <Route path="/sede/seguridad"      element={<AdminConLayout><ModuloEnDesarrollo nombre="Seguridad" /></AdminConLayout>} />
-      <Route path="/sede/equipo"         element={<AdminConLayout><ModuloEnDesarrollo nombre="Usuarios" /></AdminConLayout>} />
-      <Route path="/sede/configuracion"  element={<AdminConLayout><ConfiguracionPage /></AdminConLayout>} />
+      <Route path="/sede"               element={<Pagina><DashboardPage /></Pagina>} />
+      <Route path="/sede/beneficiarios" element={<Pagina modulo="beneficiarios"><BeneficiariosPage /></Pagina>} />
+      <Route path="/sede/sedes"         element={<Pagina modulo="sedes"><SedesPage /></Pagina>} />
+      <Route path="/sede/log-descargas" element={<Pagina modulo="log_descargas"><LogDescargasPage /></Pagina>} />
+      <Route path="/sede/donantes"      element={<Pagina modulo="donantes"><DonantesPage /></Pagina>} />
+      <Route path="/sede/donaciones"    element={<Pagina modulo="donaciones"><DonacionesPage /></Pagina>} />
+      <Route path="/sede/proyectos"     element={<Pagina modulo="programas"><ProgramasPage /></Pagina>} />
+      <Route path="/sede/inscripciones" element={<Pagina modulo="inscripciones"><InscripcionesPage /></Pagina>} />
+      <Route path="/sede/actividades"   element={<Pagina modulo="actividades"><ModuloEnDesarrollo nombre="Actividades" /></Pagina>} />
+      <Route path="/sede/voluntarios"   element={<Pagina modulo="voluntarios"><VoluntariosPage /></Pagina>} />
+      <Route path="/sede/talento-humano" element={<Pagina modulo="talento_humano"><ModuloEnDesarrollo nombre="Talento Humano" /></Pagina>} />
+      <Route path="/sede/contabilidad"  element={<Pagina modulo="contabilidad"><ModuloEnDesarrollo nombre="Contabilidad" /></Pagina>} />
+      <Route path="/sede/inventario"    element={<Pagina modulo="inventario"><InventarioPage /></Pagina>} />
+      <Route path="/sede/reportes"      element={<Pagina modulo="reportes"><ModuloEnDesarrollo nombre="Reportes" /></Pagina>} />
+      <Route path="/sede/documentos"    element={<Pagina modulo="documentos"><DocumentosPage /></Pagina>} />
+      <Route path="/sede/seguridad"     element={<Pagina modulo="seguridad"><ModuloEnDesarrollo nombre="Seguridad" /></Pagina>} />
+      <Route path="/sede/equipo"        element={<Pagina modulo="equipo"><EquipoPage /></Pagina>} />
+      <Route path="/sede/configuracion" element={<Pagina modulo="configuracion"><ConfiguracionPage /></Pagina>} />
 
       <Route path="/sede/*" element={<Navigate to="/sede" replace />} />
       <Route path="*"       element={<Navigate to="/" replace />} />

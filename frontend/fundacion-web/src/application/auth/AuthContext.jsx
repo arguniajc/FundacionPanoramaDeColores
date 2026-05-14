@@ -1,28 +1,50 @@
-/**
- * AuthContext
- * Estado global de la sesión del administrador.
- * Delega el acceso a localStorage a authStorage (infrastructure).
- */
-import { createContext, useContext, useState, useEffect } from 'react';
-import { getToken, getUser, saveSession, clearSession } from '../../infrastructure/storage/authStorage';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import {
+  getToken, getUser, getRol, getPermisos,
+  saveSession, clearSession,
+} from '../../infrastructure/storage/authStorage';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user,     setUser]     = useState(null);
+  const [rol,      setRol]      = useState('');
+  const [permisos, setPermisos] = useState({});
   const [cargando, setCargando] = useState(true);
 
-  // Restaurar sesión al montar (localStorage → estado React)
   useEffect(() => {
-    if (getToken()) setUser(getUser());
+    if (getToken()) {
+      setUser(getUser());
+      setRol(getRol());
+      setPermisos(getPermisos());
+    }
     setCargando(false);
   }, []);
 
-  const login  = (token, userData) => { saveSession(token, userData); setUser(userData); };
-  const logout = ()                 => { clearSession(); setUser(null); };
+  const login = useCallback((token, userData, rolData, permisosData) => {
+    saveSession(token, userData, rolData, permisosData);
+    setUser(userData);
+    setRol(rolData ?? '');
+    setPermisos(permisosData ?? {});
+  }, []);
+
+  const logout = useCallback(() => {
+    clearSession();
+    setUser(null);
+    setRol('');
+    setPermisos({});
+  }, []);
+
+  // puedo('beneficiarios', 'crear') → true/false
+  const puedo = useCallback((modulo, accion) => {
+    if (rol === 'administrador') return true;
+    return permisos[modulo]?.includes(accion) ?? false;
+  }, [rol, permisos]);
+
+  const esAdmin = rol === 'administrador';
 
   return (
-    <AuthContext.Provider value={{ user, cargando, login, logout }}>
+    <AuthContext.Provider value={{ user, rol, permisos, cargando, esAdmin, login, logout, puedo }}>
       {children}
     </AuthContext.Provider>
   );

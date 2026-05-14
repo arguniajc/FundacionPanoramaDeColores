@@ -1,5 +1,9 @@
 using FundacionPanorama.Application.Features.Configuracion;
 using FundacionPanorama.Application.Features.Configuracion.Interfaces;
+using FundacionPanorama.Application.Features.Permisos;
+using FundacionPanorama.Application.Features.Permisos.Interfaces;
+using FundacionPanorama.Application.Features.Usuarios;
+using FundacionPanorama.Application.Features.Usuarios.Interfaces;
 using FundacionPanorama.Infrastructure.Persistence;
 using FundacionPanorama.Infrastructure.Persistence.Repositories;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,9 +20,13 @@ public static class DependencyInjection
 
         // Repositories
         services.AddScoped<IConfiguracionRepository, ConfiguracionRepository>();
+        services.AddScoped<IUsuariosRepository, UsuariosRepository>();
+        services.AddScoped<IPermisosRepository, PermisosRepository>();
 
         // Services
         services.AddScoped<ConfiguracionService>();
+        services.AddScoped<UsuariosService>();
+        services.AddScoped<PermisosService>();
 
         return services;
     }

@@ -34,6 +34,7 @@ import { useAuth }           from '../../application/auth/AuthContext';
 import { useThemeMode }      from '../../shared/theme/ThemeContext';
 import { useConfiguracion }  from '../../shared/context/ConfiguracionContext';
 import useInactividad        from '../../shared/hooks/useInactividad';
+import usePermisos           from '../../shared/hooks/usePermisos';
 
 const SIDEBAR_WIDTH = 260;
 const CYAN  = '#B4E8E8';
@@ -49,38 +50,38 @@ const MENU = [
   {
     grupo: 'MÓDULOS FUNCIONALES',
     items: [
-      { label: 'Beneficiarios',  icon: <ChildCareIcon />,          ruta: '/sede/beneficiarios' },
-      { label: 'Donantes',       icon: <VolunteerActivismIcon />,  ruta: '/sede/donantes' },
-      { label: 'Donaciones',     icon: <MonetizationOnIcon />,     ruta: '/sede/donaciones' },
-      { label: 'Proyectos',      icon: <FolderSpecialIcon />,      ruta: '/sede/proyectos' },
-      { label: 'Inscripciones a proyectos', icon: <HowToRegIcon />, ruta: '/sede/inscripciones' },
-      { label: 'Sedes',          icon: <LocationOnIcon />,         ruta: '/sede/sedes' },
-      { label: 'Actividades',    icon: <EventNoteIcon />,          ruta: '/sede/actividades' },
-      { label: 'Voluntarios',    icon: <PeopleIcon />,             ruta: '/sede/voluntarios' },
+      { label: 'Beneficiarios',             icon: <ChildCareIcon />,         ruta: '/sede/beneficiarios', modulo: 'beneficiarios' },
+      { label: 'Donantes',                  icon: <VolunteerActivismIcon />, ruta: '/sede/donantes',      modulo: 'donantes' },
+      { label: 'Donaciones',                icon: <MonetizationOnIcon />,    ruta: '/sede/donaciones',    modulo: 'donaciones' },
+      { label: 'Proyectos',                 icon: <FolderSpecialIcon />,     ruta: '/sede/proyectos',     modulo: 'programas' },
+      { label: 'Inscripciones a proyectos', icon: <HowToRegIcon />,          ruta: '/sede/inscripciones', modulo: 'inscripciones' },
+      { label: 'Sedes',                     icon: <LocationOnIcon />,        ruta: '/sede/sedes',         modulo: 'sedes' },
+      { label: 'Actividades',               icon: <EventNoteIcon />,         ruta: '/sede/actividades',   modulo: 'actividades' },
+      { label: 'Voluntarios',               icon: <PeopleIcon />,            ruta: '/sede/voluntarios',   modulo: 'voluntarios' },
     ],
   },
   {
     grupo: 'RECURSOS',
     items: [
-      { label: 'Talento Humano', icon: <BadgeIcon />,              ruta: '/sede/talento-humano' },
-      { label: 'Contabilidad',   icon: <AccountBalanceIcon />,     ruta: '/sede/contabilidad' },
-      { label: 'Inventario',     icon: <InventoryIcon />,          ruta: '/sede/inventario' },
+      { label: 'Talento Humano', icon: <BadgeIcon />,          ruta: '/sede/talento-humano', modulo: 'talento_humano' },
+      { label: 'Contabilidad',   icon: <AccountBalanceIcon />, ruta: '/sede/contabilidad',   modulo: 'contabilidad' },
+      { label: 'Inventario',     icon: <InventoryIcon />,      ruta: '/sede/inventario',     modulo: 'inventario' },
     ],
   },
   {
     grupo: 'REPORTES Y DOCS',
     items: [
-      { label: 'Reportes',       icon: <AssessmentIcon />,         ruta: '/sede/reportes' },
-      { label: 'Documentos',     icon: <FolderIcon />,             ruta: '/sede/documentos' },
-      { label: 'Log Descargas',  icon: <DownloadIcon />,           ruta: '/sede/log-descargas' },
+      { label: 'Reportes',       icon: <AssessmentIcon />, ruta: '/sede/reportes',       modulo: 'reportes' },
+      { label: 'Documentos',     icon: <FolderIcon />,     ruta: '/sede/documentos',     modulo: 'documentos' },
+      { label: 'Log Descargas',  icon: <DownloadIcon />,   ruta: '/sede/log-descargas',  modulo: 'log_descargas' },
     ],
   },
   {
     grupo: 'SISTEMA',
     items: [
-      { label: 'Seguridad',      icon: <SecurityIcon />,           ruta: '/sede/seguridad' },
-      { label: 'Equipo',         icon: <ManageAccountsIcon />,     ruta: '/sede/equipo' },
-      { label: 'Configuración',  icon: <SettingsIcon />,           ruta: '/sede/configuracion' },
+      { label: 'Seguridad',     icon: <SecurityIcon />,        ruta: '/sede/seguridad',     modulo: 'seguridad' },
+      { label: 'Equipo',        icon: <ManageAccountsIcon />,  ruta: '/sede/equipo',        modulo: 'equipo' },
+      { label: 'Configuración', icon: <SettingsIcon />,        ruta: '/sede/configuracion', modulo: 'configuracion' },
     ],
   },
 ];
@@ -117,6 +118,7 @@ function SidebarContent({
   collapsed, onToggleGrupo, onNavegar, onCerrarSesion,
   bg,
 }) {
+  const { puedo } = usePermisos();
   const esActivo = (ruta) =>
     ruta === '/sede'
       ? location.pathname === '/sede'
@@ -190,7 +192,7 @@ function SidebarContent({
 
             <Collapse in={!collapsed[grupo]} timeout="auto">
               <List dense disablePadding>
-                {items.map(({ label, icon, ruta }) => {
+                {items.filter(({ modulo }) => !modulo || puedo(modulo, 'ver')).map(({ label, icon, ruta }) => {
                   const activo = esActivo(ruta);
                   return (
                     <ListItemButton

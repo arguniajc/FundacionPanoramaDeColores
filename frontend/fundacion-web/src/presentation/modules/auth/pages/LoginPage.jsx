@@ -30,11 +30,12 @@ export default function LoginPage() {
       const { data } = await apiClient.post('/api/auth/google', {
         idToken: credentialResponse.credential,
       });
-      login(data.token, {
-        email:     data.email,
-        nombre:    data.nombre,
-        avatarUrl: data.avatarUrl,
-      });
+      login(
+        data.token,
+        { email: data.email, nombre: data.nombre, avatarUrl: data.avatarUrl },
+        data.rol,
+        data.permisos,
+      );
       navigate('/sede', { replace: true });
     } catch (err) {
       const msg = err.response?.status === 403

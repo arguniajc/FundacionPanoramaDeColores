@@ -7,8 +7,11 @@ public class GoogleLoginDto
 
 public class AuthResponseDto
 {
-    public string Token { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string Nombre { get; set; } = string.Empty;
+    public string  Token     { get; set; } = string.Empty;
+    public string  Email     { get; set; } = string.Empty;
+    public string  Nombre    { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
+    public string  Rol       { get; set; } = string.Empty;
+    // { "beneficiarios": ["ver","crear"], ... }
+    public Dictionary<string, List<string>> Permisos { get; set; } = [];
 }

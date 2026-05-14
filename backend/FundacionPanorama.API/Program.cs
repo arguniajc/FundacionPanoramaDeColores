@@ -66,6 +66,7 @@ builder.Services.AddInfrastructure(connStr);
 // ── Controllers + OpenAPI ────────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
@@ -407,6 +408,140 @@ var app = builder.Build();
             END IF;
         END $$
         """, "programas_campos.rename_opciones");
+
+    // ── Módulo Roles y Permisos ───────────────────────────────────────────────
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            email              VARCHAR(200) NOT NULL UNIQUE,
+            nombre             VARCHAR(200),
+            avatar_url         TEXT,
+            rol                VARCHAR(50)  NOT NULL DEFAULT 'trabajador_social',
+            activo             BOOLEAN      NOT NULL DEFAULT true,
+            fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        )
+        """, "usuarios");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS roles_permisos (
+            rol       VARCHAR(50) NOT NULL,
+            modulo    VARCHAR(50) NOT NULL,
+            accion    VARCHAR(20) NOT NULL,
+            permitido BOOLEAN     NOT NULL DEFAULT false,
+            PRIMARY KEY (rol, modulo, accion)
+        )
+        """, "roles_permisos");
+
+    await Migrar("""
+        INSERT INTO roles_permisos (rol, modulo, accion, permitido) VALUES
+          -- representante_legal
+          ('representante_legal','dashboard','ver',true),
+          ('representante_legal','beneficiarios','ver',true),('representante_legal','beneficiarios','exportar',true),
+          ('representante_legal','donantes','ver',true),
+          ('representante_legal','donaciones','ver',true),('representante_legal','donaciones','autorizar',true),
+          ('representante_legal','programas','ver',true),('representante_legal','programas','autorizar',true),
+          ('representante_legal','inscripciones','ver',true),
+          ('representante_legal','sedes','ver',true),
+          ('representante_legal','actividades','ver',true),
+          ('representante_legal','voluntarios','ver',true),
+          ('representante_legal','talento_humano','ver',true),
+          ('representante_legal','contabilidad','ver',true),
+          ('representante_legal','inventario','ver',true),
+          ('representante_legal','reportes','ver',true),('representante_legal','reportes','exportar',true),
+          ('representante_legal','documentos','ver',true),('representante_legal','documentos','crear',true),
+          ('representante_legal','documentos','editar',true),('representante_legal','documentos','eliminar',true),
+          ('representante_legal','equipo','ver',true),
+          -- sistemas
+          ('sistemas','dashboard','ver',true),
+          ('sistemas','sedes','ver',true),('sistemas','sedes','crear',true),('sistemas','sedes','editar',true),('sistemas','sedes','eliminar',true),
+          ('sistemas','reportes','ver',true),
+          ('sistemas','documentos','ver',true),
+          ('sistemas','log_descargas','ver',true),
+          ('sistemas','seguridad','ver',true),('sistemas','seguridad','crear',true),('sistemas','seguridad','editar',true),('sistemas','seguridad','eliminar',true),
+          ('sistemas','equipo','ver',true),('sistemas','equipo','crear',true),('sistemas','equipo','editar',true),('sistemas','equipo','eliminar',true),
+          ('sistemas','configuracion','ver',true),('sistemas','configuracion','editar',true),
+          -- coordinador_programas
+          ('coordinador_programas','dashboard','ver',true),
+          ('coordinador_programas','beneficiarios','ver',true),('coordinador_programas','beneficiarios','crear',true),
+          ('coordinador_programas','beneficiarios','editar',true),('coordinador_programas','beneficiarios','exportar',true),
+          ('coordinador_programas','programas','ver',true),('coordinador_programas','programas','crear',true),('coordinador_programas','programas','editar',true),
+          ('coordinador_programas','inscripciones','ver',true),('coordinador_programas','inscripciones','crear',true),
+          ('coordinador_programas','inscripciones','editar',true),('coordinador_programas','inscripciones','eliminar',true),
+          ('coordinador_programas','sedes','ver',true),
+          ('coordinador_programas','actividades','ver',true),('coordinador_programas','actividades','crear',true),
+          ('coordinador_programas','actividades','editar',true),('coordinador_programas','actividades','eliminar',true),
+          ('coordinador_programas','inventario','ver',true),('coordinador_programas','inventario','crear',true),('coordinador_programas','inventario','editar',true),
+          ('coordinador_programas','reportes','ver',true),('coordinador_programas','reportes','exportar',true),
+          ('coordinador_programas','documentos','ver',true),('coordinador_programas','documentos','crear',true),
+          -- trabajador_social
+          ('trabajador_social','dashboard','ver',true),
+          ('trabajador_social','beneficiarios','ver',true),('trabajador_social','beneficiarios','crear',true),('trabajador_social','beneficiarios','editar',true),
+          ('trabajador_social','programas','ver',true),
+          ('trabajador_social','inscripciones','ver',true),('trabajador_social','inscripciones','crear',true),('trabajador_social','inscripciones','editar',true),
+          ('trabajador_social','sedes','ver',true),
+          ('trabajador_social','actividades','ver',true),('trabajador_social','actividades','crear',true),('trabajador_social','actividades','editar',true),
+          ('trabajador_social','inventario','ver',true),
+          ('trabajador_social','reportes','ver',true),
+          ('trabajador_social','documentos','ver',true),
+          -- tesorero
+          ('tesorero','dashboard','ver',true),
+          ('tesorero','donantes','ver',true),('tesorero','donantes','crear',true),('tesorero','donantes','editar',true),('tesorero','donantes','eliminar',true),
+          ('tesorero','donaciones','ver',true),('tesorero','donaciones','crear',true),('tesorero','donaciones','editar',true),
+          ('tesorero','donaciones','eliminar',true),('tesorero','donaciones','exportar',true),
+          ('tesorero','contabilidad','ver',true),('tesorero','contabilidad','crear',true),('tesorero','contabilidad','editar',true),
+          ('tesorero','inventario','ver',true),
+          ('tesorero','reportes','ver',true),('tesorero','reportes','exportar',true),
+          ('tesorero','documentos','ver',true),
+          -- contador
+          ('contador','dashboard','ver',true),
+          ('contador','donantes','ver',true),
+          ('contador','donaciones','ver',true),('contador','donaciones','exportar',true),
+          ('contador','contabilidad','ver',true),('contador','contabilidad','crear',true),('contador','contabilidad','editar',true),('contador','contabilidad','exportar',true),
+          ('contador','inventario','ver',true),
+          ('contador','reportes','ver',true),('contador','reportes','exportar',true),
+          ('contador','documentos','ver',true),
+          -- secretario
+          ('secretario','dashboard','ver',true),
+          ('secretario','beneficiarios','ver',true),
+          ('secretario','programas','ver',true),
+          ('secretario','inscripciones','ver',true),
+          ('secretario','sedes','ver',true),
+          ('secretario','actividades','ver',true),('secretario','actividades','crear',true),('secretario','actividades','editar',true),
+          ('secretario','voluntarios','ver',true),
+          ('secretario','talento_humano','ver',true),
+          ('secretario','reportes','ver',true),
+          ('secretario','documentos','ver',true),('secretario','documentos','crear',true),('secretario','documentos','editar',true),
+          ('secretario','equipo','ver',true),
+          -- talento_humano
+          ('talento_humano','dashboard','ver',true),
+          ('talento_humano','voluntarios','ver',true),('talento_humano','voluntarios','crear',true),('talento_humano','voluntarios','editar',true),
+          ('talento_humano','voluntarios','eliminar',true),('talento_humano','voluntarios','exportar',true),
+          ('talento_humano','talento_humano','ver',true),('talento_humano','talento_humano','crear',true),
+          ('talento_humano','talento_humano','editar',true),('talento_humano','talento_humano','eliminar',true),
+          ('talento_humano','sedes','ver',true),
+          ('talento_humano','reportes','ver',true),
+          ('talento_humano','documentos','ver',true),
+          ('talento_humano','equipo','ver',true),
+          -- auditor
+          ('auditor','dashboard','ver',true),
+          ('auditor','beneficiarios','ver',true),
+          ('auditor','donantes','ver',true),
+          ('auditor','donaciones','ver',true),
+          ('auditor','programas','ver',true),
+          ('auditor','inscripciones','ver',true),
+          ('auditor','sedes','ver',true),
+          ('auditor','actividades','ver',true),
+          ('auditor','voluntarios','ver',true),
+          ('auditor','talento_humano','ver',true),
+          ('auditor','contabilidad','ver',true),
+          ('auditor','inventario','ver',true),
+          ('auditor','reportes','ver',true),('auditor','reportes','exportar',true),
+          ('auditor','documentos','ver',true),
+          ('auditor','log_descargas','ver',true),
+          ('auditor','equipo','ver',true)
+        ON CONFLICT (rol, modulo, accion) DO NOTHING
+        """, "roles_permisos.seed");
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────

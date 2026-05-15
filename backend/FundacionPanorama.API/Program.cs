@@ -366,8 +366,11 @@ var app = builder.Build();
     await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS programa_id   UUID",                                         "donaciones.programa_id");
     await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS sede_id       UUID",                                         "donaciones.sede_id");
     await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS recibo_numero VARCHAR(50)",                                  "donaciones.recibo_numero");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS descripcion    TEXT",                                         "donaciones.descripcion");
     await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS activo        BOOLEAN        NOT NULL DEFAULT true",         "donaciones.activo");
     await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS fecha_donacion DATE           NOT NULL DEFAULT CURRENT_DATE", "donaciones.fecha_donacion");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS fecha_creacion     TIMESTAMPTZ NOT NULL DEFAULT NOW()",       "donaciones.fecha_creacion");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()",       "donaciones.fecha_modificacion");
 
     // ── Módulo Voluntarios ────────────────────────────────────────────────────
     await Migrar("""

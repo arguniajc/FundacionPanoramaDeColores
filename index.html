@@ -322,19 +322,24 @@
             <p class="section-subtitle">Déjanos tu mensaje, pronto nos pondremos en contacto contigo</p>
             <div class="contact-container">
                 <div class="contact-form">
-                    <form id="contactForm">
+                    <form id="contactForm" novalidate>
                         <div class="form-group">
-                            <input type="text" id="name" placeholder="Tu nombre completo" required>
+                            <label for="name">Nombre completo <span class="required-mark" aria-hidden="true">*</span></label>
+                            <input type="text" id="name" name="name" placeholder="Ej: María García" autocomplete="name" required aria-required="true">
                         </div>
                         <div class="form-group">
-                            <input type="email" id="email" placeholder="Tu correo electrónico" required>
+                            <label for="email">Correo electrónico <span class="required-mark" aria-hidden="true">*</span></label>
+                            <input type="email" id="email" name="email" placeholder="Ej: correo@ejemplo.com" autocomplete="email" required aria-required="true">
                         </div>
                         <div class="form-group">
-                            <input type="tel" id="phone" placeholder="Tu número de teléfono">
+                            <label for="phone">Teléfono <span class="optional-mark">(opcional)</span></label>
+                            <input type="tel" id="phone" name="phone" placeholder="Ej: +57 322 601 2056" autocomplete="tel">
                         </div>
                         <div class="form-group">
-                            <textarea id="message" rows="5" placeholder="Tu mensaje" required></textarea>
+                            <label for="message">Mensaje <span class="required-mark" aria-hidden="true">*</span></label>
+                            <textarea id="message" name="message" rows="5" placeholder="Cuéntanos cómo podemos ayudarte..." required aria-required="true"></textarea>
                         </div>
+                        <p class="form-hint" aria-label="Campos obligatorios"><span class="required-mark">*</span> Campos obligatorios</p>
                         <button type="submit" class="btn-submit"><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</button>
                     </form>
                     <div id="form-success">¡Mensaje listo! Se abrirá WhatsApp para enviarlo.</div>

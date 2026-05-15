@@ -873,3 +873,173 @@ a {
     padding-top: 2rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* ═══════════════════════════════════════════════════════
+   GRADIENTES VIVOS POR SLIDE (fallback sin imagen)
+═══════════════════════════════════════════════════════ */
+.slide:nth-child(1) {
+    background-color: #2d0a5e;
+}
+.slide:nth-child(1)::before {
+    background: linear-gradient(135deg, rgba(78,27,149,0.90) 0%, rgba(109,40,217,0.60) 100%);
+}
+.slide:nth-child(2) {
+    background-color: #0f3d1c;
+}
+.slide:nth-child(2)::before {
+    background: linear-gradient(135deg, rgba(15,61,28,0.92) 0%, rgba(45,152,79,0.60) 100%);
+}
+.slide:nth-child(3) {
+    background-color: #063354;
+}
+.slide:nth-child(3)::before {
+    background: linear-gradient(135deg, rgba(6,51,84,0.92) 0%, rgba(14,165,233,0.55) 100%);
+}
+
+/* ═══════════════════════════════════════════════════════
+   FRANJA DE ESTADÍSTICAS
+═══════════════════════════════════════════════════════ */
+.stats-strip {
+    background: linear-gradient(135deg, #160428 0%, #0d1f0f 100%);
+    padding: 2.8rem 0;
+    position: relative;
+    overflow: hidden;
+}
+.stats-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(78,27,149,0.25) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(45,152,79,0.20) 0%, transparent 60%);
+    pointer-events: none;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    position: relative;
+    z-index: 1;
+}
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 1.2rem 1rem;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    text-align: center;
+}
+.stat-item:last-child { border-right: none; }
+.stat-item i {
+    font-size: 1.7rem;
+    color: var(--secondary-orange);
+    margin-bottom: 0.2rem;
+}
+.stat-number {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+.stat-label {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.55);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+@media (max-width: 640px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-item:nth-child(2) { border-right: none; }
+    .stat-item:nth-child(1),
+    .stat-item:nth-child(2) { border-bottom: 1px solid rgba(255,255,255,0.08); }
+}
+@media (max-width: 360px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .stat-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .stat-item:last-child { border-bottom: none; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   BOTÓN FLOTANTE DE WHATSAPP
+═══════════════════════════════════════════════════════ */
+.whatsapp-float {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 9999;
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background-color: #25D366;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 4px 20px rgba(37,211,102,0.45);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+}
+.whatsapp-float:hover {
+    transform: scale(1.13);
+    box-shadow: 0 6px 30px rgba(37,211,102,0.65);
+}
+.whatsapp-float::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: #25D366;
+    animation: wa-pulse 2.8s ease-out infinite;
+    z-index: -1;
+}
+@keyframes wa-pulse {
+    0%   { transform: scale(1);   opacity: 0.7; }
+    100% { transform: scale(1.7); opacity: 0;   }
+}
+@media (max-width: 480px) {
+    .whatsapp-float { bottom: 1.2rem; right: 1.2rem; width: 54px; height: 54px; font-size: 1.7rem; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ANIMACIONES DE ENTRADA AL HACER SCROLL
+═══════════════════════════════════════════════════════ */
+[data-animate] {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+}
+[data-animate="left"]  { transform: translateX(-32px); }
+[data-animate="right"] { transform: translateX(32px);  }
+[data-animate="scale"] { transform: scale(0.88);       }
+[data-animate].animated {
+    opacity: 1;
+    transform: translate(0) scale(1);
+}
+/* Stagger para grids */
+.program-card:nth-child(1)[data-animate],
+.gallery-item:nth-child(1)[data-animate],
+.stat-item:nth-child(1)[data-animate] { transition-delay: 0.05s; }
+
+.program-card:nth-child(2)[data-animate],
+.gallery-item:nth-child(2)[data-animate],
+.stat-item:nth-child(2)[data-animate] { transition-delay: 0.15s; }
+
+.program-card:nth-child(3)[data-animate],
+.gallery-item:nth-child(3)[data-animate],
+.stat-item:nth-child(3)[data-animate] { transition-delay: 0.25s; }
+
+.program-card:nth-child(4)[data-animate],
+.gallery-item:nth-child(4)[data-animate],
+.stat-item:nth-child(4)[data-animate] { transition-delay: 0.35s; }
+
+.gallery-item:nth-child(5)[data-animate] { transition-delay: 0.20s; }
+.gallery-item:nth-child(6)[data-animate] { transition-delay: 0.30s; }
+
+/* Reducir movimiento si el usuario lo prefiere */
+@media (prefers-reduced-motion: reduce) {
+    [data-animate] { opacity: 1; transform: none; transition: none; }
+}

@@ -799,6 +799,20 @@ var app = builder.Build();
             PRIMARY KEY (actividad_id, beneficiario_id)
         )
         """, "actividad_asistencia");
+
+    await Migrar("""
+        CREATE TABLE IF NOT EXISTS organigrama_personas (
+            id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+            cargo          VARCHAR(50)  NOT NULL,
+            orden          INT          NOT NULL DEFAULT 0,
+            empleado_id    UUID         REFERENCES empleados(id) ON DELETE SET NULL,
+            nombre_externo VARCHAR(200),
+            foto_url       TEXT,
+            activo         BOOLEAN      NOT NULL DEFAULT TRUE,
+            created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+            updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+        )
+        """, "organigrama_personas");
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────

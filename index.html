@@ -581,19 +581,33 @@
         txt('footer-copyright', w.footer.copyright);
       }
 
-      // Aplicar defaults inmediatamente (sin esperar al API)
+      // 1. Aplicar defaults como base
       aplicar(DEFAULTS);
 
-      // Luego sobrescribir con datos del servidor
+      // 2. Aplicar cache local inmediatamente (evita esperar al backend en cold-start)
+      try {
+        var cached = localStorage.getItem('_fpc_cfg');
+        if (cached) {
+          var cachedData = JSON.parse(cached);
+          if (cachedData && cachedData.webContenido) {
+            aplicar(merge(DEFAULTS, JSON.parse(cachedData.webContenido)));
+          }
+        }
+      } catch (e) { /* ignorar errores de localStorage */ }
+
+      // 3. Cargar datos frescos del servidor y actualizar
       fetch(API + '/api/configuracion/publica')
         .then(function(r) { return r.ok ? r.json() : null; })
         .then(function(data) {
           if (!data || !data.webContenido) return;
-          var parsed = JSON.parse(data.webContenido);
-          aplicar(merge(DEFAULTS, parsed));
+          // Guardar en cache para la próxima visita
+          try { localStorage.setItem('_fpc_cfg', JSON.stringify(data)); } catch (e) {}
+          aplicar(merge(DEFAULTS, JSON.parse(data.webContenido)));
           if (window._initAnim) window._initAnim();
         })
-        .catch(function() { /* silencioso — los defaults ya están aplicados */ });
+        .catch(function(err) {
+          console.warn('[Fundación] No se pudo cargar configuración del servidor:', err);
+        });
     })();
     </script>
 </body>

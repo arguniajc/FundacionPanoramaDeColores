@@ -33,7 +33,7 @@ apiClient.interceptors.response.use(
       const enLogin = window.location.hash.includes('/acceso');
       if (!enLogin) {
         clearSession();
-        window.location.href = '/#/acceso';
+        window.location.href = '/gestion/#/acceso';
       }
     }
     return Promise.reject(error);

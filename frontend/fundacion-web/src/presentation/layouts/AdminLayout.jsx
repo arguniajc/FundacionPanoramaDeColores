@@ -272,7 +272,7 @@ export default function AdminLayout({ children }) {
 
   useInactividad(5, () => {
     logout();
-    window.location.href = 'https://fundacionpanoramadecolores.org';
+    window.location.href = 'https://fundacionpanoramadecolores.org/gestion/#/acceso';
   }, !!user);
 
   const sidebarProps = {

@@ -504,6 +504,25 @@ var app = builder.Build();
     await Migrar("CREATE INDEX IF NOT EXISTS idx_empleados_sede  ON empleados(sede_id)",  "empleados.idx_sede");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_empleados_activo ON empleados(activo)", "empleados.idx_activo");
 
+    // Columnas retroactivas en empleados (tabla creada antes del esquema completo)
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS tipo_documento     VARCHAR(20)",                                   "empleados.tipo_documento");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS numero_documento   VARCHAR(50)",                                   "empleados.numero_documento");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS email              VARCHAR(200)",                                  "empleados.email");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS telefono           VARCHAR(30)",                                   "empleados.telefono");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS celular            VARCHAR(30)",                                   "empleados.celular");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS cargo              VARCHAR(100)",                                  "empleados.cargo");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS area               VARCHAR(100)",                                  "empleados.area");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS sede_id            UUID",                                          "empleados.sede_id");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS tipo_contrato      VARCHAR(50)",                                   "empleados.tipo_contrato");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS fecha_ingreso      DATE",                                          "empleados.fecha_ingreso");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS fecha_fin_contrato DATE",                                          "empleados.fecha_fin_contrato");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS salario            NUMERIC(14,2)",                                 "empleados.salario");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS eps                VARCHAR(100)",                                  "empleados.eps");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS pension            VARCHAR(100)",                                  "empleados.pension");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS foto_url           TEXT",                                          "empleados.foto_url");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS notas              TEXT",                                          "empleados.notas");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()",            "empleados.fecha_modificacion");
+
     await Migrar("""
         CREATE TABLE IF NOT EXISTS novedades_empleado (
             id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),

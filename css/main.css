@@ -954,6 +954,55 @@ ul { list-style: none; }
 #back-top:hover { background: var(--purple-hover); }
 
 /* ═══════════════════════════════════════════════════════
+   AVISO DE PRIVACIDAD / COOKIES
+═══════════════════════════════════════════════════════ */
+#privacy-banner {
+  position: fixed;
+  bottom: 0; left: 0;
+  width: 100%;
+  z-index: 10000;
+  background: var(--purple-dark);
+  color: rgba(255, 255, 255, 0.90);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.85rem clamp(1rem, 4vw, 2.5rem);
+  font-size: var(--text-sm);
+  flex-wrap: wrap;
+  transform: translateY(0);
+  transition: transform 0.35s var(--ease-out);
+}
+#privacy-banner.hidden {
+  transform: translateY(110%);
+  pointer-events: none;
+}
+#privacy-banner p {
+  margin: 0;
+  flex: 1;
+  min-width: 220px;
+}
+#privacy-banner a {
+  color: var(--cyan);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#privacy-banner a:hover { color: var(--white); }
+#privacy-accept {
+  flex-shrink: 0;
+  background: var(--green);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1.25rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+#privacy-accept:hover { background: var(--green-hover); }
+
+/* ═══════════════════════════════════════════════════════
    FORMULARIO — ESTADOS DE ERROR Y ÉXITO
 ═══════════════════════════════════════════════════════ */
 .input-error {

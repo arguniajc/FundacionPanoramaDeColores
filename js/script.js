@@ -190,6 +190,22 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // ========== AVISO DE PRIVACIDAD ==========
+  var privacyBanner = document.getElementById('privacy-banner');
+  var privacyAccept = document.getElementById('privacy-accept');
+
+  if (privacyBanner) {
+    if (localStorage.getItem('_fpc_privacy')) {
+      privacyBanner.classList.add('hidden');
+    }
+    if (privacyAccept) {
+      privacyAccept.addEventListener('click', function () {
+        privacyBanner.classList.add('hidden');
+        try { localStorage.setItem('_fpc_privacy', '1'); } catch (e) {}
+      });
+    }
+  }
+
   // ========== SCROLL: NAVBAR .scrolled + BOTÓN VOLVER ARRIBA ==========
   var navbar  = document.querySelector('.navbar');
   var backTop = document.getElementById('back-top');

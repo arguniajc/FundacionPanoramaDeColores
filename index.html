@@ -70,6 +70,7 @@
     }
     </script>
 
+    <link rel="preload" href="images/logo.png" as="image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -84,7 +85,7 @@
         <div class="nav-container">
            <div class="logo-container">
                 <a href="#inicio" class="logo">
-                    <img id="nav-logo" src="images/logo.png" alt="Logo Fundación Panorama de Colores">
+                    <img id="nav-logo" src="images/logo.png" alt="Logo Fundación Panorama de Colores" width="72" height="72" fetchpriority="high">
                 </a>
            </div>
             <button class="menu-toggle" id="menuToggle">
@@ -174,7 +175,7 @@
             <h2 class="section-title" data-animate>QUIÉNES SOMOS</h2>
             <div class="about-content">
                 <div class="about-image">
-                    <img id="qs-imagen" src="images/imagen1.jpg" alt="Equipo de la Fundación Panorama de Colores">
+                    <img id="qs-imagen" src="images/imagen1.jpg" alt="Equipo de la Fundación Panorama de Colores" width="600" height="800" loading="lazy" decoding="async">
                 </div>
                 <div class="about-text">
                     <div class="about-card" data-animate data-delay="0">
@@ -255,17 +256,17 @@
             <h2 class="section-title" data-animate>GALERÍA DE EVENTOS</h2>
             <p class="section-subtitle">Momentos que inspiran y transforman</p>
             <div id="galeria-grid" class="gallery-grid">
-                <div class="gallery-item" data-animate data-delay="0"><img src="images/imagen2.jpg" alt="Taller de arte infantil"></div>
-                <div class="gallery-item" data-animate data-delay="80"><img src="images/imagen3.jpg" alt="Actividad deportiva con niños"></div>
-                <div class="gallery-item" data-animate data-delay="160"><img src="images/imagen4.jpg" alt="Taller de conciencia ambiental"></div>
-                <div class="gallery-item" data-animate data-delay="240"><img src="images/imagen5.jpg" alt="Niños mostrando sus creaciones"></div>
-                <div class="gallery-item" data-animate data-delay="320"><img src="images/imagen6.jpg" alt="Familia participando en actividades"></div>
-                <div class="gallery-item" data-animate data-delay="400"><img src="images/imagen7.jpg" alt="Evento comunitario de la fundación"></div>
+                <div class="gallery-item" data-animate data-delay="0"><img src="images/imagen2.jpg" alt="Taller de arte infantil" width="600" height="450" loading="lazy" decoding="async"></div>
+                <div class="gallery-item" data-animate data-delay="80"><img src="images/imagen3.jpg" alt="Actividad deportiva con niños" width="600" height="450" loading="lazy" decoding="async"></div>
+                <div class="gallery-item" data-animate data-delay="160"><img src="images/imagen4.jpg" alt="Taller de conciencia ambiental" width="600" height="450" loading="lazy" decoding="async"></div>
+                <div class="gallery-item" data-animate data-delay="240"><img src="images/imagen5.jpg" alt="Niños mostrando sus creaciones" width="600" height="450" loading="lazy" decoding="async"></div>
+                <div class="gallery-item" data-animate data-delay="320"><img src="images/imagen6.jpg" alt="Familia participando en actividades" width="600" height="450" loading="lazy" decoding="async"></div>
+                <div class="gallery-item" data-animate data-delay="400"><img src="images/imagen7.jpg" alt="Evento comunitario de la fundación" width="600" height="450" loading="lazy" decoding="async"></div>
             </div>
             <div class="gallery-modal">
                 <div class="modal-content">
                     <span class="modal-close">&times;</span>
-                    <img class="modal-image" src="" alt="">
+                    <img class="modal-image" src="" alt="" decoding="async">
                     <div class="modal-caption"></div>
                 </div>
             </div>
@@ -619,7 +620,7 @@
         var grid = document.getElementById('galeria-grid');
         if (grid && w.galeria && w.galeria.length) {
           grid.innerHTML = w.galeria.map(function(g, i) {
-            return '<div class="gallery-item" data-animate data-delay="' + (i * 80) + '"><img src="' + esc(g.imagen) + '" alt="' + esc(g.titulo) + '" loading="lazy"></div>';
+            return '<div class="gallery-item" data-animate data-delay="' + (i * 80) + '"><img src="' + esc(g.imagen) + '" alt="' + esc(g.titulo) + '" width="600" height="450" loading="lazy" decoding="async"></div>';
           }).join('');
           // Re-adjuntar eventos de modal con delegación
           grid.addEventListener('click', function(e) {

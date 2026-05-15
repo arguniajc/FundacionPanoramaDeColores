@@ -14,6 +14,7 @@ import AssessmentIcon       from '@mui/icons-material/Assessment';
 import PublicIcon           from '@mui/icons-material/Public';
 import LocationOnIcon       from '@mui/icons-material/LocationOn';
 import InfoOutlinedIcon     from '@mui/icons-material/InfoOutlined';
+import ExpandMoreIcon       from '@mui/icons-material/ExpandMore';
 import { useAuth }      from '../../../../application/auth/AuthContext';
 import { useThemeMode } from '../../../../shared/theme/ThemeContext';
 import apiClient        from '../../../../infrastructure/http/apiClient';
@@ -149,10 +150,14 @@ export default function DashboardPage() {
     color: COLORES_GENERO[g.genero] ?? '#94a3b8',
   })) ?? [];
 
-  const maxOrigen = Math.max(
-    ...(stats?.topDepartamentos?.map(d => d.total) ?? [1]),
+  const [deptoExpandido, setDeptoExpandido] = useState(null);
+
+  const maxDepto = Math.max(
+    ...(stats?.departamentosConCiudades?.map(d => d.total) ?? [1]),
+    1,
+  );
+  const maxPais = Math.max(
     ...(stats?.topPaises?.map(p => p.total) ?? [1]),
-    ...(stats?.topCiudades?.map(c => c.total) ?? [1]),
     1,
   );
 
@@ -318,50 +323,89 @@ export default function DashboardPage() {
                 </Typography>
               </Box>
               {cargando
-                ? <Skeleton height={60} />
+                ? <Skeleton height={50} />
                 : stats?.topPaises?.length > 0
                   ? stats.topPaises.map(p => (
-                      <FilaOrigen key={p.pais} nombre={p.pais} total={p.total} max={maxOrigen} color="#0ea5e9" />
+                      <FilaOrigen key={p.pais} nombre={p.pais} total={p.total} max={maxPais} color="#0ea5e9" />
                     ))
-                  : <Typography fontSize="0.75rem" color="text.disabled">Sin registros de país extranjero</Typography>
+                  : <Typography fontSize="0.75rem" color="text.disabled" mb={0.5}>Sin registros de país extranjero</Typography>
               }
             </Box>
 
-            {/* Otras regiones colombianas — departamentos */}
-            <Box mb={stats?.topCiudades?.length > 0 ? 2 : 0}>
+            {/* Departamentos con ciudades — acordeón */}
+            <Box>
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <LocationOnIcon sx={{ fontSize: 15, color: '#f59e0b' }} />
                 <Typography fontSize="0.78rem" fontWeight={700} color="#f59e0b">
-                  Otras regiones de Colombia ({stats?.otraRegion ?? 0})
+                  Colombia — por departamento
                 </Typography>
               </Box>
               {cargando
-                ? <Skeleton height={80} />
-                : stats?.topDepartamentos?.length > 0
-                  ? stats.topDepartamentos.map(d => (
-                      <FilaOrigen key={d.departamento} nombre={d.departamento} total={d.total} max={maxOrigen} color="#f59e0b" />
-                    ))
+                ? <Skeleton height={100} />
+                : stats?.departamentosConCiudades?.length > 0
+                  ? stats.departamentosConCiudades.map(d => {
+                      const abierto = deptoExpandido === d.departamento;
+                      const pct = maxDepto > 0 ? Math.round((d.total / maxDepto) * 100) : 0;
+                      return (
+                        <Box key={d.departamento}>
+                          {/* Fila departamento (clickeable) */}
+                          <Box
+                            onClick={() => setDeptoExpandido(abierto ? null : d.departamento)}
+                            sx={{
+                              display: 'flex', alignItems: 'center', gap: 1, mb: 0.5,
+                              cursor: d.ciudades?.length > 0 ? 'pointer' : 'default',
+                              borderRadius: 1, px: 0.5,
+                              '&:hover': d.ciudades?.length > 0 ? { bgcolor: 'action.hover' } : {},
+                            }}
+                          >
+                            <Typography fontSize="0.78rem" sx={{
+                              minWidth: 110, color: 'text.secondary',
+                              textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap',
+                            }} title={d.departamento}>{d.departamento}</Typography>
+                            <Box flex={1} sx={{ bgcolor: 'action.hover', borderRadius: 4, height: 7 }}>
+                              <Box sx={{ width: `${pct}%`, height: 7, borderRadius: 4, bgcolor: '#f59e0b', transition: 'width 0.5s ease' }} />
+                            </Box>
+                            <Typography fontSize="0.78rem" fontWeight={700} sx={{ minWidth: 22, textAlign: 'right', color: '#f59e0b' }}>
+                              {d.total}
+                            </Typography>
+                            {d.ciudades?.length > 0 && (
+                              <ExpandMoreIcon sx={{
+                                fontSize: 15, color: 'text.disabled', flexShrink: 0,
+                                transform: abierto ? 'rotate(180deg)' : 'none',
+                                transition: 'transform 0.2s',
+                              }} />
+                            )}
+                          </Box>
+
+                          {/* Ciudades desplegables */}
+                          {abierto && d.ciudades?.length > 0 && (
+                            <Box sx={{ pl: 1.5, pb: 0.5, borderLeft: '2px solid', borderColor: '#f59e0b30' }}>
+                              {d.ciudades.map(c => {
+                                const maxC = Math.max(...d.ciudades.map(x => x.total), 1);
+                                const pctC = Math.round((c.total / maxC) * 100);
+                                return (
+                                  <Box key={c.ciudad} display="flex" alignItems="center" gap={1} mb={0.5}>
+                                    <Typography fontSize="0.73rem" sx={{
+                                      minWidth: 100, color: 'text.secondary',
+                                      textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap',
+                                    }} title={c.ciudad}>{c.ciudad}</Typography>
+                                    <Box flex={1} sx={{ bgcolor: 'action.hover', borderRadius: 4, height: 6 }}>
+                                      <Box sx={{ width: `${pctC}%`, height: 6, borderRadius: 4, bgcolor: '#8b5cf6', transition: 'width 0.5s ease' }} />
+                                    </Box>
+                                    <Typography fontSize="0.73rem" fontWeight={700} sx={{ minWidth: 20, textAlign: 'right', color: '#8b5cf6' }}>
+                                      {c.total}
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+                          )}
+                        </Box>
+                      );
+                    })
                   : <Typography fontSize="0.75rem" color="text.disabled">Sin registros de departamento</Typography>
               }
             </Box>
-
-            {/* Ciudades */}
-            {(stats?.topCiudades?.length > 0 || cargando) && (
-              <Box>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <LocationOnIcon sx={{ fontSize: 15, color: '#8b5cf6' }} />
-                  <Typography fontSize="0.78rem" fontWeight={700} color="#8b5cf6">
-                    Ciudades de otras regiones
-                  </Typography>
-                </Box>
-                {cargando
-                  ? <Skeleton height={60} />
-                  : stats.topCiudades.map(c => (
-                      <FilaOrigen key={c.ciudad} nombre={c.ciudad} total={c.total} max={maxOrigen} color="#8b5cf6" />
-                    ))
-                }
-              </Box>
-            )}
 
           </Box>
         </Grid>

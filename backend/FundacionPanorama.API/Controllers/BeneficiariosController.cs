@@ -254,39 +254,35 @@ public class BeneficiariosController : ControllerBase
             !b.DepartamentoNacimiento.Equals("Valle del Cauca", StringComparison.OrdinalIgnoreCase) &&
             !b.DepartamentoNacimiento.Equals("Valle", StringComparison.OrdinalIgnoreCase));
 
-        var topDepartamentos = activos
-            .Where(b =>
-                (string.IsNullOrWhiteSpace(b.PaisNacimiento) ||
-                 b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase)) &&
-                !string.IsNullOrWhiteSpace(b.DepartamentoNacimiento))
-            .GroupBy(b => b.DepartamentoNacimiento!)
-            .OrderByDescending(g => g.Count())
-            .Take(5)
-            .Select(g => new { departamento = g.Key, total = g.Count() })
-            .ToList();
-
         var topPaises = activos
             .Where(b =>
                 !string.IsNullOrWhiteSpace(b.PaisNacimiento) &&
                 !b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase))
             .GroupBy(b => b.PaisNacimiento!)
             .OrderByDescending(g => g.Count())
-            .Take(5)
+            .Take(10)
             .Select(g => new { pais = g.Key, total = g.Count() })
             .ToList();
 
-        var topCiudades = activos
+        var departamentosConCiudades = activos
             .Where(b =>
                 (string.IsNullOrWhiteSpace(b.PaisNacimiento) ||
                  b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase)) &&
-                !string.IsNullOrWhiteSpace(b.CiudadNacimiento) &&
-                !string.IsNullOrWhiteSpace(b.DepartamentoNacimiento) &&
-                !b.DepartamentoNacimiento.Equals("Valle del Cauca", StringComparison.OrdinalIgnoreCase) &&
-                !b.DepartamentoNacimiento.Equals("Valle", StringComparison.OrdinalIgnoreCase))
-            .GroupBy(b => b.CiudadNacimiento!)
+                !string.IsNullOrWhiteSpace(b.DepartamentoNacimiento))
+            .GroupBy(b => b.DepartamentoNacimiento!)
             .OrderByDescending(g => g.Count())
-            .Take(5)
-            .Select(g => new { ciudad = g.Key, total = g.Count() })
+            .Take(15)
+            .Select(g => new {
+                departamento = g.Key,
+                total        = g.Count(),
+                ciudades     = g
+                    .Where(b => !string.IsNullOrWhiteSpace(b.CiudadNacimiento))
+                    .GroupBy(b => b.CiudadNacimiento!)
+                    .OrderByDescending(c => c.Count())
+                    .Take(10)
+                    .Select(c => new { ciudad = c.Key, total = c.Count() })
+                    .ToList()
+            })
             .ToList();
 
         var porGenero = activos
@@ -301,9 +297,8 @@ public class BeneficiariosController : ControllerBase
             extranjeros,
             otraRegion,
             porRango,
-            topDepartamentos,
             topPaises,
-            topCiudades,
+            departamentosConCiudades,
             porGenero,
         });
     }

@@ -809,7 +809,7 @@ if (app.Environment.IsDevelopment())
     {
         options.Title           = "Fundación Panorama de Colores — API";
         options.Theme           = ScalarTheme.Purple;
-        options.WithHttpBearerAuthentication(b => b.Token = "");
+        options.AddHttpAuthentication("bearer", b => b.Token = "");
     });
 }
 

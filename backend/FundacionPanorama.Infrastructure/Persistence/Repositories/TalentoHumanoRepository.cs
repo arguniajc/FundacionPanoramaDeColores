@@ -230,16 +230,16 @@ public class TalentoHumanoRepository(DbConnectionFactory factory) : ITalentoHuma
         cmd.CommandText = """
             SELECT
               COUNT(*),
-              SUM(CASE WHEN activo THEN 1 ELSE 0 END),
-              SUM(CASE WHEN activo AND fecha_fin_contrato IS NOT NULL
-                            AND fecha_fin_contrato BETWEEN CURRENT_DATE AND CURRENT_DATE + 30 THEN 1 ELSE 0 END),
+              COALESCE(SUM(CASE WHEN activo THEN 1 ELSE 0 END), 0),
+              COALESCE(SUM(CASE WHEN activo AND fecha_fin_contrato IS NOT NULL
+                            AND fecha_fin_contrato BETWEEN CURRENT_DATE AND CURRENT_DATE + 30 THEN 1 ELSE 0 END), 0),
               (SELECT COUNT(*) FROM novedades_empleado WHERE estado = 'pendiente')
             FROM empleados
             """;
         await using var r = await cmd.ExecuteReaderAsync(ct);
         await r.ReadAsync(ct);
         return new TalentoHumanoStatsDto(
-            (int)(long)r[0], (int)(long)r[1], (int)(long)r[2], (int)(long)r[3]);
+            Convert.ToInt32(r[0]), Convert.ToInt32(r[1]), Convert.ToInt32(r[2]), Convert.ToInt32(r[3]));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

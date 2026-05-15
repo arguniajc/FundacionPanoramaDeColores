@@ -505,6 +505,8 @@ var app = builder.Build();
     await Migrar("CREATE INDEX IF NOT EXISTS idx_empleados_activo ON empleados(activo)", "empleados.idx_activo");
 
     // Columnas retroactivas en empleados (tabla creada antes del esquema completo)
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS nombres            VARCHAR(200) NOT NULL DEFAULT ''",              "empleados.nombres");
+    await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS apellidos          VARCHAR(200) NOT NULL DEFAULT ''",              "empleados.apellidos");
     await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS tipo_documento     VARCHAR(20)",                                   "empleados.tipo_documento");
     await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS numero_documento   VARCHAR(50)",                                   "empleados.numero_documento");
     await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS email              VARCHAR(200)",                                  "empleados.email");

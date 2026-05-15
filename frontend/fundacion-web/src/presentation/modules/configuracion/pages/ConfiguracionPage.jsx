@@ -3,16 +3,19 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Accordion, AccordionDetails, AccordionSummary,
   Alert, Box, Button, CircularProgress, Divider, FormControl,
-  FormControlLabel, Grid, InputLabel, MenuItem, Select,
+  FormControlLabel, Grid, IconButton, InputLabel, MenuItem, Select,
   Snackbar, Switch, Tab, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
-import SaveIcon         from '@mui/icons-material/Save';
-import UploadFileIcon   from '@mui/icons-material/UploadFile';
-import PaletteIcon      from '@mui/icons-material/Palette';
-import ExpandMoreIcon   from '@mui/icons-material/ExpandMore';
-import FirmaPad         from '../../../../shared/components/FirmaPad';
+import SaveIcon              from '@mui/icons-material/Save';
+import UploadFileIcon        from '@mui/icons-material/UploadFile';
+import PaletteIcon           from '@mui/icons-material/Palette';
+import ExpandMoreIcon        from '@mui/icons-material/ExpandMore';
+import CloseIcon             from '@mui/icons-material/Close';
+import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import FirmaPad              from '../../../../shared/components/FirmaPad';
 import { configuracionRepository } from '../../../../infrastructure/repositories/configuracionRepository';
 import { useConfiguracion }        from '../../../../shared/context/ConfiguracionContext';
+import apiClient                   from '../../../../infrastructure/http/apiClient';
 
 const COLOR     = 'var(--color-primario)';
 const TIPOS_DOC = ['CC', 'CE', 'PP', 'NIT', 'Otro'];
@@ -29,7 +32,7 @@ const DEFAULT_WEB = {
     { titulo: 'Conciencia ambiental para un futuro mejor', subtitulo: 'Educamos y actuamos por un entorno más sostenible',                        cta: 'Únete a nuestra causa',    ctaHref: '#donaciones',  imagen: '' },
   ],
   quienesSomos: {
-    imagen: 'images/imagen1.jpg',
+    imagen: '',
     mision: 'Transformar vidas de niños, niñas y familias en el barrio Panorama Comuna 1 a través del arte, el deporte y la conciencia ambiental, promoviendo el desarrollo integral y la construcción de un futuro sostenible.',
     vision: 'Ser una fundación líder en la transformación social del barrio Panorama Comuna 1, reconocida por nuestro compromiso con el desarrollo integral de la niñez y la promoción de entornos sostenibles y saludables.',
     historia: 'Fundación Panorama de Colores nació hace más de 2 años como una iniciativa comunitaria para brindar oportunidades a niños y niñas en situación de vulnerabilidad. Desde entonces, hemos crecido y transformado la vida de más de 18 niños y sus familias.',
@@ -51,12 +54,12 @@ const DEFAULT_WEB = {
     ],
   },
   galeria: [
-    { imagen: 'images/imagen2.jpg', titulo: 'Taller de arte infantil' },
-    { imagen: 'images/imagen3.jpg', titulo: 'Actividad deportiva con niños' },
-    { imagen: 'images/imagen4.jpg', titulo: 'Taller de conciencia ambiental' },
-    { imagen: 'images/imagen5.jpg', titulo: 'Niños mostrando sus creaciones' },
-    { imagen: 'images/imagen6.jpg', titulo: 'Familia participando en actividades' },
-    { imagen: 'images/imagen7.jpg', titulo: 'Evento comunitario de la fundación' },
+    { imagen: '', titulo: 'Taller de arte infantil' },
+    { imagen: '', titulo: 'Actividad deportiva con niños' },
+    { imagen: '', titulo: 'Taller de conciencia ambiental' },
+    { imagen: '', titulo: 'Niños mostrando sus creaciones' },
+    { imagen: '', titulo: 'Familia participando en actividades' },
+    { imagen: '', titulo: 'Evento comunitario de la fundación' },
   ],
   donaciones: {
     whatsapp: '573226012056',
@@ -199,18 +202,97 @@ function ColorPicker({ label, value, onChange }) {
   );
 }
 
-// ── Campo con previsualización de imagen ─────────────────────────────────────
-function ImagenUrlField({ label, value, onChange, placeholder }) {
+// ── Campo de imagen con upload a Supabase ────────────────────────────────────
+function ImagenField({ label, value, onChange }) {
+  const inputRef = useRef(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [errImg,   setErrImg]   = useState('');
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    if (!file.type.startsWith('image/')) { setErrImg('El archivo debe ser una imagen'); return; }
+    if (file.size > 5 * 1024 * 1024)    { setErrImg('La imagen no puede superar 5 MB'); return; }
+    setErrImg(''); setSubiendo(true);
+    try {
+      const fd = new FormData();
+      fd.append('archivo', file);
+      const { data } = await apiClient.post('/api/archivos/upload?carpeta=web', fd);
+      onChange({ target: { value: data.url } });
+    } catch {
+      setErrImg('No se pudo subir la imagen. Intenta de nuevo.');
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  const limpiar = () => onChange({ target: { value: '' } });
+
   return (
     <Box>
-      <TextField fullWidth size="small" label={label} value={value} onChange={onChange}
-        placeholder={placeholder || 'images/imagen1.jpg o https://...'} />
-      {value && (
-        <Box mt={1} sx={{ borderRadius: 1, overflow: 'hidden', maxWidth: 200, border: '1px solid', borderColor: 'divider' }}>
-          <img src={value} alt="preview" style={{ width: '100%', height: 80, objectFit: 'cover', display: 'block' }}
-            onError={(e) => { e.target.style.display = 'none'; }} />
+      <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>{label}</Typography>
+
+      {value ? (
+        /* Vista previa con botón eliminar */
+        <Box sx={{ position: 'relative', display: 'inline-block', mb: 1 }}>
+          <Box
+            component="img"
+            src={value}
+            alt="preview"
+            sx={{ height: 100, maxWidth: 220, objectFit: 'cover', borderRadius: 2,
+                  display: 'block', border: '1px solid', borderColor: 'divider' }}
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+          <IconButton
+            size="small"
+            onClick={limpiar}
+            sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'white',
+                  border: '1px solid', borderColor: 'divider', p: 0.3,
+                  '&:hover': { bgcolor: '#ffeaea' } }}
+          >
+            <CloseIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Box>
+      ) : (
+        /* Zona vacía */
+        <Box
+          onClick={() => !subiendo && inputRef.current?.click()}
+          sx={{ border: '2px dashed', borderColor: 'divider', borderRadius: 2,
+                p: 2, mb: 1, textAlign: 'center', cursor: subiendo ? 'default' : 'pointer',
+                '&:hover': { borderColor: COLOR, bgcolor: 'rgba(0,0,0,0.02)' } }}
+        >
+          {subiendo
+            ? <CircularProgress size={24} sx={{ color: COLOR }} />
+            : <AddPhotoAlternateIcon sx={{ fontSize: 32, color: 'text.disabled' }} />}
+          <Typography variant="caption" color="text.disabled" display="block" mt={0.5}>
+            {subiendo ? 'Subiendo imagen…' : 'Haz clic para subir una imagen'}
+          </Typography>
         </Box>
       )}
+
+      <Box display="flex" gap={1} alignItems="center">
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={subiendo ? <CircularProgress size={12} /> : <UploadFileIcon />}
+          onClick={() => inputRef.current?.click()}
+          disabled={subiendo}
+          sx={{ fontSize: '0.72rem', color: COLOR, borderColor: COLOR }}
+        >
+          {subiendo ? 'Subiendo…' : value ? 'Cambiar imagen' : 'Subir imagen'}
+        </Button>
+        {value && (
+          <Typography variant="caption" color="text.disabled" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200, whiteSpace: 'nowrap' }}>
+            {value.split('/').pop()}
+          </Typography>
+        )}
+      </Box>
+
+      {errImg && (
+        <Typography variant="caption" color="error" display="block" mt={0.5}>{errImg}</Typography>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
     </Box>
   );
 }
@@ -441,7 +523,7 @@ function TabPaginaWeb({ webForm, setWebForm }) {
                 <Grid size={12}><TextField fullWidth size="small" label="Subtítulo / descripción" value={slide.subtitulo} onChange={setSlide(i, 'subtitulo')} /></Grid>
                 <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="Texto del botón CTA" value={slide.cta} onChange={setSlide(i, 'cta')} /></Grid>
                 <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="Enlace del botón (href)" value={slide.ctaHref} onChange={setSlide(i, 'ctaHref')} placeholder="#que-hacemos" /></Grid>
-                <Grid size={12}><ImagenUrlField label="Imagen de fondo (URL)" value={slide.imagen} onChange={setSlide(i, 'imagen')} /></Grid>
+                <Grid size={12}><ImagenField label="Imagen de fondo (URL)" value={slide.imagen} onChange={setSlide(i, 'imagen')} /></Grid>
               </Grid>
             </AccordionDetails>
           </Accordion>
@@ -451,7 +533,7 @@ function TabPaginaWeb({ webForm, setWebForm }) {
       {/* ── Quiénes Somos ── */}
       <Box mt={2}><Seccion titulo="👥 Quiénes Somos">
         <Grid container spacing={2.5}>
-          <Grid size={12}><ImagenUrlField label="Imagen sección (URL)" value={webForm.quienesSomos.imagen} onChange={(e) => setWebForm(p => ({ ...p, quienesSomos: { ...p.quienesSomos, imagen: e.target.value } }))} /></Grid>
+          <Grid size={12}><ImagenField label="Imagen sección (URL)" value={webForm.quienesSomos.imagen} onChange={(e) => setWebForm(p => ({ ...p, quienesSomos: { ...p.quienesSomos, imagen: e.target.value } }))} /></Grid>
           <Grid size={12}><TextField fullWidth size="small" multiline minRows={3} label="Misión" value={webForm.quienesSomos.mision} onChange={setQS('mision')} /></Grid>
           <Grid size={12}><TextField fullWidth size="small" multiline minRows={3} label="Visión" value={webForm.quienesSomos.vision} onChange={setQS('vision')} /></Grid>
           <Grid size={12}><TextField fullWidth size="small" multiline minRows={3} label="Historia" value={webForm.quienesSomos.historia} onChange={setQS('historia')} /></Grid>
@@ -516,7 +598,7 @@ function TabPaginaWeb({ webForm, setWebForm }) {
               <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
                 <Typography variant="caption" color="text.secondary" fontWeight={700}>Foto {i + 1}</Typography>
                 <Box mt={1} display="flex" gap={1} flexDirection="column">
-                  <ImagenUrlField label="URL de la imagen" value={item.imagen} onChange={setGal(i, 'imagen')} />
+                  <ImagenField label="URL de la imagen" value={item.imagen} onChange={setGal(i, 'imagen')} />
                   <TextField fullWidth size="small" label="Descripción / título de foto" value={item.titulo} onChange={setGal(i, 'titulo')} />
                 </Box>
               </Box>

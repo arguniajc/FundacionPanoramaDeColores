@@ -312,103 +312,179 @@ export default function DashboardPage() {
         {/* Orígenes */}
         <Grid size={{ xs: 12, md: 5 }}>
           <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5, height: '100%' }}>
-            <Typography fontWeight={700} fontSize="0.95rem" mb={2}>Lugar de origen</Typography>
 
-            {/* Extranjeros */}
-            <Box mb={2}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <PublicIcon sx={{ fontSize: 15, color: '#0ea5e9' }} />
-                <Typography fontSize="0.78rem" fontWeight={700} color="#0ea5e9">
-                  Extranjeros ({stats?.extranjeros ?? 0})
-                </Typography>
+            {/* Título */}
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2.5}>
+              <Typography fontWeight={800} fontSize="0.95rem">Lugar de origen</Typography>
+              <Box sx={{ fontSize: '0.68rem', color: 'text.disabled', fontWeight: 500 }}>
+                clic en depto. para ver ciudades
               </Box>
-              {cargando
-                ? <Skeleton height={50} />
-                : stats?.topPaises?.length > 0
-                  ? stats.topPaises.map(p => (
-                      <FilaOrigen key={p.pais} nombre={p.pais} total={p.total} max={maxPais} color="#0ea5e9" />
+            </Box>
+
+            {/* ── Extranjeros ── */}
+            <Box mb={2.5}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                <Box display="flex" alignItems="center" gap={0.8}>
+                  <PublicIcon sx={{ fontSize: 14, color: '#0ea5e9' }} />
+                  <Typography fontSize="0.72rem" fontWeight={700} color="text.secondary"
+                    sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Extranjeros
+                  </Typography>
+                </Box>
+                <Box sx={{
+                  bgcolor: '#0ea5e915', color: '#0ea5e9', px: 1.2, py: 0.25,
+                  borderRadius: 2, fontSize: '0.78rem', fontWeight: 800,
+                  border: '1px solid #0ea5e930',
+                }}>
+                  {stats?.extranjeros ?? 0}
+                </Box>
+              </Box>
+              {cargando ? <Skeleton height={44} sx={{ borderRadius: 2 }} /> :
+                stats?.topPaises?.length > 0
+                  ? stats.topPaises.map((p, i) => (
+                      <Box key={p.pais} display="flex" alignItems="center" gap={1.5}
+                        sx={{ p: '5px 8px', borderRadius: 2, mb: 0.4,
+                              '&:hover': { bgcolor: 'action.hover' } }}>
+                        <Typography fontSize="0.65rem" fontWeight={700} color="text.disabled"
+                          sx={{ minWidth: 14 }}>
+                          {i + 1}
+                        </Typography>
+                        <Typography fontSize="0.8rem" fontWeight={600} color="text.primary"
+                          sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                          title={p.pais}>{p.pais}
+                        </Typography>
+                        <Box sx={{
+                          bgcolor: '#0ea5e915', color: '#0ea5e9', px: 0.9, py: 0.1,
+                          borderRadius: 1.5, fontSize: '0.72rem', fontWeight: 800,
+                          minWidth: 24, textAlign: 'center',
+                        }}>
+                          {p.total}
+                        </Box>
+                      </Box>
                     ))
-                  : <Typography fontSize="0.75rem" color="text.disabled" mb={0.5}>Sin registros de país extranjero</Typography>
+                  : (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1,
+                                bgcolor: 'action.hover', borderRadius: 2 }}>
+                      <PublicIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                      <Typography fontSize="0.74rem" color="text.disabled" fontStyle="italic">
+                        Todos los niños son de Colombia
+                      </Typography>
+                    </Box>
+                  )
               }
             </Box>
 
-            {/* Departamentos con ciudades — acordeón */}
+            {/* Divisor */}
+            <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mb: 2 }} />
+
+            {/* ── Departamentos acordeón ── */}
             <Box>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <LocationOnIcon sx={{ fontSize: 15, color: '#f59e0b' }} />
-                <Typography fontSize="0.78rem" fontWeight={700} color="#f59e0b">
-                  Colombia — por departamento
-                </Typography>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                <Box display="flex" alignItems="center" gap={0.8}>
+                  <LocationOnIcon sx={{ fontSize: 14, color: '#f59e0b' }} />
+                  <Typography fontSize="0.72rem" fontWeight={700} color="text.secondary"
+                    sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Colombia · departamentos
+                  </Typography>
+                </Box>
               </Box>
-              {cargando
-                ? <Skeleton height={100} />
-                : stats?.departamentosConCiudades?.length > 0
-                  ? stats.departamentosConCiudades.map(d => {
+
+              {cargando ? <Skeleton height={120} sx={{ borderRadius: 2 }} /> :
+                stats?.departamentosConCiudades?.length > 0
+                  ? stats.departamentosConCiudades.map((d, i) => {
                       const abierto = deptoExpandido === d.departamento;
-                      const pct = maxDepto > 0 ? Math.round((d.total / maxDepto) * 100) : 0;
+                      const hasCiudades = d.ciudades?.length > 0;
                       return (
                         <Box key={d.departamento}>
-                          {/* Fila departamento (clickeable) */}
+                          {/* Fila departamento */}
                           <Box
-                            onClick={() => setDeptoExpandido(abierto ? null : d.departamento)}
+                            onClick={() => hasCiudades && setDeptoExpandido(abierto ? null : d.departamento)}
                             sx={{
-                              display: 'flex', alignItems: 'center', gap: 1, mb: 0.5,
-                              cursor: d.ciudades?.length > 0 ? 'pointer' : 'default',
-                              borderRadius: 1, px: 0.5,
-                              '&:hover': d.ciudades?.length > 0 ? { bgcolor: 'action.hover' } : {},
+                              display: 'flex', alignItems: 'center', gap: 1.2,
+                              p: '6px 8px', borderRadius: 2, mb: 0.3,
+                              cursor: hasCiudades ? 'pointer' : 'default',
+                              transition: 'background 0.15s',
+                              bgcolor: abierto ? '#f59e0b08' : 'transparent',
+                              border: abierto ? '1px solid #f59e0b20' : '1px solid transparent',
+                              '&:hover': hasCiudades ? { bgcolor: '#f59e0b08' } : {},
                             }}
                           >
-                            <Typography fontSize="0.78rem" sx={{
-                              minWidth: 110, color: 'text.secondary',
-                              textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap',
-                            }} title={d.departamento}>{d.departamento}</Typography>
-                            <Box flex={1} sx={{ bgcolor: 'action.hover', borderRadius: 4, height: 7 }}>
-                              <Box sx={{ width: `${pct}%`, height: 7, borderRadius: 4, bgcolor: '#f59e0b', transition: 'width 0.5s ease' }} />
-                            </Box>
-                            <Typography fontSize="0.78rem" fontWeight={700} sx={{ minWidth: 22, textAlign: 'right', color: '#f59e0b' }}>
-                              {d.total}
+                            <Typography fontSize="0.64rem" fontWeight={700} color="text.disabled"
+                              sx={{ minWidth: 14, textAlign: 'center' }}>
+                              {i + 1}
                             </Typography>
-                            {d.ciudades?.length > 0 && (
+                            <Typography fontSize="0.8rem" fontWeight={600}
+                              sx={{ flex: 1, color: abierto ? '#f59e0b' : 'text.primary',
+                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                    transition: 'color 0.15s' }}
+                              title={d.departamento}>{d.departamento}
+                            </Typography>
+                            <Box sx={{
+                              bgcolor: abierto ? '#f59e0b' : '#f59e0b15',
+                              color: abierto ? '#fff' : '#f59e0b',
+                              px: 0.9, py: 0.1, borderRadius: 1.5,
+                              fontSize: '0.72rem', fontWeight: 800,
+                              minWidth: 24, textAlign: 'center',
+                              transition: 'all 0.15s',
+                            }}>
+                              {d.total}
+                            </Box>
+                            {hasCiudades && (
                               <ExpandMoreIcon sx={{
-                                fontSize: 15, color: 'text.disabled', flexShrink: 0,
+                                fontSize: 15, color: abierto ? '#f59e0b' : 'text.disabled',
+                                flexShrink: 0, transition: 'transform 0.2s, color 0.15s',
                                 transform: abierto ? 'rotate(180deg)' : 'none',
-                                transition: 'transform 0.2s',
                               }} />
                             )}
                           </Box>
 
-                          {/* Ciudades desplegables */}
-                          {abierto && d.ciudades?.length > 0 && (
-                            <Box sx={{ pl: 1.5, pb: 0.5, borderLeft: '2px solid', borderColor: '#f59e0b30' }}>
-                              {d.ciudades.map(c => {
-                                const maxC = Math.max(...d.ciudades.map(x => x.total), 1);
-                                const pctC = Math.round((c.total / maxC) * 100);
-                                return (
-                                  <Box key={c.ciudad} display="flex" alignItems="center" gap={1} mb={0.5}>
-                                    <Typography fontSize="0.73rem" sx={{
-                                      minWidth: 100, color: 'text.secondary',
-                                      textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap',
-                                    }} title={c.ciudad}>{c.ciudad}</Typography>
-                                    <Box flex={1} sx={{ bgcolor: 'action.hover', borderRadius: 4, height: 6 }}>
-                                      <Box sx={{ width: `${pctC}%`, height: 6, borderRadius: 4, bgcolor: '#8b5cf6', transition: 'width 0.5s ease' }} />
-                                    </Box>
-                                    <Typography fontSize="0.73rem" fontWeight={700} sx={{ minWidth: 20, textAlign: 'right', color: '#8b5cf6' }}>
-                                      {c.total}
+                          {/* Ciudades desplegadas */}
+                          {abierto && hasCiudades && (
+                            <Box sx={{ ml: 3, mb: 0.8, pl: 1.5,
+                                        borderLeft: '2px solid', borderColor: '#f59e0b40' }}>
+                              {d.ciudades.map(c => (
+                                <Box key={c.ciudad} display="flex" alignItems="center"
+                                  justifyContent="space-between"
+                                  sx={{ py: 0.4, px: 0.5, borderRadius: 1.5,
+                                        '&:hover': { bgcolor: 'action.hover' } }}>
+                                  <Box display="flex" alignItems="center" gap={1}>
+                                    <Box sx={{ width: 5, height: 5, borderRadius: '50%',
+                                                bgcolor: '#8b5cf6', flexShrink: 0 }} />
+                                    <Typography fontSize="0.75rem" color="text.secondary"
+                                      sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}
+                                      title={c.ciudad}>{c.ciudad}
                                     </Typography>
                                   </Box>
-                                );
-                              })}
+                                  <Box sx={{
+                                    bgcolor: '#8b5cf615', color: '#8b5cf6',
+                                    px: 0.8, py: 0.1, borderRadius: 1.5,
+                                    fontSize: '0.7rem', fontWeight: 800,
+                                    minWidth: 22, textAlign: 'center',
+                                  }}>
+                                    {c.total}
+                                  </Box>
+                                </Box>
+                              ))}
                             </Box>
                           )}
                         </Box>
                       );
                     })
-                  : <Typography fontSize="0.75rem" color="text.disabled">Sin registros de departamento</Typography>
+                  : (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1,
+                                bgcolor: 'action.hover', borderRadius: 2 }}>
+                      <LocationOnIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                      <Typography fontSize="0.74rem" color="text.disabled" fontStyle="italic">
+                        Sin departamentos registrados
+                      </Typography>
+                    </Box>
+                  )
               }
             </Box>
 
           </Box>
         </Grid>
+
       </Grid>
 
       {/* ── Género ──────────────────────────────────────────────────── */}

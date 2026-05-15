@@ -7,6 +7,8 @@ import {
 } from '@mui/material';
 import apiClient       from '../../../../infrastructure/http/apiClient';
 import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA } from '../../../../shared/constants/beneficiarios';
+
+const GENEROS = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];
 import UploadFoto      from '../../../../shared/components/UploadFoto';
 import UploadDocumento from '../../../../shared/components/UploadDocumento';
 import { useGeografiaColombia } from '../../../../shared/hooks/useGeografiaColombia';
@@ -34,6 +36,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
     fechaNacimiento:         inscripcion.fechaNacimiento         || '',
     tipoDocumento:           inscripcion.tipoDocumento           || '',
     numeroDocumento:         inscripcion.numeroDocumento         || '',
+    genero:                  inscripcion.genero                  || '',
     paisNacimiento:          inscripcion.paisNacimiento          || 'Colombia',
     departamentoNacimiento:  inscripcion.departamentoNacimiento  || '',
     ciudadNacimiento:        inscripcion.ciudadNacimiento        || '',
@@ -82,6 +85,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
         fechaNacimiento:         form.fechaNacimiento,
         tipoDocumento:           form.tipoDocumento,
         numeroDocumento:         form.numeroDocumento         || null,
+        genero:                  form.genero                  || null,
         paisNacimiento:          form.paisNacimiento          || null,
         departamentoNacimiento:  form.departamentoNacimiento  || null,
         ciudadNacimiento:        form.ciudadNacimiento        || null,
@@ -156,6 +160,15 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Número de documento" size="small"
               value={form.numeroDocumento} onChange={set('numeroDocumento')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Género</InputLabel>
+              <Select label="Género" value={form.genero} onChange={set('genero')}>
+                <MenuItem value=""><em>No especificado</em></MenuItem>
+                {GENEROS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <Autocomplete

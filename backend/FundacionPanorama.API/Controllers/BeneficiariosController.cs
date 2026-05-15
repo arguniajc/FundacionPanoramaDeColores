@@ -353,6 +353,7 @@ public class BeneficiariosController : ControllerBase
             TieneDiscapacidad       = dto.TieneDiscapacidad,
             DescripcionDiscapacidad = string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad) ? null : dto.DescripcionDiscapacidad.Trim(),
             ViveConNino             = dto.ViveConNino,
+            Genero                  = string.IsNullOrWhiteSpace(dto.Genero) ? null : dto.Genero.Trim(),
             Autorizacion            = dto.Autorizacion,
             Activo                  = true
         };
@@ -406,6 +407,7 @@ public class BeneficiariosController : ControllerBase
         beneficiario.TieneDiscapacidad       = dto.TieneDiscapacidad;
         beneficiario.DescripcionDiscapacidad = string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad) ? null : dto.DescripcionDiscapacidad.Trim();
         beneficiario.ViveConNino             = dto.ViveConNino;
+        beneficiario.Genero                  = string.IsNullOrWhiteSpace(dto.Genero) ? null : dto.Genero.Trim();
         beneficiario.Autorizacion            = dto.Autorizacion;
 
         await CrearOActualizarDependientes(id, dto, epsId, isNew: false);
@@ -813,6 +815,7 @@ public class BeneficiariosController : ControllerBase
             NumHermanos             = b.NumHermanos,
             NombreColegio           = b.NombreColegio,
             GradoEscolar            = b.GradoEscolar,
+            Genero                  = b.Genero,
             Autorizacion            = b.Autorizacion,
             FotoMenorUrl            = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto del menor")?.Url,
             FotoDocumentoUrl        = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto documento")?.Url,

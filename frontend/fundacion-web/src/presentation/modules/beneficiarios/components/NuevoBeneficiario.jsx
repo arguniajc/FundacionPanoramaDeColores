@@ -17,9 +17,12 @@ import { useGeografiaColombia } from '../../../../shared/hooks/useGeografiaColom
 
 const GRADOS = ['Prejardín','Jardín','Transición','1°','2°','3°','4°','5°','6°','7°','8°','9°','10°','11°'];
 
+const GENEROS = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];
+
 const FORM_VACIO = {
   // Datos del menor
   nombreMenor: '', fechaNacimiento: '', tipoDocumento: 'RC', numeroDocumento: '',
+  genero: '',
   paisNacimiento: 'Colombia', departamentoNacimiento: '', ciudadNacimiento: '',
   barrio: '', direccion: '', numPersonasVive: '', numHermanos: '',
   // Tallas
@@ -85,6 +88,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
         fechaNacimiento:         form.fechaNacimiento,
         tipoDocumento:           form.tipoDocumento,
         numeroDocumento:         form.numeroDocumento.trim() || null,
+        genero:                  form.genero                 || null,
         paisNacimiento:          form.paisNacimiento.trim()  || null,
         departamentoNacimiento:  form.departamentoNacimiento || null,
         ciudadNacimiento:        form.ciudadNacimiento       || null,
@@ -195,6 +199,15 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
                 },
               }}
             />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Género</InputLabel>
+              <Select label="Género" value={form.genero} onChange={set('genero')}>
+                <MenuItem value=""><em>No especificado</em></MenuItem>
+                {GENEROS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <Autocomplete

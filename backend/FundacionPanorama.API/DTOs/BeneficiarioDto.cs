@@ -40,6 +40,8 @@ public class BeneficiarioDto
     // ── Educación ─────────────────────────────────────────────────────────────
     public string?   NombreColegio      { get; set; }
     public string?   GradoEscolar       { get; set; }
+    // ── Género ────────────────────────────────────────────────────────────────
+    public string?   Genero             { get; set; }
     // ── Autorización ──────────────────────────────────────────────────────────
     public bool      Autorizacion       { get; set; }
     // ── Archivos ──────────────────────────────────────────────────────────────
@@ -87,6 +89,8 @@ public class CrearBeneficiarioDto
     // ── Educación ─────────────────────────────────────────────────────────────
     public string?   NombreColegio      { get; set; }
     public string?   GradoEscolar       { get; set; }
+    // ── Género ────────────────────────────────────────────────────────────────
+    public string?   Genero             { get; set; }
     // ── Autorización ──────────────────────────────────────────────────────────
     public bool      Autorizacion       { get; set; }
     // ── Archivos ──────────────────────────────────────────────────────────────

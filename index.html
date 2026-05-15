@@ -85,23 +85,23 @@
             <div class="stats-grid">
                 <div class="stat-item" data-animate data-delay="0">
                     <i class="fas fa-child"></i>
-                    <span class="stat-number">20+</span>
-                    <span class="stat-label">Niños beneficiados</span>
+                    <span class="stat-number" id="stat-n-1">20+</span>
+                    <span class="stat-label" id="stat-l-1">Niños beneficiados</span>
                 </div>
                 <div class="stat-item" data-animate data-delay="100">
                     <i class="fas fa-calendar-check"></i>
-                    <span class="stat-number">2+</span>
-                    <span class="stat-label">Años de impacto</span>
+                    <span class="stat-number" id="stat-n-2">2+</span>
+                    <span class="stat-label" id="stat-l-2">Años de impacto</span>
                 </div>
                 <div class="stat-item" data-animate data-delay="200">
                     <i class="fas fa-chalkboard-teacher"></i>
-                    <span class="stat-number">15+</span>
-                    <span class="stat-label">Talleres realizados</span>
+                    <span class="stat-number" id="stat-n-3">15+</span>
+                    <span class="stat-label" id="stat-l-3">Talleres realizados</span>
                 </div>
                 <div class="stat-item" data-animate data-delay="300">
                     <i class="fas fa-map-marker-alt"></i>
-                    <span class="stat-number">Yumbo</span>
-                    <span class="stat-label">Valle del Cauca</span>
+                    <span class="stat-number" id="stat-n-4">40+</span>
+                    <span class="stat-label" id="stat-l-4">Talleres realizados</span>
                 </div>
             </div>
         </div>
@@ -411,10 +411,10 @@
           visible: false,
           titulo: 'NUESTRO IMPACTO EN EL BARRIO PANORAMA',
           items: [
-            { numero: 20, label: 'Niñas y niños formados en nuestros programas' },
-            { numero: 20, label: 'Familias beneficiadas' },
+            { numero: 66, label: 'Niñas y niños formados en nuestros programas' },
+            { numero: 25, label: 'Familias beneficiadas' },
             { numero: 1,  label: 'Año trabajando por la niñez del barrio Panorama de Yumbo Valle' },
-            { numero: 15, label: 'Talleres realizados' }
+            { numero: 40, label: 'Talleres realizados' }
           ]
         },
         galeria: [
@@ -579,6 +579,19 @@
         txt('footer-nombre',    w.footer.nombre);
         txt('footer-eslogan',   w.footer.eslogan);
         txt('footer-copyright', w.footer.copyright);
+
+        // ── Franja de estadísticas (sincronizada con Nuestro Impacto) ────────
+        if (w.impacto && w.impacto.items && w.impacto.items.length) {
+          for (var si = 0; si < Math.min(w.impacto.items.length, 4); si++) {
+            var sit = w.impacto.items[si];
+            var snEl = document.getElementById('stat-n-' + (si + 1));
+            var slEl = document.getElementById('stat-l-' + (si + 1));
+            if (snEl && sit.numero != null && sit.numero !== '')
+              snEl.textContent = sit.numero + '+';
+            if (slEl && sit.label)
+              slEl.textContent = sit.label;
+          }
+        }
       }
 
       // 1. Aplicar defaults como base

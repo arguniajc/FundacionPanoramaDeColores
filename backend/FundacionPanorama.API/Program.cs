@@ -525,6 +525,9 @@ var app = builder.Build();
     await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS notas              TEXT",                                          "empleados.notas");
     await Migrar("ALTER TABLE empleados ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()",            "empleados.fecha_modificacion");
 
+    // La tabla fue creada originalmente con "nombre" (singular) NOT NULL; la columna es obsoleta.
+    await Migrar("ALTER TABLE empleados DROP COLUMN IF EXISTS nombre",                                                              "empleados.drop_nombre_singular");
+
     await Migrar("""
         CREATE TABLE IF NOT EXISTS novedades_empleado (
             id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),

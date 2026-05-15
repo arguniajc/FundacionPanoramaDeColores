@@ -1,0 +1,31 @@
+name: Auto-bump service worker cache
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'css/**'
+      - 'js/**'
+      - 'images/**'
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Actualizar versión del caché con timestamp
+        run: |
+          VERSION="fpc-assets-$(date +%Y%m%d%H%M)"
+          sed -i "s/var CACHE = 'fpc-assets-[^']*'/var CACHE = '$VERSION'/" sw.js
+          echo "Nueva versión: $VERSION"
+
+      - name: Commit y push si cambió sw.js
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sw.js
+          git diff --staged --quiet || git commit -m "chore: auto-bump service worker cache [skip ci]"
+          git push

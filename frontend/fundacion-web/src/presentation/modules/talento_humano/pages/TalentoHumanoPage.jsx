@@ -608,8 +608,8 @@ function OrgNode({ cargo, personas, canEdit, onAdd, onEdit, onDelete }) {
 }
 
 // ── Dialog agregar / editar persona del organigrama ──────────────────────────
-function DialogOrgPersona({ open, onClose, cargo, persona, empleados, onSave }) {
-  const cfg = CARGO_CONFIG[cargo] ?? {};
+function DialogOrgPersona({ open, onClose, cargoInicial, persona, empleados, onSave }) {
+  const [cargoKey,      setCargoKey]      = useState('');
   const [empleadoId,    setEmpleadoId]    = useState('');
   const [nombreExterno, setNombreExterno] = useState('');
   const [fotoFile,      setFotoFile]      = useState(null);
@@ -619,12 +619,15 @@ function DialogOrgPersona({ open, onClose, cargo, persona, empleados, onSave }) 
 
   useEffect(() => {
     if (!open) return;
+    setCargoKey(cargoInicial ?? persona?.cargo ?? '');
     setEmpleadoId(persona?.empleadoId ?? '');
     setNombreExterno(persona?.nombreExterno ?? '');
     setFotoPreview(persona?.fotoUrl ?? '');
     setFotoFile(null);
     setError('');
-  }, [open, persona]);
+  }, [open, cargoInicial, persona]);
+
+  const cfg = CARGO_CONFIG[cargoKey] ?? {};
 
   const handleFoto = (e) => {
     const f = e.target.files?.[0];
@@ -639,6 +642,7 @@ function DialogOrgPersona({ open, onClose, cargo, persona, empleados, onSave }) 
     : nombreExterno;
 
   const handleSave = async () => {
+    if (!cargoKey) { setError('Selecciona el cargo en el organigrama.'); return; }
     if (!empleadoId && !nombreExterno.trim()) { setError('Selecciona un empleado o ingresa un nombre.'); return; }
     setSaving(true); setError('');
     try {
@@ -651,7 +655,7 @@ function DialogOrgPersona({ open, onClose, cargo, persona, empleados, onSave }) 
         });
         fotoUrl = data.url;
       }
-      await onSave({ cargo, empleadoId: empleadoId || null, nombreExterno: empleadoId ? null : nombreExterno.trim(), fotoUrl });
+      await onSave({ cargo: cargoKey, empleadoId: empleadoId || null, nombreExterno: empleadoId ? null : nombreExterno.trim(), fotoUrl });
     } catch (e) {
       setError(e.response?.data?.mensaje ?? 'Error al guardar.');
     } finally {
@@ -659,18 +663,62 @@ function DialogOrgPersona({ open, onClose, cargo, persona, empleados, onSave }) 
     }
   };
 
+  // Opciones de cargo con descripción de jerarquía
+  const CARGO_JERARQUIA = [
+    { key: 'juntaDirectiva', label: 'Junta Directiva', desc: 'Nivel 1 — Máxima autoridad' },
+    { key: 'gerente',        label: 'Representante Legal / Gerente', desc: 'Nivel 2 — Reporta a Junta Directiva' },
+    { key: 'revisorFiscal',  label: 'Revisor Fiscal',  desc: 'Nivel 3 — Reporta a Gerente' },
+    { key: 'tesorero',       label: 'Tesorero/a',      desc: 'Nivel 3 — Reporta a Gerente' },
+    { key: 'secretario',     label: 'Secretario/a',    desc: 'Nivel 3 — Reporta a Gerente' },
+    { key: 'contadora',      label: 'Contadora',       desc: 'Nivel 3 — Reporta a Gerente' },
+    { key: 'vocales',        label: 'Vocales',         desc: 'Nivel 4 — Reporta a Secretario/a' },
+    { key: 'voluntarios',    label: 'Voluntarios',     desc: 'Nivel 5 — Reporta a Vocales' },
+  ];
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle fontWeight={700}>
-        {persona ? 'Editar persona' : 'Agregar persona'} — {cfg.titulo}
+        {persona ? 'Editar persona del organigrama' : 'Agregar persona al organigrama'}
       </DialogTitle>
       <DialogContent dividers>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
+        {/* Selector de cargo (nivel jerárquico) */}
+        <FormControl fullWidth size="small" sx={{ mb: 2 }} required>
+          <InputLabel>Cargo / Nivel en el organigrama *</InputLabel>
+          <Select
+            value={cargoKey}
+            label="Cargo / Nivel en el organigrama *"
+            onChange={e => setCargoKey(e.target.value)}
+            disabled={!!persona}
+          >
+            <MenuItem value="" disabled><em>Selecciona un nivel...</em></MenuItem>
+            {CARGO_JERARQUIA.map(({ key, label, desc }) => (
+              <MenuItem key={key} value={key}>
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>{label}</Typography>
+                  <Typography variant="caption" color="text.secondary">{desc}</Typography>
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* Chip informativo con el color del cargo seleccionado */}
+        {cargoKey && (
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: cfg.color }} />
+            <Typography variant="caption" color="text.secondary">
+              {CARGO_JERARQUIA.find(c => c.key === cargoKey)?.desc}
+            </Typography>
+          </Box>
+        )}
+
         {/* Foto */}
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2.5 }}>
           <Avatar src={fotoPreview || undefined}
-            sx={{ width: 88, height: 88, mb: 1.5, boxShadow: 3, fontSize: 30 }}>
+            sx={{ width: 88, height: 88, mb: 1.5, boxShadow: 3, fontSize: 30,
+                  bgcolor: cfg.color || 'grey.400' }}>
             {nombreMostrado?.charAt(0)?.toUpperCase() ?? '?'}
           </Avatar>
           <Button size="small" component="label" variant="outlined" startIcon={<AddIcon />}>
@@ -697,14 +745,14 @@ function DialogOrgPersona({ open, onClose, cargo, persona, empleados, onSave }) 
           <TextField
             fullWidth size="small" label="Nombre completo *"
             value={nombreExterno} onChange={e => setNombreExterno(e.target.value)}
-            helperText="Para personas externas que no están en el panel"
+            helperText="Para personas externas que no están registradas como empleados"
           />
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3 }}>
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave}
-          disabled={saving || (!empleadoId && !nombreExterno.trim())}>
+          disabled={saving || !cargoKey || (!empleadoId && !nombreExterno.trim())}>
           {saving ? 'Guardando…' : 'Guardar'}
         </Button>
       </DialogActions>
@@ -716,7 +764,7 @@ function DialogOrgPersona({ open, onClose, cargo, persona, empleados, onSave }) 
 function OrgChartTab({ puedoEditar, empleados }) {
   const [personas,  setPersonas]  = useState([]);
   const [cargando,  setCargando]  = useState(true);
-  const [dlg, setDlg] = useState({ open: false, cargo: null, persona: null });
+  const [dlg, setDlg] = useState({ open: false, cargoInicial: null, persona: null });
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -731,8 +779,8 @@ function OrgChartTab({ puedoEditar, empleados }) {
   useEffect(() => { cargar(); }, [cargar]);
 
   const byCargo  = (key) => personas.filter(p => p.cargo === key);
-  const openAdd  = (cargo) => setDlg({ open: true, cargo, persona: null });
-  const openEdit = (p)     => setDlg({ open: true, cargo: p.cargo, persona: p });
+  const openAdd  = (cargo) => setDlg({ open: true, cargoInicial: cargo ?? null, persona: null });
+  const openEdit = (p)     => setDlg({ open: true, cargoInicial: p.cargo, persona: p });
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Quitar esta persona del organigrama?')) return;
@@ -782,12 +830,14 @@ function OrgChartTab({ puedoEditar, empleados }) {
         <Box>
           <Typography variant="h6" fontWeight={700}>Organigrama Institucional</Typography>
           <Typography variant="body2" color="text.secondary">
-            Haz clic en una foto o en "Agregar" para gestionar las personas de cada cargo
+            Agrega personas por nivel jerárquico o haz clic en el ícono de edición sobre cada persona
           </Typography>
         </Box>
         {puedoEditar && (
-          <Chip icon={<EditIcon fontSize="small" />} label="Haz clic en la foto para editar"
-            size="small" variant="outlined" color="primary" />
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => openAdd(null)}
+            sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3b1470' } }}>
+            Agregar persona
+          </Button>
         )}
       </Box>
 
@@ -849,7 +899,7 @@ function OrgChartTab({ puedoEditar, empleados }) {
       <DialogOrgPersona
         open={dlg.open}
         onClose={() => setDlg(d => ({ ...d, open: false }))}
-        cargo={dlg.cargo}
+        cargoInicial={dlg.cargoInicial}
         persona={dlg.persona}
         empleados={empleados}
         onSave={handleSave}

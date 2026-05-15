@@ -273,8 +273,9 @@
                         <div class="form-group">
                             <textarea id="message" rows="5" placeholder="Tu mensaje" required></textarea>
                         </div>
-                        <button type="submit" class="btn-submit">Enviar Mensaje</button>
+                        <button type="submit" class="btn-submit"><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</button>
                     </form>
+                    <div id="form-success">¡Mensaje listo! Se abrirá WhatsApp para enviarlo.</div>
                 </div>
                 <div class="contact-info">
                     <h3 class="contact-title">Información de contacto</h3>
@@ -348,9 +349,12 @@
       <i class="fab fa-whatsapp"></i>
     </a>
 
+    <!-- Botón volver arriba -->
+    <button id="back-top" aria-label="Volver al inicio">
+      <i class="fas fa-chevron-up"></i>
+    </button>
+
     <script src="js/script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-    <script>emailjs.init("AQUI_TU_PUBLIC_KEY");</script>
 
     <!-- Animaciones al hacer scroll -->
     <script>

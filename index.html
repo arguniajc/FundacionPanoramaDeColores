@@ -98,11 +98,6 @@
                 <li class="nav-item"><a href="#galeria" class="nav-link">Galería</a></li>
                 <li class="nav-item"><a href="#donaciones" class="nav-link">¿Cómo ayudar?</a></li>
                 <li class="nav-item"><a href="#contacto" class="nav-link">Contacto</a></li>
-                <li class="nav-item">
-                    <a id="admin-link" href="/gestion/" class="nav-link" style="color:#4E1B95;font-weight:800;">
-                        <i class="fas fa-lock"></i> Admin
-                    </a>
-                </li>
             </ul>
         </div>
     </nav>
@@ -415,7 +410,10 @@
                         </a>
                     </div>
                     <p id="footer-copyright" class="footer-copyright">© 2025 Fundación Panorama de Colores. Todos los derechos reservados.</p>
-                    <p class="footer-copyright" style="margin-top:0.4rem;">
+                    <p class="footer-copyright" style="margin-top:0.3rem;">
+                      NIT: 901.962.262-9
+                    </p>
+                    <p class="footer-copyright" style="margin-top:0.3rem;">
                       <a href="privacidad.html" style="color:rgba(255,255,255,0.45);font-size:0.78rem;text-decoration:underline;text-underline-offset:3px;">Política de privacidad</a>
                     </p>
                 </div>
@@ -466,13 +464,6 @@
     window._initAnim();
     </script>
 
-    <!-- Enlace Admin -->
-    <script>
-      (function () {
-        var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        document.getElementById('admin-link').href = isLocal ? 'http://localhost:5173/panel/' : '/panel/';
-      })();
-    </script>
 
     <!-- ═══════════════════════════════════════════════════════════════════
          CONTENIDO DINÁMICO DESDE CONFIGURACIÓN

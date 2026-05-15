@@ -919,6 +919,72 @@ ul { list-style: none; }
 }
 
 /* ═══════════════════════════════════════════════════════
+   FRANJA COMPARTIR WHATSAPP
+═══════════════════════════════════════════════════════ */
+.share-strip {
+  margin-top: clamp(2rem, 4vw, 3rem);
+  background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple) 100%);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.25rem, 3vw, 1.75rem) clamp(1.5rem, 4vw, 2.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-md);
+}
+.share-strip-text {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  color: rgba(255,255,255,0.90);
+  font-size: var(--text-sm);
+  flex: 1;
+  min-width: 220px;
+}
+.share-strip-text i {
+  font-size: 1.4rem;
+  color: var(--orange);
+  flex-shrink: 0;
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1);    }
+  14%       { transform: scale(1.2); }
+  28%       { transform: scale(1);   }
+  42%       { transform: scale(1.15);}
+  70%       { transform: scale(1);   }
+}
+.btn-share-wa {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #25D366;
+  color: var(--white);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 16px rgba(37,211,102,0.40);
+  transition: background 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+  white-space: nowrap;
+}
+.btn-share-wa:hover {
+  background: #1da851;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(37,211,102,0.55);
+}
+.btn-share-wa i { font-size: 1.15rem; }
+
+@media (max-width: 600px) {
+  .share-strip { justify-content: center; text-align: center; }
+  .share-strip-text { justify-content: center; }
+  .btn-share-wa { width: 100%; justify-content: center; }
+}
+
+/* ═══════════════════════════════════════════════════════
    NAVBAR — ESTADO SCROLLED
 ═══════════════════════════════════════════════════════ */
 .navbar.scrolled {

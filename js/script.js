@@ -190,6 +190,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // ========== BOTÓN COMPARTIR EN WHATSAPP ==========
+  var btnShare = document.getElementById('btn-share-wa');
+  if (btnShare) {
+    var shareMsg = '¡Hola! 👋 Te comparto la *Fundación Panorama de Colores* 🎨\n\n'
+      + 'Transforman vidas de niñas y niños del barrio Panorama, Yumbo, '
+      + 'a través del arte, el deporte y la conciencia ambiental.\n\n'
+      + '🌐 https://fundacionpanoramadecolores.org\n\n'
+      + '¡Apoyemos juntos! 💚';
+    btnShare.href = 'https://wa.me/?text=' + encodeURIComponent(shareMsg);
+  }
+
   // ========== AÑO AUTOMÁTICO EN COPYRIGHT ==========
   var yearEl = document.getElementById('footer-year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();

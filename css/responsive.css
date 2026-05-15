@@ -1,304 +1,299 @@
-/* CSS Responsive - Fundación Panorama de Colores */
+/* ═══════════════════════════════════════════════════════════════════
+   CSS Responsive — Fundación Panorama de Colores
+   Breakpoints soportados:
+     Mobile:  320 · 360 · 375 · 390 · 414 · 480
+     Tablet:  768 · 820 · 853 · 1024
+     Laptop:  1280 · 1366 · 1440
+     FHD:     1920
+     2K/4K:   2560 · 3440 · 3840
+═══════════════════════════════════════════════════════════════════ */
 
-/* ========== LOGO RESPONSIVE 1024×1024px ========== */
+/* ── Landscape móvil (altura reducida) ───────────────────────────── */
+@media screen and (max-height: 520px) and (orientation: landscape) {
+  .slider-section { height: 100vh; min-height: 280px; }
+  .slide-title  { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .slide-text   { font-size: 0.9rem; margin-bottom: 1rem; }
+  .slider-controls { bottom: 0.6rem; }
+  .slide-content .btn-slide { padding: 0.55rem 1.25rem; }
+  .navbar { min-height: 56px; }
+  .slider-section { margin-top: 56px; }
+  .nav-menu { top: 56px; }
+}
 
-/* Tablets y dispositivos medianos (1024px y menos) */
+/* ══════════════════════════════════════════════════════
+   ≤ 1024px — Tablet grande / laptop pequeño
+══════════════════════════════════════════════════════ */
 @media screen and (max-width: 1024px) {
-    .section {
-        padding: 4rem 0;
-    }
-    
-    .slide-title {
-        font-size: 2.5rem;
-    }
-    
-    .slide-text {
-        font-size: 1.2rem;
-    }
-    
-    .about-content {
-        gap: 2rem;
-    }
-    
-    .contact-container {
-        gap: 2rem;
-    }
-    
-    /* Logo en tablet grande */
-    .logo img {
-        height: 70px;
-        width: 70px;
-    }
-    
-    .navbar {
-        min-height: 80px;
-    }
-    
-    .nav-container {
-        padding: 0.7rem 1.5rem;
-    }
-    
-    .nav-menu {
-        gap: 1.8rem;
-    }
+  :root { --section-py: 4rem; }
+
+  .logo img       { height: 64px; width: 64px; }
+  .navbar         { min-height: 76px; }
+  .nav-container  { padding: 0.6rem clamp(1rem, 2.5vw, 1.5rem); }
+  .nav-menu       { gap: 1.2rem; }
+  .nav-link       { font-size: 0.875rem; }
+
+  .slider-section { margin-top: 76px; }
+
+  .about-content      { gap: 2.5rem; }
+  .contact-container  { gap: 2.5rem; }
+
+  .footer-content {
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 2rem;
+  }
+  .gallery-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* Tablets pequeñas (768px y menos) */
+/* ══════════════════════════════════════════════════════
+   ≤ 853px — Tablet mediana
+══════════════════════════════════════════════════════ */
+@media screen and (max-width: 853px) {
+  .about-image img  { aspect-ratio: 3/2; }
+  .gallery-grid     { grid-template-columns: repeat(2, 1fr); }
+  .programs-grid    { grid-template-columns: repeat(2, 1fr); }
+  .donation-options { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≤ 820px — Tablet antes del menú hamburguesa
+══════════════════════════════════════════════════════ */
+@media screen and (max-width: 820px) {
+  .footer-content {
+    grid-template-columns: 1fr 1fr;
+  }
+  .footer-logo { grid-column: 1 / -1; }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≤ 768px — Menú hamburguesa · Tablet pequeña
+══════════════════════════════════════════════════════ */
 @media screen and (max-width: 768px) {
-    .section-title {
-        font-size: 2rem;
-    }
-    
-    .section-subtitle {
-        font-size: 1.1rem;
-    }
-    
-    .slider-section {
-        height: 70vh;
-        min-height: 450px;
-        margin-top: 75px; /* Ajustar por navbar más alto */
-    }
-    
-    .slide-title {
-        font-size: 2.2rem;
-    }
-    
-    .slide-text {
-        font-size: 1.1rem;
-    }
-    
-    /* Menú responsive */
-    .menu-toggle {
-        display: block;
-        font-size: 1.6rem;
-    }
-    
-    .nav-menu {
-        position: fixed;
-        top: 75px;
-        left: 0;
-        width: 100%;
-        background-color: var(--neutral-white);
-        flex-direction: column;
-        align-items: center;
-        padding: 2rem 0;
-        gap: 1.5rem;
-        box-shadow: 0 5px 15px var(--shadow-light);
-        transform: translateY(-100%);
-        opacity: 0;
-        visibility: hidden;
-        transition: all var(--transition-medium);
-    }
-    
-    .nav-menu.active {
-        transform: translateY(0);
-        opacity: 1;
-        visibility: visible;
-    }
-    
-    .about-content {
-        grid-template-columns: 1fr;
-    }
-    
-    .contact-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .impact-number {
-        font-size: 3.5rem;
-    }
-    
-    /* Logo en tablet pequeña */
-    .logo img {
-        height: 60px;
-        width: 60px;
-    }
-    
-    .logo-container {
-        min-width: 140px;
-    }
-    
-    .navbar {
-        min-height: 75px;
-    }
-    
-    .nav-container {
-        padding: 0.6rem 1.2rem;
-    }
+  /* ── Navbar ── */
+  .menu-toggle { display: flex; }
+  .logo img     { height: 56px; width: 56px; }
+  .navbar       { min-height: 70px; }
+  .nav-container { padding: 0.5rem 1.25rem; }
+
+  .nav-menu {
+    position: fixed;
+    top: 70px; left: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 0;
+    gap: 0;
+    box-shadow: 0 8px 32px rgba(78, 27, 149, 0.12);
+    border-bottom: 2px solid var(--border);
+    transform: translateY(-100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    overflow-y: auto;
+    max-height: calc(100vh - 70px);
+  }
+  .nav-menu.active {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+  .nav-item { width: 100%; }
+  .nav-link {
+    display: block;
+    padding: 0.85rem 2rem;
+    font-size: 1rem;
+    text-align: center;
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+  .nav-link:hover { background: var(--purple-soft); }
+  .nav-link::after { display: none; }
+
+  /* ── Slider ── */
+  .slider-section { height: 72vh; min-height: 440px; margin-top: 70px; }
+
+  /* ── Secciones ── */
+  :root { --section-py: 3.5rem; }
+  .section-title { font-size: 1.75rem; }
+
+  /* ── Layouts ── */
+  .about-content    { grid-template-columns: 1fr; gap: 2rem; }
+  .about-image img  { aspect-ratio: 16/9; }
+  .contact-container { grid-template-columns: 1fr; gap: 2.5rem; }
+
+  /* ── Stats ── */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-item:nth-child(2) { border-right: none; }
+  .stat-item:nth-child(1),
+  .stat-item:nth-child(2) { border-bottom: 1px solid rgba(255,255,255,0.10); }
 }
 
-/* Dispositivos móviles (576px y menos) */
-@media screen and (max-width: 576px) {
-    .container {
-        padding: 0 1rem;
-    }
-    
-    .section {
-        padding: 3rem 0;
-    }
-    
-    .section-title {
-        font-size: 1.8rem;
-    }
-    
-    .slider-section {
-        height: 60vh;
-        min-height: 400px;
-        margin-top: 70px;
-    }
-    
-    .slide {
-        padding: 1rem;
-    }
-    
-    .slide-title {
-        font-size: 1.8rem;
-        margin-bottom: 1rem;
-    }
-    
-    .slide-text {
-        font-size: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .btn-slide, .btn-donation, .btn-submit {
-        padding: 0.8rem 1.5rem;
-        font-size: 0.9rem;
-    }
-    
-    /* Logo en móviles */
-    .logo img {
-        height: 52px;
-        width: 52px;
-    }
-    
-    .logo-container {
-        min-width: 120px;
-    }
-    
-    .navbar {
-        min-height: 70px;
-    }
-    
-    .nav-container {
-        padding: 0.5rem 1rem;
-    }
-    
-    .nav-menu {
-        top: 70px;
-        padding: 1.8rem 0;
-        gap: 1.3rem;
-    }
-    
-    .impact-number {
-        font-size: 3rem;
-    }
-    
-    .gallery-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .programs-grid, .donation-options {
-        grid-template-columns: 1fr;
-    }
-    
-    .impact-grid, .alliances-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .footer-content {
-        grid-template-columns: 1fr;
-        text-align: center;
-    }
-    
-    .footer-links ul {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 1rem;
-    }
-    
-    .footer-links li {
-        margin-bottom: 0;
-    }
-    
-    .footer-social .social-icons {
-        justify-content: center;
-    }
+/* ══════════════════════════════════════════════════════
+   ≤ 480px — Móviles grandes
+══════════════════════════════════════════════════════ */
+@media screen and (max-width: 480px) {
+  :root { --section-py: 3rem; }
+
+  .slider-section  { height: 65vh; min-height: 400px; margin-top: 70px; }
+
+  .programs-grid   { grid-template-columns: repeat(2, 1fr); gap: 0.875rem; }
+  .program-card    { padding: 1.5rem 1rem; }
+
+  .gallery-grid    { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+
+  .donation-options { grid-template-columns: 1fr; }
+
+  .impact-grid     { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+
+  .footer-content  { grid-template-columns: 1fr; text-align: center; }
+  .footer-logo     { grid-column: auto; }
+  .footer-links ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  .footer-links li { margin-bottom: 0; }
+  .footer-social .social-icons,
+  .contact-social  .social-icons { justify-content: center; }
+
+  .whatsapp-float  { bottom: 1.2rem; right: 1.2rem; width: 54px; height: 54px; font-size: 1.65rem; }
 }
 
-/* Dispositivos móviles muy pequeños (400px y menos) */
-@media screen and (max-width: 400px) {
-    .slide-title {
-        font-size: 1.6rem;
-    }
-    
-    .section-title {
-        font-size: 1.6rem;
-    }
-    
-    /* Logo en móviles pequeños */
-    .logo img {
-        height: 46px;
-        width: 46px;
-    }
-    
-    .logo-container {
-        min-width: 110px;
-    }
-    
-    .navbar {
-        min-height: 65px;
-    }
-    
-    .nav-container {
-        padding: 0.4rem 0.8rem;
-    }
-    
-    .nav-menu {
-        top: 65px;
-        padding: 1.5rem 0;
-        gap: 1.2rem;
-    }
-    
-    .slider-section {
-        margin-top: 65px;
-        height: 55vh;
-    }
-    
-    .impact-grid, .alliances-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .impact-number {
-        font-size: 2.5rem;
-    }
-    
-    .contact-form {
-        padding: 1.5rem;
-    }
+/* ══════════════════════════════════════════════════════
+   ≤ 414px — iPhone Plus / Pro Max
+══════════════════════════════════════════════════════ */
+@media screen and (max-width: 414px) {
+  .slide-title  { font-size: 1.65rem; }
+  .about-card   { padding: 1.25rem; }
+  .contact-form { padding: 1.5rem; }
+  .donation-card { padding: 1.75rem 1.25rem; }
 }
 
-/* Dispositivos muy pequeños (350px y menos) */
-@media screen and (max-width: 350px) {
-    .logo img {
-        height: 42px;
-        width: 42px;
-    }
-    
-    .logo-container {
-        min-width: 100px;
-    }
-    
-    .navbar {
-        min-height: 60px;
-    }
-    
-    .nav-menu {
-        top: 60px;
-    }
-    
-    .slider-section {
-        margin-top: 60px;
-    }
+/* ══════════════════════════════════════════════════════
+   ≤ 390px — iPhone 15 / 14
+══════════════════════════════════════════════════════ */
+@media screen and (max-width: 390px) {
+  .container { padding: 0 0.875rem; }
+
+  .logo img      { height: 50px; width: 50px; }
+  .navbar        { min-height: 66px; }
+  .nav-container { padding: 0.45rem 0.875rem; }
+  .nav-menu      { top: 66px; max-height: calc(100vh - 66px); }
+  .slider-section { margin-top: 66px; height: 62vh; min-height: 360px; }
+
+  .section-title { font-size: 1.55rem; }
+  .slide-title   { font-size: 1.5rem; }
+
+  .programs-grid { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≤ 375px — iPhone estándar
+══════════════════════════════════════════════════════ */
+@media screen and (max-width: 375px) {
+  .impact-grid   { grid-template-columns: 1fr; }
+  .gallery-grid  { grid-template-columns: 1fr; }
+  .section-title { font-size: 1.45rem; }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≤ 360px — Android promedio
+══════════════════════════════════════════════════════ */
+@media screen and (max-width: 360px) {
+  .container     { padding: 0 0.75rem; }
+
+  .logo img      { height: 46px; width: 46px; }
+  .navbar        { min-height: 62px; }
+  .nav-container { padding: 0.4rem 0.75rem; }
+  .nav-menu      { top: 62px; max-height: calc(100vh - 62px); }
+  .slider-section { margin-top: 62px; height: 60vh; min-height: 320px; }
+
+  .section-title { font-size: 1.35rem; }
+  .slide-title   { font-size: 1.3rem; margin-bottom: 0.65rem; }
+  .slide-text    { font-size: 0.9rem; margin-bottom: 1.2rem; }
+  .btn-slide     { padding: 0.7rem 1.25rem; font-size: 0.85rem; }
+
+  .stats-grid    { grid-template-columns: 1fr; }
+  .stat-item     { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.10); }
+  .stat-item:last-child { border-bottom: none; }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≤ 320px — Móviles muy pequeños
+══════════════════════════════════════════════════════ */
+@media screen and (max-width: 320px) {
+  :root { --section-py: 2.5rem; }
+  .container { padding: 0 0.65rem; }
+
+  .logo img      { height: 40px; width: 40px; }
+  .navbar        { min-height: 58px; }
+  .nav-container { padding: 0.35rem 0.65rem; }
+  .nav-menu      { top: 58px; max-height: calc(100vh - 58px); }
+  .slider-section { margin-top: 58px; height: 58vh; min-height: 280px; }
+
+  .section-title { font-size: 1.2rem; }
+  .slide-title   { font-size: 1.15rem; }
+  .slide-text    { font-size: 0.82rem; margin-bottom: 1rem; }
+  .btn-slide     { padding: 0.6rem 1rem; font-size: 0.8rem; }
+
+  .program-card  { padding: 1.25rem 0.875rem; }
+  .impact-grid   { grid-template-columns: 1fr; }
+  .gallery-grid  { grid-template-columns: 1fr; }
+
+  .contact-form  { padding: 1.25rem; }
+  .whatsapp-float { width: 50px; height: 50px; font-size: 1.5rem; bottom: 1rem; right: 1rem; }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≥ 1025px — Rangos laptop (ajustes finos)
+══════════════════════════════════════════════════════ */
+@media screen and (min-width: 1025px) and (max-width: 1280px) {
+  .footer-content { grid-template-columns: 1.5fr 1fr 1fr; }
+  .gallery-grid   { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media screen and (min-width: 1281px) and (max-width: 1440px) {
+  .gallery-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≥ 1440px — Pantallas grandes · limitar ancho + galería
+══════════════════════════════════════════════════════ */
+@media screen and (min-width: 1440px) {
+  :root { --container: 1400px; }
+  .gallery-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≥ 1920px — Full HD
+══════════════════════════════════════════════════════ */
+@media screen and (min-width: 1920px) {
+  :root { --container: 1540px; }
+  .gallery-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≥ 2561px — 2K / Ultrawide
+══════════════════════════════════════════════════════ */
+@media screen and (min-width: 2561px) {
+  :root { --container: 1800px; }
+  .gallery-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≥ 3440px — Ultrawide 21:9
+══════════════════════════════════════════════════════ */
+@media screen and (min-width: 3440px) {
+  :root { --container: 2200px; }
+  .gallery-grid { grid-template-columns: repeat(6, 1fr); }
+}
+
+/* ══════════════════════════════════════════════════════
+   ≥ 3840px — 4K
+══════════════════════════════════════════════════════ */
+@media screen and (min-width: 3840px) {
+  :root { --container: 2600px; }
+  .gallery-grid { grid-template-columns: repeat(6, 1fr); }
 }

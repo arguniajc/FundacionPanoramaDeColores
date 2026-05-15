@@ -41,15 +41,41 @@ const ANIOS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 // ── Subcomponentes locales ────────────────────────────────────────────────────
 function KpiCard({ label, value, icon, color }) {
   return (
-    <Card sx={{ borderLeft: `4px solid ${color}`, height: '100%' }}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Box sx={{ color, fontSize: 36 }}>{icon}</Box>
+    <Card sx={{
+      borderLeft: `4px solid ${color}`,
+      height: '100%',
+      transition: 'box-shadow 0.2s',
+      '&:hover': { boxShadow: 4 },
+    }}>
+      <CardContent sx={{
+        display: 'flex', alignItems: 'center', gap: 2,
+        p: '20px !important',
+      }}>
+        <Box sx={{
+          color: 'white', fontSize: 22, bgcolor: color,
+          borderRadius: 2, p: 1.25, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>{icon}</Box>
         <Box>
-          <Typography variant="caption" color="text.secondary">{label}</Typography>
-          <Typography variant="h6" fontWeight="bold" lineHeight={1.2}>{value}</Typography>
+          <Typography variant="caption" color="text.secondary"
+            sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
+            {label}
+          </Typography>
+          <Typography variant="h6" fontWeight="bold" lineHeight={1.2} sx={{ mt: 0.25 }}>
+            {value}
+          </Typography>
         </Box>
       </CardContent>
     </Card>
+  );
+}
+
+function SectionHeader({ title }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+      <Box sx={{ width: 4, height: 20, bgcolor: '#4E1B95', borderRadius: 1 }} />
+      <Typography variant="subtitle1" fontWeight="bold">{title}</Typography>
+    </Box>
   );
 }
 
@@ -294,14 +320,28 @@ export default function ContabilidadPage() {
   if (error) return <Alert severity="error" sx={{ m: 3 }}>{error}</Alert>;
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>Contabilidad</Typography>
-      <Typography variant="body2" color="text.secondary" mb={3}>
-        Registra ingresos y egresos con categorías PUC. Los datos quedan organizados para entregar al contador.
-      </Typography>
+    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+      {/* Page header */}
+      <Paper sx={{
+        p: { xs: 2, sm: 3 }, mb: 3,
+        background: 'linear-gradient(135deg, #4E1B95 0%, #7C3AED 100%)',
+        borderRadius: 3, color: 'white',
+      }} elevation={0}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 2, p: 1.25, display: 'flex' }}>
+            <AccountBalanceWalletIcon sx={{ fontSize: 32 }} />
+          </Box>
+          <Box>
+            <Typography variant="h5" fontWeight="bold">Contabilidad</Typography>
+            <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+              Registra ingresos y egresos con categorías PUC. Los datos quedan organizados para entregar al contador.
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
 
       {/* KPIs */}
-      <Grid container spacing={2} mb={3}>
+      <Grid container spacing={3} mb={3}>
         <Grid item xs={12} sm={6} md={3}>
           <KpiCard label="Saldo total" value={fmt(stats?.saldoTotal)}
             icon={<AccountBalanceWalletIcon fontSize="inherit" />} color="#4E1B95" />
@@ -326,7 +366,7 @@ export default function ContabilidadPage() {
 
       {/* Acciones rápidas */}
       {puedeCrear && (
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <Paper variant="outlined" sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', p: 2, borderRadius: 2, bgcolor: 'grey.50' }}>
           <Button variant="contained" color="success" startIcon={<AddIcon />}
             onClick={() => setDlgMov({ open: true, modo: 'crear', data: null, tipoPreset: 'ingreso' })}>
             Registrar Ingreso
@@ -335,11 +375,11 @@ export default function ContabilidadPage() {
             onClick={() => setDlgMov({ open: true, modo: 'crear', data: null, tipoPreset: 'egreso' })}>
             Registrar Egreso
           </Button>
-        </Box>
+        </Paper>
       )}
 
       {/* Tabs */}
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }} variant="scrollable" scrollButtons="auto">
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }} variant="scrollable" scrollButtons="auto">
         <Tab label="Resumen" />
         <Tab label="Movimientos" />
         <Tab label="Cuentas" />
@@ -350,7 +390,7 @@ export default function ContabilidadPage() {
 
       {/* ── Tab 0: Resumen ───────────────────────────────────────────────────── */}
       {tab === 0 && (
-        <Grid container spacing={3}>
+        <Grid container spacing={3} sx={{ pt: 1 }}>
           {(stats?.ultimosDosMeses ?? []).length > 0 && (
             <Grid item xs={12} md={6}>
               <Card>
@@ -459,7 +499,8 @@ export default function ContabilidadPage() {
       {/* ── Tab 1: Movimientos ───────────────────────────────────────────────── */}
       {tab === 1 && (
         <Box>
-          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             <FormControl size="small" sx={{ minWidth: 130 }}>
               <InputLabel>Tipo</InputLabel>
               <Select value={filtroTipo} label="Tipo" onChange={e => setFiltroTipo(e.target.value)}>
@@ -482,7 +523,8 @@ export default function ContabilidadPage() {
               </Select>
             </FormControl>
             <Button variant="outlined" size="small" onClick={cargarMovimientos}>Filtrar</Button>
-          </Box>
+            </Box>
+          </Paper>
 
           <TableContainer component={Paper}>
             <Table size="small">
@@ -557,12 +599,12 @@ export default function ContabilidadPage() {
       {tab === 2 && (
         <Box>
           {puedeCrear && (
-            <Button variant="contained" startIcon={<AddIcon />} sx={{ mb: 2 }}
+            <Button variant="contained" startIcon={<AddIcon />} sx={{ mb: 3 }}
               onClick={() => setDlgCuenta({ open: true, modo: 'crear', data: null })}>
               Nueva Cuenta
             </Button>
           )}
-          <Grid container spacing={2}>
+          <Grid container spacing={3}>
             {cuentas.map(c => (
               <Grid item xs={12} sm={6} md={4} key={c.id}>
                 <Card variant="outlined">
@@ -625,7 +667,8 @@ export default function ContabilidadPage() {
       {/* ── Tab 3: Presupuesto ───────────────────────────────────────────────── */}
       {tab === 3 && (
         <Box>
-          <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <FormControl size="small" sx={{ minWidth: 100 }}>
               <InputLabel>Año</InputLabel>
               <Select value={presAnio} label="Año" onChange={e => setPresAnio(e.target.value)}>
@@ -639,7 +682,8 @@ export default function ContabilidadPage() {
                 Agregar línea
               </Button>
             )}
-          </Box>
+            </Box>
+          </Paper>
 
           <TableContainer component={Paper}>
             <Table size="small">
@@ -714,7 +758,8 @@ export default function ContabilidadPage() {
       {/* ── Tab 4: Reporte Contador ──────────────────────────────────────────── */}
       {tab === 4 && (
         <Box>
-          <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Mes</InputLabel>
               <Select value={repMes} label="Mes" onChange={e => setRepMes(e.target.value)}>
@@ -734,6 +779,7 @@ export default function ContabilidadPage() {
               </Button>
             )}
           </Box>
+          </Paper>
 
           {!reporte && (
             <Typography color="text.secondary" textAlign="center" sx={{ py: 6 }}>
@@ -901,7 +947,8 @@ export default function ContabilidadPage() {
       {tab === 5 && (
         <Box>
           {/* Selector de cuenta + filtros */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             <FormControl size="small" sx={{ minWidth: 220 }}>
               <InputLabel>Cuenta de caja</InputLabel>
               <Select value={cajaCuentaId} label="Cuenta de caja"
@@ -926,6 +973,7 @@ export default function ContabilidadPage() {
             </FormControl>
             <Button variant="outlined" size="small" onClick={cargarCajaMenor}>Filtrar</Button>
           </Box>
+          </Paper>
 
           {!cajaCuentaId
             ? <Alert severity="info">
@@ -987,9 +1035,8 @@ export default function ContabilidadPage() {
                     )}
 
                     {/* Libro auxiliar */}
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                      Libro Auxiliar — {cuenta?.nombre}
-                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    <SectionHeader title={`Libro Auxiliar — ${cuenta?.nombre}`} />
                     {cargandoCaja
                       ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={28} /></Box>
                       : (
@@ -1067,9 +1114,8 @@ export default function ContabilidadPage() {
                     }
 
                     {/* Arqueos */}
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                      Arqueos de Caja
-                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    <SectionHeader title="Arqueos de Caja" />
                     <TableContainer component={Paper}>
                       <Table size="small">
                         <TableHead>

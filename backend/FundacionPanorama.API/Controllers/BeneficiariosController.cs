@@ -196,6 +196,96 @@ public class BeneficiariosController : ControllerBase
     }
 
     // =========================================================================
+    // GET api/beneficiarios/stats-ninos  — estadísticas del dashboard
+    // =========================================================================
+    [HttpGet("stats-ninos")]
+    [Authorize]
+    public async Task<IActionResult> StatsNinos()
+    {
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var activos = await _db.Beneficiarios
+            .Where(b => b.Activo)
+            .Select(b => new {
+                b.FechaNacimiento,
+                b.PaisNacimiento,
+                b.DepartamentoNacimiento,
+                b.CiudadNacimiento,
+            })
+            .ToListAsync();
+
+        int CalcEdad(DateOnly? f)
+        {
+            if (f is null) return -1;
+            int e = hoy.Year - f.Value.Year;
+            if (hoy < f.Value.AddYears(e)) e--;
+            return e;
+        }
+
+        var rangos = new[]
+        {
+            new { Codigo = "PI",  Nombre = "Primera infancia",  Min = 0,  Max = 5  },
+            new { Codigo = "IN1", Nombre = "Infancia inicial",  Min = 6,  Max = 8  },
+            new { Codigo = "IN2", Nombre = "Infancia media",    Min = 9,  Max = 11 },
+            new { Codigo = "PA",  Nombre = "Preadolescencia",   Min = 12, Max = 13 },
+            new { Codigo = "AD",  Nombre = "Adolescencia",      Min = 14, Max = 16 },
+        };
+
+        var porRango = rangos.Select(r => new {
+            r.Codigo,
+            r.Nombre,
+            rango = $"{r.Min} a {r.Max} años",
+            total = activos.Count(b => { var e = CalcEdad(b.FechaNacimiento); return e >= r.Min && e <= r.Max; })
+        }).ToList();
+
+        var sinEdad = activos.Count(b => b.FechaNacimiento is null);
+
+        // Extranjeros: nacidos fuera de Colombia
+        var extranjeros = activos.Count(b =>
+            !string.IsNullOrWhiteSpace(b.PaisNacimiento) &&
+            !b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase));
+
+        // Colombianos de otras regiones (departamento diferente a Valle del Cauca)
+        var otraRegion = activos.Count(b =>
+            (string.IsNullOrWhiteSpace(b.PaisNacimiento) ||
+             b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase)) &&
+            !string.IsNullOrWhiteSpace(b.DepartamentoNacimiento) &&
+            !b.DepartamentoNacimiento.Equals("Valle del Cauca", StringComparison.OrdinalIgnoreCase) &&
+            !b.DepartamentoNacimiento.Equals("Valle", StringComparison.OrdinalIgnoreCase));
+
+        var topDepartamentos = activos
+            .Where(b =>
+                (string.IsNullOrWhiteSpace(b.PaisNacimiento) ||
+                 b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase)) &&
+                !string.IsNullOrWhiteSpace(b.DepartamentoNacimiento))
+            .GroupBy(b => b.DepartamentoNacimiento!)
+            .OrderByDescending(g => g.Count())
+            .Take(5)
+            .Select(g => new { departamento = g.Key, total = g.Count() })
+            .ToList();
+
+        var topPaises = activos
+            .Where(b =>
+                !string.IsNullOrWhiteSpace(b.PaisNacimiento) &&
+                !b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase))
+            .GroupBy(b => b.PaisNacimiento!)
+            .OrderByDescending(g => g.Count())
+            .Take(5)
+            .Select(g => new { pais = g.Key, total = g.Count() })
+            .ToList();
+
+        return Ok(new {
+            totalActivos = activos.Count,
+            sinEdad,
+            extranjeros,
+            otraRegion,
+            porRango,
+            topDepartamentos,
+            topPaises,
+        });
+    }
+
+    // =========================================================================
     // GET api/beneficiarios/{id}
     // =========================================================================
     [HttpGet("{id:guid}")]

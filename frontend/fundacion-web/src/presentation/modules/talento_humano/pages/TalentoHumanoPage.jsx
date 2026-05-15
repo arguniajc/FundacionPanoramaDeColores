@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Children } from 'react';
 import {
   Box, Typography, Button, TextField, MenuItem, Grid, Card, CardContent,
   Avatar, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -15,6 +15,7 @@ import PeopleIcon         from '@mui/icons-material/People';
 import WarningAmberIcon   from '@mui/icons-material/WarningAmber';
 import NotificationsIcon  from '@mui/icons-material/Notifications';
 import EventNoteIcon      from '@mui/icons-material/EventNote';
+import AccountTreeIcon    from '@mui/icons-material/AccountTree';
 import apiClient          from '../../../../infrastructure/http/apiClient';
 import { useAuth }        from '../../../../application/auth/AuthContext';
 
@@ -465,6 +466,284 @@ function PanelEmpleado({ empleado, onClose, onEdit, onDeleted, puedo }) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// ORGANIGRAMA
+// ════════════════════════════════════════════════════════════════════════════
+const ORG_KEY = '_fpc_org_v1';
+const LCOLOR  = '#94A3B8';
+
+const DEFAULT_ORG = {
+  juntaDirectiva: { titulo: 'Junta Directiva', personas: ['', '', '', ''], esMultiple: true },
+  gerente:        { titulo: 'Representante Legal / Gerente', personas: [''], esMultiple: false },
+  revisorFiscal:  { titulo: 'Revisor Fiscal', personas: [''], esMultiple: false },
+  tesorero:       { titulo: 'Tesorero/a', personas: [''], esMultiple: false },
+  secretario:     { titulo: 'Secretario/a', personas: [''], esMultiple: false },
+  contadora:      { titulo: 'Contadora', personas: [''], esMultiple: false },
+  vocales:        { titulo: 'Vocales', personas: [], esMultiple: true },
+  voluntarios:    { titulo: 'Voluntarios', personas: [], esMultiple: true },
+};
+
+const NODE_COLOR = {
+  juntaDirectiva: '#1E1B4B',
+  gerente:        '#4E1B95',
+  revisorFiscal:  '#DC2626',
+  tesorero:       '#D97706',
+  secretario:     '#059669',
+  contadora:      '#2563EB',
+  vocales:        '#7C3AED',
+  voluntarios:    '#0891B2',
+};
+
+function VLine({ h = 28 }) {
+  return <Box sx={{ width: 2, height: h, bgcolor: LCOLOR, mx: 'auto', flexShrink: 0 }} />;
+}
+
+function HBranch({ children }) {
+  const arr = Children.toArray(children);
+  if (!arr.length) return null;
+  if (arr.length === 1) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <VLine />
+        {arr[0]}
+      </Box>
+    );
+  }
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+      {arr.map((child, i) => {
+        const first = i === 0, last = i === arr.length - 1;
+        return (
+          <Box key={i} sx={{
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+            position: 'relative', pt: '28px',
+            '&::before': first ? {} : { content: '""', position: 'absolute', top: 0, left: 0, right: '50%', height: 2, bgcolor: LCOLOR },
+            '&::after':  last  ? {} : { content: '""', position: 'absolute', top: 0, left: '50%', right: 0, height: 2, bgcolor: LCOLOR },
+          }}>
+            <Box sx={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 2, height: 28, bgcolor: LCOLOR }} />
+            {child}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+function OrgNode({ nodeKey, data, onEdit, puedoEditar }) {
+  const color   = NODE_COLOR[nodeKey] ?? '#4E1B95';
+  const personas = (data?.personas ?? []).filter(p => p.trim());
+  const isWide   = nodeKey === 'juntaDirectiva' || nodeKey === 'gerente';
+  return (
+    <Paper elevation={3} sx={{
+      p: 1.5, textAlign: 'center',
+      minWidth: isWide ? 220 : 140,
+      maxWidth: isWide ? 340 : 190,
+      border: `2px solid ${color}`, borderRadius: 2, bgcolor: 'white',
+      position: 'relative',
+      transition: 'box-shadow 0.2s',
+      '&:hover': { boxShadow: 6 },
+    }}>
+      <Box sx={{ bgcolor: color, borderRadius: 1, px: 1, py: 0.25, mb: personas.length ? 0.75 : 0.5, display: 'inline-block' }}>
+        <Typography variant="caption" sx={{ color: 'white', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.5 }}>
+          {data.titulo}
+        </Typography>
+      </Box>
+      {personas.length === 0 ? (
+        <Typography variant="caption" color="text.disabled" display="block" sx={{ mt: 0.25 }}>
+          {nodeKey === 'juntaDirectiva' ? '4 fundadores' : 'Sin asignar'}
+        </Typography>
+      ) : (
+        personas.map((p, i) => (
+          <Typography key={i} variant="body2" fontWeight={500} display="block" lineHeight={1.5}>{p}</Typography>
+        ))
+      )}
+      {puedoEditar && (
+        <IconButton size="small" onClick={() => onEdit(nodeKey)}
+          sx={{ position: 'absolute', top: 3, right: 3, color, opacity: 0.6, '&:hover': { opacity: 1 } }}>
+          <EditIcon sx={{ fontSize: 13 }} />
+        </IconButton>
+      )}
+    </Paper>
+  );
+}
+
+function DialogEditNode({ open, onClose, nodeKey, orgData, onSave }) {
+  const data = orgData?.[nodeKey];
+  const [names, setNames] = useState(['']);
+
+  useEffect(() => {
+    if (open && data) {
+      const init = data.personas.length > 0 ? [...data.personas] : [''];
+      setNames(init);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, nodeKey]);
+
+  if (!data) return null;
+  const multi  = data.esMultiple;
+  const change = (i, v) => setNames(ns => ns.map((n, idx) => idx === i ? v : n));
+  const add    = () => setNames(ns => [...ns, '']);
+  const remove = (i) => setNames(ns => ns.filter((_, idx) => idx !== i));
+  const handleSave = () => {
+    const filtered = multi ? names.filter(n => n.trim()) : [names[0] ?? ''];
+    onSave(nodeKey, filtered);
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle fontWeight={700}>{data.titulo}</DialogTitle>
+      <DialogContent dividers>
+        {names.map((n, i) => (
+          <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+            <TextField
+              fullWidth size="small"
+              label={multi ? `Persona ${i + 1}` : 'Nombre completo'}
+              value={n}
+              onChange={e => change(i, e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && multi) add(); }}
+              autoFocus={i === 0}
+            />
+            {multi && names.length > 1 && (
+              <IconButton size="small" color="error" onClick={() => remove(i)}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
+        ))}
+        {multi && (
+          <Button size="small" startIcon={<AddIcon />} onClick={add} sx={{ mt: 0.5 }}>
+            Agregar persona
+          </Button>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3 }}>
+        <Button onClick={onClose}>Cancelar</Button>
+        <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave}>Guardar</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function OrgChartTab({ puedoEditar }) {
+  const [org, setOrg] = useState(() => {
+    try {
+      const saved = localStorage.getItem(ORG_KEY);
+      if (saved) return { ...DEFAULT_ORG, ...JSON.parse(saved) };
+    } catch { /* */ }
+    return DEFAULT_ORG;
+  });
+  const [editKey, setEditKey] = useState(null);
+
+  const saveNode = (key, personas) => {
+    const updated = { ...org, [key]: { ...org[key], personas } };
+    setOrg(updated);
+    try { localStorage.setItem(ORG_KEY, JSON.stringify(updated)); } catch { /* */ }
+    setEditKey(null);
+  };
+
+  const n = (key) => ({ nodeKey: key, data: org[key], onEdit: setEditKey, puedoEditar });
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
+        <Box>
+          <Typography variant="h6" fontWeight={700}>Organigrama Institucional</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Estructura de gobierno y operación de la Fundación
+          </Typography>
+        </Box>
+        {puedoEditar && (
+          <Chip
+            icon={<EditIcon fontSize="small" />}
+            label="Haz clic en ✎ de cada cargo para editar"
+            size="small"
+            variant="outlined"
+            color="primary"
+          />
+        )}
+      </Box>
+
+      <Box sx={{
+        overflowX: 'auto',
+        background: 'linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%)',
+        borderRadius: 3, p: { xs: 2, sm: 3, md: 5 },
+        border: '1px solid', borderColor: 'divider',
+      }}>
+        <Box sx={{ minWidth: 640, userSelect: 'none' }}>
+
+          {/* NIVEL 1 — Junta Directiva */}
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <OrgNode {...n('juntaDirectiva')} />
+          </Box>
+
+          {/* Conector hacia Gerente */}
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <VLine h={36} />
+          </Box>
+
+          {/* NIVEL 2 — Gerente / Representante Legal */}
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <OrgNode {...n('gerente')} />
+          </Box>
+
+          {/* Conector hacia nivel 3 */}
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <VLine h={20} />
+          </Box>
+
+          {/* NIVEL 3 — 4 roles (+ nivel 4 embebido en Secretario) */}
+          <HBranch>
+            {/* Revisor Fiscal */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <OrgNode {...n('revisorFiscal')} />
+            </Box>
+
+            {/* Tesorero */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <OrgNode {...n('tesorero')} />
+            </Box>
+
+            {/* Secretario → Vocales → Voluntarios */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <OrgNode {...n('secretario')} />
+              <VLine h={24} />
+              <OrgNode {...n('vocales')} />
+              <VLine h={24} />
+              <OrgNode {...n('voluntarios')} />
+            </Box>
+
+            {/* Contadora */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <OrgNode {...n('contadora')} />
+            </Box>
+          </HBranch>
+
+        </Box>
+      </Box>
+
+      {/* Leyenda de colores */}
+      <Box sx={{ mt: 3, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+        {Object.entries(NODE_COLOR).map(([key, color]) => (
+          <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 10, height: 10, bgcolor: color, borderRadius: '50%' }} />
+            <Typography variant="caption" color="text.secondary">
+              {DEFAULT_ORG[key]?.titulo}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      <DialogEditNode
+        open={!!editKey}
+        onClose={() => setEditKey(null)}
+        nodeKey={editKey}
+        orgData={org}
+        onSave={saveNode}
+      />
+    </Box>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // PÁGINA PRINCIPAL
 // ════════════════════════════════════════════════════════════════════════════
 export default function TalentoHumanoPage() {
@@ -479,6 +758,7 @@ export default function TalentoHumanoPage() {
   const [busqueda,  setBusqueda]  = useState('');
   const [filtroActivo, setFiltroActivo] = useState('true');
 
+  const [mainTab,        setMainTab]        = useState(0);
   const [dialogEmpleado, setDialogEmpleado] = useState(false);
   const [editEmpleado,   setEditEmpleado]   = useState(null);
   const [panelEmpleado,  setPanelEmpleado]  = useState(null);
@@ -526,18 +806,46 @@ export default function TalentoHumanoPage() {
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
         <Box>
           <Typography variant="h5" fontWeight={700}>Talento Humano</Typography>
           <Typography variant="body2" color="text.secondary">Gestión del personal y novedades de la fundación</Typography>
         </Box>
-        {puedo('talento_humano', 'crear') && (
+        {mainTab === 0 && puedo('talento_humano', 'crear') && (
           <Button variant="contained" startIcon={<AddIcon />}
             onClick={() => { setEditEmpleado(null); setDialogEmpleado(true); }}>
             Nuevo empleado
           </Button>
         )}
       </Box>
+
+      {/* Pestañas principales */}
+      <Tabs
+        value={mainTab}
+        onChange={(_, v) => setMainTab(v)}
+        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Tab
+          label="Empleados"
+          icon={<BadgeIcon fontSize="small" />}
+          iconPosition="start"
+          sx={{ minHeight: 42, py: 0, fontWeight: 600 }}
+        />
+        <Tab
+          label="Organigrama"
+          icon={<AccountTreeIcon fontSize="small" />}
+          iconPosition="start"
+          sx={{ minHeight: 42, py: 0, fontWeight: 600 }}
+        />
+      </Tabs>
+
+      {/* ── Tab Organigrama ───────────────────────────────────────── */}
+      {mainTab === 1 && (
+        <OrgChartTab puedoEditar={puedo('talento_humano', 'editar')} />
+      )}
+
+      {/* ── Tab Empleados ─────────────────────────────────────────── */}
+      {mainTab === 0 && <>
 
       {/* KPIs */}
       {stats && (
@@ -685,6 +993,8 @@ export default function TalentoHumanoPage() {
         sedes={sedes}
         onSaved={() => { setDialogEmpleado(false); cargar(); }}
       />
+
+      </>}
     </Box>
   );
 }

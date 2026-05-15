@@ -310,24 +310,22 @@ export default function DashboardPage() {
             <Typography fontWeight={700} fontSize="0.95rem" mb={2}>Lugar de origen</Typography>
 
             {/* Extranjeros */}
-            {(stats?.topPaises?.length > 0 || stats?.extranjeros > 0) && (
-              <Box mb={2}>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <PublicIcon sx={{ fontSize: 15, color: '#0ea5e9' }} />
-                  <Typography fontSize="0.78rem" fontWeight={700} color="#0ea5e9">
-                    Extranjeros ({stats?.extranjeros ?? 0})
-                  </Typography>
-                </Box>
-                {cargando
-                  ? <Skeleton height={60} />
-                  : stats?.topPaises?.length > 0
-                    ? stats.topPaises.map(p => (
-                        <FilaOrigen key={p.pais} nombre={p.pais} total={p.total} max={maxOrigen} color="#0ea5e9" />
-                      ))
-                    : <Typography fontSize="0.75rem" color="text.disabled">Sin registros de país</Typography>
-                }
+            <Box mb={2}>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                <PublicIcon sx={{ fontSize: 15, color: '#0ea5e9' }} />
+                <Typography fontSize="0.78rem" fontWeight={700} color="#0ea5e9">
+                  Extranjeros ({stats?.extranjeros ?? 0})
+                </Typography>
               </Box>
-            )}
+              {cargando
+                ? <Skeleton height={60} />
+                : stats?.topPaises?.length > 0
+                  ? stats.topPaises.map(p => (
+                      <FilaOrigen key={p.pais} nombre={p.pais} total={p.total} max={maxOrigen} color="#0ea5e9" />
+                    ))
+                  : <Typography fontSize="0.75rem" color="text.disabled">Sin registros de país extranjero</Typography>
+              }
+            </Box>
 
             {/* Otras regiones colombianas — departamentos */}
             <Box mb={stats?.topCiudades?.length > 0 ? 2 : 0}>
@@ -365,14 +363,6 @@ export default function DashboardPage() {
               </Box>
             )}
 
-            {!cargando && stats?.extranjeros === 0 && stats?.otraRegion === 0 && (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
-                <LocationOnIcon sx={{ fontSize: 32, color: 'text.disabled' }} />
-                <Typography fontSize="0.8rem" color="text.disabled" mt={1}>
-                  Todos los niños son del Valle del Cauca
-                </Typography>
-              </Box>
-            )}
           </Box>
         </Grid>
       </Grid>

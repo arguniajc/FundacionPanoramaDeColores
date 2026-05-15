@@ -1,0 +1,25 @@
+name: Keep-alive — Backend Render.com
+
+on:
+  schedule:
+    # Cada 14 minutos para evitar que Render.com duerma el servidor (límite: 15 min)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub si hace falta
+
+jobs:
+  ping:
+    name: Ping backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API pública
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            https://fundacionpanoramadecolores-nez4.onrender.com/api/configuracion/publica)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
+            echo "Backend activo ✓"
+          else
+            echo "Backend no respondió correctamente (status $STATUS)"
+            exit 1
+          fi

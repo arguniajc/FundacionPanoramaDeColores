@@ -1,0 +1,27 @@
+{
+  "name": "Fundación Panorama de Colores",
+  "short_name": "Panorama",
+  "description": "Arte, deporte y conciencia ambiental para niñas y niños del barrio Panorama, Yumbo.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#2D0A5E",
+  "theme_color": "#4E1B95",
+  "lang": "es-CO",
+  "categories": ["education", "social"],
+  "icons": [
+    {
+      "src": "images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

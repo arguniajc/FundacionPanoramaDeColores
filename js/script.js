@@ -190,6 +190,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // ========== PROTECCIÓN DE IMÁGENES ==========
+  document.addEventListener('contextmenu', function (e) {
+    if (e.target.tagName === 'IMG') e.preventDefault();
+  });
+  document.addEventListener('dragstart', function (e) {
+    if (e.target.tagName === 'IMG') e.preventDefault();
+  });
+  document.querySelectorAll('img').forEach(function (img) {
+    img.setAttribute('draggable', 'false');
+  });
+
   // ========== AVISO DE PRIVACIDAD ==========
   var privacyBanner = document.getElementById('privacy-banner');
   var privacyAccept = document.getElementById('privacy-accept');

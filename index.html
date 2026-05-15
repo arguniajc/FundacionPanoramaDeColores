@@ -13,6 +13,12 @@
     <meta name="theme-color" content="#4E1B95">
     <meta name="google-site-verification" content="Mi51rPp_H4RINaLNIAqIqnfPy5Rm0ck3CtiRaBjARz4">
     <link rel="canonical" href="https://fundacionpanoramadecolores.org/">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Panorama">
+    <link rel="apple-touch-icon" href="images/logo.png">
 
     <!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
     <meta property="og:type"        content="website">
@@ -449,6 +455,13 @@
     </button>
 
     <script src="js/script.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
 
     <!-- Animaciones al hacer scroll -->
     <script>

@@ -356,6 +356,19 @@ var app = builder.Build();
     await Migrar("CREATE INDEX IF NOT EXISTS idx_donaciones_programa ON donaciones(programa_id)",  "donaciones.idx_programa");
     await Migrar("CREATE INDEX IF NOT EXISTS idx_donaciones_sede     ON donaciones(sede_id)",      "donaciones.idx_sede");
 
+    // Columnas retroactivas en donaciones (tabla creada antes del esquema completo)
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS tipo          VARCHAR(20)    NOT NULL DEFAULT 'dinero'",     "donaciones.tipo");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS monto         NUMERIC(14,2)",                               "donaciones.monto");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS item_id       UUID",                                         "donaciones.item_id");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS nombre_item   VARCHAR(200)",                                 "donaciones.nombre_item");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS cantidad      NUMERIC(12,2)",                               "donaciones.cantidad");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS unidad_medida VARCHAR(50)",                                  "donaciones.unidad_medida");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS programa_id   UUID",                                         "donaciones.programa_id");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS sede_id       UUID",                                         "donaciones.sede_id");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS recibo_numero VARCHAR(50)",                                  "donaciones.recibo_numero");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS activo        BOOLEAN        NOT NULL DEFAULT true",         "donaciones.activo");
+    await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS fecha_donacion DATE           NOT NULL DEFAULT CURRENT_DATE", "donaciones.fecha_donacion");
+
     // ── Módulo Voluntarios ────────────────────────────────────────────────────
     await Migrar("""
         CREATE TABLE IF NOT EXISTS voluntarios (

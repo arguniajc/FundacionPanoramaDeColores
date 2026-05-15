@@ -190,6 +190,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // ========== AÑO AUTOMÁTICO EN COPYRIGHT ==========
+  var yearEl = document.getElementById('footer-year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
   // ========== PROTECCIÓN DE IMÁGENES ==========
   document.addEventListener('contextmenu', function (e) {
     if (e.target.tagName === 'IMG') e.preventDefault();

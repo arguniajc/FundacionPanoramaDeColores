@@ -179,7 +179,8 @@
   </main>
 
   <footer>
-    <p>© 2026 Fundación Panorama de Colores — Yumbo, Valle del Cauca, Colombia</p>
+    <p>© <span id="py"></span> Fundación Panorama de Colores — Yumbo, Valle del Cauca, Colombia</p>
+    <script>document.getElementById('py').textContent = new Date().getFullYear();</script>
   </footer>
 
 </body>

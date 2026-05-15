@@ -1,5 +1,5 @@
 // Service Worker — Fundación Panorama de Colores
-var CACHE = 'fpc-v2';
+var CACHE = 'fpc-v3';
 var ASSETS = [
   '/',
   '/css/main.css',

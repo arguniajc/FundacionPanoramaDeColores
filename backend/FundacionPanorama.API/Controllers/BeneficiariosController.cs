@@ -275,6 +275,20 @@ public class BeneficiariosController : ControllerBase
             .Select(g => new { pais = g.Key, total = g.Count() })
             .ToList();
 
+        var topCiudades = activos
+            .Where(b =>
+                (string.IsNullOrWhiteSpace(b.PaisNacimiento) ||
+                 b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase)) &&
+                !string.IsNullOrWhiteSpace(b.CiudadNacimiento) &&
+                !string.IsNullOrWhiteSpace(b.DepartamentoNacimiento) &&
+                !b.DepartamentoNacimiento.Equals("Valle del Cauca", StringComparison.OrdinalIgnoreCase) &&
+                !b.DepartamentoNacimiento.Equals("Valle", StringComparison.OrdinalIgnoreCase))
+            .GroupBy(b => b.CiudadNacimiento!)
+            .OrderByDescending(g => g.Count())
+            .Take(5)
+            .Select(g => new { ciudad = g.Key, total = g.Count() })
+            .ToList();
+
         var porGenero = activos
             .GroupBy(b => string.IsNullOrWhiteSpace(b.Genero) ? "No especificado" : b.Genero)
             .Select(g => new { genero = g.Key, total = g.Count() })
@@ -289,6 +303,7 @@ public class BeneficiariosController : ControllerBase
             porRango,
             topDepartamentos,
             topPaises,
+            topCiudades,
             porGenero,
         });
     }

@@ -152,8 +152,27 @@ export default function DashboardPage() {
   const maxOrigen = Math.max(
     ...(stats?.topDepartamentos?.map(d => d.total) ?? [1]),
     ...(stats?.topPaises?.map(p => p.total) ?? [1]),
+    ...(stats?.topCiudades?.map(c => c.total) ?? [1]),
     1,
   );
+
+  const renderLabelGenero = ({ cx, cy, midAngle, outerRadius, percent, index }) => {
+    if (percent < 0.03) return null;
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius + 44;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const g = generoData[index];
+    if (!g) return null;
+    return (
+      <text x={x} y={y} fill={g.color}
+            textAnchor={x > cx ? 'start' : 'end'}
+            dominantBaseline="central"
+            fontSize={12} fontWeight={700}>
+        {`${g.genero}: ${g.total} (${(percent * 100).toFixed(0)}%)`}
+      </text>
+    );
+  };
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
@@ -310,8 +329,8 @@ export default function DashboardPage() {
               </Box>
             )}
 
-            {/* Otras regiones colombianas */}
-            <Box>
+            {/* Otras regiones colombianas — departamentos */}
+            <Box mb={stats?.topCiudades?.length > 0 ? 2 : 0}>
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <LocationOnIcon sx={{ fontSize: 15, color: '#f59e0b' }} />
                 <Typography fontSize="0.78rem" fontWeight={700} color="#f59e0b">
@@ -328,6 +347,24 @@ export default function DashboardPage() {
               }
             </Box>
 
+            {/* Ciudades */}
+            {(stats?.topCiudades?.length > 0 || cargando) && (
+              <Box>
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  <LocationOnIcon sx={{ fontSize: 15, color: '#8b5cf6' }} />
+                  <Typography fontSize="0.78rem" fontWeight={700} color="#8b5cf6">
+                    Ciudades de otras regiones
+                  </Typography>
+                </Box>
+                {cargando
+                  ? <Skeleton height={60} />
+                  : stats.topCiudades.map(c => (
+                      <FilaOrigen key={c.ciudad} nombre={c.ciudad} total={c.total} max={maxOrigen} color="#8b5cf6" />
+                    ))
+                }
+              </Box>
+            )}
+
             {!cargando && stats?.extranjeros === 0 && stats?.otraRegion === 0 && (
               <Box sx={{ textAlign: 'center', py: 3 }}>
                 <LocationOnIcon sx={{ fontSize: 32, color: 'text.disabled' }} />
@@ -342,79 +379,35 @@ export default function DashboardPage() {
 
       {/* ── Género ──────────────────────────────────────────────────── */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5, height: '100%' }}>
-            <Typography fontWeight={700} fontSize="0.95rem" mb={2}>Niños y niñas</Typography>
+        <Grid size={{ xs: 12 }}>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5 }}>
+            <Typography fontWeight={700} fontSize="0.95rem" mb={1}>Niños y niñas</Typography>
             {cargando ? (
-              <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
+              <Skeleton variant="rectangular" height={260} sx={{ borderRadius: 2 }} />
             ) : generoData.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <Typography fontSize="0.8rem" color="text.disabled">Sin datos de género registrados</Typography>
               </Box>
             ) : (
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
                     data={generoData}
                     dataKey="total"
                     nameKey="genero"
                     cx="50%"
-                    cy="45%"
-                    outerRadius={80}
-                    label={({ genero, percent }) =>
-                      percent > 0.04 ? `${(percent * 100).toFixed(0)}%` : ''
-                    }
-                    labelLine={false}
+                    cy="50%"
+                    outerRadius={95}
+                    label={renderLabelGenero}
+                    labelLine={{ strokeWidth: 1, stroke: '#94a3b8' }}
                   >
                     {generoData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
                     ))}
                   </Pie>
                   <RTooltip content={<GeneroTooltip />} />
-                  <Legend
-                    formatter={(value) => (
-                      <span style={{ fontSize: '0.75rem', color: 'inherit' }}>{value}</span>
-                    )}
-                  />
                 </PieChart>
               </ResponsiveContainer>
-            )}
-          </Box>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5, height: '100%' }}>
-            <Typography fontWeight={700} fontSize="0.95rem" mb={2}>Detalle por género</Typography>
-            {cargando ? (
-              <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
-            ) : generoData.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography fontSize="0.8rem" color="text.disabled">Sin datos registrados</Typography>
-              </Box>
-            ) : (
-              generoData.map(g => {
-                const pct = stats?.totalActivos > 0
-                  ? Math.round((g.total / stats.totalActivos) * 100)
-                  : 0;
-                return (
-                  <Box key={g.genero} mb={1.5}>
-                    <Box display="flex" justifyContent="space-between" mb={0.4}>
-                      <Typography fontSize="0.82rem" fontWeight={600} sx={{ color: g.color }}>
-                        {g.genero}
-                      </Typography>
-                      <Typography fontSize="0.82rem" fontWeight={700} sx={{ color: g.color }}>
-                        {g.total} <span style={{ fontWeight: 400, color: '#94a3b8' }}>({pct}%)</span>
-                      </Typography>
-                    </Box>
-                    <Box sx={{ bgcolor: 'action.hover', borderRadius: 4, height: 10 }}>
-                      <Box sx={{
-                        width: `${pct}%`, height: 10, borderRadius: 4,
-                        bgcolor: g.color, transition: 'width 0.6s ease',
-                      }} />
-                    </Box>
-                  </Box>
-                );
-              })
             )}
           </Box>
         </Grid>

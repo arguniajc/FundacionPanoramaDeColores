@@ -65,6 +65,10 @@ public class Beneficiario
     [Column("vive_con_nino")]
     public bool? ViveConNino { get; set; }
 
+    // ── Género ────────────────────────────────────────────────────────────────
+    [Column("genero"), MaxLength(20)]
+    public string? Genero { get; set; }
+
     // ── Autorización ──────────────────────────────────────────────────────────
     [Column("autorizacion")]
     public bool Autorizacion { get; set; } = false;

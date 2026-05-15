@@ -3,7 +3,7 @@ import { Box, Typography, Grid, Card, CardActionArea, Chip, Skeleton, Tooltip } 
 import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
-  ResponsiveContainer, Cell,
+  ResponsiveContainer, Cell, PieChart, Pie, Legend,
 } from 'recharts';
 import ChildCareIcon        from '@mui/icons-material/ChildCare';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
@@ -29,16 +29,39 @@ const MODULOS = [
 
 const COLORES_RANGO = ['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 
-// ── Tooltip personalizado del gráfico ──────────────────────────────────────
+const COLORES_GENERO = {
+  'Masculino':        '#3b82f6',
+  'Femenino':         '#ec4899',
+  'No binario':       '#8b5cf6',
+  'Prefiero no decir':'#94a3b8',
+  'No especificado':  '#cbd5e1',
+};
+
+// ── Tooltip personalizado del gráfico de rangos ────────────────────────────
 function CustomTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
     <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
                borderRadius: 2, p: 1.5, boxShadow: 3, minWidth: 160 }}>
-      <Typography fontWeight={700} fontSize="0.8rem">{d.Codigo} — {d.Nombre}</Typography>
+      <Typography fontWeight={700} fontSize="0.8rem">{d.codigo} — {d.nombre}</Typography>
       <Typography fontSize="0.75rem" color="text.secondary">{d.rango}</Typography>
       <Typography fontWeight={800} fontSize="1.1rem" mt={0.5} color={d.color}>
+        {d.total} {d.total === 1 ? 'niño' : 'niños'}
+      </Typography>
+    </Box>
+  );
+}
+
+// ── Tooltip personalizado del gráfico de género ────────────────────────────
+function GeneroTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
+               borderRadius: 2, p: 1.5, boxShadow: 3 }}>
+      <Typography fontWeight={700} fontSize="0.82rem">{d.genero}</Typography>
+      <Typography fontWeight={800} fontSize="1rem" mt={0.3} color={COLORES_GENERO[d.genero] ?? '#64748b'}>
         {d.total} {d.total === 1 ? 'niño' : 'niños'}
       </Typography>
     </Box>
@@ -118,7 +141,12 @@ export default function DashboardPage() {
   const chartData = stats?.porRango?.map((r, i) => ({
     ...r,
     color: COLORES_RANGO[i],
-    label: r.Codigo,
+    label: r.codigo,
+  })) ?? [];
+
+  const generoData = stats?.porGenero?.map(g => ({
+    ...g,
+    color: COLORES_GENERO[g.genero] ?? '#94a3b8',
   })) ?? [];
 
   const maxOrigen = Math.max(
@@ -198,8 +226,8 @@ export default function DashboardPage() {
             <Box display="flex" flexWrap="wrap" gap={0.8} mb={2}>
               {stats?.porRango?.map((r, i) => (
                 <Chip
-                  key={r.Codigo}
-                  label={`${r.Codigo}: ${r.total}`}
+                  key={r.codigo}
+                  label={`${r.codigo}: ${r.total}`}
                   size="small"
                   sx={{
                     bgcolor: `${COLORES_RANGO[i]}20`,
@@ -307,6 +335,86 @@ export default function DashboardPage() {
                   Todos los niños son del Valle del Cauca
                 </Typography>
               </Box>
+            )}
+          </Box>
+        </Grid>
+      </Grid>
+
+      {/* ── Género ──────────────────────────────────────────────────── */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5, height: '100%' }}>
+            <Typography fontWeight={700} fontSize="0.95rem" mb={2}>Niños y niñas</Typography>
+            {cargando ? (
+              <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
+            ) : generoData.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography fontSize="0.8rem" color="text.disabled">Sin datos de género registrados</Typography>
+              </Box>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={generoData}
+                    dataKey="total"
+                    nameKey="genero"
+                    cx="50%"
+                    cy="45%"
+                    outerRadius={80}
+                    label={({ genero, percent }) =>
+                      percent > 0.04 ? `${(percent * 100).toFixed(0)}%` : ''
+                    }
+                    labelLine={false}
+                  >
+                    {generoData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RTooltip content={<GeneroTooltip />} />
+                  <Legend
+                    formatter={(value) => (
+                      <span style={{ fontSize: '0.75rem', color: 'inherit' }}>{value}</span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </Box>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5, height: '100%' }}>
+            <Typography fontWeight={700} fontSize="0.95rem" mb={2}>Detalle por género</Typography>
+            {cargando ? (
+              <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
+            ) : generoData.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography fontSize="0.8rem" color="text.disabled">Sin datos registrados</Typography>
+              </Box>
+            ) : (
+              generoData.map(g => {
+                const pct = stats?.totalActivos > 0
+                  ? Math.round((g.total / stats.totalActivos) * 100)
+                  : 0;
+                return (
+                  <Box key={g.genero} mb={1.5}>
+                    <Box display="flex" justifyContent="space-between" mb={0.4}>
+                      <Typography fontSize="0.82rem" fontWeight={600} sx={{ color: g.color }}>
+                        {g.genero}
+                      </Typography>
+                      <Typography fontSize="0.82rem" fontWeight={700} sx={{ color: g.color }}>
+                        {g.total} <span style={{ fontWeight: 400, color: '#94a3b8' }}>({pct}%)</span>
+                      </Typography>
+                    </Box>
+                    <Box sx={{ bgcolor: 'action.hover', borderRadius: 4, height: 10 }}>
+                      <Box sx={{
+                        width: `${pct}%`, height: 10, borderRadius: 4,
+                        bgcolor: g.color, transition: 'width 0.6s ease',
+                      }} />
+                    </Box>
+                  </Box>
+                );
+              })
             )}
           </Box>
         </Grid>

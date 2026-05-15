@@ -211,6 +211,7 @@ public class BeneficiariosController : ControllerBase
                 b.PaisNacimiento,
                 b.DepartamentoNacimiento,
                 b.CiudadNacimiento,
+                b.Genero,
             })
             .ToListAsync();
 
@@ -274,6 +275,12 @@ public class BeneficiariosController : ControllerBase
             .Select(g => new { pais = g.Key, total = g.Count() })
             .ToList();
 
+        var porGenero = activos
+            .GroupBy(b => string.IsNullOrWhiteSpace(b.Genero) ? "No especificado" : b.Genero)
+            .Select(g => new { genero = g.Key, total = g.Count() })
+            .OrderByDescending(g => g.total)
+            .ToList();
+
         return Ok(new {
             totalActivos = activos.Count,
             sinEdad,
@@ -282,6 +289,7 @@ public class BeneficiariosController : ControllerBase
             porRango,
             topDepartamentos,
             topPaises,
+            porGenero,
         });
     }
 

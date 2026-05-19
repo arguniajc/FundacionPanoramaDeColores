@@ -1,27 +1,30 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import AdminLayout          from '../layouts/AdminLayout';
-import RutaProtegida        from '../../shared/components/RutaProtegida';
-import SinAcceso            from '../../shared/components/SinAcceso';
-import ModuloEnDesarrollo   from '../../shared/components/ModuloEnDesarrollo';
-import { useAuth }          from '../../application/auth/AuthContext';
-import LoginPage            from '../modules/auth/pages/LoginPage';
-import DashboardPage        from '../modules/dashboard/pages/DashboardPage';
-import BeneficiariosPage    from '../modules/beneficiarios/pages/BeneficiariosPage';
-import SedesPage            from '../modules/sedes/pages/SedesPage';
-import LogDescargasPage     from '../modules/auditoria/pages/LogDescargasPage';
-import DocumentosPage       from '../modules/documentos/pages/DocumentosPage';
-import ProgramasPage        from '../modules/programas/pages/ProgramasPage';
-import InscripcionesPage    from '../modules/inscripciones/pages/InscripcionesPage';
-import InventarioPage       from '../modules/inventario/pages/InventarioPage';
-import DonacionesPage       from '../modules/donaciones/pages/DonacionesPage';
-import VoluntariosPage      from '../modules/voluntarios/pages/VoluntariosPage';
-import ConfiguracionPage    from '../modules/configuracion/pages/ConfiguracionPage';
-import EquipoPage           from '../modules/equipo/pages/EquipoPage';
-import ActividadesPage      from '../modules/actividades/pages/ActividadesPage';
-import SeguridadPage        from '../modules/seguridad/pages/SeguridadPage';
-import ReportesPage         from '../modules/reportes/pages/ReportesPage';
-import TalentoHumanoPage    from '../modules/talento_humano/pages/TalentoHumanoPage';
-import ContabilidadPage     from '../modules/contabilidad/pages/ContabilidadPage';
+import AdminLayout        from '../layouts/AdminLayout';
+import RutaProtegida      from '../../shared/components/RutaProtegida';
+import SinAcceso          from '../../shared/components/SinAcceso';
+import PantallaCarga      from '../../shared/components/PantallaCarga';
+import { useAuth }        from '../../application/auth/AuthContext';
+import LoginPage          from '../modules/auth/pages/LoginPage';
+
+// Módulos cargados bajo demanda — el bundle principal pasa de ~2.6 MB a ~800 KB
+const DashboardPage      = lazy(() => import('../modules/dashboard/pages/DashboardPage'));
+const BeneficiariosPage  = lazy(() => import('../modules/beneficiarios/pages/BeneficiariosPage'));
+const SedesPage          = lazy(() => import('../modules/sedes/pages/SedesPage'));
+const LogDescargasPage   = lazy(() => import('../modules/auditoria/pages/LogDescargasPage'));
+const DocumentosPage     = lazy(() => import('../modules/documentos/pages/DocumentosPage'));
+const ProgramasPage      = lazy(() => import('../modules/programas/pages/ProgramasPage'));
+const InscripcionesPage  = lazy(() => import('../modules/inscripciones/pages/InscripcionesPage'));
+const InventarioPage     = lazy(() => import('../modules/inventario/pages/InventarioPage'));
+const DonacionesPage     = lazy(() => import('../modules/donaciones/pages/DonacionesPage'));
+const VoluntariosPage    = lazy(() => import('../modules/voluntarios/pages/VoluntariosPage'));
+const ConfiguracionPage  = lazy(() => import('../modules/configuracion/pages/ConfiguracionPage'));
+const EquipoPage         = lazy(() => import('../modules/equipo/pages/EquipoPage'));
+const ActividadesPage    = lazy(() => import('../modules/actividades/pages/ActividadesPage'));
+const SeguridadPage      = lazy(() => import('../modules/seguridad/pages/SeguridadPage'));
+const ReportesPage       = lazy(() => import('../modules/reportes/pages/ReportesPage'));
+const TalentoHumanoPage  = lazy(() => import('../modules/talento_humano/pages/TalentoHumanoPage'));
+const ContabilidadPage   = lazy(() => import('../modules/contabilidad/pages/ContabilidadPage'));
 
 // Envuelve en layout + auth + permiso de módulo
 function Pagina({ modulo, children }) {
@@ -38,6 +41,7 @@ function Pagina({ modulo, children }) {
 
 export default function AppRoutes() {
   return (
+    <Suspense fallback={<PantallaCarga />}>
     <Routes>
       <Route path="/"    element={<Navigate to="/sede" replace />} />
       <Route path="/acceso" element={<LoginPage />} />
@@ -64,5 +68,6 @@ export default function AppRoutes() {
       <Route path="/sede/*" element={<Navigate to="/sede" replace />} />
       <Route path="*"       element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }

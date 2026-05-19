@@ -822,6 +822,24 @@ var app = builder.Build();
 
     await Migrar("ALTER TABLE organigrama_personas ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES organigrama_personas(id) ON DELETE SET NULL", "organigrama_personas.parent_id");
     await Migrar("ALTER TABLE organigrama_personas ALTER COLUMN cargo TYPE VARCHAR(200)",                                                            "organigrama_personas.cargo_200");
+
+    // ── A2: Índices de rendimiento ────────────────────────────────────────────
+    // beneficiarios: filtro activo (Stats, StatsNinos, listados) — columna más consultada
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_beneficiarios_activo          ON beneficiarios(activo)",                            "idx.beneficiarios_activo");
+    // beneficiarios: activo + fecha_creacion para agregación "por mes" del dashboard
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_beneficiarios_activo_fecha    ON beneficiarios(activo, fecha_creacion)",            "idx.beneficiarios_activo_fecha");
+    // beneficiarios: búsqueda y verificación de documento único
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_beneficiarios_num_doc         ON beneficiarios(numero_documento)",                  "idx.beneficiarios_num_doc");
+    // beneficiario_talla: conteo sin_tallas en Stats (WHERE beneficiario_id AND activo)
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_ben_talla_ben_activo          ON beneficiario_talla(beneficiario_id, activo)",      "idx.ben_talla_ben_activo");
+    // archivos: sin_foto check + listado de archivos por entidad
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_archivos_entidad              ON archivos(entidad_tipo, entidad_id, activo)",       "idx.archivos_entidad");
+    // inscripciones: listado filtrado por estado (activa/retirada/finalizada)
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_activo_estado   ON inscripciones(activo, estado)",                   "idx.inscripciones_activo_estado");
+    // organigrama: listado completo WHERE activo = true ORDER BY orden
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_organigrama_activo            ON organigrama_personas(activo, orden)",              "idx.organigrama_activo");
+    // voluntarios: listado de activos
+    await Migrar("CREATE INDEX IF NOT EXISTS idx_voluntarios_activo            ON voluntarios(activo)",                              "idx.voluntarios_activo");
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────

@@ -13,6 +13,7 @@ import DeleteIcon           from '@mui/icons-material/Delete';
 import SearchIcon           from '@mui/icons-material/Search';
 import CloseIcon            from '@mui/icons-material/Close';
 import AttachMoneyIcon      from '@mui/icons-material/AttachMoney';
+import SkeletonTabla        from '../../../../shared/components/SkeletonTabla';
 import Inventory2Icon       from '@mui/icons-material/Inventory2';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import BusinessIcon         from '@mui/icons-material/Business';
@@ -827,7 +828,7 @@ function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
 
       {/* Tabla */}
       {cargando && donaciones.length === 0 ? (
-        <Box sx={{ py: 8, textAlign: 'center' }}><CircularProgress /></Box>
+        <SkeletonTabla columnas={5} filas={8} />
       ) : donaciones.length === 0 ? (
         <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed #fde68a', borderRadius: 2, bgcolor: '#fffbf0' }}>
           <VolunteerActivismIcon sx={{ fontSize: 48, color: '#fcd34d', mb: 1.5 }} />

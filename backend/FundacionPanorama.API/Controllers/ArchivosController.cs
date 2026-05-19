@@ -1,11 +1,11 @@
 // Sube archivos a Supabase Storage y lleva auditoría de descargas de documentos.
 using System.Security.Claims;
 using FundacionPanorama.API.Data;
-using FundacionPanorama.API.Models;
 using FundacionPanorama.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -25,7 +25,6 @@ public class ArchivosController : ControllerBase
     }
 
     // POST api/archivos/upload?carpeta=fotos
-    // Recibe un IFormFile "archivo", lo sube a Supabase Storage y devuelve la URL pública.
     [HttpPost("upload")]
     [Authorize]
     [Consumes("multipart/form-data")]
@@ -72,24 +71,41 @@ public class ArchivosController : ControllerBase
         pagina    = Math.Max(1, pagina);
         porPagina = Math.Clamp(porPagina, 1, 100);
 
-        var total = await _db.LogDescargas.CountAsync();
-        var registros = await _db.LogDescargas
-            .OrderByDescending(l => l.DescargadoEn)
-            .Skip((pagina - 1) * porPagina)
-            .Take(porPagina)
-            .Join(_db.Beneficiarios,
-                  l => l.BeneficiarioId,
-                  b => b.Id,
-                  (l, b) => new {
-                      l.Id,
-                      l.UsuarioEmail,
-                      l.BeneficiarioId,
-                      NombreBeneficiario = b.Nombre,
-                      l.TipoArchivo,
-                      l.UrlArchivo,
-                      l.DescargadoEn
-                  })
-            .ToListAsync();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+
+        long total;
+        await using (var cmdCount = conn.CreateCommand())
+        {
+            cmdCount.CommandText = "SELECT COUNT(*) FROM log_descargas";
+            total = (long)(await cmdCount.ExecuteScalarAsync())!;
+        }
+
+        var registros = new List<object>();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT l.id, l.usuario_email, l.beneficiario_id, b.nombre AS nombre_beneficiario,
+                   l.tipo_archivo, l.url_archivo, l.descargado_en
+            FROM log_descargas l
+            JOIN beneficiarios b ON b.id = l.beneficiario_id
+            ORDER BY l.descargado_en DESC
+            LIMIT @limit OFFSET @offset";
+        cmd.Parameters.AddWithValue("limit",  porPagina);
+        cmd.Parameters.AddWithValue("offset", (pagina - 1) * porPagina);
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+        {
+            registros.Add(new
+            {
+                Id                 = r.GetGuid(0),
+                UsuarioEmail       = r.GetString(1),
+                BeneficiarioId     = r.GetGuid(2),
+                NombreBeneficiario = r.GetString(3),
+                TipoArchivo        = r.IsDBNull(4) ? null : r.GetString(4),
+                UrlArchivo         = r.IsDBNull(5) ? null : r.GetString(5),
+                DescargadoEn       = r.GetDateTime(6),
+            });
+        }
 
         return Ok(new { data = registros, total, pagina, porPagina });
     }
@@ -104,15 +120,19 @@ public class ArchivosController : ControllerBase
                  ?? User.Identity?.Name
                  ?? "desconocido";
 
-        _db.LogDescargas.Add(new LogDescarga
-        {
-            UsuarioEmail    = email,
-            BeneficiarioId  = dto.BeneficiarioId,
-            TipoArchivo     = dto.TipoArchivo ?? "documento",
-            UrlArchivo      = dto.UrlArchivo,
-            DescargadoEn    = DateTime.UtcNow,
-        });
-        await _db.SaveChangesAsync();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            INSERT INTO log_descargas (usuario_email, beneficiario_id, tipo_archivo, url_archivo, descargado_en)
+            VALUES (@email, @bid, @tipo, @url, NOW())";
+        cmd.Parameters.AddWithValue("email", email);
+        cmd.Parameters.AddWithValue("bid",   dto.BeneficiarioId);
+        cmd.Parameters.AddWithValue("tipo",  dto.TipoArchivo ?? "documento");
+        cmd.Parameters.AddWithValue("url",   (object?)dto.UrlArchivo ?? DBNull.Value);
+        await cmd.ExecuteNonQueryAsync();
         return Ok();
     }
+
+    private NpgsqlConnection AbrirConexion() => new(_db.Database.GetConnectionString());
 }

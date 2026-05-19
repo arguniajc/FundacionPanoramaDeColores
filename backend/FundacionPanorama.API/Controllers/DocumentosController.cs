@@ -1,10 +1,10 @@
 // Gestión de documentos: institucionales (tabla propia) y adicionales por beneficiario (tabla archivos).
 using System.Security.Claims;
 using FundacionPanorama.API.Data;
-using FundacionPanorama.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -35,21 +35,44 @@ public class DocumentosController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Listar([FromQuery] string? categoria)
     {
-        var q = _db.DocumentosInstitucionales
-            .Where(d => d.Activo);
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
 
-        if (!string.IsNullOrWhiteSpace(categoria))
-            q = q.Where(d => d.Categoria == categoria);
+        if (string.IsNullOrWhiteSpace(categoria))
+        {
+            cmd.CommandText = @"
+                SELECT id, titulo, descripcion, categoria, url, nombre_original, subido_por_email, fecha_creacion
+                FROM documentos_institucionales
+                WHERE activo = true
+                ORDER BY fecha_creacion DESC";
+        }
+        else
+        {
+            cmd.CommandText = @"
+                SELECT id, titulo, descripcion, categoria, url, nombre_original, subido_por_email, fecha_creacion
+                FROM documentos_institucionales
+                WHERE activo = true AND categoria = @cat
+                ORDER BY fecha_creacion DESC";
+            cmd.Parameters.AddWithValue("cat", categoria);
+        }
 
-        var docs = await q
-            .OrderByDescending(d => d.FechaCreacion)
-            .Select(d => new
+        var docs = new List<object>();
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+        {
+            docs.Add(new
             {
-                d.Id, d.Titulo, d.Descripcion, d.Categoria,
-                d.Url, d.NombreOriginal, d.SubidoPorEmail, d.FechaCreacion
-            })
-            .ToListAsync();
-
+                Id             = r.GetGuid(0),
+                Titulo         = r.GetString(1),
+                Descripcion    = r.IsDBNull(2) ? null : r.GetString(2),
+                Categoria      = r.GetString(3),
+                Url            = r.GetString(4),
+                NombreOriginal = r.IsDBNull(5) ? null : r.GetString(5),
+                SubidoPorEmail = r.IsDBNull(6) ? null : r.GetString(6),
+                FechaCreacion  = r.GetDateTime(7),
+            });
+        }
         return Ok(docs);
     }
 
@@ -61,31 +84,37 @@ public class DocumentosController : ControllerBase
                  ?? User.FindFirst("email")?.Value
                  ?? "desconocido";
 
-        var doc = new DocumentoInstitucional
-        {
-            Titulo         = dto.Titulo.Trim(),
-            Descripcion    = dto.Descripcion?.Trim(),
-            Categoria      = dto.Categoria,
-            Url            = dto.Url,
-            NombreOriginal = dto.NombreOriginal,
-            SubidoPorEmail = email,
-        };
-
-        _db.DocumentosInstitucionales.Add(doc);
-        await _db.SaveChangesAsync();
-        return Ok(new { doc.Id });
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            INSERT INTO documentos_institucionales (titulo, descripcion, categoria, url, nombre_original, subido_por_email)
+            VALUES (@titulo, @desc, @cat, @url, @nombreOrig, @email)
+            RETURNING id";
+        cmd.Parameters.AddWithValue("titulo",     dto.Titulo.Trim());
+        cmd.Parameters.AddWithValue("desc",       (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("cat",        dto.Categoria);
+        cmd.Parameters.AddWithValue("url",        dto.Url);
+        cmd.Parameters.AddWithValue("nombreOrig", (object?)dto.NombreOriginal ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("email",      email);
+        var id = (Guid)(await cmd.ExecuteScalarAsync())!;
+        return Ok(new { Id = id });
     }
 
     // DELETE api/documentos/{id}
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Eliminar(Guid id)
     {
-        var doc = await _db.DocumentosInstitucionales.FindAsync(id);
-        if (doc is null || !doc.Activo) return NotFound();
-
-        doc.Activo            = false;
-        doc.FechaModificacion = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            UPDATE documentos_institucionales
+            SET activo = false, fecha_modificacion = NOW()
+            WHERE id = @id AND activo = true";
+        cmd.Parameters.AddWithValue("id", id);
+        var rows = await cmd.ExecuteNonQueryAsync();
+        if (rows == 0) return NotFound();
         return Ok();
     }
 
@@ -95,17 +124,27 @@ public class DocumentosController : ControllerBase
     [HttpGet("beneficiario/{beneficiarioId:guid}")]
     public async Task<IActionResult> ListarPorBeneficiario(Guid beneficiarioId)
     {
-        var archivos = await _db.Archivos
-            .Where(a => a.EntidadTipo == "beneficiario"
-                     && a.EntidadId   == beneficiarioId
-                     && a.Activo)
-            .OrderByDescending(a => a.FechaCreacion)
-            .Select(a => new
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT id, url, nombre_original, fecha_creacion
+            FROM archivos
+            WHERE entidad_tipo = 'beneficiario' AND entidad_id = @bid AND activo = true
+            ORDER BY fecha_creacion DESC";
+        cmd.Parameters.AddWithValue("bid", beneficiarioId);
+        var archivos = new List<object>();
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+        {
+            archivos.Add(new
             {
-                a.Id, a.Url, a.NombreOriginal, a.FechaCreacion
-            })
-            .ToListAsync();
-
+                Id             = r.GetGuid(0),
+                Url            = r.GetString(1),
+                NombreOriginal = r.IsDBNull(2) ? null : r.GetString(2),
+                FechaCreacion  = r.GetDateTime(3),
+            });
+        }
         return Ok(archivos);
     }
 
@@ -114,32 +153,45 @@ public class DocumentosController : ControllerBase
     public async Task<IActionResult> GuardarArchivoBeneficiario(
         Guid beneficiarioId, [FromBody] GuardarArchivoDto dto)
     {
-        var existe = await _db.Beneficiarios.AnyAsync(b => b.Id == beneficiarioId && b.Activo);
-        if (!existe) return NotFound(new { mensaje = "Beneficiario no encontrado." });
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
 
-        var archivo = new Archivo
+        await using (var cmdCheck = conn.CreateCommand())
         {
-            EntidadTipo    = "beneficiario",
-            EntidadId      = beneficiarioId,
-            Url            = dto.Url,
-            NombreOriginal = dto.NombreOriginal ?? dto.Titulo,
-        };
+            cmdCheck.CommandText = "SELECT EXISTS(SELECT 1 FROM beneficiarios WHERE id = @id AND activo = true)";
+            cmdCheck.Parameters.AddWithValue("id", beneficiarioId);
+            var existe = (bool)(await cmdCheck.ExecuteScalarAsync())!;
+            if (!existe) return NotFound(new { mensaje = "Beneficiario no encontrado." });
+        }
 
-        _db.Archivos.Add(archivo);
-        await _db.SaveChangesAsync();
-        return Ok(new { archivo.Id });
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            INSERT INTO archivos (entidad_tipo, entidad_id, url, nombre_original)
+            VALUES ('beneficiario', @bid, @url, @nombreOrig)
+            RETURNING id";
+        cmd.Parameters.AddWithValue("bid",      beneficiarioId);
+        cmd.Parameters.AddWithValue("url",      dto.Url);
+        cmd.Parameters.AddWithValue("nombreOrig", (object?)(dto.NombreOriginal ?? dto.Titulo) ?? DBNull.Value);
+        var id = (Guid)(await cmd.ExecuteScalarAsync())!;
+        return Ok(new { Id = id });
     }
 
     // DELETE api/documentos/archivo/{id}
     [HttpDelete("archivo/{id:guid}")]
     public async Task<IActionResult> EliminarArchivo(Guid id)
     {
-        var archivo = await _db.Archivos.FindAsync(id);
-        if (archivo is null || !archivo.Activo) return NotFound();
-
-        archivo.Activo            = false;
-        archivo.FechaModificacion = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            UPDATE archivos
+            SET activo = false, fecha_modificacion = NOW()
+            WHERE id = @id AND activo = true";
+        cmd.Parameters.AddWithValue("id", id);
+        var rows = await cmd.ExecuteNonQueryAsync();
+        if (rows == 0) return NotFound();
         return Ok();
     }
+
+    private NpgsqlConnection AbrirConexion() => new(_db.Database.GetConnectionString());
 }

@@ -5,9 +5,10 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Chip, Pagination, CircularProgress, Alert, TextField, InputAdornment,
 } from '@mui/material';
-import SearchIcon   from '@mui/icons-material/Search';
-import DownloadIcon from '@mui/icons-material/Download';
-import apiClient    from '../../../../infrastructure/http/apiClient';
+import SearchIcon    from '@mui/icons-material/Search';
+import DownloadIcon  from '@mui/icons-material/Download';
+import apiClient     from '../../../../infrastructure/http/apiClient';
+import SkeletonTabla from '../../../../shared/components/SkeletonTabla';
 
 const POR_PAGINA = 20;
 
@@ -84,9 +85,7 @@ export default function LogDescargasPage() {
         </Box>
 
         {cargando ? (
-          <Box display="flex" justifyContent="center" py={5}>
-            <CircularProgress sx={{ color: 'var(--color-primario)' }} />
-          </Box>
+          <SkeletonTabla columnas={4} filas={8} />
         ) : (
           <TableContainer sx={{ overflowX: 'auto' }}>
             <Table size="small">

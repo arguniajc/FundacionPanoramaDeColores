@@ -1,11 +1,11 @@
 // CRUD de sedes, programas y campos dinámicos. Requiere JWT.
 using System.Text.Json;
 using FundacionPanorama.API.Data;
-using FundacionPanorama.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -27,69 +27,126 @@ public class SedesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Listar([FromQuery] bool soloActivas = false)
     {
-        var query = _db.Sedes.Include(s => s.Programas).AsQueryable();
-        if (soloActivas) query = query.Where(s => s.Activo);
-        var sedes = await query.OrderBy(s => s.Nombre).ToListAsync();
-        return Ok(sedes.Select(MapearSede));
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+
+        var dtos = new List<SedeDto>();
+        var sedeIds = new List<Guid>();
+
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT id, nombre, direccion, ciudad, telefono, activo, fecha_creacion, fecha_modificacion FROM sedes" +
+                              (soloActivas ? " WHERE activo = true" : "") +
+                              " ORDER BY nombre";
+            await using var r = await cmd.ExecuteReaderAsync();
+            while (await r.ReadAsync())
+            {
+                var sid = r.GetGuid(0);
+                sedeIds.Add(sid);
+                dtos.Add(new SedeDto(
+                    sid,
+                    r.GetString(1),
+                    r.IsDBNull(2) ? null : r.GetString(2),
+                    r.IsDBNull(3) ? null : r.GetString(3),
+                    r.IsDBNull(4) ? null : r.GetString(4),
+                    r.GetBoolean(5), r.GetDateTime(6), r.GetDateTime(7),
+                    new List<ProgramaDto>()
+                ));
+            }
+        }
+
+        if (sedeIds.Count > 0)
+        {
+            var indexBySede = dtos.ToDictionary(d => d.Id);
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = SqlSelectPrograma + " WHERE p.sede_id = ANY(@ids) ORDER BY p.nombre";
+            cmd.Parameters.Add(new NpgsqlParameter("ids", NpgsqlDbType.Array | NpgsqlDbType.Uuid) { Value = sedeIds.ToArray() });
+            await using var r = await cmd.ExecuteReaderAsync();
+            while (await r.ReadAsync())
+            {
+                var p = LeerPrograma(r);
+                if (indexBySede.TryGetValue(p.SedeId, out var sede)) sede.Programas.Add(p);
+            }
+        }
+
+        return Ok(dtos);
     }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> ObtenerPorId(Guid id)
     {
-        var s = await _db.Sedes.Include(s => s.Programas).FirstOrDefaultAsync(s => s.Id == id);
-        if (s is null) return NotFound();
-        return Ok(MapearSede(s));
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        var sede = await CargarSedeAsync(conn, id);
+        if (sede is null) return NotFound();
+        return Ok(sede);
     }
 
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearSedeDto dto)
     {
-        var sede = new Sede
-        {
-            Nombre    = dto.Nombre.Trim(),
-            Direccion = dto.Direccion?.Trim(),
-            Ciudad    = dto.Ciudad?.Trim(),
-            Telefono  = dto.Telefono?.Trim(),
-            Activo    = true
-        };
-        _db.Sedes.Add(sede);
-        await _db.SaveChangesAsync();
-        await _db.Entry(sede).Collection(s => s.Programas).LoadAsync();
-        return CreatedAtAction(nameof(ObtenerPorId), new { id = sede.Id }, MapearSede(sede));
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            INSERT INTO sedes (nombre, direccion, ciudad, telefono, activo)
+            VALUES (@nombre, @dir, @ciudad, @tel, true)
+            RETURNING id";
+        cmd.Parameters.AddWithValue("nombre", dto.Nombre.Trim());
+        cmd.Parameters.AddWithValue("dir",    (object?)dto.Direccion?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("ciudad", (object?)dto.Ciudad?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("tel",    (object?)dto.Telefono?.Trim() ?? DBNull.Value);
+        var newId = (Guid)(await cmd.ExecuteScalarAsync())!;
+        var sede = await CargarSedeAsync(conn, newId);
+        return CreatedAtAction(nameof(ObtenerPorId), new { id = newId }, sede);
     }
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearSedeDto dto)
     {
-        var sede = await _db.Sedes.Include(s => s.Programas).FirstOrDefaultAsync(s => s.Id == id);
-        if (sede is null) return NotFound();
-        sede.Nombre             = dto.Nombre.Trim();
-        sede.Direccion          = dto.Direccion?.Trim();
-        sede.Ciudad             = dto.Ciudad?.Trim();
-        sede.Telefono           = dto.Telefono?.Trim();
-        sede.FechaModificacion  = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-        return Ok(MapearSede(sede));
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE sedes SET nombre=@nombre, direccion=@dir, ciudad=@ciudad, telefono=@tel, fecha_modificacion=NOW()
+                WHERE id = @id";
+            cmd.Parameters.AddWithValue("id",     id);
+            cmd.Parameters.AddWithValue("nombre", dto.Nombre.Trim());
+            cmd.Parameters.AddWithValue("dir",    (object?)dto.Direccion?.Trim() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("ciudad", (object?)dto.Ciudad?.Trim() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("tel",    (object?)dto.Telefono?.Trim() ?? DBNull.Value);
+            var rows = await cmd.ExecuteNonQueryAsync();
+            if (rows == 0) return NotFound();
+        }
+        return Ok(await CargarSedeAsync(conn, id));
     }
 
     [HttpPatch("{id:guid}/toggle")]
     public async Task<IActionResult> Toggle(Guid id)
     {
-        var sede = await _db.Sedes.Include(s => s.Programas).FirstOrDefaultAsync(s => s.Id == id);
-        if (sede is null) return NotFound();
-        sede.Activo            = !sede.Activo;
-        sede.FechaModificacion = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-        return Ok(MapearSede(sede));
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "UPDATE sedes SET activo = NOT activo, fecha_modificacion = NOW() WHERE id = @id";
+            cmd.Parameters.AddWithValue("id", id);
+            var rows = await cmd.ExecuteNonQueryAsync();
+            if (rows == 0) return NotFound();
+        }
+        return Ok(await CargarSedeAsync(conn, id));
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Eliminar(Guid id)
     {
-        var sede = await _db.Sedes.FindAsync(id);
-        if (sede is null) return NotFound();
-        _db.Sedes.Remove(sede);
-        await _db.SaveChangesAsync();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM sedes WHERE id = @id";
+        cmd.Parameters.AddWithValue("id", id);
+        var rows = await cmd.ExecuteNonQueryAsync();
+        if (rows == 0) return NotFound();
         return NoContent();
     }
 
@@ -98,94 +155,146 @@ public class SedesController : ControllerBase
     [HttpGet("programas/{id:guid}")]
     public async Task<IActionResult> ObtenerPrograma(Guid id)
     {
-        var p = await _db.Programas.Include(p => p.Sede).FirstOrDefaultAsync(p => p.Id == id);
-        if (p is null) return NotFound();
-        return Ok(MapearPrograma(p));
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = SqlSelectPrograma + " WHERE p.id = @id";
+        cmd.Parameters.AddWithValue("id", id);
+        await using var r = await cmd.ExecuteReaderAsync();
+        if (!await r.ReadAsync()) return NotFound();
+        return Ok(LeerPrograma(r));
     }
 
     [HttpGet("{sedeId:guid}/programas")]
     public async Task<IActionResult> ListarProgramas(Guid sedeId)
     {
-        var programas = await _db.Programas
-            .Include(p => p.Sede)
-            .Where(p => p.SedeId == sedeId)
-            .OrderBy(p => p.Nombre)
-            .ToListAsync();
-        return Ok(programas.Select(MapearPrograma));
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = SqlSelectPrograma + " WHERE p.sede_id = @sid ORDER BY p.nombre";
+        cmd.Parameters.AddWithValue("sid", sedeId);
+        var programas = new List<ProgramaDto>();
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync()) programas.Add(LeerPrograma(r));
+        return Ok(programas);
     }
 
     [HttpPost("programas")]
     public async Task<IActionResult> CrearPrograma([FromBody] CrearProgramaDto dto)
     {
-        var sedeExiste = await _db.Sedes.AnyAsync(s => s.Id == dto.SedeId);
-        if (!sedeExiste) return BadRequest(new { mensaje = "Sede no encontrada." });
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
 
-        var programa = new Programa
+        await using (var cmdCheck = conn.CreateCommand())
         {
-            SedeId        = dto.SedeId,
-            Nombre        = dto.Nombre.Trim(),
-            Descripcion   = dto.Descripcion?.Trim(),
-            CupoMaximo    = dto.CupoMaximo,
-            Activo        = true,
-            TieneTercero  = dto.TieneTercero,
-            NombreTercero = dto.NombreTercero?.Trim(),
-        };
-        _db.Programas.Add(programa);
-        await _db.SaveChangesAsync();
-        await _db.Entry(programa).Reference(p => p.Sede).LoadAsync();
-        return Ok(MapearPrograma(programa));
+            cmdCheck.CommandText = "SELECT EXISTS(SELECT 1 FROM sedes WHERE id = @id)";
+            cmdCheck.Parameters.AddWithValue("id", dto.SedeId);
+            var existe = (bool)(await cmdCheck.ExecuteScalarAsync())!;
+            if (!existe) return BadRequest(new { mensaje = "Sede no encontrada." });
+        }
+
+        Guid newId;
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                INSERT INTO programas (sede_id, nombre, descripcion, cupo_maximo, activo, tiene_tercero, nombre_tercero)
+                VALUES (@sedeId, @nombre, @desc, @cupo, true, @tieneTercero, @nombreTercero)
+                RETURNING id";
+            cmd.Parameters.AddWithValue("sedeId",       dto.SedeId);
+            cmd.Parameters.AddWithValue("nombre",        dto.Nombre.Trim());
+            cmd.Parameters.AddWithValue("desc",          (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("cupo",          (object?)dto.CupoMaximo ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("tieneTercero",  dto.TieneTercero);
+            cmd.Parameters.AddWithValue("nombreTercero", (object?)dto.NombreTercero?.Trim() ?? DBNull.Value);
+            newId = (Guid)(await cmd.ExecuteScalarAsync())!;
+        }
+
+        await using var cmdGet = conn.CreateCommand();
+        cmdGet.CommandText = SqlSelectPrograma + " WHERE p.id = @id";
+        cmdGet.Parameters.AddWithValue("id", newId);
+        await using var r = await cmdGet.ExecuteReaderAsync();
+        await r.ReadAsync();
+        return Ok(LeerPrograma(r));
     }
 
     [HttpPut("programas/{id:guid}")]
     public async Task<IActionResult> ActualizarPrograma(Guid id, [FromBody] CrearProgramaDto dto)
     {
-        var programa = await _db.Programas.Include(p => p.Sede).FirstOrDefaultAsync(p => p.Id == id);
-        if (programa is null) return NotFound();
-        programa.SedeId             = dto.SedeId;
-        programa.Nombre             = dto.Nombre.Trim();
-        programa.Descripcion        = dto.Descripcion?.Trim();
-        programa.CupoMaximo         = dto.CupoMaximo;
-        programa.TieneTercero       = dto.TieneTercero;
-        programa.NombreTercero      = dto.NombreTercero?.Trim();
-        programa.FechaModificacion  = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-        return Ok(MapearPrograma(programa));
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE programas
+                SET sede_id=@sedeId, nombre=@nombre, descripcion=@desc, cupo_maximo=@cupo,
+                    tiene_tercero=@tieneTercero, nombre_tercero=@nombreTercero, fecha_modificacion=NOW()
+                WHERE id = @id";
+            cmd.Parameters.AddWithValue("id",           id);
+            cmd.Parameters.AddWithValue("sedeId",       dto.SedeId);
+            cmd.Parameters.AddWithValue("nombre",        dto.Nombre.Trim());
+            cmd.Parameters.AddWithValue("desc",          (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("cupo",          (object?)dto.CupoMaximo ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("tieneTercero",  dto.TieneTercero);
+            cmd.Parameters.AddWithValue("nombreTercero", (object?)dto.NombreTercero?.Trim() ?? DBNull.Value);
+            var rows = await cmd.ExecuteNonQueryAsync();
+            if (rows == 0) return NotFound();
+        }
+
+        await using var cmdGet = conn.CreateCommand();
+        cmdGet.CommandText = SqlSelectPrograma + " WHERE p.id = @id";
+        cmdGet.Parameters.AddWithValue("id", id);
+        await using var r = await cmdGet.ExecuteReaderAsync();
+        if (!await r.ReadAsync()) return NotFound();
+        return Ok(LeerPrograma(r));
     }
 
     [HttpPatch("programas/{id:guid}/toggle")]
     public async Task<IActionResult> TogglePrograma(Guid id)
     {
-        var programa = await _db.Programas.Include(p => p.Sede).FirstOrDefaultAsync(p => p.Id == id);
-        if (programa is null) return NotFound();
-        programa.Activo            = !programa.Activo;
-        programa.FechaModificacion = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-        return Ok(MapearPrograma(programa));
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "UPDATE programas SET activo = NOT activo, fecha_modificacion = NOW() WHERE id = @id";
+            cmd.Parameters.AddWithValue("id", id);
+            var rows = await cmd.ExecuteNonQueryAsync();
+            if (rows == 0) return NotFound();
+        }
+
+        await using var cmdGet = conn.CreateCommand();
+        cmdGet.CommandText = SqlSelectPrograma + " WHERE p.id = @id";
+        cmdGet.Parameters.AddWithValue("id", id);
+        await using var r = await cmdGet.ExecuteReaderAsync();
+        await r.ReadAsync();
+        return Ok(LeerPrograma(r));
     }
 
     [HttpDelete("programas/{id:guid}")]
     public async Task<IActionResult> EliminarPrograma(Guid id)
     {
-        var programa = await _db.Programas.FindAsync(id);
-        if (programa is null) return NotFound();
-        _db.Programas.Remove(programa);
-        await _db.SaveChangesAsync();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM programas WHERE id = @id";
+        cmd.Parameters.AddWithValue("id", id);
+        var rows = await cmd.ExecuteNonQueryAsync();
+        if (rows == 0) return NotFound();
         return NoContent();
     }
 
     [HttpPut("programas/{id:guid}/autorizar-rep")]
     public async Task<IActionResult> AutorizarRepLegal(Guid id)
     {
-        var programa = await _db.Programas.Include(p => p.Sede).FirstOrDefaultAsync(p => p.Id == id);
-        if (programa is null) return NotFound();
-
-        string? repNombre = null, repDocumento = null, repCargo = null, repFirma = null;
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT nombre_rep_legal, documento_rep, cargo_rep, firma_rep FROM configuracion LIMIT 1";
-        await using (var r = await cmd.ExecuteReaderAsync())
+
+        string? repNombre = null, repDocumento = null, repCargo = null, repFirma = null;
+        await using (var cmd = conn.CreateCommand())
         {
+            cmd.CommandText = "SELECT nombre_rep_legal, documento_rep, cargo_rep, firma_rep FROM configuracion LIMIT 1";
+            await using var r = await cmd.ExecuteReaderAsync();
             if (!await r.ReadAsync())
                 return BadRequest(new { mensaje = "No hay configuración de representante legal guardada. Ve a Configuración y completa los datos." });
             repNombre    = r.IsDBNull(0) ? null : r.GetString(0);
@@ -194,32 +303,64 @@ public class SedesController : ControllerBase
             repFirma     = r.IsDBNull(3) ? null : r.GetString(3);
         }
 
-        programa.RepAutorizado        = true;
-        programa.RepAutorizacionFecha = DateTime.UtcNow;
-        programa.RepNombre            = repNombre;
-        programa.RepDocumento         = repDocumento;
-        programa.RepCargo             = repCargo;
-        programa.RepFirma             = repFirma;
-        programa.FechaModificacion    = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-        return Ok(MapearPrograma(programa));
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE programas SET
+                    rep_autorizado = true,
+                    rep_autorizacion_fecha = NOW(),
+                    rep_nombre = @repNombre,
+                    rep_documento = @repDocumento,
+                    rep_cargo = @repCargo,
+                    rep_firma = @repFirma,
+                    fecha_modificacion = NOW()
+                WHERE id = @id";
+            cmd.Parameters.AddWithValue("id",          id);
+            cmd.Parameters.AddWithValue("repNombre",    (object?)repNombre    ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("repDocumento", (object?)repDocumento ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("repCargo",     (object?)repCargo     ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("repFirma",     (object?)repFirma     ?? DBNull.Value);
+            var rows = await cmd.ExecuteNonQueryAsync();
+            if (rows == 0) return NotFound();
+        }
+
+        await using var cmdGet = conn.CreateCommand();
+        cmdGet.CommandText = SqlSelectPrograma + " WHERE p.id = @id";
+        cmdGet.Parameters.AddWithValue("id", id);
+        await using var r2 = await cmdGet.ExecuteReaderAsync();
+        if (!await r2.ReadAsync()) return NotFound();
+        return Ok(LeerPrograma(r2));
     }
 
     [HttpDelete("programas/{id:guid}/autorizar-rep")]
     public async Task<IActionResult> RevocarRepLegal(Guid id)
     {
-        var programa = await _db.Programas.Include(p => p.Sede).FirstOrDefaultAsync(p => p.Id == id);
-        if (programa is null) return NotFound();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
 
-        programa.RepAutorizado        = false;
-        programa.RepAutorizacionFecha = null;
-        programa.RepNombre            = null;
-        programa.RepDocumento         = null;
-        programa.RepCargo             = null;
-        programa.RepFirma             = null;
-        programa.FechaModificacion    = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-        return Ok(MapearPrograma(programa));
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                UPDATE programas SET
+                    rep_autorizado = false,
+                    rep_autorizacion_fecha = NULL,
+                    rep_nombre = NULL,
+                    rep_documento = NULL,
+                    rep_cargo = NULL,
+                    rep_firma = NULL,
+                    fecha_modificacion = NOW()
+                WHERE id = @id";
+            cmd.Parameters.AddWithValue("id", id);
+            var rows = await cmd.ExecuteNonQueryAsync();
+            if (rows == 0) return NotFound();
+        }
+
+        await using var cmdGet = conn.CreateCommand();
+        cmdGet.CommandText = SqlSelectPrograma + " WHERE p.id = @id";
+        cmdGet.Parameters.AddWithValue("id", id);
+        await using var r = await cmdGet.ExecuteReaderAsync();
+        if (!await r.ReadAsync()) return NotFound();
+        return Ok(LeerPrograma(r));
     }
 
     // ── Campos dinámicos — Npgsql directo (sin EF Core DbSet) ─────────────────
@@ -241,14 +382,21 @@ public class SedesController : ControllerBase
     [HttpPost("programas/{programaId:guid}/campos")]
     public async Task<IActionResult> CrearCampo(Guid programaId, [FromBody] CrearCampoDto dto)
     {
-        if (!await _db.Programas.AnyAsync(p => p.Id == programaId))
-            return NotFound(new { mensaje = "Programa no encontrado." });
         if (string.IsNullOrWhiteSpace(dto.Seccion))
             return BadRequest(new { mensaje = "La sección del campo es obligatoria." });
 
-        var opJson = dto.Opciones is { Length: > 0 } ? JsonSerializer.Serialize(dto.Opciones) : null;
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
+
+        await using (var cmdCheck = conn.CreateCommand())
+        {
+            cmdCheck.CommandText = "SELECT EXISTS(SELECT 1 FROM programas WHERE id = @id)";
+            cmdCheck.Parameters.AddWithValue("id", programaId);
+            var existe = (bool)(await cmdCheck.ExecuteScalarAsync())!;
+            if (!existe) return NotFound(new { mensaje = "Programa no encontrado." });
+        }
+
+        var opJson = dto.Opciones is { Length: > 0 } ? JsonSerializer.Serialize(dto.Opciones) : null;
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"INSERT INTO programas_campos (programa_id, etiqueta, tipo, obligatorio, opciones_json, orden, activo, seccion, columnas)
                             VALUES (@pid, @etiqueta, @tipo, @oblig, @opciones, @orden, true, @seccion, @columnas)
@@ -308,6 +456,59 @@ public class SedesController : ControllerBase
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    private const string SqlSelectPrograma = @"
+        SELECT p.id, p.sede_id, s.nombre AS nombre_sede, p.nombre, p.descripcion, p.cupo_maximo,
+               p.activo, p.tiene_tercero, p.nombre_tercero, p.fecha_creacion, p.fecha_modificacion,
+               p.rep_autorizado, p.rep_autorizacion_fecha, p.rep_firma, p.rep_nombre, p.rep_documento, p.rep_cargo
+        FROM programas p
+        JOIN sedes s ON s.id = p.sede_id";
+
+    private static ProgramaDto LeerPrograma(System.Data.Common.DbDataReader r) => new(
+        r.GetGuid(0), r.GetGuid(1), r.GetString(2), r.GetString(3),
+        r.IsDBNull(4)  ? null : r.GetString(4),
+        r.IsDBNull(5)  ? null : (int?)r.GetInt32(5),
+        r.GetBoolean(6), r.GetBoolean(7),
+        r.IsDBNull(8)  ? null : r.GetString(8),
+        r.GetDateTime(9), r.GetDateTime(10),
+        r.GetBoolean(11),
+        r.IsDBNull(12) ? null : (DateTime?)r.GetDateTime(12),
+        r.IsDBNull(13) ? null : r.GetString(13),
+        r.IsDBNull(14) ? null : r.GetString(14),
+        r.IsDBNull(15) ? null : r.GetString(15),
+        r.IsDBNull(16) ? null : r.GetString(16)
+    );
+
+    private async Task<SedeDto?> CargarSedeAsync(NpgsqlConnection conn, Guid id)
+    {
+        Guid sid; string snombre; string? sdir, sciud, stel; bool sactivo;
+        DateTime sfcreacion, sfmod;
+
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT id, nombre, direccion, ciudad, telefono, activo, fecha_creacion, fecha_modificacion FROM sedes WHERE id = @id";
+            cmd.Parameters.AddWithValue("id", id);
+            await using var r = await cmd.ExecuteReaderAsync();
+            if (!await r.ReadAsync()) return null;
+            sid = r.GetGuid(0); snombre = r.GetString(1);
+            sdir = r.IsDBNull(2) ? null : r.GetString(2);
+            sciud = r.IsDBNull(3) ? null : r.GetString(3);
+            stel = r.IsDBNull(4) ? null : r.GetString(4);
+            sactivo = r.GetBoolean(5);
+            sfcreacion = r.GetDateTime(6); sfmod = r.GetDateTime(7);
+        }
+
+        var programas = new List<ProgramaDto>();
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = SqlSelectPrograma + " WHERE p.sede_id = @sid ORDER BY p.nombre";
+            cmd.Parameters.AddWithValue("sid", id);
+            await using var r = await cmd.ExecuteReaderAsync();
+            while (await r.ReadAsync()) programas.Add(LeerPrograma(r));
+        }
+
+        return new SedeDto(sid, snombre, sdir, sciud, stel, sactivo, sfcreacion, sfmod, programas);
+    }
+
     private NpgsqlConnection AbrirConexion() =>
         new(_db.Database.GetConnectionString());
 
@@ -329,18 +530,4 @@ public class SedesController : ControllerBase
             r.GetDateTime(11)
         );
     }
-
-    private static SedeDto MapearSede(Sede s) => new(
-        s.Id, s.Nombre, s.Direccion, s.Ciudad, s.Telefono, s.Activo, s.FechaCreacion, s.FechaModificacion,
-        s.Programas.Select(p => MapearProgramaConSede(p, s.Nombre)).ToList()
-    );
-
-    private static ProgramaDto MapearPrograma(Programa p) =>
-        MapearProgramaConSede(p, p.Sede?.Nombre ?? "");
-
-    private static ProgramaDto MapearProgramaConSede(Programa p, string nombreSede) => new(
-        p.Id, p.SedeId, nombreSede, p.Nombre, p.Descripcion, p.CupoMaximo, p.Activo,
-        p.TieneTercero, p.NombreTercero, p.FechaCreacion, p.FechaModificacion,
-        p.RepAutorizado, p.RepAutorizacionFecha, p.RepFirma, p.RepNombre, p.RepDocumento, p.RepCargo
-    );
 }

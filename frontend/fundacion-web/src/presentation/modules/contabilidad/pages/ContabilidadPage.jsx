@@ -8,6 +8,7 @@ import {
   InputAdornment, Alert,
 } from '@mui/material';
 import AddIcon            from '@mui/icons-material/Add';
+import SkeletonTabla     from '../../../../shared/components/SkeletonTabla';
 import EditIcon           from '@mui/icons-material/Edit';
 import DeleteIcon         from '@mui/icons-material/Delete';
 import TrendingUpIcon     from '@mui/icons-material/TrendingUp';
@@ -313,8 +314,8 @@ export default function ContabilidadPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   if (cargando) return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
-      <CircularProgress />
+    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+      <SkeletonTabla columnas={6} filas={10} />
     </Box>
   );
   if (error) return <Alert severity="error" sx={{ m: 3 }}>{error}</Alert>;

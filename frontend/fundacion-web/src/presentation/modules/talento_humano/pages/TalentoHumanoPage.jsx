@@ -653,10 +653,10 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
   useEffect(() => {
     if (!open) return;
     setCargo(persona?.cargo ?? '');
-    setParentId(persona?.parentId ?? parentIdInicial ?? '');
-    setEmpleadoId(persona?.empleadoId ?? '');
-    setNombreExterno(persona?.nombreExterno ?? '');
-    setFotoPreview(persona?.fotoUrl ?? '');
+    setParentId(persona?.parentId ?? persona?.ParentId ?? parentIdInicial ?? '');
+    setEmpleadoId(persona?.empleadoId ?? persona?.EmpleadoId ?? '');
+    setNombreExterno(persona?.nombreExterno ?? persona?.NombreExterno ?? '');
+    setFotoPreview(persona?.fotoUrl ?? persona?.FotoUrl ?? '');
     setFotoFile(null);
     setError('');
   }, [open, persona, parentIdInicial]);
@@ -792,7 +792,8 @@ function buildTree(personas) {
   personas.forEach(p => { map[p.id] = { ...p, children: [] }; });
   const roots = [];
   personas.forEach(p => {
-    if (p.parentId && map[p.parentId]) map[p.parentId].children.push(map[p.id]);
+    const pid = p.parentId || p.ParentId || null;
+    if (pid && map[pid]) map[pid].children.push(map[p.id]);
     else roots.push(map[p.id]);
   });
   return roots;
@@ -854,7 +855,7 @@ function OrgChartTab({ puedoEditar, empleados }) {
     const isDescendant = (nodeId, ancId) => {
       if (!nodeId || !pMap[nodeId]) return false;
       if (nodeId === ancId) return true;
-      return isDescendant(pMap[nodeId].parentId, ancId);
+      return isDescendant(pMap[nodeId].parentId || pMap[nodeId].ParentId, ancId);
     };
     if (isDescendant(targetId, sourceId)) return;
     const p = pMap[sourceId];

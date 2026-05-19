@@ -64,7 +64,9 @@ var connStr = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Services.AddInfrastructure(connStr);
 
 // ── Controllers + OpenAPI ────────────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+        o.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase);
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
 

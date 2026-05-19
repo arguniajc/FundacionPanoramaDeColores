@@ -1,0 +1,46 @@
+name: CI — Build check
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  backend:
+    name: Backend (.NET 10)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore backend/FundacionPanorama.API/FundacionPanorama.API.csproj
+
+      - name: Build (Release)
+        run: dotnet build backend/FundacionPanorama.API/FundacionPanorama.API.csproj --no-restore -c Release
+
+  frontend:
+    name: Frontend (React/Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/fundacion-web/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: frontend/fundacion-web
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend/fundacion-web
+        env:
+          VITE_API_URL: https://fundacionpanoramadecolores-nez4.onrender.com

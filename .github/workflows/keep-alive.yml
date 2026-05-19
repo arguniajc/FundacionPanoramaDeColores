@@ -4,22 +4,49 @@ on:
   schedule:
     # Cada 14 minutos para evitar que Render.com duerma el servidor (límite: 15 min)
     - cron: '*/14 * * * *'
-  workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub si hace falta
+  workflow_dispatch:
 
 jobs:
   ping:
     name: Ping backend
     runs-on: ubuntu-latest
     steps:
-      - name: Ping API pública
+      - name: Ping API con reintentos
+        id: ping
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            --max-time 30 \
-            https://fundacionpanoramadecolores-nez4.onrender.com/api/configuracion/publica)
-          echo "HTTP status: $STATUS"
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
-            echo "Backend activo ✓"
-          else
-            echo "Backend no respondió correctamente (status $STATUS)"
-            exit 1
-          fi
+          MAX_ATTEMPTS=3
+          DELAY=20
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            STATUS=$(curl -s -o /tmp/resp.json -w "%{http_code}" \
+              --max-time 30 \
+              https://fundacionpanoramadecolores-nez4.onrender.com/api/configuracion/publica)
+            echo "Intento $i — HTTP $STATUS"
+            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
+              echo "Backend activo ✓"
+              exit 0
+            fi
+            cat /tmp/resp.json 2>/dev/null || true
+            [ $i -lt $MAX_ATTEMPTS ] && echo "Esperando ${DELAY}s antes del siguiente intento…" && sleep $DELAY
+          done
+          echo "❌ Backend no respondió tras $MAX_ATTEMPTS intentos"
+          exit 1
+
+      - name: Enviar alerta por email
+        if: failure()
+        continue-on-error: true
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "⚠️ API Fundación Panorama — Backend caído"
+          to: ${{ secrets.MAIL_TO }}
+          from: "Fundación Panorama CI <${{ secrets.MAIL_USERNAME }}>"
+          body: |
+            El keep-alive del backend en Render.com falló tras 3 intentos.
+
+            URL: https://fundacionpanoramadecolores-nez4.onrender.com/api/configuracion/publica
+            Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Revisa el estado del servicio en: https://dashboard.render.com

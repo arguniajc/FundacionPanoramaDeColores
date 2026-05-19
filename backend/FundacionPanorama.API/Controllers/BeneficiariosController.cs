@@ -1,6 +1,7 @@
 // CRUD completo de beneficiarios (niños inscritos). La mayoría de endpoints requieren JWT.
 // Regla de negocio: los beneficiarios no se eliminan permanentemente desde la UI,
 // solo se "dan de baja" (activo=false). El DELETE existe para limpieza de datos por admin.
+using System.Data;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.DTOs;
 using FundacionPanorama.API.Models;
@@ -99,100 +100,184 @@ public class BeneficiariosController : ControllerBase
     // =========================================================================
     [HttpGet("stats")]
     [Authorize]
-    public async Task<IActionResult> Stats()
+    public async Task<IActionResult> Stats(CancellationToken ct)
     {
-        var beneficiarios = await _db.Beneficiarios
-            .Include(b => b.Salud)
-            .Include(b => b.BeneficiarioAcudientes).ThenInclude(ba => ba.Acudiente)
-            .Include(b => b.Tallas)
-            .Include(b => b.Alergias)
-            .ToListAsync();
+        var conn = _db.Database.GetDbConnection();
+        if (conn.State != ConnectionState.Open)
+            await conn.OpenAsync(ct);
 
-        var idsActivos = beneficiarios.Select(b => b.Id).ToList();
+        // ── 1. Contadores principales (1 query, 1 fila) ───────────────────────
+        await using var cmd1 = conn.CreateCommand();
+        cmd1.CommandText = """
+            SELECT
+              COUNT(*)::int                                                            AS total,
+              COUNT(*) FILTER (WHERE activo = true)::int                              AS activos,
+              COUNT(*) FILTER (WHERE activo = false)::int                             AS baja,
+              COUNT(*) FILTER (WHERE numero_documento IS NULL
+                                OR   numero_documento = '')::int                      AS sin_documento,
+              (SELECT COUNT(DISTINCT beneficiario_id)::int
+               FROM   beneficiario_alergia WHERE activo = true)                       AS con_alergia,
+              (SELECT COUNT(*)::int FROM beneficiarios b2
+               LEFT   JOIN beneficiario_salud bs ON bs.beneficiario_id = b2.id
+               WHERE  bs.eps_id IS NULL)                                              AS sin_eps,
+              (SELECT COUNT(*)::int FROM beneficiarios b2
+               WHERE  NOT EXISTS (
+                   SELECT 1 FROM beneficiario_acudiente bac
+                   JOIN   acudientes ac ON ac.id = bac.acudiente_id
+                   WHERE  bac.beneficiario_id = b2.id
+                   AND    bac.es_principal = true AND bac.activo = true
+                   AND    ac.whatsapp IS NOT NULL AND ac.whatsapp <> ''))             AS sin_whatsapp,
+              (SELECT COUNT(*)::int FROM beneficiarios b2
+               WHERE  NOT EXISTS (
+                   SELECT 1 FROM beneficiario_acudiente bac
+                   JOIN   acudientes ac ON ac.id = bac.acudiente_id
+                   WHERE  bac.beneficiario_id = b2.id
+                   AND    bac.es_principal = true AND bac.activo = true
+                   AND    ac.direccion IS NOT NULL AND ac.direccion <> ''))           AS sin_direccion,
+              (SELECT COUNT(*)::int FROM beneficiarios b2
+               WHERE  NOT EXISTS (
+                   SELECT 1 FROM beneficiario_talla bt
+                   WHERE  bt.beneficiario_id = b2.id AND bt.activo = true))          AS sin_tallas,
+              (SELECT COUNT(*)::int FROM beneficiarios b2
+               WHERE  NOT EXISTS (
+                   SELECT 1 FROM archivos ar
+                   JOIN   cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
+                   WHERE  ar.entidad_tipo = 'beneficiario'
+                   AND    ar.entidad_id   = b2.id
+                   AND    ar.activo       = true
+                   AND    cta.nombre      = 'Foto del menor'))                        AS sin_foto
+            FROM beneficiarios b
+            """;
 
-        var archivos = await _db.Archivos
-            .Where(a => a.EntidadTipo == "beneficiario" && idsActivos.Contains(a.EntidadId)
-                        && a.Activo && a.TipoArchivo!.Nombre == "Foto del menor")
-            .Select(a => a.EntidadId)
-            .ToListAsync();
-
-        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
-
-        static int? Edad(DateOnly? f)
+        int total, activos, baja, sinDoc, conAlergia, sinEps, sinWhatsapp, sinDireccion, sinTallas, sinFoto;
+        await using (var r = await cmd1.ExecuteReaderAsync(ct))
         {
-            if (f is null) return null;
-            var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
-            int e = hoy.Year - f.Value.Year;
-            if (hoy < f.Value.AddYears(e)) e--;
-            return e;
+            await r.ReadAsync(ct);
+            total        = r.GetInt32(0);
+            activos      = r.GetInt32(1);
+            baja         = r.GetInt32(2);
+            sinDoc       = r.GetInt32(3);
+            conAlergia   = r.GetInt32(4);
+            sinEps       = r.GetInt32(5);
+            sinWhatsapp  = r.GetInt32(6);
+            sinDireccion = r.GetInt32(7);
+            sinTallas    = r.GetInt32(8);
+            sinFoto      = r.GetInt32(9);
         }
 
-        (string Label, int Min, int Max)[] rangos =
-        [
-            ("0-3 años",   0,  3),
-            ("4-6 años",   4,  6),
-            ("7-9 años",   7,  9),
-            ("10-12 años", 10, 12),
-            ("13-15 años", 13, 15),
-            ("16+ años",   16, 99),
-        ];
-
-        var porEdad = rangos.ToDictionary(
-            r => r.Label,
-            r => beneficiarios.Count(b =>
-            {
-                var e = Edad(b.FechaNacimiento);
-                return e is not null && e >= r.Min && e <= r.Max;
-            }));
-
-        var porMes = Enumerable.Range(0, 4)
-            .Select(k =>
-            {
-                var d     = DateTime.UtcNow.AddMonths(-(3 - k));
-                var label = d.ToString("MMM yy", new System.Globalization.CultureInfo("es-CO"));
-                var count = beneficiarios.Count(b =>
-                    b.FechaCreacion.Month == d.Month && b.FechaCreacion.Year == d.Year);
-                return (label, count);
-            })
-            .ToDictionary(x => x.label, x => x.count);
-
-        static List<TallaFreq> TopTallas(IEnumerable<string?> valores) =>
-            valores
-                .Where(v => !string.IsNullOrWhiteSpace(v))
-                .GroupBy(v => v!)
-                .OrderByDescending(g => g.Count())
-                .Take(5)
-                .Select(g => new TallaFreq(g.Key, g.Count()))
-                .ToList();
-
-        var ultimasTallas = beneficiarios
-            .Select(b => b.Tallas.OrderByDescending(t => t.FechaMedicion).FirstOrDefault(t => t.Activo))
-            .ToList();
-
-        var dto = new BeneficiarioStatsDto
+        // ── 2. Distribución por rango de edad (1 query, 1 fila) ───────────────
+        await using var cmd2 = conn.CreateCommand();
+        cmd2.CommandText = """
+            SELECT
+              COUNT(*) FILTER (WHERE edad BETWEEN  0 AND  3)::int,
+              COUNT(*) FILTER (WHERE edad BETWEEN  4 AND  6)::int,
+              COUNT(*) FILTER (WHERE edad BETWEEN  7 AND  9)::int,
+              COUNT(*) FILTER (WHERE edad BETWEEN 10 AND 12)::int,
+              COUNT(*) FILTER (WHERE edad BETWEEN 13 AND 15)::int,
+              COUNT(*) FILTER (WHERE edad >= 16)::int
+            FROM (
+              SELECT DATE_PART('year', AGE(fecha_nacimiento::date))::int AS edad
+              FROM   beneficiarios
+              WHERE  fecha_nacimiento IS NOT NULL
+            ) sub
+            """;
+        var porEdad = new Dictionary<string, int>();
+        await using (var r = await cmd2.ExecuteReaderAsync(ct))
         {
-            Total        = beneficiarios.Count,
-            Activos      = beneficiarios.Count(b => b.Activo),
-            Baja         = beneficiarios.Count(b => !b.Activo),
-            ConAlergia   = beneficiarios.Count(b => b.Alergias.Any(a => a.Activo)),
-            SinDocumento = beneficiarios.Count(b => string.IsNullOrWhiteSpace(b.NumeroDocumento)),
-            SinEps       = beneficiarios.Count(b => b.Salud?.EpsId is null),
-            SinWhatsapp  = beneficiarios.Count(b =>
-                !b.BeneficiarioAcudientes.Any(ba => ba.EsPrincipal && ba.Activo &&
-                    !string.IsNullOrWhiteSpace(ba.Acudiente?.Whatsapp))),
-            SinDireccion = beneficiarios.Count(b =>
-                !b.BeneficiarioAcudientes.Any(ba => ba.EsPrincipal && ba.Activo &&
-                    !string.IsNullOrWhiteSpace(ba.Acudiente?.Direccion))),
-            SinTallas    = beneficiarios.Count(b => !b.Tallas.Any(t => t.Activo)),
-            SinFoto      = beneficiarios.Count(b => !archivos.Contains(b.Id)),
+            await r.ReadAsync(ct);
+            porEdad["0-3 años"]   = r.GetInt32(0);
+            porEdad["4-6 años"]   = r.GetInt32(1);
+            porEdad["7-9 años"]   = r.GetInt32(2);
+            porEdad["10-12 años"] = r.GetInt32(3);
+            porEdad["13-15 años"] = r.GetInt32(4);
+            porEdad["16+ años"]   = r.GetInt32(5);
+        }
+
+        // ── 3. Inscripciones por mes — últimos 4 meses (4 filas) ─────────────
+        await using var cmd3 = conn.CreateCommand();
+        cmd3.CommandText = """
+            WITH meses AS (
+              SELECT generate_series(
+                date_trunc('month', NOW() - INTERVAL '3 months'),
+                date_trunc('month', NOW()),
+                INTERVAL '1 month'
+              ) AS mes
+            )
+            SELECT
+              EXTRACT(YEAR  FROM m.mes)::int AS anio,
+              EXTRACT(MONTH FROM m.mes)::int AS mes_num,
+              COUNT(b.id)::int               AS total
+            FROM  meses m
+            LEFT  JOIN beneficiarios b
+                  ON date_trunc('month', b.fecha_creacion) = m.mes
+            GROUP BY m.mes
+            ORDER BY m.mes
+            """;
+        var porMes = new Dictionary<string, int>();
+        var esCO   = new System.Globalization.CultureInfo("es-CO");
+        await using (var r = await cmd3.ExecuteReaderAsync(ct))
+        {
+            while (await r.ReadAsync(ct))
+            {
+                var label = new DateTime(r.GetInt32(0), r.GetInt32(1), 1).ToString("MMM yy", esCO);
+                porMes[label] = r.GetInt32(2);
+            }
+        }
+
+        // ── 4. Top 5 tallas (camisa, pantalón, zapatos) — máx 15 filas ───────
+        await using var cmd4 = conn.CreateCommand();
+        cmd4.CommandText = """
+            WITH ultima AS (
+              SELECT DISTINCT ON (beneficiario_id)
+                talla_camisa, talla_pantalon, talla_zapatos
+              FROM  beneficiario_talla
+              WHERE activo = true
+              ORDER BY beneficiario_id, fecha_medicion DESC
+            )
+            (SELECT 'camisa'   AS tipo, talla_camisa   AS val, COUNT(*)::int AS cnt
+             FROM ultima WHERE talla_camisa IS NOT NULL GROUP BY talla_camisa   ORDER BY cnt DESC LIMIT 5)
+            UNION ALL
+            (SELECT 'pantalon' AS tipo, talla_pantalon AS val, COUNT(*)::int AS cnt
+             FROM ultima WHERE talla_pantalon IS NOT NULL GROUP BY talla_pantalon ORDER BY cnt DESC LIMIT 5)
+            UNION ALL
+            (SELECT 'zapatos'  AS tipo, talla_zapatos  AS val, COUNT(*)::int AS cnt
+             FROM ultima WHERE talla_zapatos IS NOT NULL GROUP BY talla_zapatos  ORDER BY cnt DESC LIMIT 5)
+            """;
+        var topCamisa   = new List<TallaFreq>();
+        var topPantalon = new List<TallaFreq>();
+        var topZapatos  = new List<TallaFreq>();
+        await using (var r = await cmd4.ExecuteReaderAsync(ct))
+        {
+            while (await r.ReadAsync(ct))
+            {
+                var tf = new TallaFreq(r.GetString(1), r.GetInt32(2));
+                switch (r.GetString(0))
+                {
+                    case "camisa":   topCamisa.Add(tf);   break;
+                    case "pantalon": topPantalon.Add(tf); break;
+                    case "zapatos":  topZapatos.Add(tf);  break;
+                }
+            }
+        }
+
+        return Ok(new BeneficiarioStatsDto
+        {
+            Total        = total,
+            Activos      = activos,
+            Baja         = baja,
+            ConAlergia   = conAlergia,
+            SinDocumento = sinDoc,
+            SinEps       = sinEps,
+            SinWhatsapp  = sinWhatsapp,
+            SinDireccion = sinDireccion,
+            SinTallas    = sinTallas,
+            SinFoto      = sinFoto,
             PorEdad      = porEdad,
             PorMes       = porMes,
-            TopCamisa    = TopTallas(ultimasTallas.Select(t => t?.TallaCamisa)),
-            TopZapatos   = TopTallas(ultimasTallas.Select(t => t?.TallaZapatos)),
-            TopPantalon  = TopTallas(ultimasTallas.Select(t => t?.TallaPantalon)),
-        };
-
-        return Ok(dto);
+            TopCamisa    = topCamisa,
+            TopZapatos   = topZapatos,
+            TopPantalon  = topPantalon,
+        });
     }
 
     // =========================================================================
@@ -200,99 +285,151 @@ public class BeneficiariosController : ControllerBase
     // =========================================================================
     [HttpGet("stats-ninos")]
     [Authorize]
-    public async Task<IActionResult> StatsNinos()
+    public async Task<IActionResult> StatsNinos(CancellationToken ct)
     {
-        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var conn = _db.Database.GetDbConnection();
+        if (conn.State != ConnectionState.Open)
+            await conn.OpenAsync(ct);
 
-        var activos = await _db.Beneficiarios
-            .Where(b => b.Activo)
-            .Select(b => new {
-                b.FechaNacimiento,
-                b.PaisNacimiento,
-                b.DepartamentoNacimiento,
-                b.CiudadNacimiento,
-                b.Genero,
-            })
-            .ToListAsync();
-
-        int CalcEdad(DateOnly? f)
+        // ── 1. Contadores principales ─────────────────────────────────────────
+        await using var cmd1 = conn.CreateCommand();
+        cmd1.CommandText = """
+            SELECT
+              COUNT(*)::int                                                              AS total_activos,
+              COUNT(*) FILTER (WHERE fecha_nacimiento IS NULL)::int                     AS sin_edad,
+              COUNT(*) FILTER (
+                WHERE pais_nacimiento IS NOT NULL AND pais_nacimiento <> ''
+                  AND LOWER(pais_nacimiento) <> 'colombia'
+              )::int                                                                     AS extranjeros,
+              COUNT(*) FILTER (
+                WHERE (pais_nacimiento IS NULL OR pais_nacimiento = ''
+                       OR LOWER(pais_nacimiento) = 'colombia')
+                  AND departamento_nacimiento IS NOT NULL AND departamento_nacimiento <> ''
+                  AND LOWER(departamento_nacimiento) NOT IN ('valle del cauca', 'valle')
+              )::int                                                                     AS otra_region
+            FROM beneficiarios
+            WHERE activo = true
+            """;
+        int totalActivos, sinEdad, extranjeros, otraRegion;
+        await using (var r = await cmd1.ExecuteReaderAsync(ct))
         {
-            if (f is null) return -1;
-            int e = hoy.Year - f.Value.Year;
-            if (hoy < f.Value.AddYears(e)) e--;
-            return e;
+            await r.ReadAsync(ct);
+            totalActivos = r.GetInt32(0);
+            sinEdad      = r.GetInt32(1);
+            extranjeros  = r.GetInt32(2);
+            otraRegion   = r.GetInt32(3);
         }
 
-        var rangos = new[]
+        // ── 2. Por rango de edad ──────────────────────────────────────────────
+        await using var cmd2 = conn.CreateCommand();
+        cmd2.CommandText = """
+            SELECT
+              COUNT(*) FILTER (WHERE edad BETWEEN  0 AND  5)::int AS pi,
+              COUNT(*) FILTER (WHERE edad BETWEEN  6 AND  8)::int AS in1,
+              COUNT(*) FILTER (WHERE edad BETWEEN  9 AND 11)::int AS in2,
+              COUNT(*) FILTER (WHERE edad BETWEEN 12 AND 13)::int AS pa,
+              COUNT(*) FILTER (WHERE edad BETWEEN 14 AND 16)::int AS ad
+            FROM (
+              SELECT DATE_PART('year', AGE(fecha_nacimiento::date))::int AS edad
+              FROM   beneficiarios
+              WHERE  activo = true AND fecha_nacimiento IS NOT NULL
+            ) sub
+            """;
+        int cPI, cIN1, cIN2, cPA, cAD;
+        await using (var r = await cmd2.ExecuteReaderAsync(ct))
         {
-            new { Codigo = "PI",  Nombre = "Primera infancia",  Min = 0,  Max = 5  },
-            new { Codigo = "IN1", Nombre = "Infancia inicial",  Min = 6,  Max = 8  },
-            new { Codigo = "IN2", Nombre = "Infancia media",    Min = 9,  Max = 11 },
-            new { Codigo = "PA",  Nombre = "Preadolescencia",   Min = 12, Max = 13 },
-            new { Codigo = "AD",  Nombre = "Adolescencia",      Min = 14, Max = 16 },
+            await r.ReadAsync(ct);
+            cPI  = r.GetInt32(0);
+            cIN1 = r.GetInt32(1);
+            cIN2 = r.GetInt32(2);
+            cPA  = r.GetInt32(3);
+            cAD  = r.GetInt32(4);
+        }
+        var porRango = new object[]
+        {
+            new { Codigo = "PI",  Nombre = "Primera infancia",  rango = "0 a 5 años",   total = cPI  },
+            new { Codigo = "IN1", Nombre = "Infancia inicial",  rango = "6 a 8 años",   total = cIN1 },
+            new { Codigo = "IN2", Nombre = "Infancia media",    rango = "9 a 11 años",  total = cIN2 },
+            new { Codigo = "PA",  Nombre = "Preadolescencia",   rango = "12 a 13 años", total = cPA  },
+            new { Codigo = "AD",  Nombre = "Adolescencia",      rango = "14 a 16 años", total = cAD  },
         };
 
-        var porRango = rangos.Select(r => new {
-            r.Codigo,
-            r.Nombre,
-            rango = $"{r.Min} a {r.Max} años",
-            total = activos.Count(b => { var e = CalcEdad(b.FechaNacimiento); return e >= r.Min && e <= r.Max; })
-        }).ToList();
+        // ── 3. Top 10 países extranjeros ──────────────────────────────────────
+        await using var cmd3 = conn.CreateCommand();
+        cmd3.CommandText = """
+            SELECT pais_nacimiento, COUNT(*)::int AS total
+            FROM   beneficiarios
+            WHERE  activo = true
+              AND  pais_nacimiento IS NOT NULL AND pais_nacimiento <> ''
+              AND  LOWER(pais_nacimiento) <> 'colombia'
+            GROUP BY pais_nacimiento
+            ORDER BY total DESC
+            LIMIT 10
+            """;
+        var topPaises = new List<object>();
+        await using (var r = await cmd3.ExecuteReaderAsync(ct))
+        {
+            while (await r.ReadAsync(ct))
+                topPaises.Add(new { pais = r.GetString(0), total = r.GetInt32(1) });
+        }
 
-        var sinEdad = activos.Count(b => b.FechaNacimiento is null);
-
-        // Extranjeros: nacidos fuera de Colombia
-        var extranjeros = activos.Count(b =>
-            !string.IsNullOrWhiteSpace(b.PaisNacimiento) &&
-            !b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase));
-
-        // Colombianos de otras regiones (departamento diferente a Valle del Cauca)
-        var otraRegion = activos.Count(b =>
-            (string.IsNullOrWhiteSpace(b.PaisNacimiento) ||
-             b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase)) &&
-            !string.IsNullOrWhiteSpace(b.DepartamentoNacimiento) &&
-            !b.DepartamentoNacimiento.Equals("Valle del Cauca", StringComparison.OrdinalIgnoreCase) &&
-            !b.DepartamentoNacimiento.Equals("Valle", StringComparison.OrdinalIgnoreCase));
-
-        var topPaises = activos
-            .Where(b =>
-                !string.IsNullOrWhiteSpace(b.PaisNacimiento) &&
-                !b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase))
-            .GroupBy(b => b.PaisNacimiento!)
-            .OrderByDescending(g => g.Count())
-            .Take(10)
-            .Select(g => new { pais = g.Key, total = g.Count() })
-            .ToList();
-
-        var departamentosConCiudades = activos
-            .Where(b =>
-                (string.IsNullOrWhiteSpace(b.PaisNacimiento) ||
-                 b.PaisNacimiento.Equals("Colombia", StringComparison.OrdinalIgnoreCase)) &&
-                !string.IsNullOrWhiteSpace(b.DepartamentoNacimiento))
-            .GroupBy(b => b.DepartamentoNacimiento!)
-            .OrderByDescending(g => g.Count())
-            .Take(15)
+        // ── 4. Departamentos con ciudades (colombianos) ───────────────────────
+        await using var cmd4 = conn.CreateCommand();
+        cmd4.CommandText = """
+            SELECT
+              departamento_nacimiento,
+              COALESCE(ciudad_nacimiento, '') AS ciudad,
+              COUNT(*)::int                   AS total
+            FROM   beneficiarios
+            WHERE  activo = true
+              AND  (pais_nacimiento IS NULL OR pais_nacimiento = ''
+                    OR LOWER(pais_nacimiento) = 'colombia')
+              AND  departamento_nacimiento IS NOT NULL AND departamento_nacimiento <> ''
+            GROUP BY departamento_nacimiento, ciudad_nacimiento
+            ORDER BY departamento_nacimiento, total DESC
+            """;
+        var deptoRows = new List<(string depto, string ciudad, int total)>();
+        await using (var r = await cmd4.ExecuteReaderAsync(ct))
+        {
+            while (await r.ReadAsync(ct))
+                deptoRows.Add((r.GetString(0), r.GetString(1), r.GetInt32(2)));
+        }
+        var departamentosConCiudades = deptoRows
+            .GroupBy(x => x.depto)
             .Select(g => new {
                 departamento = g.Key,
-                total        = g.Count(),
+                total        = g.Sum(x => x.total),
                 ciudades     = g
-                    .Where(b => !string.IsNullOrWhiteSpace(b.CiudadNacimiento))
-                    .GroupBy(b => b.CiudadNacimiento!)
-                    .OrderByDescending(c => c.Count())
+                    .Where(x => x.ciudad != "")
+                    .OrderByDescending(x => x.total)
                     .Take(10)
-                    .Select(c => new { ciudad = c.Key, total = c.Count() })
+                    .Select(x => new { ciudad = x.ciudad, total = x.total })
                     .ToList()
             })
+            .OrderByDescending(g => g.total)
+            .Take(15)
             .ToList();
 
-        var porGenero = activos
-            .GroupBy(b => string.IsNullOrWhiteSpace(b.Genero) ? "No especificado" : b.Genero)
-            .Select(g => new { genero = g.Key, total = g.Count() })
-            .OrderByDescending(g => g.total)
-            .ToList();
+        // ── 5. Por género ─────────────────────────────────────────────────────
+        await using var cmd5 = conn.CreateCommand();
+        cmd5.CommandText = """
+            SELECT
+              CASE WHEN genero IS NULL OR genero = '' THEN 'No especificado' ELSE genero END AS genero,
+              COUNT(*)::int AS total
+            FROM   beneficiarios
+            WHERE  activo = true
+            GROUP BY 1
+            ORDER BY total DESC
+            """;
+        var porGenero = new List<object>();
+        await using (var r = await cmd5.ExecuteReaderAsync(ct))
+        {
+            while (await r.ReadAsync(ct))
+                porGenero.Add(new { genero = r.GetString(0), total = r.GetInt32(1) });
+        }
 
         return Ok(new {
-            totalActivos = activos.Count,
+            totalActivos,
             sinEdad,
             extranjeros,
             otraRegion,

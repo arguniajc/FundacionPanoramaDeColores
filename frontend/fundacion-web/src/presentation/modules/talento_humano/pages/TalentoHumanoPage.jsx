@@ -481,23 +481,23 @@ function VLine({ h = 28 }) {
 function HBranch({ children }) {
   const arr = Children.toArray(children);
   if (!arr.length) return null;
-  if (arr.length === 1) return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <VLine />{arr[0]}
-    </Box>
-  );
+  // 1 hijo: renderizar directo — el VLine lo pone TreeNode arriba
+  if (arr.length === 1) return arr[0];
+  // Varios hijos: expandir horizontalmente con barras conectoras
   return (
-    <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'nowrap' }}>
       {arr.map((child, i) => {
         const first = i === 0, last = i === arr.length - 1;
         return (
           <Box key={i} sx={{
-            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-            position: 'relative', pt: '28px',
+            minWidth: 172, // evita colapso flex
+            px: 0.5,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            position: 'relative', pt: '32px',
             '&::before': first ? {} : { content: '""', position: 'absolute', top: 0, left: 0, right: '50%', height: 2, bgcolor: LCOLOR },
             '&::after':  last  ? {} : { content: '""', position: 'absolute', top: 0, left: '50%', right: 0, height: 2, bgcolor: LCOLOR },
           }}>
-            <Box sx={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 2, height: 28, bgcolor: LCOLOR }} />
+            <Box sx={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 2, height: 32, bgcolor: LCOLOR }} />
             {child}
           </Box>
         );
@@ -615,12 +615,14 @@ function TreeNode({ node, depth, canEdit, onEdit, onDelete, draggingId, onDragSt
         onDropOnto={onDropOnto}
       />
       {hasChildren && (
-        <HBranch>
-          {node.children.map(child => (
-            <TreeNode
-              key={child.id}
-              node={child}
-              depth={depth + 1}
+        <>
+          <VLine h={32} />
+          <HBranch>
+            {node.children.map(child => (
+              <TreeNode
+                key={child.id}
+                node={child}
+                depth={depth + 1}
               canEdit={canEdit}
               onEdit={onEdit}
               onDelete={onDelete}
@@ -629,8 +631,9 @@ function TreeNode({ node, depth, canEdit, onEdit, onDelete, draggingId, onDragSt
               onDragEnd={onDragEnd}
               onDropOnto={onDropOnto}
             />
-          ))}
-        </HBranch>
+            ))}
+          </HBranch>
+        </>
       )}
     </Box>
   );

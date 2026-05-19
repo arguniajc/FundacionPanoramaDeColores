@@ -695,7 +695,7 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
         fotoUrl,
       });
     } catch (e) {
-      setError(e.response?.data?.mensaje ?? 'Error al guardar.');
+      setError(e.response?.data?.error ?? e.response?.data?.mensaje ?? e.message ?? 'Error al guardar.');
     } finally {
       setSaving(false);
     }
@@ -824,20 +824,21 @@ function OrgChartTab({ puedoEditar, empleados }) {
   const handleSave = async ({ cargo, parentId, empleadoId, nombreExterno, fotoUrl }) => {
     if (dlg.persona) {
       await apiClient.put(`/api/organigrama/${dlg.persona.id}`, {
+        cargo:         cargo         || null,
         orden:         dlg.persona.orden,
-        empleadoId:    empleadoId    ?? null,
-        nombreExterno: nombreExterno ?? null,
-        fotoUrl:       fotoUrl       ?? null,
-        parentId:      parentId      ?? null,
+        empleadoId:    empleadoId    || null,
+        nombreExterno: nombreExterno || null,
+        fotoUrl:       fotoUrl       || null,
+        parentId:      parentId      || null,
       });
     } else {
       await apiClient.post('/api/organigrama', {
         cargo,
         orden:         personas.length,
-        empleadoId:    empleadoId    ?? null,
-        nombreExterno: nombreExterno ?? null,
-        fotoUrl:       fotoUrl       ?? null,
-        parentId:      parentId      ?? null,
+        empleadoId:    empleadoId    || null,
+        nombreExterno: nombreExterno || null,
+        fotoUrl:       fotoUrl       || null,
+        parentId:      parentId      || null,
       });
     }
     setDlg(d => ({ ...d, open: false }));

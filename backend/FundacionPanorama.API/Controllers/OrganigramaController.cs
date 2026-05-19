@@ -50,7 +50,7 @@ public class OrganigramaController(OrganigramaService svc, SupabaseStorageServic
             return BadRequest(new { mensaje = "La imagen no puede superar 5 MB." });
 
         var url = await storage.SubirAsync(foto, "organigrama");
-        var result = await svc.ActualizarAsync(id, new ActualizarOrganigramaPersonaDto(null, null, null, url), ct);
+        var result = await svc.ActualizarAsync(id, new ActualizarOrganigramaPersonaDto(null, null, null, null, url, null), ct);
         return result is null ? NotFound() : Ok(new { url });
     }
 }

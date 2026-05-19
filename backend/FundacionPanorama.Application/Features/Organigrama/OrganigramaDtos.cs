@@ -22,6 +22,7 @@ public record CrearOrganigramaPersonaDto(
 );
 
 public record ActualizarOrganigramaPersonaDto(
+    string? Cargo,
     int?    Orden,
     Guid?   EmpleadoId,
     string? NombreExterno,

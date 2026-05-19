@@ -67,11 +67,13 @@ public sealed class OrganigramaRepository(DbConnectionFactory factory) : IOrgani
         await using var cmd = conn.CreateCommand();
 
         var sets = new List<string> { "updated_at = NOW()" };
+        if (!string.IsNullOrWhiteSpace(dto.Cargo))
+                                          { sets.Add("cargo = @cargo");             cmd.Parameters.AddWithValue("cargo",    dto.Cargo.Trim()); }
         if (dto.Orden.HasValue)           { sets.Add("orden = @orden");             cmd.Parameters.AddWithValue("orden",    dto.Orden.Value); }
         if (dto.EmpleadoId is not null)   { sets.Add("empleado_id = @empId");       cmd.Parameters.AddWithValue("empId",    dto.EmpleadoId == Guid.Empty ? DBNull.Value : (object)dto.EmpleadoId.Value); }
         if (dto.NombreExterno is not null){ sets.Add("nombre_externo = @nombre");   cmd.Parameters.AddWithValue("nombre",   dto.NombreExterno == "" ? DBNull.Value : (object)dto.NombreExterno); }
         if (dto.FotoUrl is not null)      { sets.Add("foto_url = @foto");           cmd.Parameters.AddWithValue("foto",     dto.FotoUrl == "" ? DBNull.Value : (object)dto.FotoUrl); }
-        // ParentId always updated (null means "make root")
+        // ParentId siempre se actualiza (null = nodo raíz)
         sets.Add("parent_id = @parentId");
         cmd.Parameters.AddWithValue("parentId", dto.ParentId.HasValue ? (object)dto.ParentId.Value : DBNull.Value);
 

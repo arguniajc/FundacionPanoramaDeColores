@@ -8,7 +8,8 @@ public record OrganigramaPersonaDto(
     string? EmpleadoNombre,
     string? EmpleadoCargo,
     string? NombreExterno,
-    string? FotoUrl
+    string? FotoUrl,
+    Guid?   ParentId
 );
 
 public record CrearOrganigramaPersonaDto(
@@ -16,12 +17,14 @@ public record CrearOrganigramaPersonaDto(
     int     Orden,
     Guid?   EmpleadoId,
     string? NombreExterno,
-    string? FotoUrl
+    string? FotoUrl,
+    Guid?   ParentId
 );
 
 public record ActualizarOrganigramaPersonaDto(
     int?    Orden,
     Guid?   EmpleadoId,
     string? NombreExterno,
-    string? FotoUrl
+    string? FotoUrl,
+    Guid?   ParentId
 );

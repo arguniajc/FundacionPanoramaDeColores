@@ -467,21 +467,13 @@ function PanelEmpleado({ empleado, onClose, onEdit, onDeleted, puedo }) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// ORGANIGRAMA
+// ORGANIGRAMA — árbol dinámico con drag & drop
 // ════════════════════════════════════════════════════════════════════════════
-const LCOLOR  = '#94A3B8';
+const LCOLOR       = '#94A3B8';
+const DEPTH_COLORS = ['#1E1B4B','#4E1B95','#7C3AED','#2563EB','#0891B2','#059669','#D97706','#DC2626'];
+const depthColor   = (d) => DEPTH_COLORS[Math.min(d, DEPTH_COLORS.length - 1)];
 
-const CARGO_CONFIG = {
-  juntaDirectiva: { titulo: 'Junta Directiva',               color: '#1E1B4B', multi: true  },
-  gerente:        { titulo: 'Representante Legal / Gerente',  color: '#4E1B95', multi: false },
-  revisorFiscal:  { titulo: 'Revisor Fiscal',                 color: '#DC2626', multi: false },
-  tesorero:       { titulo: 'Tesorero/a',                     color: '#D97706', multi: false },
-  secretario:     { titulo: 'Secretario/a',                   color: '#059669', multi: false },
-  contadora:      { titulo: 'Contadora',                      color: '#2563EB', multi: false },
-  vocales:        { titulo: 'Vocales',                        color: '#7C3AED', multi: true  },
-  voluntarios:    { titulo: 'Voluntarios',                    color: '#0891B2', multi: true  },
-};
-
+// ── Conectores ────────────────────────────────────────────────────────────────
 function VLine({ h = 28 }) {
   return <Box sx={{ width: 2, height: h, bgcolor: LCOLOR, mx: 'auto', flexShrink: 0 }} />;
 }
@@ -489,14 +481,11 @@ function VLine({ h = 28 }) {
 function HBranch({ children }) {
   const arr = Children.toArray(children);
   if (!arr.length) return null;
-  if (arr.length === 1) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <VLine />
-        {arr[0]}
-      </Box>
-    );
-  }
+  if (arr.length === 1) return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <VLine />{arr[0]}
+    </Box>
+  );
   return (
     <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
       {arr.map((child, i) => {
@@ -517,99 +506,130 @@ function HBranch({ children }) {
   );
 }
 
-// ── PersonCard: foto + nombre + acciones ─────────────────────────────────────
-function PersonCard({ persona, canEdit, onEdit, onDelete }) {
+// ── PersonCard — foto 70%, cargo grande, nombre pequeño, drag & drop ─────────
+function PersonCard({ persona, depth, canEdit, onEdit, onDelete, draggingId, onDragStart, onDragEnd, onDropOnto }) {
   const nombre = persona.empleadoNombre ?? persona.nombreExterno ?? '—';
-  const cargo  = persona.empleadoCargo  ?? '';
+  const color  = depthColor(depth);
+  const isDragging = draggingId === persona.id;
+  const isDropTarget = draggingId && draggingId !== persona.id;
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, minWidth: 88 }}>
-      <Avatar
-        src={persona.fotoUrl || undefined}
-        sx={{
-          width: 64, height: 64,
-          border: '3px solid white', boxShadow: 3,
-          fontSize: 22, cursor: canEdit ? 'pointer' : 'default',
-          transition: 'transform 0.15s',
-          '&:hover': canEdit ? { transform: 'scale(1.08)' } : {},
-        }}
-        onClick={() => canEdit && onEdit(persona)}
-      >
-        {nombre.charAt(0).toUpperCase()}
-      </Avatar>
-      <Typography variant="caption" fontWeight={700} textAlign="center"
-        sx={{ maxWidth: 90, lineHeight: 1.2, fontSize: 11 }}>
-        {nombre}
-      </Typography>
-      {cargo && (
-        <Typography variant="caption" color="text.secondary"
-          sx={{ maxWidth: 90, lineHeight: 1.1, fontSize: 10, textAlign: 'center' }}>
-          {cargo}
+    <Box
+      draggable={canEdit}
+      onDragStart={(e) => { e.stopPropagation(); onDragStart(persona.id); }}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => { if (isDropTarget) e.preventDefault(); }}
+      onDrop={(e) => { e.stopPropagation(); if (isDropTarget) onDropOnto(persona.id); }}
+      sx={{
+        width: 148, flexShrink: 0,
+        borderRadius: '12px',
+        border: isDropTarget ? `2.5px dashed ${color}` : `2.5px solid ${color}`,
+        bgcolor: 'white',
+        boxShadow: isDragging ? 0 : 3,
+        opacity: isDragging ? 0.4 : 1,
+        cursor: canEdit ? 'grab' : 'default',
+        overflow: 'hidden',
+        transition: 'box-shadow 0.15s, opacity 0.15s, border-color 0.15s',
+        '&:hover': { boxShadow: 6 },
+        position: 'relative',
+      }}
+    >
+      {/* Foto — 70% de la altura de la card */}
+      <Box sx={{ width: '100%', height: 120, overflow: 'hidden', bgcolor: color + '18', position: 'relative' }}>
+        {persona.fotoUrl ? (
+          <Box component="img" src={persona.fotoUrl} alt={nombre}
+            sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        ) : (
+          <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Avatar sx={{ width: 72, height: 72, bgcolor: color, fontSize: 28, fontWeight: 700 }}>
+              {nombre.charAt(0).toUpperCase()}
+            </Avatar>
+          </Box>
+        )}
+        {/* Botones de acción en overlay */}
+        {canEdit && (
+          <Box sx={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 0.25 }}>
+            <IconButton size="small"
+              onClick={(e) => { e.stopPropagation(); onEdit(persona); }}
+              sx={{ bgcolor: 'rgba(255,255,255,0.92)', p: 0.4, boxShadow: 1,
+                    '&:hover': { bgcolor: 'primary.main', color: 'white' } }}>
+              <EditIcon sx={{ fontSize: 12 }} />
+            </IconButton>
+            <IconButton size="small"
+              onClick={(e) => { e.stopPropagation(); onDelete(persona.id); }}
+              sx={{ bgcolor: 'rgba(255,255,255,0.92)', p: 0.4, boxShadow: 1,
+                    '&:hover': { bgcolor: 'error.main', color: 'white' } }}>
+              <DeleteIcon sx={{ fontSize: 12 }} />
+            </IconButton>
+          </Box>
+        )}
+      </Box>
+
+      {/* Info — 30% */}
+      <Box sx={{ px: 1, py: 0.75, bgcolor: 'white' }}>
+        <Typography sx={{
+          fontSize: 11, fontWeight: 800, textTransform: 'uppercase',
+          color, letterSpacing: 0.4, lineHeight: 1.2,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {persona.cargo}
         </Typography>
-      )}
-      {canEdit && (
-        <Box sx={{ display: 'flex', gap: 0.25 }}>
-          <IconButton size="small" onClick={() => onEdit(persona)}
-            sx={{ p: 0.25, color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
-            <EditIcon sx={{ fontSize: 13 }} />
-          </IconButton>
-          <IconButton size="small" onClick={() => onDelete(persona.id)}
-            sx={{ p: 0.25, color: 'text.secondary', '&:hover': { color: 'error.main' } }}>
-            <DeleteIcon sx={{ fontSize: 13 }} />
-          </IconButton>
-        </Box>
+        <Typography sx={{
+          fontSize: 10, color: 'text.secondary', lineHeight: 1.3, mt: 0.25,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {nombre}
+        </Typography>
+      </Box>
+
+      {/* Borde superior de color */}
+      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, bgcolor: color }} />
+    </Box>
+  );
+}
+
+// ── Nodo del árbol recursivo ──────────────────────────────────────────────────
+function TreeNode({ node, depth, canEdit, onEdit, onDelete, draggingId, onDragStart, onDragEnd, onDropOnto }) {
+  const hasChildren = node.children?.length > 0;
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <PersonCard
+        persona={node}
+        depth={depth}
+        canEdit={canEdit}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        draggingId={draggingId}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDropOnto={onDropOnto}
+      />
+      {hasChildren && (
+        <HBranch>
+          {node.children.map(child => (
+            <TreeNode
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              canEdit={canEdit}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              draggingId={draggingId}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              onDropOnto={onDropOnto}
+            />
+          ))}
+        </HBranch>
       )}
     </Box>
   );
 }
 
-// ── OrgNode: contenedor de cargo con sus personas ────────────────────────────
-function OrgNode({ cargo, personas, canEdit, onAdd, onEdit, onDelete }) {
-  const cfg   = CARGO_CONFIG[cargo];
-  const color = cfg?.color ?? '#4E1B95';
-  const isWide = cargo === 'juntaDirectiva' || cargo === 'gerente' || personas.length > 2;
-  return (
-    <Paper elevation={3} sx={{
-      p: 1.5, textAlign: 'center',
-      minWidth: isWide ? Math.min(personas.length * 110 + 40, 400) : 150,
-      border: `2px solid ${color}`, borderRadius: 2, bgcolor: 'white',
-      transition: 'box-shadow 0.2s',
-      '&:hover': { boxShadow: 6 },
-    }}>
-      {/* Badge de cargo */}
-      <Box sx={{ bgcolor: color, borderRadius: 1, px: 1.5, py: 0.4, mb: 1.5, display: 'inline-block' }}>
-        <Typography variant="caption" sx={{ color: 'white', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.5 }}>
-          {cfg?.titulo ?? cargo}
-        </Typography>
-      </Box>
-
-      {/* Personas */}
-      <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap', minHeight: 80 }}>
-        {personas.length === 0 ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, opacity: 0.4 }}>
-            <Avatar sx={{ width: 52, height: 52 }} />
-            <Typography variant="caption" color="text.disabled">Sin asignar</Typography>
-          </Box>
-        ) : (
-          personas.map(p => (
-            <PersonCard key={p.id} persona={p} canEdit={canEdit} onEdit={onEdit} onDelete={onDelete} />
-          ))
-        )}
-      </Box>
-
-      {/* Botón agregar */}
-      {canEdit && (cfg?.multi || personas.length === 0) && (
-        <Button size="small" startIcon={<AddIcon />} onClick={() => onAdd(cargo)}
-          sx={{ mt: 1, fontSize: 11, color, '&:hover': { bgcolor: color + '15' } }}>
-          Agregar
-        </Button>
-      )}
-    </Paper>
-  );
-}
-
 // ── Dialog agregar / editar persona del organigrama ──────────────────────────
-function DialogOrgPersona({ open, onClose, cargoInicial, persona, empleados, onSave }) {
-  const [cargoKey,      setCargoKey]      = useState('');
+function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, personas, onSave }) {
+  const [cargo,         setCargo]         = useState('');
+  const [parentId,      setParentId]      = useState('');
   const [empleadoId,    setEmpleadoId]    = useState('');
   const [nombreExterno, setNombreExterno] = useState('');
   const [fotoFile,      setFotoFile]      = useState(null);
@@ -619,15 +639,14 @@ function DialogOrgPersona({ open, onClose, cargoInicial, persona, empleados, onS
 
   useEffect(() => {
     if (!open) return;
-    setCargoKey(cargoInicial ?? persona?.cargo ?? '');
+    setCargo(persona?.cargo ?? '');
+    setParentId(persona?.parentId ?? parentIdInicial ?? '');
     setEmpleadoId(persona?.empleadoId ?? '');
     setNombreExterno(persona?.nombreExterno ?? '');
     setFotoPreview(persona?.fotoUrl ?? '');
     setFotoFile(null);
     setError('');
-  }, [open, cargoInicial, persona]);
-
-  const cfg = CARGO_CONFIG[cargoKey] ?? {};
+  }, [open, persona, parentIdInicial]);
 
   const handleFoto = (e) => {
     const f = e.target.files?.[0];
@@ -642,7 +661,7 @@ function DialogOrgPersona({ open, onClose, cargoInicial, persona, empleados, onS
     : nombreExterno;
 
   const handleSave = async () => {
-    if (!cargoKey) { setError('Selecciona el cargo en el organigrama.'); return; }
+    if (!cargo.trim()) { setError('El cargo es obligatorio.'); return; }
     if (!empleadoId && !nombreExterno.trim()) { setError('Selecciona un empleado o ingresa un nombre.'); return; }
     setSaving(true); setError('');
     try {
@@ -655,7 +674,13 @@ function DialogOrgPersona({ open, onClose, cargoInicial, persona, empleados, onS
         });
         fotoUrl = data.url;
       }
-      await onSave({ cargo: cargoKey, empleadoId: empleadoId || null, nombreExterno: empleadoId ? null : nombreExterno.trim(), fotoUrl });
+      await onSave({
+        cargo: cargo.trim(),
+        parentId:      parentId || null,
+        empleadoId:    empleadoId || null,
+        nombreExterno: empleadoId ? null : nombreExterno.trim(),
+        fotoUrl,
+      });
     } catch (e) {
       setError(e.response?.data?.mensaje ?? 'Error al guardar.');
     } finally {
@@ -663,69 +688,58 @@ function DialogOrgPersona({ open, onClose, cargoInicial, persona, empleados, onS
     }
   };
 
-  // Opciones de cargo con descripción de jerarquía
-  const CARGO_JERARQUIA = [
-    { key: 'juntaDirectiva', label: 'Junta Directiva', desc: 'Nivel 1 — Máxima autoridad' },
-    { key: 'gerente',        label: 'Representante Legal / Gerente', desc: 'Nivel 2 — Reporta a Junta Directiva' },
-    { key: 'revisorFiscal',  label: 'Revisor Fiscal',  desc: 'Nivel 3 — Reporta a Gerente' },
-    { key: 'tesorero',       label: 'Tesorero/a',      desc: 'Nivel 3 — Reporta a Gerente' },
-    { key: 'secretario',     label: 'Secretario/a',    desc: 'Nivel 3 — Reporta a Gerente' },
-    { key: 'contadora',      label: 'Contadora',       desc: 'Nivel 3 — Reporta a Gerente' },
-    { key: 'vocales',        label: 'Vocales',         desc: 'Nivel 4 — Reporta a Secretario/a' },
-    { key: 'voluntarios',    label: 'Voluntarios',     desc: 'Nivel 5 — Reporta a Vocales' },
-  ];
+  // Excluir la persona actual y sus descendientes de la lista de jefes
+  const posiblesJefes = personas.filter(p => p.id !== persona?.id);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle fontWeight={700}>
-        {persona ? 'Editar persona del organigrama' : 'Agregar persona al organigrama'}
+        {persona ? 'Editar persona' : 'Agregar persona al organigrama'}
       </DialogTitle>
       <DialogContent dividers>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-        {/* Selector de cargo (nivel jerárquico) */}
-        <FormControl fullWidth size="small" sx={{ mb: 2 }} required>
-          <InputLabel>Cargo / Nivel en el organigrama *</InputLabel>
-          <Select
-            value={cargoKey}
-            label="Cargo / Nivel en el organigrama *"
-            onChange={e => setCargoKey(e.target.value)}
-            disabled={!!persona}
-          >
-            <MenuItem value="" disabled><em>Selecciona un nivel...</em></MenuItem>
-            {CARGO_JERARQUIA.map(({ key, label, desc }) => (
-              <MenuItem key={key} value={key}>
-                <Box>
-                  <Typography variant="body2" fontWeight={600}>{label}</Typography>
-                  <Typography variant="caption" color="text.secondary">{desc}</Typography>
-                </Box>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        {/* Chip informativo con el color del cargo seleccionado */}
-        {cargoKey && (
-          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: cfg.color }} />
-            <Typography variant="caption" color="text.secondary">
-              {CARGO_JERARQUIA.find(c => c.key === cargoKey)?.desc}
-            </Typography>
-          </Box>
-        )}
-
         {/* Foto */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2.5 }}>
-          <Avatar src={fotoPreview || undefined}
-            sx={{ width: 88, height: 88, mb: 1.5, boxShadow: 3, fontSize: 30,
-                  bgcolor: cfg.color || 'grey.400' }}>
-            {nombreMostrado?.charAt(0)?.toUpperCase() ?? '?'}
-          </Avatar>
-          <Button size="small" component="label" variant="outlined" startIcon={<AddIcon />}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+          <Box sx={{
+            width: 110, height: 110, borderRadius: '12px', overflow: 'hidden',
+            border: '3px solid', borderColor: 'primary.main', mb: 1.5, bgcolor: 'grey.100',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {fotoPreview
+              ? <Box component="img" src={fotoPreview} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <Avatar sx={{ width: 80, height: 80, fontSize: 32 }}>{nombreMostrado?.charAt(0)?.toUpperCase() ?? '?'}</Avatar>
+            }
+          </Box>
+          <Button size="small" component="label" variant="outlined">
             {fotoPreview ? 'Cambiar foto' : 'Subir foto'}
             <input type="file" hidden accept="image/jpeg,image/png,image/webp" onChange={handleFoto} />
           </Button>
         </Box>
+
+        {/* Cargo libre */}
+        <TextField
+          fullWidth size="small" label="Cargo *" value={cargo}
+          onChange={e => setCargo(e.target.value)}
+          placeholder="Ej: Junta Directiva, Gerente, Tesorero..."
+          sx={{ mb: 1.5 }}
+        />
+
+        {/* Jefe directo */}
+        <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
+          <InputLabel>Reporta a (jefe directo)</InputLabel>
+          <Select value={parentId} label="Reporta a (jefe directo)" onChange={e => setParentId(e.target.value)}>
+            <MenuItem value="">— Nivel raíz (sin jefe) —</MenuItem>
+            {posiblesJefes.map(p => {
+              const n = p.empleadoNombre ?? p.nombreExterno ?? '—';
+              return (
+                <MenuItem key={p.id} value={p.id}>
+                  {p.cargo} — {n}
+                </MenuItem>
+              );
+            })}
+          </Select>
+        </FormControl>
 
         {/* Selector de empleado */}
         <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
@@ -740,19 +754,18 @@ function DialogOrgPersona({ open, onClose, cargoInicial, persona, empleados, onS
           </Select>
         </FormControl>
 
-        {/* Nombre manual (solo si no hay empleado seleccionado) */}
         {!empleadoId && (
           <TextField
             fullWidth size="small" label="Nombre completo *"
             value={nombreExterno} onChange={e => setNombreExterno(e.target.value)}
-            helperText="Para personas externas que no están registradas como empleados"
+            helperText="Para personas que no están registradas como empleados"
           />
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3 }}>
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave}
-          disabled={saving || !cargoKey || (!empleadoId && !nombreExterno.trim())}>
+          disabled={saving || !cargo.trim() || (!empleadoId && !nombreExterno.trim())}>
           {saving ? 'Guardando…' : 'Guardar'}
         </Button>
       </DialogActions>
@@ -761,26 +774,33 @@ function DialogOrgPersona({ open, onClose, cargoInicial, persona, empleados, onS
 }
 
 // ── OrgChartTab principal ─────────────────────────────────────────────────────
+function buildTree(personas) {
+  const map = {};
+  personas.forEach(p => { map[p.id] = { ...p, children: [] }; });
+  const roots = [];
+  personas.forEach(p => {
+    if (p.parentId && map[p.parentId]) map[p.parentId].children.push(map[p.id]);
+    else roots.push(map[p.id]);
+  });
+  return roots;
+}
+
 function OrgChartTab({ puedoEditar, empleados }) {
-  const [personas,  setPersonas]  = useState([]);
-  const [cargando,  setCargando]  = useState(true);
-  const [dlg, setDlg] = useState({ open: false, cargoInicial: null, persona: null });
+  const [personas,    setPersonas]    = useState([]);
+  const [cargando,    setCargando]    = useState(true);
+  const [dlg,         setDlg]         = useState({ open: false, persona: null, parentIdInicial: null });
+  const [draggingId,  setDraggingId]  = useState(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
-    try {
-      const { data } = await apiClient.get('/api/organigrama');
-      setPersonas(data);
-    } catch { /* silent */ } finally {
-      setCargando(false);
-    }
+    try { const { data } = await apiClient.get('/api/organigrama'); setPersonas(data); }
+    catch { /* silent */ } finally { setCargando(false); }
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const byCargo  = (key) => personas.filter(p => p.cargo === key);
-  const openAdd  = (cargo) => setDlg({ open: true, cargoInicial: cargo ?? null, persona: null });
-  const openEdit = (p)     => setDlg({ open: true, cargoInicial: p.cargo, persona: p });
+  const openAdd  = (parentIdInicial = null) => setDlg({ open: true, persona: null, parentIdInicial });
+  const openEdit = (p) => setDlg({ open: true, persona: p, parentIdInicial: null });
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Quitar esta persona del organigrama?')) return;
@@ -788,49 +808,81 @@ function OrgChartTab({ puedoEditar, empleados }) {
     cargar();
   };
 
-  const handleSave = async ({ cargo, empleadoId, nombreExterno, fotoUrl }) => {
+  const handleSave = async ({ cargo, parentId, empleadoId, nombreExterno, fotoUrl }) => {
     if (dlg.persona) {
       await apiClient.put(`/api/organigrama/${dlg.persona.id}`, {
         orden:         dlg.persona.orden,
-        empleadoId:    empleadoId  ?? null,
+        empleadoId:    empleadoId    ?? null,
         nombreExterno: nombreExterno ?? null,
-        fotoUrl:       fotoUrl     ?? null,
+        fotoUrl:       fotoUrl       ?? null,
+        parentId:      parentId      ?? null,
       });
     } else {
       await apiClient.post('/api/organigrama', {
         cargo,
-        orden:         byCargo(cargo).length,
-        empleadoId:    empleadoId  ?? null,
+        orden:         personas.length,
+        empleadoId:    empleadoId    ?? null,
         nombreExterno: nombreExterno ?? null,
-        fotoUrl:       fotoUrl     ?? null,
+        fotoUrl:       fotoUrl       ?? null,
+        parentId:      parentId      ?? null,
       });
     }
     setDlg(d => ({ ...d, open: false }));
     cargar();
   };
 
-  const nodeProps = (key) => ({
-    cargo:    key,
-    personas: byCargo(key),
-    canEdit:  puedoEditar,
-    onAdd:    openAdd,
-    onEdit:   openEdit,
-    onDelete: handleDelete,
-  });
+  // Drag & drop — al soltar sobre un nodo, ese nodo se convierte en jefe directo
+  const handleDropOnto = async (targetId) => {
+    if (!draggingId || draggingId === targetId) return;
+    // Verificar que no sea descendiente para evitar ciclos
+    const isDescendant = (nodeId, ancestorId, map) => {
+      if (!nodeId) return false;
+      const node = map[nodeId];
+      if (!node) return false;
+      if (nodeId === ancestorId) return true;
+      return isDescendant(node.parentId, ancestorId, map);
+    };
+    const pMap = {};
+    personas.forEach(p => { pMap[p.id] = p; });
+    if (isDescendant(targetId, draggingId, pMap)) return; // evitar ciclo
+    const p = personas.find(x => x.id === draggingId);
+    if (!p) return;
+    await apiClient.put(`/api/organigrama/${draggingId}`, {
+      orden: p.orden, empleadoId: p.empleadoId ?? null,
+      nombreExterno: p.nombreExterno ?? null, fotoUrl: p.fotoUrl ?? null,
+      parentId: targetId,
+    });
+    setDraggingId(null);
+    cargar();
+  };
 
-  if (cargando) return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-      <CircularProgress />
-    </Box>
-  );
+  const handleDropRoot = async () => {
+    if (!draggingId) return;
+    const p = personas.find(x => x.id === draggingId);
+    if (!p) return;
+    await apiClient.put(`/api/organigrama/${draggingId}`, {
+      orden: p.orden, empleadoId: p.empleadoId ?? null,
+      nombreExterno: p.nombreExterno ?? null, fotoUrl: p.fotoUrl ?? null,
+      parentId: null,
+    });
+    setDraggingId(null);
+    cargar();
+  };
+
+  const roots = buildTree(personas);
+
+  if (cargando) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>;
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
+      {/* Cabecera */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Box>
           <Typography variant="h6" fontWeight={700}>Organigrama Institucional</Typography>
           <Typography variant="body2" color="text.secondary">
-            Agrega personas por nivel jerárquico o haz clic en el ícono de edición sobre cada persona
+            {puedoEditar
+              ? 'Arrastra una card sobre otra para definir quién reporta a quién. Usa el botón "+" para agregar.'
+              : 'Visualización del organigrama institucional.'}
           </Typography>
         </Box>
         {puedoEditar && (
@@ -841,67 +893,75 @@ function OrgChartTab({ puedoEditar, empleados }) {
         )}
       </Box>
 
+      {/* Zona "soltar aquí para hacer raíz" */}
+      {puedoEditar && draggingId && (
+        <Box
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDropRoot}
+          sx={{
+            mb: 2, p: 1.5, borderRadius: 2, textAlign: 'center',
+            border: '2px dashed', borderColor: 'warning.main',
+            bgcolor: 'warning.light', color: 'warning.dark', fontSize: 13, fontWeight: 600,
+          }}
+        >
+          Suelta aquí para mover al nivel raíz (sin jefe directo)
+        </Box>
+      )}
+
+      {/* Árbol */}
       <Box sx={{
         overflowX: 'auto',
         background: 'linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%)',
-        borderRadius: 3, p: { xs: 2, sm: 3, md: 5 },
+        borderRadius: 3, p: { xs: 2, sm: 3, md: 4 },
         border: '1px solid', borderColor: 'divider',
+        minHeight: 200,
       }}>
-        <Box sx={{ minWidth: 680, userSelect: 'none' }}>
-
-          {/* NIVEL 1 — Junta Directiva */}
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <OrgNode {...nodeProps('juntaDirectiva')} />
+        {personas.length === 0 ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6, opacity: 0.5 }}>
+            <AccountTreeIcon sx={{ fontSize: 48, mb: 1, color: 'text.disabled' }} />
+            <Typography color="text.secondary">
+              El organigrama está vacío. Haz clic en "Agregar persona" para comenzar.
+            </Typography>
           </Box>
-
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}><VLine h={36} /></Box>
-
-          {/* NIVEL 2 — Gerente */}
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <OrgNode {...nodeProps('gerente')} />
+        ) : (
+          <Box sx={{ display: 'flex', justifyContent: 'center', userSelect: 'none' }}>
+            <HBranch>
+              {roots.map(root => (
+                <TreeNode
+                  key={root.id}
+                  node={root}
+                  depth={0}
+                  canEdit={puedoEditar}
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                  draggingId={draggingId}
+                  onDragStart={setDraggingId}
+                  onDragEnd={() => setDraggingId(null)}
+                  onDropOnto={handleDropOnto}
+                />
+              ))}
+            </HBranch>
           </Box>
+        )}
+      </Box>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}><VLine h={20} /></Box>
-
-          {/* NIVEL 3+4 */}
-          <HBranch>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <OrgNode {...nodeProps('revisorFiscal')} />
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <OrgNode {...nodeProps('tesorero')} />
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <OrgNode {...nodeProps('secretario')} />
-              <VLine h={24} />
-              <OrgNode {...nodeProps('vocales')} />
-              <VLine h={24} />
-              <OrgNode {...nodeProps('voluntarios')} />
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <OrgNode {...nodeProps('contadora')} />
-            </Box>
-          </HBranch>
-
+      {/* Ayuda drag & drop */}
+      {puedoEditar && personas.length > 0 && (
+        <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1, opacity: 0.6 }}>
+          <AccountTreeIcon sx={{ fontSize: 16 }} />
+          <Typography variant="caption">
+            Arrastra una card encima de otra para establecer jerarquía. Haz clic en el lápiz para editar nombre, cargo o foto.
+          </Typography>
         </Box>
-      </Box>
-
-      {/* Leyenda */}
-      <Box sx={{ mt: 3, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-        {Object.entries(CARGO_CONFIG).map(([key, cfg]) => (
-          <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 10, height: 10, bgcolor: cfg.color, borderRadius: '50%' }} />
-            <Typography variant="caption" color="text.secondary">{cfg.titulo}</Typography>
-          </Box>
-        ))}
-      </Box>
+      )}
 
       <DialogOrgPersona
         open={dlg.open}
         onClose={() => setDlg(d => ({ ...d, open: false }))}
-        cargoInicial={dlg.cargoInicial}
         persona={dlg.persona}
+        parentIdInicial={dlg.parentIdInicial}
         empleados={empleados}
+        personas={personas}
         onSave={handleSave}
       />
     </Box>

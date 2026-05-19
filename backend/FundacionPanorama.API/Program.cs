@@ -806,16 +806,20 @@ var app = builder.Build();
     await Migrar("""
         CREATE TABLE IF NOT EXISTS organigrama_personas (
             id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-            cargo          VARCHAR(50)  NOT NULL,
+            cargo          VARCHAR(200) NOT NULL,
             orden          INT          NOT NULL DEFAULT 0,
             empleado_id    UUID         REFERENCES empleados(id) ON DELETE SET NULL,
             nombre_externo VARCHAR(200),
             foto_url       TEXT,
+            parent_id      UUID         REFERENCES organigrama_personas(id) ON DELETE SET NULL,
             activo         BOOLEAN      NOT NULL DEFAULT TRUE,
             created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
             updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
         )
         """, "organigrama_personas");
+
+    await Migrar("ALTER TABLE organigrama_personas ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES organigrama_personas(id) ON DELETE SET NULL", "organigrama_personas.parent_id");
+    await Migrar("ALTER TABLE organigrama_personas ALTER COLUMN cargo TYPE VARCHAR(200)",                                                            "organigrama_personas.cargo_200");
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────

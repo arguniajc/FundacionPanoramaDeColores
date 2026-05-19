@@ -4,7 +4,7 @@ import {
   Avatar, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
   Tabs, Tab, Alert, Skeleton, Tooltip, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, Badge, InputAdornment,
-  CircularProgress, FormControl, InputLabel, Select,
+  CircularProgress, FormControl, InputLabel, Select, Autocomplete,
 } from '@mui/material';
 import AddIcon            from '@mui/icons-material/Add';
 import EditIcon           from '@mui/icons-material/Edit';
@@ -44,6 +44,20 @@ const NOVEDAD_COLORS = {
   otro:                '#7C3AED',
 };
 const ESTADO_NOVEDAD_COLORS = { pendiente: 'warning', aprobada: 'success', rechazada: 'error' };
+
+const CARGOS_COMUNES = [
+  'Presidente', 'Vicepresidente', 'Representante Legal', 'Secretario(a) General', 'Tesorero(a)',
+  'Director Ejecutivo', 'Director General', 'Director Administrativo', 'Director Financiero',
+  'Director de Operaciones', 'Director Comercial', 'Director de Talento Humano',
+  'Director de Comunicaciones', 'Director de Sistemas', 'Director de Proyectos',
+  'Gerente General', 'Subgerente', 'Gerente Administrativo', 'Gerente Financiero',
+  'Coordinador General', 'Coordinador Administrativo', 'Coordinador Financiero',
+  'Coordinador de Proyectos', 'Coordinador Pedagógico', 'Coordinador de Comunicaciones',
+  'Jefe de Recursos Humanos', 'Jefe de Contabilidad', 'Jefe de Sistemas',
+  'Contador', 'Auxiliar Contable', 'Asistente Administrativo', 'Asistente de Gerencia',
+  'Profesional de Talento Humano', 'Trabajador Social', 'Psicólogo(a)', 'Docente', 'Instructor(a)',
+  'Auxiliar Administrativo', 'Recepcionista', 'Técnico de Sistemas',
+];
 
 function iniciales(nombres, apellidos) {
   return `${nombres?.[0] ?? ''}${apellidos?.[0] ?? ''}`.toUpperCase();
@@ -730,11 +744,18 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
           </Button>
         </Box>
 
-        {/* Cargo libre */}
-        <TextField
-          fullWidth size="small" label="Cargo *" value={cargo}
-          onChange={e => setCargo(e.target.value)}
-          placeholder="Ej: Junta Directiva, Gerente, Tesorero..."
+        {/* Cargo con sugerencias */}
+        <Autocomplete
+          freeSolo
+          options={CARGOS_COMUNES}
+          value={cargo}
+          onChange={(_, v) => setCargo(v || '')}
+          onInputChange={(_, v) => setCargo(v)}
+          renderInput={(params) => (
+            <TextField {...params} size="small" label="Cargo *"
+              placeholder="Ej: Director, Coordinador, Tesorero..."
+              required />
+          )}
           sx={{ mb: 1.5 }}
         />
 
@@ -757,7 +778,18 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
         {/* Selector de empleado */}
         <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
           <InputLabel>Empleado del panel</InputLabel>
-          <Select value={empleadoId} label="Empleado del panel" onChange={e => setEmpleadoId(e.target.value)}>
+          <Select
+            value={empleadoId}
+            label="Empleado del panel"
+            onChange={e => {
+              const id = e.target.value;
+              setEmpleadoId(id);
+              if (id) {
+                const emp = empleados.find(x => x.id === id);
+                if (emp?.cargo) setCargo(emp.cargo);
+              }
+            }}
+          >
             <MenuItem value="">— Persona externa —</MenuItem>
             {empleados.map(e => (
               <MenuItem key={e.id} value={e.id}>

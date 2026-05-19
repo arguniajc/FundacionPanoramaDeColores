@@ -1,9 +1,11 @@
 // CRUD de inscripciones usando Npgsql directo (sin EF Core). Requiere JWT.
+using System.Text.Json;
 using FundacionPanorama.API.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -47,7 +49,7 @@ public class InscripcionesController : ControllerBase
         if (beneficiarioId.HasValue) { where.Add("beneficiario_id = @bid"); parms.Add(("bid", beneficiarioId.Value)); }
         if (!string.IsNullOrEmpty(estado)) { where.Add("estado = @est");    parms.Add(("est", estado)); }
 
-        var sql = $"SELECT id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos, observaciones, activo, fecha_creacion " +
+        var sql = $"SELECT id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos::text, observaciones, activo, fecha_creacion " +
                   $"FROM inscripciones WHERE {string.Join(" AND ", where)} ORDER BY fecha_inscripcion DESC";
         var rows = await EjecutarSelectAsync(sql, parms);
         return Ok(await Enriquecer(rows));
@@ -57,7 +59,7 @@ public class InscripcionesController : ControllerBase
     public async Task<IActionResult> ObtenerPorId(Guid id)
     {
         var rows = await EjecutarSelectAsync(
-            "SELECT id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos, observaciones, activo, fecha_creacion " +
+            "SELECT id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos::text, observaciones, activo, fecha_creacion " +
             "FROM inscripciones WHERE id = @id",
             [("id", id)]);
         if (rows.Count == 0) return NotFound();
@@ -67,6 +69,9 @@ public class InscripcionesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearInscripcionDto dto)
     {
+        if (!EsJsonValido(dto.Datos))
+            return BadRequest(new { mensaje = "El campo 'datos' no contiene JSON válido." });
+
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
 
@@ -89,11 +94,11 @@ public class InscripcionesController : ControllerBase
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"INSERT INTO inscripciones (beneficiario_id, programa_id, estado, datos, observaciones, activo)
                             VALUES (@bid, @pid, 'activa', @datos, @obs, true)
-                            RETURNING id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos, observaciones, activo, fecha_creacion";
-        cmd.Parameters.AddWithValue("bid",   dto.BeneficiarioId);
-        cmd.Parameters.AddWithValue("pid",   dto.ProgramaId);
-        cmd.Parameters.AddWithValue("datos", dto.Datos);
-        cmd.Parameters.AddWithValue("obs",   (object?)dto.Observaciones?.Trim() ?? DBNull.Value);
+                            RETURNING id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos::text, observaciones, activo, fecha_creacion";
+        cmd.Parameters.AddWithValue("bid", dto.BeneficiarioId);
+        cmd.Parameters.AddWithValue("pid", dto.ProgramaId);
+        cmd.Parameters.Add(new NpgsqlParameter("datos", NpgsqlDbType.Jsonb) { Value = dto.Datos });
+        cmd.Parameters.AddWithValue("obs", (object?)dto.Observaciones?.Trim() ?? DBNull.Value);
         await using var r = await cmd.ExecuteReaderAsync();
         await r.ReadAsync();
         var row = LeerFila(r);
@@ -104,14 +109,17 @@ public class InscripcionesController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] ActualizarInscripcionDto dto)
     {
+        if (!EsJsonValido(dto.Datos))
+            return BadRequest(new { mensaje = "El campo 'datos' no contiene JSON válido." });
+
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"UPDATE inscripciones SET datos=@datos, observaciones=@obs WHERE id=@id
-                            RETURNING id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos, observaciones, activo, fecha_creacion";
-        cmd.Parameters.AddWithValue("id",    id);
-        cmd.Parameters.AddWithValue("datos", dto.Datos);
-        cmd.Parameters.AddWithValue("obs",   (object?)dto.Observaciones?.Trim() ?? DBNull.Value);
+                            RETURNING id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos::text, observaciones, activo, fecha_creacion";
+        cmd.Parameters.AddWithValue("id",  id);
+        cmd.Parameters.Add(new NpgsqlParameter("datos", NpgsqlDbType.Jsonb) { Value = dto.Datos });
+        cmd.Parameters.AddWithValue("obs", (object?)dto.Observaciones?.Trim() ?? DBNull.Value);
         await using var r = await cmd.ExecuteReaderAsync();
         if (!await r.ReadAsync()) return NotFound();
         var row = LeerFila(r);
@@ -129,7 +137,7 @@ public class InscripcionesController : ControllerBase
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"UPDATE inscripciones SET estado=@est, activo=@activo WHERE id=@id
-                            RETURNING id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos, observaciones, activo, fecha_creacion";
+                            RETURNING id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos::text, observaciones, activo, fecha_creacion";
         cmd.Parameters.AddWithValue("id",     id);
         cmd.Parameters.AddWithValue("est",    dto.Estado);
         cmd.Parameters.AddWithValue("activo", dto.Estado == "activa");
@@ -154,6 +162,13 @@ public class InscripcionesController : ControllerBase
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static bool EsJsonValido(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return false;
+        try { JsonDocument.Parse(json); return true; }
+        catch { return false; }
+    }
 
     private NpgsqlConnection AbrirConexion() =>
         new(_db.Database.GetConnectionString());

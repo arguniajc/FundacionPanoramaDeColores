@@ -859,6 +859,42 @@ var app = builder.Build();
     await Migrar("ALTER TABLE organigrama_personas ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES organigrama_personas(id) ON DELETE SET NULL", "organigrama_personas.parent_id");
     await Migrar("ALTER TABLE organigrama_personas ALTER COLUMN cargo TYPE VARCHAR(200)",                                                            "organigrama_personas.cargo_200");
 
+    // ── D1: Foreign key constraints (NOT VALID = no valida filas existentes, solo las nuevas) ──
+    await MigrarUnaVez("""
+        ALTER TABLE inventario_movimientos
+          ADD CONSTRAINT fk_invmov_item
+          FOREIGN KEY (item_id) REFERENCES inventario_items(id) ON DELETE CASCADE NOT VALID
+        """, "fk.invmov_item");
+
+    await MigrarUnaVez("""
+        ALTER TABLE inventario_movimientos
+          ADD CONSTRAINT fk_invmov_tipo
+          FOREIGN KEY (tipo_movimiento_id) REFERENCES cat_tipo_movimiento_inv(id) ON DELETE RESTRICT NOT VALID
+        """, "fk.invmov_tipo");
+
+    await MigrarUnaVez("""
+        ALTER TABLE donaciones
+          ADD CONSTRAINT fk_donaciones_donante
+          FOREIGN KEY (donante_id) REFERENCES donantes(id) ON DELETE RESTRICT NOT VALID
+        """, "fk.donaciones_donante");
+
+    await MigrarUnaVez("""
+        ALTER TABLE inventario_items
+          ADD CONSTRAINT fk_invitems_sede
+          FOREIGN KEY (sede_id) REFERENCES sedes(id) ON DELETE SET NULL NOT VALID
+        """, "fk.invitems_sede");
+
+    // ── D2: inscripciones.datos TEXT → JSONB ─────────────────────────────────
+    await MigrarUnaVez("""
+        ALTER TABLE inscripciones
+          ALTER COLUMN datos TYPE JSONB USING datos::jsonb
+        """, "inscripciones.datos_jsonb");
+
+    await Migrar("""
+        CREATE INDEX IF NOT EXISTS idx_inscripciones_datos_gin
+          ON inscripciones USING GIN (datos jsonb_path_ops)
+        """, "inscripciones.idx_datos_gin");
+
     // ── A2: Índices de rendimiento ────────────────────────────────────────────
     // beneficiarios: filtro activo (Stats, StatsNinos, listados) — columna más consultada
     await Migrar("CREATE INDEX IF NOT EXISTS idx_beneficiarios_activo          ON beneficiarios(activo)",                            "idx.beneficiarios_activo");

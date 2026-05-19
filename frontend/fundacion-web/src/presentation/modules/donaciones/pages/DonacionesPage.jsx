@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '../../../../shared/components/ConfirmDialog';
 import {
   Box, Typography, Grid, Button, TextField, Dialog, DialogTitle, DialogContent,
   DialogActions, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip,
@@ -318,6 +319,7 @@ function DonanteDialog({ open, donante, onClose, onGuardado }) {
 
 function TabDonantes({ onNuevaDonacion }) {
   const { puedo } = useAuth();
+  const confirm = useConfirm();
   const [donantes,  setDonantes]  = useState([]);
   const [cargando,  setCargando]  = useState(false);
   const [buscar,    setBuscar]    = useState('');
@@ -351,7 +353,7 @@ function TabDonantes({ onNuevaDonacion }) {
   };
 
   const handleEliminar = async (donante) => {
-    if (!window.confirm(`¿Eliminar a "${donante.nombre}"? Si tiene donaciones quedará inactivo.`)) return;
+    if (!await confirm(`¿Eliminar a "${donante.nombre}"? Si tiene donaciones quedará inactivo.`)) return;
     try {
       await donantesRepository.eliminar(donante.id);
       setDonantes(prev => prev.filter(d => d.id !== donante.id));
@@ -689,6 +691,7 @@ function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada, sedes 
 
 function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
   const { puedo } = useAuth();
+  const confirm = useConfirm();
   const [donaciones,    setDonaciones]    = useState([]);
   const [stats,         setStats]         = useState(null);
   const [cargando,      setCargando]      = useState(false);
@@ -747,7 +750,7 @@ function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
   };
 
   const handleEliminar = async (don) => {
-    if (!window.confirm('¿Eliminar esta donación?')) return;
+    if (!await confirm('¿Eliminar esta donación?')) return;
     try {
       await donacionesRepository.eliminar(don.id);
       setDonaciones(prev => prev.filter(d => d.id !== don.id));
@@ -846,9 +849,9 @@ function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
               <TableRow sx={{ bgcolor: '#fffbf0' }}>
                 <TableCell sx={{ fontWeight: 700 }}>Fecha</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Donante</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Tipo</TableCell>
+                <TableCell sx={{ fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>Tipo</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Detalle</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Sede / Programa</TableCell>
+                <TableCell sx={{ fontWeight: 700, display: { xs: 'none', md: 'table-cell' } }}>Sede / Programa</TableCell>
                 <TableCell />
               </TableRow>
             </TableHead>
@@ -864,7 +867,7 @@ function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
                       {d.tipoDonante === 'empresa' ? 'Empresa' : 'Persona'}
                     </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                     <Chip label={d.tipo === 'dinero' ? 'Dinero' : 'Especie'} size="small"
                       sx={{
                         bgcolor: d.tipo === 'dinero' ? `${COLOR_DONACIONES}18` : `${COLOR_ESPECIE}18`,
@@ -887,7 +890,7 @@ function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
                       <>{d.cantidad} {d.unidadMedida || ''} — <strong>{d.nombreItem || '—'}</strong></>
                     )}
                   </TableCell>
-                  <TableCell sx={{ fontSize: '0.78rem', color: 'text.secondary', maxWidth: 160 }}>
+                  <TableCell sx={{ fontSize: '0.78rem', color: 'text.secondary', maxWidth: 160, display: { xs: 'none', md: 'table-cell' } }}>
                     {d.nombreSede || '—'}
                     {d.nombrePrograma && (
                       <Typography component="span" sx={{ fontSize: '0.72rem', display: 'block', color: 'text.secondary' }}>

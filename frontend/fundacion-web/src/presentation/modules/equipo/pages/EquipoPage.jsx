@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '../../../../shared/components/ConfirmDialog';
 import {
   Box, Typography, Button, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, Chip,
@@ -42,6 +43,7 @@ const EMPTY = { email: '', nombre: '', rol: 'trabajador_social' };
 
 export default function EquipoPage() {
   const { puedo } = usePermisos();
+  const confirm = useConfirm();
   const [usuarios, setUsuarios] = useState([]);
   const [open,     setOpen]     = useState(false);
   const [editing,  setEditing]  = useState(null); // null=crear, obj=editar
@@ -115,7 +117,7 @@ export default function EquipoPage() {
   };
 
   const eliminar = async (u) => {
-    if (!window.confirm(`¿Desactivar a ${u.nombre ?? u.email}?`)) return;
+    if (!await confirm(`¿Desactivar a ${u.nombre ?? u.email}?`)) return;
     try {
       await apiClient.delete(`/api/equipo/${u.id}`);
       cargar();
@@ -145,7 +147,7 @@ export default function EquipoPage() {
               <TableCell><b>Nombre / Email</b></TableCell>
               <TableCell><b>Rol</b></TableCell>
               <TableCell align="center"><b>Activo</b></TableCell>
-              <TableCell align="center"><b>Miembro desde</b></TableCell>
+              <TableCell align="center" sx={{ display: { xs: 'none', sm: 'table-cell' } }}><b>Miembro desde</b></TableCell>
               {(puedo('equipo', 'editar') || puedo('equipo', 'eliminar')) && (
                 <TableCell align="center"><b>Acciones</b></TableCell>
               )}
@@ -173,7 +175,7 @@ export default function EquipoPage() {
                           color={u.activo ? 'success' : 'default'} />
                   )}
                 </TableCell>
-                <TableCell align="center">
+                <TableCell align="center" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                   <Typography variant="caption">
                     {new Date(u.fechaCreacion).toLocaleDateString('es-CO')}
                   </Typography>

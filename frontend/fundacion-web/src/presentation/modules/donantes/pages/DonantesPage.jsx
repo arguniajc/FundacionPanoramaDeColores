@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '../../../../shared/components/ConfirmDialog';
 import {
   Box, Typography, Grid, Button, TextField, Dialog, DialogTitle, DialogContent,
   DialogActions, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip,
@@ -249,6 +250,7 @@ function DonanteDialog({ open, donante, onClose, onGuardado }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function DonantesPage() {
+  const confirm = useConfirm();
   const [donantes,  setDonantes]  = useState([]);
   const [cargando,  setCargando]  = useState(false);
   const [buscar,    setBuscar]    = useState('');
@@ -285,7 +287,7 @@ export default function DonantesPage() {
   };
 
   const handleEliminar = async (donante) => {
-    if (!window.confirm(`¿Eliminar a "${donante.nombre}"? Si tiene donaciones quedará inactivo.`)) return;
+    if (!await confirm(`¿Eliminar a "${donante.nombre}"? Si tiene donaciones quedará inactivo.`)) return;
     try {
       await donantesRepository.eliminar(donante.id);
       setDonantes(prev => prev.filter(d => d.id !== donante.id));

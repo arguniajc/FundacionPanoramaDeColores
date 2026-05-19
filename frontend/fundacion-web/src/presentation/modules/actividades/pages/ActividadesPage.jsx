@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useConfirm } from '../../../../shared/components/ConfirmDialog';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin   from '@fullcalendar/daygrid';
 import timeGridPlugin  from '@fullcalendar/timegrid';
@@ -37,6 +38,7 @@ const EMPTY_FORM = {
 
 export default function ActividadesPage() {
   const { puedo } = usePermisos();
+  const confirm = useConfirm();
   const calendarRef = useRef(null);
 
   const [actividades, setActividades]   = useState([]);
@@ -148,7 +150,7 @@ export default function ActividadesPage() {
   };
 
   const eliminar = async (id) => {
-    if (!window.confirm('¿Eliminar esta actividad?')) return;
+    if (!await confirm('¿Eliminar esta actividad?')) return;
     try {
       await actividadesRepository.eliminar(id);
       cargar();

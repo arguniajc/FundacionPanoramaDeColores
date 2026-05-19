@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, Children } from 'react';
+import { useState, useEffect, useCallback, Children, memo } from 'react';
+import { useConfirm } from '../../../../shared/components/ConfirmDialog';
 import {
   Box, Typography, Button, TextField, MenuItem, Grid, Card, CardContent,
   Avatar, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -375,6 +376,7 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
 // PANEL DETALLE EMPLEADO (novedades + info)
 // ════════════════════════════════════════════════════════════════════════════
 function PanelEmpleado({ empleado, onClose, onEdit, onDeleted, puedo }) {
+  const confirm = useConfirm();
   const [novedades, setNovedades] = useState([]);
   const [loadingNov, setLoadingNov] = useState(true);
   const [dialogNov, setDialogNov]   = useState(false);
@@ -393,7 +395,7 @@ function PanelEmpleado({ empleado, onClose, onEdit, onDeleted, puedo }) {
   useEffect(() => { cargarNovedades(); }, [cargarNovedades]);
 
   const eliminarNovedad = async (id) => {
-    if (!window.confirm('¿Eliminar esta novedad?')) return;
+    if (!await confirm('¿Eliminar esta novedad?')) return;
     await apiClient.delete(`/api/talento-humano/novedades/${id}`);
     cargarNovedades();
   };
@@ -547,7 +549,7 @@ function HBranch({ children }) {
 }
 
 // ── PersonCard — foto 70%, cargo grande, nombre pequeño, drag & drop ─────────
-function PersonCard({ persona, depth, canEdit, onEdit, onDelete, draggingId, onDragStart, onDragEnd, onDropOnto }) {
+const PersonCard = memo(function PersonCard({ persona, depth, canEdit, onEdit, onDelete, draggingId, onDragStart, onDragEnd, onDropOnto }) {
   const nombre = persona.empleadoNombre ?? persona.nombreExterno ?? '—';
   const color  = depthColor(depth);
   const isDragging = draggingId === persona.id;
@@ -636,10 +638,10 @@ function PersonCard({ persona, depth, canEdit, onEdit, onDelete, draggingId, onD
       <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, bgcolor: color }} />
     </Box>
   );
-}
+});
 
 // ── Nodo del árbol recursivo ──────────────────────────────────────────────────
-function TreeNode({ node, depth, canEdit, onEdit, onDelete, draggingId, onDragStart, onDragEnd, onDropOnto }) {
+const TreeNode = memo(function TreeNode({ node, depth, canEdit, onEdit, onDelete, draggingId, onDragStart, onDragEnd, onDropOnto }) {
   const hasChildren = node.children?.length > 0;
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -677,7 +679,7 @@ function TreeNode({ node, depth, canEdit, onEdit, onDelete, draggingId, onDragSt
       )}
     </Box>
   );
-}
+});
 
 // ── Dialog agregar / editar persona del organigrama ──────────────────────────
 function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, personas, onSave }) {
@@ -858,6 +860,7 @@ function buildTree(personas) {
 }
 
 function OrgChartTab({ puedoEditar, empleados }) {
+  const confirm = useConfirm();
   const [personas,    setPersonas]    = useState([]);
   const [cargando,    setCargando]    = useState(true);
   const [dlg,         setDlg]         = useState({ open: false, persona: null, parentIdInicial: null });
@@ -875,7 +878,7 @@ function OrgChartTab({ puedoEditar, empleados }) {
   const openEdit = (p) => setDlg({ open: true, persona: p, parentIdInicial: null });
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Quitar esta persona del organigrama?')) return;
+    if (!await confirm('¿Quitar esta persona del organigrama?')) return;
     await apiClient.delete(`/api/organigrama/${id}`);
     cargar();
   };
@@ -1047,6 +1050,7 @@ function OrgChartTab({ puedoEditar, empleados }) {
 // ════════════════════════════════════════════════════════════════════════════
 export default function TalentoHumanoPage() {
   const { puedo } = useAuth();
+  const confirm = useConfirm();
 
   const [empleados, setEmpleados] = useState([]);
   const [stats,     setStats]     = useState(null);
@@ -1085,7 +1089,7 @@ export default function TalentoHumanoPage() {
   useEffect(() => { cargar(); }, [cargar]);
 
   const eliminar = async (id) => {
-    if (!window.confirm('¿Eliminar este empleado? Esta acción no se puede deshacer.')) return;
+    if (!await confirm('¿Eliminar este empleado? Esta acción no se puede deshacer.')) return;
     await apiClient.delete(`/api/talento-humano/${id}`);
     if (panelEmpleado?.id === id) setPanelEmpleado(null);
     cargar();

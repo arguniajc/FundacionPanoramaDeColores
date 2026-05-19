@@ -5,6 +5,8 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './application/auth/AuthContext';
 import { AppThemeProvider } from './shared/theme/ThemeContext';
 import { ConfiguracionProvider } from './shared/context/ConfiguracionContext';
+import { ToastProvider } from './shared/context/ToastContext';
+import { ConfirmProvider } from './shared/components/ConfirmDialog';
 import ErrorBoundary from './presentation/components/ErrorBoundary';
 import logger from './shared/utils/logger';
 import App from './App.jsx';
@@ -23,11 +25,15 @@ createRoot(document.getElementById('root')).render(
       <HashRouter>
         <ConfiguracionProvider>
           <AppThemeProvider>
-            <AuthProvider>
-              <ErrorBoundary>
-                <App />
-              </ErrorBoundary>
-            </AuthProvider>
+            <ToastProvider>
+              <ConfirmProvider>
+                <AuthProvider>
+                  <ErrorBoundary>
+                    <App />
+                  </ErrorBoundary>
+                </AuthProvider>
+              </ConfirmProvider>
+            </ToastProvider>
           </AppThemeProvider>
         </ConfiguracionProvider>
       </HashRouter>

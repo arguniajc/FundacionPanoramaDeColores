@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useConfirm } from '../../../../shared/components/ConfirmDialog';
 import {
   Box, Typography, Grid, Button, TextField, Dialog, DialogTitle, DialogContent,
   DialogActions, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip,
@@ -600,9 +601,9 @@ function HistorialDialog({ open, item, onClose }) {
                   <TableCell>Tipo</TableCell>
                   <TableCell align="right">Cantidad</TableCell>
                   <TableCell align="right">Stock result.</TableCell>
-                  <TableCell>Donante / Sede destino</TableCell>
-                  <TableCell>Motivo</TableCell>
-                  <TableCell>Usuario</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Donante / Sede destino</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Motivo</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Usuario</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -623,13 +624,13 @@ function HistorialDialog({ open, item, onClose }) {
                     <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
                       {fmtNum(m.stockResultante)}
                     </TableCell>
-                    <TableCell sx={{ fontSize: '0.76rem' }}>
+                    <TableCell sx={{ fontSize: '0.76rem', display: { xs: 'none', sm: 'table-cell' } }}>
                       {m.nombreDonante || (m.nombreSedeDestino && `→ ${m.nombreSedeDestino}`) || (m.donante) || '—'}
                     </TableCell>
-                    <TableCell sx={{ fontSize: '0.76rem', maxWidth: 140 }}>
+                    <TableCell sx={{ fontSize: '0.76rem', maxWidth: 140, display: { xs: 'none', md: 'table-cell' } }}>
                       <Typography noWrap sx={{ fontSize: '0.76rem' }} title={m.motivo}>{m.motivo || '—'}</Typography>
                     </TableCell>
-                    <TableCell sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
+                    <TableCell sx={{ fontSize: '0.72rem', color: 'text.secondary', display: { xs: 'none', md: 'table-cell' } }}>
                       {m.usuarioEmail ?? '—'}
                     </TableCell>
                   </TableRow>
@@ -645,6 +646,7 @@ function HistorialDialog({ open, item, onClose }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function InventarioPage() {
+  const confirm = useConfirm();
   const [sedes,        setSedes]        = useState([]);
   const [sedeSel,      setSedeSel]      = useState('');
   const [categoriaFil, setCategoriaFil] = useState('');
@@ -739,7 +741,7 @@ export default function InventarioPage() {
   };
 
   const handleEliminar = async (item) => {
-    if (!window.confirm(`¿Eliminar "${item.nombre}"? Si tiene movimientos quedará desactivado.`)) return;
+    if (!await confirm(`¿Eliminar "${item.nombre}"? Si tiene movimientos quedará desactivado.`)) return;
     try {
       await inventarioRepository.eliminarItem(item.id);
       setItems(prev => prev.filter(i => i.id !== item.id));

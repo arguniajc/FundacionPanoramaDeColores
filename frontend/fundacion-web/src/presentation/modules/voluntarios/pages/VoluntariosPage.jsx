@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useConfirm } from '../../../../shared/components/ConfirmDialog';
 import {
   Box, Typography, Grid, Button, TextField, Dialog, DialogTitle, DialogContent,
   DialogActions, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip,
@@ -275,6 +276,7 @@ function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
 const FORM_VACIO_ASIG = { sedeId: '', programaId: '', horasSemanales: '', fechaInicio: '' };
 
 function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
+  const confirm = useConfirm();
   const [asignaciones, setAsignaciones] = useState([]);
   const [cargando,     setCargando]     = useState(false);
   const [sedes,        setSedes]        = useState([]);
@@ -359,7 +361,7 @@ function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
   };
 
   const eliminar = async (asig) => {
-    if (!window.confirm('¿Eliminar esta asignación?')) return;
+    if (!await confirm('¿Eliminar esta asignación?')) return;
     try {
       await voluntariosRepository.eliminarAsignacion(asig.id);
       setAsignaciones(prev => prev.filter(a => a.id !== asig.id));
@@ -477,6 +479,7 @@ function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function VoluntariosPage() {
+  const confirm = useConfirm();
   const [voluntarios,   setVoluntarios]   = useState([]);
   const [stats,         setStats]         = useState(null);
   const [cargando,      setCargando]      = useState(false);
@@ -525,7 +528,7 @@ export default function VoluntariosPage() {
   }, []);
 
   const handleEliminar = async (v) => {
-    if (!window.confirm(`¿Eliminar a "${v.nombre}"? Si tiene asignaciones quedará inactivo.`)) return;
+    if (!await confirm(`¿Eliminar a "${v.nombre}"? Si tiene asignaciones quedará inactivo.`)) return;
     try {
       await voluntariosRepository.eliminar(v.id);
       setVoluntarios(prev => prev.filter(x => x.id !== v.id));

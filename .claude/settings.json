@@ -3,7 +3,23 @@
     "allow": [
       "Bash(git commit -m ' *)",
       "Bash(git add *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "PowerShell(gh api repos/arguniajc/FundacionPanoramaDeColores/pages 2>&1)",
+      "Bash(git ls-tree *)",
+      "Bash(grep \"\\\\.js$\")",
+      "Bash(curl -s \"https://api.github.com/repos/arguniajc/FundacionPanoramaDeColores/pages\" -H \"Accept: application/vnd.github.v3+json\")",
+      "Bash(curl -s \"https://api.github.com/repos/arguniajc/FundacionPanoramaDeColores/deployments?environment=github-pages&per_page=3\" -H \"Accept: application/vnd.github.v3+json\")",
+      "Bash(curl -s \"https://api.github.com/repos/arguniajc/FundacionPanoramaDeColores/deployments/4690555139/statuses\" -H \"Accept: application/vnd.github.v3+json\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(s['state'], s['created_at'], s.get\\('description',''\\)\\) for s in d]\")",
+      "Bash(curl -sH \"Cache-Control: no-cache\" -H \"Pragma: no-cache\" \"https://arguniajc.github.io/FundacionPanoramaDeColores/index.html\")",
+      "Bash(curl -si \"https://arguniajc.github.io/FundacionPanoramaDeColores/\")",
+      "Bash(curl -sL \"https://fundacionpanoramadecolores.org/gestion/index.html\" -H \"Cache-Control: no-cache\" -H \"Pragma: no-cache\")",
+      "Bash(Remove-Item -Recurse -Force gestion -ErrorAction SilentlyContinue)",
+      "Bash(Copy-Item -Recurse \"frontend\\\\fundacion-web\\\\dist\" \"gestion\")",
+      "Bash(Write-Output \"Copia OK\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\dfsalazarr\\OneDrive - Sistemas de informaci�n empresarial s.a\\Escritorio\\Diego Salazar\\FundacionPanoramaDeColores\\.github"
     ]
   }
 }

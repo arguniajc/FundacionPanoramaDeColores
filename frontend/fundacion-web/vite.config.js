@@ -9,4 +9,7 @@ export default defineConfig({
     { name: 'nojekyll', closeBundle() { writeFileSync('dist/.nojekyll', '') } },
   ],
   base: '/gestion/',
+  esbuild: {
+    drop: ['console', 'debugger'],
+  },
 })

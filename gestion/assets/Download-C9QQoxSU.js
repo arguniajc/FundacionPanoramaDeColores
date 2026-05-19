@@ -1,1 +1,0 @@
-import{E as e,gt as t}from"./apiClient-DIT8h-zA.js";var n=e((0,t().jsx)(`path`,{d:`M5 20h14v-2H5zM19 9h-4V3H9v6H5l7 7z`}),`Download`);export{n as t};

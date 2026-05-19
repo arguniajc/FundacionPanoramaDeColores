@@ -1,8 +1,10 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Services;
 using FundacionPanorama.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
@@ -69,6 +71,19 @@ builder.Services.AddControllers()
         o.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase);
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
+
+// ── B1: Rate limiting — máx 10 intentos/min por IP en el endpoint de login ──
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("auth", limiter =>
+    {
+        limiter.Window               = TimeSpan.FromMinutes(1);
+        limiter.PermitLimit          = 10;
+        limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiter.QueueLimit           = 0;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 var app = builder.Build();
 
@@ -855,6 +870,19 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("PoliticaCors");
+
+// ── B2: Cabeceras de seguridad HTTP ──────────────────────────────────────────
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.Headers["X-Content-Type-Options"]  = "nosniff";
+    ctx.Response.Headers["X-Frame-Options"]          = "DENY";
+    ctx.Response.Headers["Referrer-Policy"]          = "strict-origin-when-cross-origin";
+    ctx.Response.Headers["Permissions-Policy"]       = "camera=(), microphone=(), geolocation=()";
+    await next();
+});
+
+// ── B1: Rate limiter ─────────────────────────────────────────────────────────
+app.UseRateLimiter();
 
 // Captura excepciones no manejadas DESPUÉS de CORS para que la respuesta
 // de error incluya el header Access-Control-Allow-Origin

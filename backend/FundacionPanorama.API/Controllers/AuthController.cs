@@ -3,6 +3,7 @@ using FundacionPanorama.Application.Features.Usuarios;
 using FundacionPanorama.API.DTOs;
 using FundacionPanorama.API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -11,9 +12,11 @@ namespace FundacionPanorama.API.Controllers;
 public class AuthController(
     AuthService       authService,
     UsuariosService   usuariosService,
-    PermisosService   permisosService) : ControllerBase
+    PermisosService   permisosService,
+    ILogger<AuthController> logger) : ControllerBase
 {
     [HttpPost("google")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> LoginConGoogle(
         [FromBody] GoogleLoginDto dto, CancellationToken ct)
     {
@@ -49,10 +52,12 @@ public class AuthController(
                 Permisos  = permisos,
             });
         }
-        catch
+        catch (Exception ex)
         {
             // Fallback: si la tabla usuarios aún no existe (migración pendiente)
             // los emails en appsettings siguen pudiendo entrar como administrador
+            logger.LogWarning(ex, "Auth fallback activado para {Email} — posible migración pendiente", payload.Email);
+
             if (!authService.EsAdminBootstrap(payload.Email))
                 return StatusCode(403, new { mensaje = "Tu correo no tiene acceso al panel." });
 

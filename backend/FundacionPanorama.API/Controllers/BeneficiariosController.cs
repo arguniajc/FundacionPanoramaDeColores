@@ -30,6 +30,9 @@ public class BeneficiariosController : ControllerBase
         [FromQuery] string? buscar    = null,
         [FromQuery] string  estado    = "activos")
     {
+        pagina    = Math.Max(1, pagina);
+        porPagina = Math.Clamp(porPagina, 1, 100);
+
         var query = _db.Beneficiarios.AsQueryable();
 
         query = estado switch

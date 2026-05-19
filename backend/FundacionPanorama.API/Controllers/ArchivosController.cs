@@ -69,6 +69,9 @@ public class ArchivosController : ControllerBase
         [FromQuery] int pagina    = 1,
         [FromQuery] int porPagina = 20)
     {
+        pagina    = Math.Max(1, pagina);
+        porPagina = Math.Clamp(porPagina, 1, 100);
+
         var total = await _db.LogDescargas.CountAsync();
         var registros = await _db.LogDescargas
             .OrderByDescending(l => l.DescargadoEn)

@@ -516,10 +516,20 @@ function PersonCard({ persona, depth, canEdit, onEdit, onDelete, draggingId, onD
   return (
     <Box
       draggable={canEdit}
-      onDragStart={(e) => { e.stopPropagation(); onDragStart(persona.id); }}
+      onDragStart={(e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData('text/plain', persona.id);
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart(persona.id);
+      }}
       onDragEnd={onDragEnd}
-      onDragOver={(e) => { if (isDropTarget) e.preventDefault(); }}
-      onDrop={(e) => { e.stopPropagation(); if (isDropTarget) onDropOnto(persona.id); }}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const fromId = e.dataTransfer.getData('text/plain');
+        if (fromId && fromId !== persona.id) onDropOnto(persona.id, fromId);
+      }}
       sx={{
         width: 148, flexShrink: 0,
         borderRadius: '12px',
@@ -831,23 +841,21 @@ function OrgChartTab({ puedoEditar, empleados }) {
     cargar();
   };
 
-  // Drag & drop — al soltar sobre un nodo, ese nodo se convierte en jefe directo
-  const handleDropOnto = async (targetId) => {
-    if (!draggingId || draggingId === targetId) return;
-    // Verificar que no sea descendiente para evitar ciclos
-    const isDescendant = (nodeId, ancestorId, map) => {
-      if (!nodeId) return false;
-      const node = map[nodeId];
-      if (!node) return false;
-      if (nodeId === ancestorId) return true;
-      return isDescendant(node.parentId, ancestorId, map);
-    };
+  // Drag & drop — usa sourceId de dataTransfer, no de state (evita race condition)
+  const handleDropOnto = async (targetId, sourceId) => {
+    if (!sourceId || sourceId === targetId) return;
     const pMap = {};
     personas.forEach(p => { pMap[p.id] = p; });
-    if (isDescendant(targetId, draggingId, pMap)) return; // evitar ciclo
-    const p = personas.find(x => x.id === draggingId);
+    // Evitar ciclos: targetId no puede ser descendiente de sourceId
+    const isDescendant = (nodeId, ancId) => {
+      if (!nodeId || !pMap[nodeId]) return false;
+      if (nodeId === ancId) return true;
+      return isDescendant(pMap[nodeId].parentId, ancId);
+    };
+    if (isDescendant(targetId, sourceId)) return;
+    const p = pMap[sourceId];
     if (!p) return;
-    await apiClient.put(`/api/organigrama/${draggingId}`, {
+    await apiClient.put(`/api/organigrama/${sourceId}`, {
       orden: p.orden, empleadoId: p.empleadoId ?? null,
       nombreExterno: p.nombreExterno ?? null, fotoUrl: p.fotoUrl ?? null,
       parentId: targetId,
@@ -856,11 +864,13 @@ function OrgChartTab({ puedoEditar, empleados }) {
     cargar();
   };
 
-  const handleDropRoot = async () => {
-    if (!draggingId) return;
-    const p = personas.find(x => x.id === draggingId);
+  const handleDropRoot = async (e) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain');
+    if (!sourceId) return;
+    const p = personas.find(x => x.id === sourceId);
     if (!p) return;
-    await apiClient.put(`/api/organigrama/${draggingId}`, {
+    await apiClient.put(`/api/organigrama/${sourceId}`, {
       orden: p.orden, empleadoId: p.empleadoId ?? null,
       nombreExterno: p.nombreExterno ?? null, fotoUrl: p.fotoUrl ?? null,
       parentId: null,
@@ -894,10 +904,11 @@ function OrgChartTab({ puedoEditar, empleados }) {
       </Box>
 
       {/* Zona "soltar aquí para hacer raíz" */}
-      {puedoEditar && draggingId && (
+      {puedoEditar && (
         <Box
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDropRoot}
+          sx={{ display: draggingId ? undefined : 'none' }}
           sx={{
             mb: 2, p: 1.5, borderRadius: 2, textAlign: 'center',
             border: '2px dashed', borderColor: 'warning.main',

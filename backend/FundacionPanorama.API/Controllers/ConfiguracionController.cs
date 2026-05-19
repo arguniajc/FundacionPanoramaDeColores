@@ -2,31 +2,39 @@ using FundacionPanorama.Application.Features.Configuracion;
 using FundacionPanorama.Application.Features.Configuracion.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FundacionPanorama.API.Controllers;
 
 [ApiController]
 [Route("api/configuracion")]
 [Authorize]
-public class ConfiguracionController(ConfiguracionService svc) : ControllerBase
+public class ConfiguracionController(ConfiguracionService svc, IMemoryCache cache) : ControllerBase
 {
+    const string CACHE_KEY = "cfg_publica";
+
     [HttpGet("publica")]
     [AllowAnonymous]
     public async Task<IActionResult> ObtenerPublica(CancellationToken ct)
     {
-        var data = await svc.ObtenerPublicaAsync(ct);
-        if (data is null)
-            return Ok(new { webContenido = (string?)null });
+        if (cache.TryGetValue(CACHE_KEY, out object? cached))
+            return Ok(cached);
 
-        return Ok(new {
-            nombreFundacion = data.NombreFundacion,
-            emailContacto   = data.EmailContacto,
-            sitioWeb        = data.SitioWeb,
-            footerTexto     = data.FooterTexto,
-            webContenido    = data.WebContenido,
-            colorPrimario   = data.ColorPrimario,
-            colorSidebar    = data.ColorSidebar,
-        });
+        var data = await svc.ObtenerPublicaAsync(ct);
+        object result = data is null
+            ? new { webContenido = (string?)null }
+            : new {
+                nombreFundacion = data.NombreFundacion,
+                emailContacto   = data.EmailContacto,
+                sitioWeb        = data.SitioWeb,
+                footerTexto     = data.FooterTexto,
+                webContenido    = data.WebContenido,
+                colorPrimario   = data.ColorPrimario,
+                colorSidebar    = data.ColorSidebar,
+            };
+
+        cache.Set(CACHE_KEY, result, TimeSpan.FromMinutes(5));
+        return Ok(result);
     }
 
     [HttpGet]
@@ -45,6 +53,7 @@ public class ConfiguracionController(ConfiguracionService svc) : ControllerBase
         if (result.IsFailure)
             return BadRequest(new { error = result.Error });
 
+        cache.Remove(CACHE_KEY);
         return Ok(result.Value);
     }
 }

@@ -8,6 +8,7 @@ using FundacionPanorama.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -15,9 +16,14 @@ namespace FundacionPanorama.API.Controllers;
 [Route("api/beneficiarios")]
 public class BeneficiariosController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly AppDbContext  _db;
+    private readonly IMemoryCache  _cache;
 
-    public BeneficiariosController(AppDbContext db) => _db = db;
+    public BeneficiariosController(AppDbContext db, IMemoryCache cache)
+    {
+        _db    = db;
+        _cache = cache;
+    }
 
     // =========================================================================
     // GET api/beneficiarios?pagina=1&porPagina=10&buscar=...&estado=activos|baja|todos
@@ -105,6 +111,8 @@ public class BeneficiariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Stats(CancellationToken ct)
     {
+        if (_cache.TryGetValue("stats", out object? cached)) return Ok(cached);
+
         var conn = _db.Database.GetDbConnection();
         if (conn.State != ConnectionState.Open)
             await conn.OpenAsync(ct);
@@ -263,7 +271,7 @@ public class BeneficiariosController : ControllerBase
             }
         }
 
-        return Ok(new BeneficiarioStatsDto
+        var statsDto = new BeneficiarioStatsDto
         {
             Total        = total,
             Activos      = activos,
@@ -280,7 +288,9 @@ public class BeneficiariosController : ControllerBase
             TopCamisa    = topCamisa,
             TopZapatos   = topZapatos,
             TopPantalon  = topPantalon,
-        });
+        };
+        _cache.Set("stats", (object)statsDto, TimeSpan.FromMinutes(10));
+        return Ok(statsDto);
     }
 
     // =========================================================================
@@ -290,6 +300,8 @@ public class BeneficiariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> StatsNinos(CancellationToken ct)
     {
+        if (_cache.TryGetValue("stats_ninos", out object? cached)) return Ok(cached);
+
         var conn = _db.Database.GetDbConnection();
         if (conn.State != ConnectionState.Open)
             await conn.OpenAsync(ct);
@@ -431,7 +443,7 @@ public class BeneficiariosController : ControllerBase
                 porGenero.Add(new { genero = r.GetString(0), total = r.GetInt32(1) });
         }
 
-        return Ok(new {
+        var ninosDto = (object)new {
             totalActivos,
             sinEdad,
             extranjeros,
@@ -440,7 +452,9 @@ public class BeneficiariosController : ControllerBase
             topPaises,
             departamentosConCiudades,
             porGenero,
-        });
+        };
+        _cache.Set("stats_ninos", ninosDto, TimeSpan.FromMinutes(10));
+        return Ok(ninosDto);
     }
 
     // =========================================================================

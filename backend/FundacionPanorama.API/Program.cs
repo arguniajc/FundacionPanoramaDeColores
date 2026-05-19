@@ -1,10 +1,13 @@
+using System.IO.Compression;
 using System.Text;
 using System.Threading.RateLimiting;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Services;
 using FundacionPanorama.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
@@ -72,6 +75,26 @@ builder.Services.AddControllers()
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
 
+// ── C1: Compresión Brotli + Gzip ─────────────────────────────────────────────
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        ["application/json", "application/javascript", "text/css"]);
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o  => o.Level  = CompressionLevel.Fastest);
+
+// ── C3: Timeout de request — 30 s por defecto (protege BD lenta / ataques slow-read) ─
+builder.Services.AddRequestTimeouts(options =>
+    options.DefaultPolicy = new RequestTimeoutPolicy
+    {
+        Timeout           = TimeSpan.FromSeconds(30),
+        TimeoutStatusCode = StatusCodes.Status504GatewayTimeout,
+    });
+
 // ── B1: Rate limiting — máx 10 intentos/min por IP en el endpoint de login ──
 builder.Services.AddRateLimiter(options =>
 {
@@ -124,20 +147,18 @@ var app = builder.Build();
         {
             await using var migConn = new NpgsqlConnection(migConnStr);
             await migConn.OpenAsync();
-            // Verificar si ya se ejecutó
-            await using var chk = migConn.CreateCommand();
-            chk.CommandText = "SELECT 1 FROM _migraciones_ejecutadas WHERE etiqueta = @e";
-            chk.Parameters.AddWithValue("e", etiqueta);
-            if (await chk.ExecuteScalarAsync() is not null) return;
-            // Ejecutar
+
+            // C4: INSERT atómico — elimina la race condition SELECT→INSERT.
+            // Si dos instancias arrancan a la vez, solo la primera obtendrá rowsAffected=1.
+            await using var claim = migConn.CreateCommand();
+            claim.CommandText = "INSERT INTO _migraciones_ejecutadas (etiqueta) VALUES (@e) ON CONFLICT (etiqueta) DO NOTHING";
+            claim.Parameters.AddWithValue("e", etiqueta);
+            if (await claim.ExecuteNonQueryAsync() == 0) return; // ya ejecutada
+
+            // Ejecutar la migración
             await using var cmd = migConn.CreateCommand();
             cmd.CommandText = sql;
             await cmd.ExecuteNonQueryAsync();
-            // Registrar
-            await using var reg = migConn.CreateCommand();
-            reg.CommandText = "INSERT INTO _migraciones_ejecutadas (etiqueta) VALUES (@e)";
-            reg.Parameters.AddWithValue("e", etiqueta);
-            await reg.ExecuteNonQueryAsync();
             migLogger.LogInformation("✅ Migración única OK: {E}", etiqueta);
         }
         catch (Exception ex)
@@ -868,6 +889,12 @@ if (app.Environment.IsDevelopment())
         options.AddHttpAuthentication("bearer", b => b.Token = "");
     });
 }
+
+// ── C1: Compresión de respuestas (antes de CORS para comprimir también preflight) ─
+app.UseResponseCompression();
+
+// ── C3: Timeout de request ───────────────────────────────────────────────────
+app.UseRequestTimeouts();
 
 app.UseCors("PoliticaCors");
 

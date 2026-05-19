@@ -1,14 +1,14 @@
 // CRUD completo de beneficiarios (niños inscritos). La mayoría de endpoints requieren JWT.
 // Regla de negocio: los beneficiarios no se eliminan permanentemente desde la UI,
 // solo se "dan de baja" (activo=false). El DELETE existe para limpieza de datos por admin.
-using System.Data;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.DTOs;
-using FundacionPanorama.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -16,14 +16,16 @@ namespace FundacionPanorama.API.Controllers;
 [Route("api/beneficiarios")]
 public class BeneficiariosController : ControllerBase
 {
-    private readonly AppDbContext  _db;
-    private readonly IMemoryCache  _cache;
+    private readonly AppDbContext _db;
+    private readonly IMemoryCache _cache;
 
     public BeneficiariosController(AppDbContext db, IMemoryCache cache)
     {
         _db    = db;
         _cache = cache;
     }
+
+    private NpgsqlConnection AbrirConexion() => new(_db.Database.GetConnectionString());
 
     // =========================================================================
     // GET api/beneficiarios?pagina=1&porPagina=10&buscar=...&estado=activos|baja|todos
@@ -39,69 +41,63 @@ public class BeneficiariosController : ControllerBase
         pagina    = Math.Max(1, pagina);
         porPagina = Math.Clamp(porPagina, 1, 100);
 
-        var query = _db.Beneficiarios.AsQueryable();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
 
-        query = estado switch
+        // Build WHERE filters
+        var filters = new List<string>();
+        switch (estado)
         {
-            "baja"  => query.Where(b => !b.Activo),
-            "todos" => query,
-            _       => query.Where(b => b.Activo)
-        };
-
-        if (!string.IsNullOrWhiteSpace(buscar))
-        {
-            var t = buscar.ToLower();
-            query = query.Where(b =>
-                b.Nombre.ToLower().Contains(t) ||
-                (b.NumeroDocumento != null && b.NumeroDocumento.ToLower().Contains(t)) ||
-                b.BeneficiarioAcudientes.Any(ba =>
-                    ba.Acudiente != null && ba.Acudiente.Nombre.ToLower().Contains(t)) ||
-                b.BeneficiarioAcudientes.Any(ba =>
-                    ba.Acudiente != null && ba.Acudiente.Whatsapp != null &&
-                    ba.Acudiente.Whatsapp.Contains(t)));
+            case "baja":  filters.Add("b.activo = false"); break;
+            case "todos": break;
+            default:      filters.Add("b.activo = true");  break;
         }
+        if (!string.IsNullOrWhiteSpace(buscar))
+            filters.Add("""
+                (b.nombre ILIKE @buscar
+                 OR b.numero_documento ILIKE @buscar
+                 OR EXISTS (
+                     SELECT 1 FROM beneficiario_acudiente bac2
+                     JOIN acudientes ac2 ON ac2.id = bac2.acudiente_id
+                     WHERE bac2.beneficiario_id = b.id
+                     AND (ac2.nombre ILIKE @buscar OR ac2.whatsapp ILIKE @buscar)
+                 ))
+                """);
 
-        var total = await query.CountAsync();
+        var where = filters.Count > 0 ? "WHERE " + string.Join(" AND ", filters) : "";
 
-        var ids = await query
-            .OrderByDescending(b => b.FechaCreacion)
-            .Skip((pagina - 1) * porPagina)
-            .Take(porPagina)
-            .Select(b => b.Id)
-            .ToListAsync();
+        // Count
+        await using var cmdCount = conn.CreateCommand();
+        cmdCount.CommandText = $"SELECT COUNT(*)::int FROM beneficiarios b {where}";
+        if (!string.IsNullOrWhiteSpace(buscar))
+            cmdCount.Parameters.AddWithValue("buscar", $"%{buscar}%");
+        var total = (int)(await cmdCount.ExecuteScalarAsync())!;
 
-        var beneficiarios = await _db.Beneficiarios
-            .Where(b => ids.Contains(b.Id))
-            .Include(b => b.TipoDocumento)
-            .Include(b => b.Salud).ThenInclude(s => s!.Eps)
-            .Include(b => b.BeneficiarioAcudientes)
-                .ThenInclude(ba => ba.Acudiente)
-            .Include(b => b.BeneficiarioAcudientes)
-                .ThenInclude(ba => ba.Parentesco)
-            .Include(b => b.Tallas)
-            .Include(b => b.Alergias)
-            .ToListAsync();
+        // IDs page
+        await using var cmdIds = conn.CreateCommand();
+        cmdIds.CommandText = $"""
+            SELECT b.id FROM beneficiarios b {where}
+            ORDER BY b.fecha_creacion DESC
+            LIMIT @pp OFFSET @off
+            """;
+        if (!string.IsNullOrWhiteSpace(buscar))
+            cmdIds.Parameters.AddWithValue("buscar", $"%{buscar}%");
+        cmdIds.Parameters.AddWithValue("pp",  porPagina);
+        cmdIds.Parameters.AddWithValue("off", (pagina - 1) * porPagina);
 
-        // Preservar orden original de ids
-        beneficiarios = ids.Select(id => beneficiarios.First(b => b.Id == id)).ToList();
+        var ids = new List<Guid>();
+        await using (var r = await cmdIds.ExecuteReaderAsync())
+            while (await r.ReadAsync())
+                ids.Add(r.GetGuid(0));
 
-        // Cargar archivos en lote para los ids de la página
-        var archivos = await _db.Archivos
-            .Where(a => a.EntidadTipo == "beneficiario" && ids.Contains(a.EntidadId) && a.Activo)
-            .Include(a => a.TipoArchivo)
-            .ToListAsync();
+        if (ids.Count == 0)
+            return Ok(new BeneficiarioListDto { Data = [], Total = total, Pagina = pagina, PorPagina = porPagina });
 
-        var datos = beneficiarios
-            .Select(b => MapearDto(b, archivos.Where(a => a.EntidadId == b.Id).ToList()))
-            .ToList();
+        var datos = await CargarDtosAsync(conn, ids);
+        // Preserve original order
+        var ordered = ids.Select(id => datos.First(d => d.Id == id)).ToList();
 
-        return Ok(new BeneficiarioListDto
-        {
-            Data      = datos,
-            Total     = total,
-            Pagina    = pagina,
-            PorPagina = porPagina
-        });
+        return Ok(new BeneficiarioListDto { Data = ordered, Total = total, Pagina = pagina, PorPagina = porPagina });
     }
 
     // =========================================================================
@@ -113,11 +109,10 @@ public class BeneficiariosController : ControllerBase
     {
         if (_cache.TryGetValue("stats", out object? cached)) return Ok(cached);
 
-        var conn = _db.Database.GetDbConnection();
-        if (conn.State != ConnectionState.Open)
-            await conn.OpenAsync(ct);
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync(ct);
 
-        // ── 1. Contadores principales (1 query, 1 fila) ───────────────────────
+        // ── 1. Contadores principales ─────────────────────────────────────────
         await using var cmd1 = conn.CreateCommand();
         cmd1.CommandText = """
             SELECT
@@ -176,7 +171,7 @@ public class BeneficiariosController : ControllerBase
             sinFoto      = r.GetInt32(9);
         }
 
-        // ── 2. Distribución por rango de edad (1 query, 1 fila) ───────────────
+        // ── 2. Distribución por rango de edad ─────────────────────────────────
         await using var cmd2 = conn.CreateCommand();
         cmd2.CommandText = """
             SELECT
@@ -204,7 +199,7 @@ public class BeneficiariosController : ControllerBase
             porEdad["16+ años"]   = r.GetInt32(5);
         }
 
-        // ── 3. Inscripciones por mes — últimos 4 meses (4 filas) ─────────────
+        // ── 3. Inscripciones por mes — últimos 4 meses ────────────────────────
         await using var cmd3 = conn.CreateCommand();
         cmd3.CommandText = """
             WITH meses AS (
@@ -235,7 +230,7 @@ public class BeneficiariosController : ControllerBase
             }
         }
 
-        // ── 4. Top 5 tallas (camisa, pantalón, zapatos) — máx 15 filas ───────
+        // ── 4. Top 5 tallas ───────────────────────────────────────────────────
         await using var cmd4 = conn.CreateCommand();
         cmd4.CommandText = """
             WITH ultima AS (
@@ -294,7 +289,7 @@ public class BeneficiariosController : ControllerBase
     }
 
     // =========================================================================
-    // GET api/beneficiarios/stats-ninos  — estadísticas del dashboard
+    // GET api/beneficiarios/stats-ninos
     // =========================================================================
     [HttpGet("stats-ninos")]
     [Authorize]
@@ -302,11 +297,9 @@ public class BeneficiariosController : ControllerBase
     {
         if (_cache.TryGetValue("stats_ninos", out object? cached)) return Ok(cached);
 
-        var conn = _db.Database.GetDbConnection();
-        if (conn.State != ConnectionState.Open)
-            await conn.OpenAsync(ct);
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync(ct);
 
-        // ── 1. Contadores principales ─────────────────────────────────────────
         await using var cmd1 = conn.CreateCommand();
         cmd1.CommandText = """
             SELECT
@@ -335,7 +328,6 @@ public class BeneficiariosController : ControllerBase
             otraRegion   = r.GetInt32(3);
         }
 
-        // ── 2. Por rango de edad ──────────────────────────────────────────────
         await using var cmd2 = conn.CreateCommand();
         cmd2.CommandText = """
             SELECT
@@ -369,7 +361,6 @@ public class BeneficiariosController : ControllerBase
             new { Codigo = "AD",  Nombre = "Adolescencia",      rango = "14 a 16 años", total = cAD  },
         };
 
-        // ── 3. Top 10 países extranjeros ──────────────────────────────────────
         await using var cmd3 = conn.CreateCommand();
         cmd3.CommandText = """
             SELECT pais_nacimiento, COUNT(*)::int AS total
@@ -383,12 +374,9 @@ public class BeneficiariosController : ControllerBase
             """;
         var topPaises = new List<object>();
         await using (var r = await cmd3.ExecuteReaderAsync(ct))
-        {
             while (await r.ReadAsync(ct))
                 topPaises.Add(new { pais = r.GetString(0), total = r.GetInt32(1) });
-        }
 
-        // ── 4. Departamentos con ciudades (colombianos) ───────────────────────
         await using var cmd4 = conn.CreateCommand();
         cmd4.CommandText = """
             SELECT
@@ -405,10 +393,9 @@ public class BeneficiariosController : ControllerBase
             """;
         var deptoRows = new List<(string depto, string ciudad, int total)>();
         await using (var r = await cmd4.ExecuteReaderAsync(ct))
-        {
             while (await r.ReadAsync(ct))
                 deptoRows.Add((r.GetString(0), r.GetString(1), r.GetInt32(2)));
-        }
+
         var departamentosConCiudades = deptoRows
             .GroupBy(x => x.depto)
             .Select(g => new {
@@ -425,7 +412,6 @@ public class BeneficiariosController : ControllerBase
             .Take(15)
             .ToList();
 
-        // ── 5. Por género ─────────────────────────────────────────────────────
         await using var cmd5 = conn.CreateCommand();
         cmd5.CommandText = """
             SELECT
@@ -438,10 +424,8 @@ public class BeneficiariosController : ControllerBase
             """;
         var porGenero = new List<object>();
         await using (var r = await cmd5.ExecuteReaderAsync(ct))
-        {
             while (await r.ReadAsync(ct))
                 porGenero.Add(new { genero = r.GetString(0), total = r.GetInt32(1) });
-        }
 
         var ninosDto = (object)new {
             totalActivos,
@@ -464,15 +448,10 @@ public class BeneficiariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> ObtenerPorId(Guid id)
     {
-        var b = await CargarCompleto(id);
-        if (b is null) return NotFound();
-
-        var archivos = await _db.Archivos
-            .Where(a => a.EntidadTipo == "beneficiario" && a.EntidadId == id && a.Activo)
-            .Include(a => a.TipoArchivo)
-            .ToListAsync();
-
-        return Ok(MapearDto(b, archivos));
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        var dtos = await CargarDtosAsync(conn, [id]);
+        return dtos.Count == 0 ? NotFound() : Ok(dtos[0]);
     }
 
     // =========================================================================
@@ -481,8 +460,13 @@ public class BeneficiariosController : ControllerBase
     [HttpGet("verificar-documento/{numero}")]
     public async Task<IActionResult> VerificarDocumento(string numero)
     {
-        var existe = await _db.Beneficiarios.AnyAsync(b => b.NumeroDocumento == numero);
-        return Ok(new { existe });
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*)::int FROM beneficiarios WHERE numero_documento = @doc";
+        cmd.Parameters.AddWithValue("doc", numero);
+        var cnt = (int)(await cmd.ExecuteScalarAsync())!;
+        return Ok(new { existe = cnt > 0 });
     }
 
     // =========================================================================
@@ -491,49 +475,70 @@ public class BeneficiariosController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearBeneficiarioDto dto)
     {
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var tx = await conn.BeginTransactionAsync();
+
+        // Duplicate document check
         if (!string.IsNullOrWhiteSpace(dto.NumeroDocumento))
         {
-            if (await _db.Beneficiarios.AnyAsync(b => b.NumeroDocumento == dto.NumeroDocumento))
+            await using var chk = conn.CreateCommand();
+            chk.Transaction = tx;
+            chk.CommandText = "SELECT COUNT(*)::int FROM beneficiarios WHERE numero_documento = @doc";
+            chk.Parameters.AddWithValue("doc", dto.NumeroDocumento.Trim());
+            if ((int)(await chk.ExecuteScalarAsync())! > 0)
                 return Conflict(new { mensaje = "Este número de documento ya está inscrito." });
         }
 
-        var tipoDocId = await ResolverTipoDocumentoId(dto.TipoDocumento);
-        var epsId     = await ResolverEpsId(dto.Eps);
+        var tipoDocId = await ResolverTipoDocumentoIdAsync(conn, tx, dto.TipoDocumento);
+        var epsId     = await ResolverEpsIdAsync(conn, tx, dto.Eps);
 
-        var beneficiario = new Beneficiario
-        {
-            Nombre                  = dto.NombreMenor.Trim(),
-            FechaNacimiento         = dto.FechaNacimiento,
-            TipoDocumentoId         = tipoDocId,
-            NumeroDocumento         = string.IsNullOrWhiteSpace(dto.NumeroDocumento) ? null : dto.NumeroDocumento.Trim(),
-            PaisNacimiento          = string.IsNullOrWhiteSpace(dto.PaisNacimiento)         ? null : dto.PaisNacimiento.Trim(),
-            DepartamentoNacimiento  = string.IsNullOrWhiteSpace(dto.DepartamentoNacimiento) ? null : dto.DepartamentoNacimiento.Trim(),
-            CiudadNacimiento        = string.IsNullOrWhiteSpace(dto.CiudadNacimiento)       ? null : dto.CiudadNacimiento.Trim(),
-            Barrio                  = string.IsNullOrWhiteSpace(dto.Barrio)                 ? null : dto.Barrio.Trim(),
-            NumPersonasVive         = dto.NumPersonasVive,
-            NumHermanos             = dto.NumHermanos,
-            NombreColegio           = string.IsNullOrWhiteSpace(dto.NombreColegio)  ? null : dto.NombreColegio.Trim(),
-            GradoEscolar            = string.IsNullOrWhiteSpace(dto.GradoEscolar)   ? null : dto.GradoEscolar.Trim(),
-            TieneDiscapacidad       = dto.TieneDiscapacidad,
-            DescripcionDiscapacidad = string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad) ? null : dto.DescripcionDiscapacidad.Trim(),
-            ViveConNino             = dto.ViveConNino,
-            Genero                  = string.IsNullOrWhiteSpace(dto.Genero) ? null : dto.Genero.Trim(),
-            Autorizacion            = dto.Autorizacion,
-            Activo                  = true
-        };
-        _db.Beneficiarios.Add(beneficiario);
-        await _db.SaveChangesAsync();
+        // INSERT beneficiario
+        await using var ins = conn.CreateCommand();
+        ins.Transaction = tx;
+        ins.CommandText = """
+            INSERT INTO beneficiarios (
+              nombre, fecha_nacimiento, tipo_documento_id, numero_documento,
+              pais_nacimiento, departamento_nacimiento, ciudad_nacimiento, barrio,
+              num_personas_vive, num_hermanos, nombre_colegio, grado_escolar,
+              tiene_discapacidad, descripcion_discapacidad, vive_con_nino,
+              genero, autorizacion, activo
+            ) VALUES (
+              @nombre, @fn, @tdoc, @ndoc,
+              @pais, @depto, @ciudad, @barrio,
+              @npv, @nh, @col, @grado,
+              @disc, @disc_desc, @vive,
+              @genero, @auth, true
+            ) RETURNING id
+            """;
+        ins.Parameters.AddWithValue("nombre", dto.NombreMenor.Trim());
+        ins.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object?)dto.FechaNacimiento ?? DBNull.Value });
+        ins.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = (object?)tipoDocId ?? DBNull.Value });
+        ins.Parameters.AddWithValue("ndoc",  string.IsNullOrWhiteSpace(dto.NumeroDocumento)         ? DBNull.Value : (object)dto.NumeroDocumento.Trim());
+        ins.Parameters.AddWithValue("pais",  string.IsNullOrWhiteSpace(dto.PaisNacimiento)          ? DBNull.Value : (object)dto.PaisNacimiento.Trim());
+        ins.Parameters.AddWithValue("depto", string.IsNullOrWhiteSpace(dto.DepartamentoNacimiento)  ? DBNull.Value : (object)dto.DepartamentoNacimiento.Trim());
+        ins.Parameters.AddWithValue("ciudad",string.IsNullOrWhiteSpace(dto.CiudadNacimiento)        ? DBNull.Value : (object)dto.CiudadNacimiento.Trim());
+        ins.Parameters.AddWithValue("barrio",string.IsNullOrWhiteSpace(dto.Barrio)                  ? DBNull.Value : (object)dto.Barrio.Trim());
+        ins.Parameters.Add(new NpgsqlParameter("npv",  NpgsqlDbType.Integer) { Value = (object?)dto.NumPersonasVive ?? DBNull.Value });
+        ins.Parameters.Add(new NpgsqlParameter("nh",   NpgsqlDbType.Integer) { Value = (object?)dto.NumHermanos    ?? DBNull.Value });
+        ins.Parameters.AddWithValue("col",   string.IsNullOrWhiteSpace(dto.NombreColegio) ? DBNull.Value : (object)dto.NombreColegio.Trim());
+        ins.Parameters.AddWithValue("grado", string.IsNullOrWhiteSpace(dto.GradoEscolar) ? DBNull.Value : (object)dto.GradoEscolar.Trim());
+        ins.Parameters.AddWithValue("disc",  dto.TieneDiscapacidad);
+        ins.Parameters.AddWithValue("disc_desc", string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad) ? DBNull.Value : (object)dto.DescripcionDiscapacidad.Trim());
+        ins.Parameters.Add(new NpgsqlParameter("vive", NpgsqlDbType.Boolean) { Value = (object?)dto.ViveConNino ?? DBNull.Value });
+        ins.Parameters.AddWithValue("genero",string.IsNullOrWhiteSpace(dto.Genero) ? DBNull.Value : (object)dto.Genero.Trim());
+        ins.Parameters.AddWithValue("auth",  dto.Autorizacion);
 
-        await CrearOActualizarDependientes(beneficiario.Id, dto, epsId, isNew: true);
-        await _db.SaveChangesAsync();
+        var newId = (Guid)(await ins.ExecuteScalarAsync())!;
 
-        var creado = await CargarCompleto(beneficiario.Id);
-        var archivos = await _db.Archivos
-            .Where(a => a.EntidadTipo == "beneficiario" && a.EntidadId == beneficiario.Id && a.Activo)
-            .Include(a => a.TipoArchivo)
-            .ToListAsync();
+        await GuardarDependientesAsync(conn, tx, newId, dto, epsId, isNew: true);
 
-        return CreatedAtAction(nameof(ObtenerPorId), new { id = beneficiario.Id }, MapearDto(creado!, archivos));
+        await tx.CommitAsync();
+
+        await using var conn2 = AbrirConexion();
+        await conn2.OpenAsync();
+        var dtos = await CargarDtosAsync(conn2, [newId]);
+        return CreatedAtAction(nameof(ObtenerPorId), new { id = newId }, dtos[0]);
     }
 
     // =========================================================================
@@ -543,47 +548,87 @@ public class BeneficiariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearBeneficiarioDto dto)
     {
-        var beneficiario = await _db.Beneficiarios.FindAsync(id);
-        if (beneficiario is null) return NotFound();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var tx = await conn.BeginTransactionAsync();
 
-        if (!string.IsNullOrWhiteSpace(dto.NumeroDocumento) &&
-            dto.NumeroDocumento != beneficiario.NumeroDocumento)
+        // Exists check
+        if (!await BeneficiarioExisteAsync(conn, tx, id))
+            return NotFound();
+
+        await using var ex = conn.CreateCommand();
+        ex.Transaction = tx;
+        ex.CommandText = "SELECT numero_documento FROM beneficiarios WHERE id = @id";
+        ex.Parameters.AddWithValue("id", id);
+        var currentDocRaw = await ex.ExecuteScalarAsync();
+        var currentDoc = currentDocRaw == null || currentDocRaw == DBNull.Value ? null : (string)currentDocRaw;
+
+        // Duplicate document check
+        if (!string.IsNullOrWhiteSpace(dto.NumeroDocumento) && dto.NumeroDocumento.Trim() != currentDoc)
         {
-            if (await _db.Beneficiarios.AnyAsync(b => b.NumeroDocumento == dto.NumeroDocumento && b.Id != id))
+            await using var chk = conn.CreateCommand();
+            chk.Transaction = tx;
+            chk.CommandText = "SELECT COUNT(*)::int FROM beneficiarios WHERE numero_documento = @doc AND id <> @id";
+            chk.Parameters.AddWithValue("doc", dto.NumeroDocumento.Trim());
+            chk.Parameters.AddWithValue("id",  id);
+            if ((int)(await chk.ExecuteScalarAsync())! > 0)
                 return Conflict(new { mensaje = "Ese número de documento ya está registrado." });
         }
 
-        var tipoDocId = await ResolverTipoDocumentoId(dto.TipoDocumento);
-        var epsId     = await ResolverEpsId(dto.Eps);
+        var tipoDocId = await ResolverTipoDocumentoIdAsync(conn, tx, dto.TipoDocumento);
+        var epsId     = await ResolverEpsIdAsync(conn, tx, dto.Eps);
 
-        beneficiario.Nombre                  = dto.NombreMenor.Trim();
-        beneficiario.FechaNacimiento         = dto.FechaNacimiento;
-        beneficiario.TipoDocumentoId         = tipoDocId;
-        beneficiario.NumeroDocumento         = string.IsNullOrWhiteSpace(dto.NumeroDocumento) ? null : dto.NumeroDocumento.Trim();
-        beneficiario.PaisNacimiento          = string.IsNullOrWhiteSpace(dto.PaisNacimiento)         ? null : dto.PaisNacimiento.Trim();
-        beneficiario.DepartamentoNacimiento  = string.IsNullOrWhiteSpace(dto.DepartamentoNacimiento) ? null : dto.DepartamentoNacimiento.Trim();
-        beneficiario.CiudadNacimiento        = string.IsNullOrWhiteSpace(dto.CiudadNacimiento)       ? null : dto.CiudadNacimiento.Trim();
-        beneficiario.Barrio                  = string.IsNullOrWhiteSpace(dto.Barrio)                 ? null : dto.Barrio.Trim();
-        beneficiario.NumPersonasVive         = dto.NumPersonasVive;
-        beneficiario.NumHermanos             = dto.NumHermanos;
-        beneficiario.NombreColegio           = string.IsNullOrWhiteSpace(dto.NombreColegio)  ? null : dto.NombreColegio.Trim();
-        beneficiario.GradoEscolar            = string.IsNullOrWhiteSpace(dto.GradoEscolar)   ? null : dto.GradoEscolar.Trim();
-        beneficiario.TieneDiscapacidad       = dto.TieneDiscapacidad;
-        beneficiario.DescripcionDiscapacidad = string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad) ? null : dto.DescripcionDiscapacidad.Trim();
-        beneficiario.ViveConNino             = dto.ViveConNino;
-        beneficiario.Genero                  = string.IsNullOrWhiteSpace(dto.Genero) ? null : dto.Genero.Trim();
-        beneficiario.Autorizacion            = dto.Autorizacion;
+        await using var upd = conn.CreateCommand();
+        upd.Transaction = tx;
+        upd.CommandText = """
+            UPDATE beneficiarios SET
+              nombre                  = @nombre,
+              fecha_nacimiento        = @fn,
+              tipo_documento_id       = @tdoc,
+              numero_documento        = @ndoc,
+              pais_nacimiento         = @pais,
+              departamento_nacimiento = @depto,
+              ciudad_nacimiento       = @ciudad,
+              barrio                  = @barrio,
+              num_personas_vive       = @npv,
+              num_hermanos            = @nh,
+              nombre_colegio          = @col,
+              grado_escolar           = @grado,
+              tiene_discapacidad      = @disc,
+              descripcion_discapacidad= @disc_desc,
+              vive_con_nino           = @vive,
+              genero                  = @genero,
+              autorizacion            = @auth
+            WHERE id = @id
+            """;
+        upd.Parameters.AddWithValue("nombre", dto.NombreMenor.Trim());
+        upd.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object?)dto.FechaNacimiento ?? DBNull.Value });
+        upd.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = (object?)tipoDocId ?? DBNull.Value });
+        upd.Parameters.AddWithValue("ndoc",  string.IsNullOrWhiteSpace(dto.NumeroDocumento)         ? DBNull.Value : (object)dto.NumeroDocumento.Trim());
+        upd.Parameters.AddWithValue("pais",  string.IsNullOrWhiteSpace(dto.PaisNacimiento)          ? DBNull.Value : (object)dto.PaisNacimiento.Trim());
+        upd.Parameters.AddWithValue("depto", string.IsNullOrWhiteSpace(dto.DepartamentoNacimiento)  ? DBNull.Value : (object)dto.DepartamentoNacimiento.Trim());
+        upd.Parameters.AddWithValue("ciudad",string.IsNullOrWhiteSpace(dto.CiudadNacimiento)        ? DBNull.Value : (object)dto.CiudadNacimiento.Trim());
+        upd.Parameters.AddWithValue("barrio",string.IsNullOrWhiteSpace(dto.Barrio)                  ? DBNull.Value : (object)dto.Barrio.Trim());
+        upd.Parameters.Add(new NpgsqlParameter("npv",  NpgsqlDbType.Integer) { Value = (object?)dto.NumPersonasVive ?? DBNull.Value });
+        upd.Parameters.Add(new NpgsqlParameter("nh",   NpgsqlDbType.Integer) { Value = (object?)dto.NumHermanos    ?? DBNull.Value });
+        upd.Parameters.AddWithValue("col",   string.IsNullOrWhiteSpace(dto.NombreColegio) ? DBNull.Value : (object)dto.NombreColegio.Trim());
+        upd.Parameters.AddWithValue("grado", string.IsNullOrWhiteSpace(dto.GradoEscolar) ? DBNull.Value : (object)dto.GradoEscolar.Trim());
+        upd.Parameters.AddWithValue("disc",  dto.TieneDiscapacidad);
+        upd.Parameters.AddWithValue("disc_desc", string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad) ? DBNull.Value : (object)dto.DescripcionDiscapacidad.Trim());
+        upd.Parameters.Add(new NpgsqlParameter("vive", NpgsqlDbType.Boolean) { Value = (object?)dto.ViveConNino ?? DBNull.Value });
+        upd.Parameters.AddWithValue("genero",string.IsNullOrWhiteSpace(dto.Genero) ? DBNull.Value : (object)dto.Genero.Trim());
+        upd.Parameters.AddWithValue("auth",  dto.Autorizacion);
+        upd.Parameters.AddWithValue("id",    id);
+        await upd.ExecuteNonQueryAsync();
 
-        await CrearOActualizarDependientes(id, dto, epsId, isNew: false);
-        await _db.SaveChangesAsync();
+        await GuardarDependientesAsync(conn, tx, id, dto, epsId, isNew: false);
 
-        var actualizado = await CargarCompleto(id);
-        var archivos = await _db.Archivos
-            .Where(a => a.EntidadTipo == "beneficiario" && a.EntidadId == id && a.Activo)
-            .Include(a => a.TipoArchivo)
-            .ToListAsync();
+        await tx.CommitAsync();
 
-        return Ok(MapearDto(actualizado!, archivos));
+        await using var conn2 = AbrirConexion();
+        await conn2.OpenAsync();
+        var resultDtos = await CargarDtosAsync(conn2, [id]);
+        return Ok(resultDtos[0]);
     }
 
     // =========================================================================
@@ -595,17 +640,16 @@ public class BeneficiariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> DarDeBaja(Guid id, [FromBody] DarDeBajaDto? dto)
     {
-        var b = await _db.Beneficiarios.FindAsync(id);
-        if (b is null) return NotFound();
-        b.Activo     = false;
-        b.MotivoBaja = string.IsNullOrWhiteSpace(dto?.Motivo) ? null : dto.Motivo.Trim();
-        await _db.SaveChangesAsync();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE beneficiarios SET activo = false, motivo_baja = @motivo WHERE id = @id";
+        cmd.Parameters.AddWithValue("motivo", string.IsNullOrWhiteSpace(dto?.Motivo) ? DBNull.Value : (object)dto.Motivo.Trim());
+        cmd.Parameters.AddWithValue("id", id);
+        if (await cmd.ExecuteNonQueryAsync() == 0) return NotFound();
 
-        var cargado  = await CargarCompleto(id);
-        var archivos = await _db.Archivos
-            .Where(a => a.EntidadTipo == "beneficiario" && a.EntidadId == id && a.Activo)
-            .Include(a => a.TipoArchivo).ToListAsync();
-        return Ok(MapearDto(cargado!, archivos));
+        var dtos = await CargarDtosAsync(conn, [id]);
+        return Ok(dtos[0]);
     }
 
     // =========================================================================
@@ -615,17 +659,15 @@ public class BeneficiariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Reactivar(Guid id)
     {
-        var b = await _db.Beneficiarios.FindAsync(id);
-        if (b is null) return NotFound();
-        b.Activo     = true;
-        b.MotivoBaja = null;
-        await _db.SaveChangesAsync();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE beneficiarios SET activo = true, motivo_baja = NULL WHERE id = @id";
+        cmd.Parameters.AddWithValue("id", id);
+        if (await cmd.ExecuteNonQueryAsync() == 0) return NotFound();
 
-        var cargado  = await CargarCompleto(id);
-        var archivos = await _db.Archivos
-            .Where(a => a.EntidadTipo == "beneficiario" && a.EntidadId == id && a.Activo)
-            .Include(a => a.TipoArchivo).ToListAsync();
-        return Ok(MapearDto(cargado!, archivos));
+        var dtos = await CargarDtosAsync(conn, [id]);
+        return Ok(dtos[0]);
     }
 
     // =========================================================================
@@ -635,225 +677,260 @@ public class BeneficiariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Eliminar(Guid id)
     {
-        var b = await _db.Beneficiarios.FindAsync(id);
-        if (b is null) return NotFound();
-        _db.Beneficiarios.Remove(b);
-        await _db.SaveChangesAsync();
-        return NoContent();
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM beneficiarios WHERE id = @id";
+        cmd.Parameters.AddWithValue("id", id);
+        return await cmd.ExecuteNonQueryAsync() == 0 ? NotFound() : NoContent();
     }
 
     // =========================================================================
     // HELPERS PRIVADOS
     // =========================================================================
 
-    private async Task<Beneficiario?> CargarCompleto(Guid id) =>
-        await _db.Beneficiarios
-            .Include(b => b.TipoDocumento)
-            .Include(b => b.Salud).ThenInclude(s => s!.Eps)
-            .Include(b => b.BeneficiarioAcudientes).ThenInclude(ba => ba.Acudiente)
-            .Include(b => b.BeneficiarioAcudientes).ThenInclude(ba => ba.Parentesco)
-            .Include(b => b.Tallas)
-            .Include(b => b.Alergias)
-            .FirstOrDefaultAsync(b => b.Id == id);
+    private static async Task<bool> BeneficiarioExisteAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid id)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT COUNT(*)::int FROM beneficiarios WHERE id = @id";
+        cmd.Parameters.AddWithValue("id", id);
+        return (int)(await cmd.ExecuteScalarAsync())! > 0;
+    }
 
-    private async Task<short?> ResolverTipoDocumentoId(string codigo)
+    private static async Task<short?> ResolverTipoDocumentoIdAsync(NpgsqlConnection conn, NpgsqlTransaction tx, string? codigo)
     {
         if (string.IsNullOrWhiteSpace(codigo)) return null;
-        return await _db.CatTiposDocumento
-            .Where(td => td.Codigo.ToUpper() == codigo.ToUpper().Trim())
-            .Select(td => (short?)td.Id)
-            .FirstOrDefaultAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT id FROM cat_tipos_documento WHERE UPPER(codigo) = UPPER(@c) LIMIT 1";
+        cmd.Parameters.AddWithValue("c", codigo.Trim());
+        var v = await cmd.ExecuteScalarAsync();
+        return v is null ? null : (short?)Convert.ToInt16(v);
     }
 
-    private async Task<short?> ResolverEpsId(string? nombre)
+    private static async Task<short?> ResolverEpsIdAsync(NpgsqlConnection conn, NpgsqlTransaction tx, string? nombre)
     {
         if (string.IsNullOrWhiteSpace(nombre)) return null;
+        var n = nombre.Trim();
 
-        var nombreTrim = nombre.Trim();
-        var eps = await _db.CatEps
-            .FirstOrDefaultAsync(e => e.Nombre.ToLower() == nombreTrim.ToLower());
+        await using var sel = conn.CreateCommand();
+        sel.Transaction = tx;
+        sel.CommandText = "SELECT id FROM cat_eps WHERE LOWER(nombre) = LOWER(@n) LIMIT 1";
+        sel.Parameters.AddWithValue("n", n);
+        var v = await sel.ExecuteScalarAsync();
+        if (v is not null) return (short?)Convert.ToInt16(v);
 
-        if (eps is not null) return eps.Id;
-
-        // Crear EPS nueva si no existe (el formulario permite texto libre)
-        var nueva = new CatEps { Nombre = nombreTrim, Activo = true };
-        _db.CatEps.Add(nueva);
-        await _db.SaveChangesAsync();
-        return nueva.Id;
+        // Create new EPS
+        await using var ins = conn.CreateCommand();
+        ins.Transaction = tx;
+        ins.CommandText = "INSERT INTO cat_eps (nombre, activo) VALUES (@n, true) RETURNING id";
+        ins.Parameters.AddWithValue("n", n);
+        return (short?)Convert.ToInt16(await ins.ExecuteScalarAsync());
     }
 
-    private async Task<short?> ResolverParentescoId(string? nombre)
+    private static async Task<short?> ResolverParentescoIdAsync(NpgsqlConnection conn, NpgsqlTransaction tx, string? nombre)
     {
         if (string.IsNullOrWhiteSpace(nombre)) return null;
-        return await _db.CatParentescos
-            .Where(p => p.Nombre.ToLower() == nombre.ToLower().Trim())
-            .Select(p => (short?)p.Id)
-            .FirstOrDefaultAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT id FROM cat_parentescos WHERE LOWER(nombre) = LOWER(@n) LIMIT 1";
+        cmd.Parameters.AddWithValue("n", nombre.Trim());
+        var v = await cmd.ExecuteScalarAsync();
+        return v is null ? null : (short?)Convert.ToInt16(v);
     }
 
-    private async Task<short?> ResolverTipoArchivoId(string nombreTipo)
+    private static async Task<short?> ResolverTipoArchivoIdAsync(NpgsqlConnection conn, NpgsqlTransaction? tx, string nombre)
     {
-        return await _db.CatTiposArchivo
-            .Where(ta => ta.Nombre == nombreTipo)
-            .Select(ta => (short?)ta.Id)
-            .FirstOrDefaultAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT id FROM cat_tipo_archivo WHERE nombre = @n LIMIT 1";
+        cmd.Parameters.AddWithValue("n", nombre);
+        var v = await cmd.ExecuteScalarAsync();
+        return v is null ? null : (short?)Convert.ToInt16(v);
     }
 
-    private async Task CrearOActualizarDependientes(
-        Guid beneficiarioId, CrearBeneficiarioDto dto, short? epsId, bool isNew)
+    private static async Task GuardarDependientesAsync(
+        NpgsqlConnection conn, NpgsqlTransaction tx, Guid benId, CrearBeneficiarioDto dto, short? epsId, bool isNew)
     {
         // ── Acudiente ──────────────────────────────────────────────────────────
         if (!string.IsNullOrWhiteSpace(dto.NombreAcudiente))
         {
-            var nombreAcu  = dto.NombreAcudiente.Trim();
-            var whatsappAcu = string.IsNullOrWhiteSpace(dto.Whatsapp) ? null : dto.Whatsapp.Trim();
-            var direccionAcu = string.IsNullOrWhiteSpace(dto.Direccion) ? null : dto.Direccion.Trim();
-
-            Acudiente? acudiente = null;
+            var nombreAcu   = dto.NombreAcudiente.Trim();
+            var whatsappAcu = string.IsNullOrWhiteSpace(dto.Whatsapp)  ? null : dto.Whatsapp.Trim();
+            var direccAcu   = string.IsNullOrWhiteSpace(dto.Direccion) ? null : dto.Direccion.Trim();
+            Guid? acudienteId = null;
 
             if (!isNew)
             {
-                // Buscar relación principal existente
-                var relPrincipal = await _db.BeneficiarioAcudientes
-                    .Include(ba => ba.Acudiente)
-                    .FirstOrDefaultAsync(ba => ba.BeneficiarioId == beneficiarioId && ba.EsPrincipal);
-
-                if (relPrincipal?.Acudiente is not null)
-                {
-                    acudiente          = relPrincipal.Acudiente;
-                    acudiente.Nombre   = nombreAcu;
-                    acudiente.Whatsapp = whatsappAcu;
-                    acudiente.Direccion = direccionAcu;
-                }
+                // Update existing principal acudiente
+                await using var updAcu = conn.CreateCommand();
+                updAcu.Transaction = tx;
+                updAcu.CommandText = """
+                    UPDATE acudientes SET nombre = @n, whatsapp = @w, direccion = @d
+                    WHERE id = (
+                      SELECT bac.acudiente_id FROM beneficiario_acudiente bac
+                      WHERE bac.beneficiario_id = @bid AND bac.es_principal = true AND bac.activo = true
+                      LIMIT 1
+                    )
+                    RETURNING id
+                    """;
+                updAcu.Parameters.AddWithValue("n",   nombreAcu);
+                updAcu.Parameters.AddWithValue("w",   (object?)whatsappAcu ?? DBNull.Value);
+                updAcu.Parameters.AddWithValue("d",   (object?)direccAcu   ?? DBNull.Value);
+                updAcu.Parameters.AddWithValue("bid", benId);
+                var updId = await updAcu.ExecuteScalarAsync();
+                if (updId is not null) acudienteId = (Guid)updId;
             }
 
-            if (acudiente is null)
+            if (acudienteId is null)
             {
-                // Intentar reusar acudiente existente con mismo nombre+whatsapp
-                acudiente = await _db.Acudientes.FirstOrDefaultAsync(a =>
-                    a.Nombre.ToLower() == nombreAcu.ToLower() &&
-                    (a.Whatsapp ?? "") == (whatsappAcu ?? ""));
+                // Find or create acudiente
+                await using var findAcu = conn.CreateCommand();
+                findAcu.Transaction = tx;
+                findAcu.CommandText = """
+                    SELECT id FROM acudientes
+                    WHERE LOWER(nombre) = LOWER(@n) AND COALESCE(whatsapp,'') = COALESCE(@w,'')
+                    LIMIT 1
+                    """;
+                findAcu.Parameters.AddWithValue("n", nombreAcu);
+                findAcu.Parameters.AddWithValue("w", (object?)whatsappAcu ?? DBNull.Value);
+                var found = await findAcu.ExecuteScalarAsync();
 
-                if (acudiente is null)
+                if (found is not null)
                 {
-                    acudiente = new Acudiente
-                    {
-                        Nombre    = nombreAcu,
-                        Whatsapp  = whatsappAcu,
-                        Direccion = direccionAcu,
-                        Activo    = true
-                    };
-                    _db.Acudientes.Add(acudiente);
-                    await _db.SaveChangesAsync();
-                }
-
-                var parentescoId = await ResolverParentescoId(dto.Parentesco);
-
-                var relExistente = await _db.BeneficiarioAcudientes
-                    .FirstOrDefaultAsync(ba =>
-                        ba.BeneficiarioId == beneficiarioId && ba.AcudienteId == acudiente.Id);
-
-                if (relExistente is null)
-                {
-                    // Desactivar cualquier otra relación principal
-                    var anterioresPrinc = await _db.BeneficiarioAcudientes
-                        .Where(ba => ba.BeneficiarioId == beneficiarioId && ba.EsPrincipal)
-                        .ToListAsync();
-                    anterioresPrinc.ForEach(ba => ba.EsPrincipal = false);
-
-                    _db.BeneficiarioAcudientes.Add(new BeneficiarioAcudiente
-                    {
-                        BeneficiarioId = beneficiarioId,
-                        AcudienteId    = acudiente.Id,
-                        ParentescoId   = parentescoId,
-                        EsPrincipal    = true,
-                        Activo         = true
-                    });
+                    acudienteId = (Guid)found;
                 }
                 else
                 {
-                    var parentescoIdUpd = await ResolverParentescoId(dto.Parentesco);
-                    relExistente.ParentescoId = parentescoIdUpd;
-                    relExistente.EsPrincipal  = true;
+                    await using var insAcu = conn.CreateCommand();
+                    insAcu.Transaction = tx;
+                    insAcu.CommandText = "INSERT INTO acudientes (nombre, whatsapp, direccion, activo) VALUES (@n,@w,@d,true) RETURNING id";
+                    insAcu.Parameters.AddWithValue("n", nombreAcu);
+                    insAcu.Parameters.AddWithValue("w", (object?)whatsappAcu ?? DBNull.Value);
+                    insAcu.Parameters.AddWithValue("d", (object?)direccAcu   ?? DBNull.Value);
+                    acudienteId = (Guid)(await insAcu.ExecuteScalarAsync())!;
+                }
+
+                var parentescoId = await ResolverParentescoIdAsync(conn, tx, dto.Parentesco);
+
+                // Check if relation already exists
+                await using var relChk = conn.CreateCommand();
+                relChk.Transaction = tx;
+                relChk.CommandText = "SELECT id FROM beneficiario_acudiente WHERE beneficiario_id = @b AND acudiente_id = @a";
+                relChk.Parameters.AddWithValue("b", benId);
+                relChk.Parameters.AddWithValue("a", acudienteId);
+                var relId = await relChk.ExecuteScalarAsync();
+
+                if (relId is null)
+                {
+                    // Demote previous principal
+                    await using var demote = conn.CreateCommand();
+                    demote.Transaction = tx;
+                    demote.CommandText = "UPDATE beneficiario_acudiente SET es_principal = false WHERE beneficiario_id = @b AND es_principal = true";
+                    demote.Parameters.AddWithValue("b", benId);
+                    await demote.ExecuteNonQueryAsync();
+
+                    await using var insRel = conn.CreateCommand();
+                    insRel.Transaction = tx;
+                    insRel.CommandText = """
+                        INSERT INTO beneficiario_acudiente (beneficiario_id, acudiente_id, parentesco_id, es_principal, activo)
+                        VALUES (@b, @a, @p, true, true)
+                        """;
+                    insRel.Parameters.AddWithValue("b", benId);
+                    insRel.Parameters.AddWithValue("a", acudienteId.Value);
+                    insRel.Parameters.Add(new NpgsqlParameter("p", NpgsqlDbType.Smallint) { Value = (object?)parentescoId ?? DBNull.Value });
+                    await insRel.ExecuteNonQueryAsync();
+                }
+                else
+                {
+                    await using var updRel = conn.CreateCommand();
+                    updRel.Transaction = tx;
+                    updRel.CommandText = "UPDATE beneficiario_acudiente SET parentesco_id = @p, es_principal = true WHERE id = @id";
+                    updRel.Parameters.Add(new NpgsqlParameter("p", NpgsqlDbType.Smallint) { Value = (object?)parentescoId ?? DBNull.Value });
+                    updRel.Parameters.AddWithValue("id", (Guid)relId);
+                    await updRel.ExecuteNonQueryAsync();
                 }
             }
             else
             {
-                // Actualizar parentesco de la relación principal existente
-                var relPrincipal = await _db.BeneficiarioAcudientes
-                    .FirstOrDefaultAsync(ba => ba.BeneficiarioId == beneficiarioId && ba.EsPrincipal);
-                if (relPrincipal is not null)
-                    relPrincipal.ParentescoId = await ResolverParentescoId(dto.Parentesco);
+                // Update parentesco of existing principal relation
+                var parentescoId = await ResolverParentescoIdAsync(conn, tx, dto.Parentesco);
+                await using var updPar = conn.CreateCommand();
+                updPar.Transaction = tx;
+                updPar.CommandText = "UPDATE beneficiario_acudiente SET parentesco_id = @p WHERE beneficiario_id = @b AND es_principal = true";
+                updPar.Parameters.Add(new NpgsqlParameter("p", NpgsqlDbType.Smallint) { Value = (object?)parentescoId ?? DBNull.Value });
+                updPar.Parameters.AddWithValue("b", benId);
+                await updPar.ExecuteNonQueryAsync();
             }
         }
 
         // ── Salud ─────────────────────────────────────────────────────────────
-        var salud = await _db.BeneficiariosSalud
-            .FirstOrDefaultAsync(s => s.BeneficiarioId == beneficiarioId);
+        await using var saludChk = conn.CreateCommand();
+        saludChk.Transaction = tx;
+        saludChk.CommandText = "SELECT COUNT(*)::int FROM beneficiario_salud WHERE beneficiario_id = @b";
+        saludChk.Parameters.AddWithValue("b", benId);
+        var saludExists = (int)(await saludChk.ExecuteScalarAsync())! > 0;
 
-        if (salud is null)
-        {
-            _db.BeneficiariosSalud.Add(new BeneficiarioSalud
-            {
-                BeneficiarioId = beneficiarioId,
-                EpsId          = epsId,
-                Observaciones  = string.IsNullOrWhiteSpace(dto.ObservacionesSalud) ? null : dto.ObservacionesSalud.Trim(),
-                Activo         = true
-            });
-        }
-        else
-        {
-            salud.EpsId         = epsId;
-            salud.Observaciones = string.IsNullOrWhiteSpace(dto.ObservacionesSalud) ? null : dto.ObservacionesSalud.Trim();
-        }
+        await using var saludCmd = conn.CreateCommand();
+        saludCmd.Transaction = tx;
+        saludCmd.CommandText = saludExists
+            ? "UPDATE beneficiario_salud SET eps_id = @eps, observaciones = @obs WHERE beneficiario_id = @b"
+            : "INSERT INTO beneficiario_salud (beneficiario_id, eps_id, observaciones, activo) VALUES (@b, @eps, @obs, true)";
+        saludCmd.Parameters.AddWithValue("b",   benId);
+        saludCmd.Parameters.Add(new NpgsqlParameter("eps", NpgsqlDbType.Smallint) { Value = (object?)epsId ?? DBNull.Value });
+        saludCmd.Parameters.AddWithValue("obs",  string.IsNullOrWhiteSpace(dto.ObservacionesSalud) ? DBNull.Value : (object)dto.ObservacionesSalud.Trim());
+        await saludCmd.ExecuteNonQueryAsync();
 
         // ── Alergias ──────────────────────────────────────────────────────────
         if (dto.TieneAlergia?.ToLower() == "si")
         {
-            var tieneRelAlergia = await _db.BeneficiariosAlergia
-                .AnyAsync(ba => ba.BeneficiarioId == beneficiarioId && ba.Activo);
+            await using var alChk = conn.CreateCommand();
+            alChk.Transaction = tx;
+            alChk.CommandText = "SELECT COUNT(*)::int FROM beneficiario_alergia WHERE beneficiario_id = @b AND activo = true";
+            alChk.Parameters.AddWithValue("b", benId);
+            var tieneAlergia = (int)(await alChk.ExecuteScalarAsync())! > 0;
 
-            if (!tieneRelAlergia)
+            if (!tieneAlergia)
             {
-                // Obtener o crear entrada genérica en el catálogo
-                var alergiaGen = await _db.AlergiasCatalogo
-                    .FirstOrDefaultAsync(a => a.Nombre == "Alergia registrada (detalle pendiente)");
-
-                if (alergiaGen is null)
+                // Get or create generic allergy in catalog
+                await using var catChk = conn.CreateCommand();
+                catChk.Transaction = tx;
+                catChk.CommandText = "SELECT id FROM alergias_catalogo WHERE nombre = 'Alergia registrada (detalle pendiente)' LIMIT 1";
+                var catId = await catChk.ExecuteScalarAsync();
+                if (catId is null)
                 {
-                    alergiaGen = new AlergiasCatalogo
-                    {
-                        Nombre = "Alergia registrada (detalle pendiente)",
-                        Activo = true
-                    };
-                    _db.AlergiasCatalogo.Add(alergiaGen);
-                    await _db.SaveChangesAsync();
+                    await using var catIns = conn.CreateCommand();
+                    catIns.Transaction = tx;
+                    catIns.CommandText = "INSERT INTO alergias_catalogo (nombre, activo) VALUES ('Alergia registrada (detalle pendiente)', true) RETURNING id";
+                    catId = await catIns.ExecuteScalarAsync();
                 }
 
-                _db.BeneficiariosAlergia.Add(new BeneficiarioAlergia
-                {
-                    BeneficiarioId = beneficiarioId,
-                    AlergiaId      = alergiaGen.Id,
-                    Descripcion    = string.IsNullOrWhiteSpace(dto.DescripcionAlergia) ? null : dto.DescripcionAlergia.Trim(),
-                    Activo         = true
-                });
+                await using var alIns = conn.CreateCommand();
+                alIns.Transaction = tx;
+                alIns.CommandText = "INSERT INTO beneficiario_alergia (beneficiario_id, alergia_id, descripcion, activo) VALUES (@b, @al, @desc, true)";
+                alIns.Parameters.AddWithValue("b",    benId);
+                alIns.Parameters.AddWithValue("al",   Convert.ToInt32(catId));
+                alIns.Parameters.AddWithValue("desc", string.IsNullOrWhiteSpace(dto.DescripcionAlergia) ? DBNull.Value : (object)dto.DescripcionAlergia.Trim());
+                await alIns.ExecuteNonQueryAsync();
             }
             else
             {
-                // Actualizar descripción del primer registro activo
-                var relAlergia = await _db.BeneficiariosAlergia
-                    .FirstOrDefaultAsync(ba => ba.BeneficiarioId == beneficiarioId && ba.Activo);
-                if (relAlergia is not null)
-                    relAlergia.Descripcion = string.IsNullOrWhiteSpace(dto.DescripcionAlergia) ? null : dto.DescripcionAlergia.Trim();
+                await using var alUpd = conn.CreateCommand();
+                alUpd.Transaction = tx;
+                alUpd.CommandText = "UPDATE beneficiario_alergia SET descripcion = @desc WHERE beneficiario_id = @b AND activo = true";
+                alUpd.Parameters.AddWithValue("desc", string.IsNullOrWhiteSpace(dto.DescripcionAlergia) ? DBNull.Value : (object)dto.DescripcionAlergia.Trim());
+                alUpd.Parameters.AddWithValue("b",    benId);
+                await alUpd.ExecuteNonQueryAsync();
             }
         }
         else
         {
-            // Desactivar alergias si se cambia a "no"
-            var alergias = await _db.BeneficiariosAlergia
-                .Where(ba => ba.BeneficiarioId == beneficiarioId && ba.Activo)
-                .ToListAsync();
-            alergias.ForEach(a => a.Activo = false);
+            await using var alDel = conn.CreateCommand();
+            alDel.Transaction = tx;
+            alDel.CommandText = "UPDATE beneficiario_alergia SET activo = false WHERE beneficiario_id = @b AND activo = true";
+            alDel.Parameters.AddWithValue("b", benId);
+            await alDel.ExecuteNonQueryAsync();
         }
 
         // ── Tallas ────────────────────────────────────────────────────────────
@@ -866,127 +943,202 @@ public class BeneficiariosController : ControllerBase
 
         if (hasTallas)
         {
-            var tallaActual = await _db.BeneficiariosTalla
-                .Where(t => t.BeneficiarioId == beneficiarioId && t.Activo)
-                .OrderByDescending(t => t.FechaMedicion)
-                .FirstOrDefaultAsync();
+            await using var tlChk = conn.CreateCommand();
+            tlChk.Transaction = tx;
+            tlChk.CommandText = "SELECT id FROM beneficiario_talla WHERE beneficiario_id = @b AND activo = true ORDER BY fecha_medicion DESC LIMIT 1";
+            tlChk.Parameters.AddWithValue("b", benId);
+            var tlId = await tlChk.ExecuteScalarAsync();
 
-            if (tallaActual is null)
+            await using var tlCmd = conn.CreateCommand();
+            tlCmd.Transaction = tx;
+            if (tlId is null)
             {
-                _db.BeneficiariosTalla.Add(new BeneficiarioTalla
-                {
-                    BeneficiarioId = beneficiarioId,
-                    TallaCamisa    = string.IsNullOrWhiteSpace(dto.TallaCamisa)   ? null : dto.TallaCamisa.Trim(),
-                    TallaPantalon  = string.IsNullOrWhiteSpace(dto.TallaPantalon) ? null : dto.TallaPantalon.Trim(),
-                    TallaZapatos   = string.IsNullOrWhiteSpace(dto.TallaZapatos)  ? null : dto.TallaZapatos.Trim(),
-                    PesoKg         = dto.PesoKg,
-                    TallaCm        = dto.TallaCm,
-                    FechaMedicion  = DateOnly.FromDateTime(DateTime.UtcNow),
-                    Activo         = true
-                });
+                tlCmd.CommandText = """
+                    INSERT INTO beneficiario_talla (beneficiario_id, talla_camisa, talla_pantalon, talla_zapatos, peso_kg, talla_cm, fecha_medicion, activo)
+                    VALUES (@b, @tc, @tp, @tz, @pk, @cm, CURRENT_DATE, true)
+                    """;
             }
             else
             {
-                tallaActual.TallaCamisa   = string.IsNullOrWhiteSpace(dto.TallaCamisa)   ? null : dto.TallaCamisa.Trim();
-                tallaActual.TallaPantalon = string.IsNullOrWhiteSpace(dto.TallaPantalon) ? null : dto.TallaPantalon.Trim();
-                tallaActual.TallaZapatos  = string.IsNullOrWhiteSpace(dto.TallaZapatos)  ? null : dto.TallaZapatos.Trim();
-                tallaActual.PesoKg        = dto.PesoKg;
-                tallaActual.TallaCm       = dto.TallaCm;
+                tlCmd.CommandText = "UPDATE beneficiario_talla SET talla_camisa=@tc, talla_pantalon=@tp, talla_zapatos=@tz, peso_kg=@pk, talla_cm=@cm WHERE id=@id";
+                tlCmd.Parameters.AddWithValue("id", (Guid)tlId);
             }
+            tlCmd.Parameters.AddWithValue("b",  benId);
+            tlCmd.Parameters.AddWithValue("tc", string.IsNullOrWhiteSpace(dto.TallaCamisa)   ? DBNull.Value : (object)dto.TallaCamisa.Trim());
+            tlCmd.Parameters.AddWithValue("tp", string.IsNullOrWhiteSpace(dto.TallaPantalon) ? DBNull.Value : (object)dto.TallaPantalon.Trim());
+            tlCmd.Parameters.AddWithValue("tz", string.IsNullOrWhiteSpace(dto.TallaZapatos)  ? DBNull.Value : (object)dto.TallaZapatos.Trim());
+            tlCmd.Parameters.Add(new NpgsqlParameter("pk", NpgsqlDbType.Numeric) { Value = (object?)dto.PesoKg ?? DBNull.Value });
+            tlCmd.Parameters.Add(new NpgsqlParameter("cm", NpgsqlDbType.Integer) { Value = (object?)dto.TallaCm ?? DBNull.Value });
+            await tlCmd.ExecuteNonQueryAsync();
         }
 
         // ── Archivos (fotos) ──────────────────────────────────────────────────
-        await ActualizarArchivo(beneficiarioId, "Foto del menor",           dto.FotoMenorUrl);
-        await ActualizarArchivo(beneficiarioId, "Foto documento",           dto.FotoDocumentoUrl);
-        await ActualizarArchivo(beneficiarioId, "Foto documento (reverso)", dto.FotoDocumentoReversoUrl);
+        await ActualizarArchivoAsync(conn, tx, benId, "Foto del menor",           dto.FotoMenorUrl);
+        await ActualizarArchivoAsync(conn, tx, benId, "Foto documento",           dto.FotoDocumentoUrl);
+        await ActualizarArchivoAsync(conn, tx, benId, "Foto documento (reverso)", dto.FotoDocumentoReversoUrl);
     }
 
-    private async Task ActualizarArchivo(Guid beneficiarioId, string tipoNombre, string? url)
+    private static async Task ActualizarArchivoAsync(
+        NpgsqlConnection conn, NpgsqlTransaction tx, Guid benId, string tipoNombre, string? url)
     {
-        var tipoId = await ResolverTipoArchivoId(tipoNombre);
+        var tipoId = await ResolverTipoArchivoIdAsync(conn, tx, tipoNombre);
         if (tipoId is null) return;
 
-        var existente = await _db.Archivos.FirstOrDefaultAsync(a =>
-            a.EntidadTipo == "beneficiario" && a.EntidadId == beneficiarioId &&
-            a.TipoArchivoId == tipoId && a.Activo);
+        await using var chk = conn.CreateCommand();
+        chk.Transaction = tx;
+        chk.CommandText = "SELECT id FROM archivos WHERE entidad_tipo = 'beneficiario' AND entidad_id = @b AND tipo_archivo_id = @t AND activo = true LIMIT 1";
+        chk.Parameters.AddWithValue("b", benId);
+        chk.Parameters.Add(new NpgsqlParameter("t", NpgsqlDbType.Smallint) { Value = tipoId });
+        var existeId = await chk.ExecuteScalarAsync();
 
         if (string.IsNullOrWhiteSpace(url))
         {
-            if (existente is not null) existente.Activo = false;
+            if (existeId is not null)
+            {
+                await using var del = conn.CreateCommand();
+                del.Transaction = tx;
+                del.CommandText = "UPDATE archivos SET activo = false WHERE id = @id";
+                del.Parameters.AddWithValue("id", (Guid)existeId);
+                await del.ExecuteNonQueryAsync();
+            }
             return;
         }
 
-        if (existente is null)
+        if (existeId is null)
         {
-            _db.Archivos.Add(new Archivo
-            {
-                EntidadTipo   = "beneficiario",
-                EntidadId     = beneficiarioId,
-                TipoArchivoId = tipoId,
-                Url           = url.Trim(),
-                Activo        = true
-            });
+            await using var ins = conn.CreateCommand();
+            ins.Transaction = tx;
+            ins.CommandText = "INSERT INTO archivos (entidad_tipo, entidad_id, tipo_archivo_id, url, activo) VALUES ('beneficiario', @b, @t, @url, true)";
+            ins.Parameters.AddWithValue("b",   benId);
+            ins.Parameters.Add(new NpgsqlParameter("t", NpgsqlDbType.Smallint) { Value = tipoId });
+            ins.Parameters.AddWithValue("url", url.Trim());
+            await ins.ExecuteNonQueryAsync();
         }
         else
         {
-            existente.Url = url.Trim();
+            await using var upd = conn.CreateCommand();
+            upd.Transaction = tx;
+            upd.CommandText = "UPDATE archivos SET url = @url WHERE id = @id";
+            upd.Parameters.AddWithValue("url", url.Trim());
+            upd.Parameters.AddWithValue("id",  (Guid)existeId);
+            await upd.ExecuteNonQueryAsync();
         }
     }
 
-    // =========================================================================
-    // MAPEO DTO
-    // =========================================================================
-    private static BeneficiarioDto MapearDto(Beneficiario b, List<Archivo> archivos)
+    // Loads complete BeneficiarioDto for a list of IDs using a single JOIN query
+    private static async Task<List<BeneficiarioDto>> CargarDtosAsync(NpgsqlConnection conn, List<Guid> ids)
     {
-        var principal = b.BeneficiarioAcudientes
-            .FirstOrDefault(ba => ba.EsPrincipal && ba.Activo);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT
+              b.id, b.nombre, b.fecha_nacimiento, b.numero_documento, b.activo, b.motivo_baja,
+              b.fecha_creacion, b.pais_nacimiento, b.departamento_nacimiento, b.ciudad_nacimiento,
+              b.barrio, b.num_personas_vive, b.num_hermanos, b.nombre_colegio, b.grado_escolar,
+              b.tiene_discapacidad, b.descripcion_discapacidad, b.vive_con_nino, b.genero, b.autorizacion,
+              COALESCE(ctd.codigo, '')             AS tipo_documento,
+              bs.observaciones                     AS obs_salud,
+              ce.nombre                            AS eps,
+              acu.nombre                           AS acu_nombre,
+              acu.whatsapp, acu.direccion,
+              acu.parentesco,
+              tl.talla_camisa, tl.talla_pantalon, tl.talla_zapatos, tl.peso_kg, tl.talla_cm,
+              al.descripcion                       AS al_desc,
+              al.al_cnt,
+              af1.url                              AS foto_menor,
+              af2.url                              AS foto_doc,
+              af3.url                              AS foto_doc_rev
+            FROM beneficiarios b
+            LEFT JOIN cat_tipos_documento ctd ON ctd.id = b.tipo_documento_id
+            LEFT JOIN beneficiario_salud bs ON bs.beneficiario_id = b.id
+            LEFT JOIN cat_eps ce ON ce.id = bs.eps_id
+            LEFT JOIN LATERAL (
+              SELECT a.nombre, a.whatsapp, a.direccion, cp.nombre AS parentesco
+              FROM beneficiario_acudiente bac
+              JOIN acudientes a ON a.id = bac.acudiente_id
+              LEFT JOIN cat_parentescos cp ON cp.id = bac.parentesco_id
+              WHERE bac.beneficiario_id = b.id AND bac.es_principal = true AND bac.activo = true
+              LIMIT 1
+            ) acu ON true
+            LEFT JOIN LATERAL (
+              SELECT talla_camisa, talla_pantalon, talla_zapatos, peso_kg, talla_cm
+              FROM beneficiario_talla
+              WHERE beneficiario_id = b.id AND activo = true
+              ORDER BY fecha_medicion DESC
+              LIMIT 1
+            ) tl ON true
+            LEFT JOIN LATERAL (
+              SELECT
+                (SELECT descripcion FROM beneficiario_alergia WHERE beneficiario_id = b.id AND activo = true LIMIT 1) AS descripcion,
+                (SELECT COUNT(*)::int FROM beneficiario_alergia WHERE beneficiario_id = b.id AND activo = true)       AS al_cnt
+            ) al ON true
+            LEFT JOIN LATERAL (
+              SELECT ar.url FROM archivos ar
+              JOIN cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
+              WHERE ar.entidad_tipo = 'beneficiario' AND ar.entidad_id = b.id AND ar.activo = true AND cta.nombre = 'Foto del menor'
+              LIMIT 1
+            ) af1 ON true
+            LEFT JOIN LATERAL (
+              SELECT ar.url FROM archivos ar
+              JOIN cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
+              WHERE ar.entidad_tipo = 'beneficiario' AND ar.entidad_id = b.id AND ar.activo = true AND cta.nombre = 'Foto documento'
+              LIMIT 1
+            ) af2 ON true
+            LEFT JOIN LATERAL (
+              SELECT ar.url FROM archivos ar
+              JOIN cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
+              WHERE ar.entidad_tipo = 'beneficiario' AND ar.entidad_id = b.id AND ar.activo = true AND cta.nombre = 'Foto documento (reverso)'
+              LIMIT 1
+            ) af3 ON true
+            WHERE b.id = ANY(@ids)
+            ORDER BY b.fecha_creacion DESC
+            """;
+        cmd.Parameters.Add(new NpgsqlParameter("ids", NpgsqlDbType.Array | NpgsqlDbType.Uuid) { Value = ids.ToArray() });
 
-        var talla = b.Tallas
-            .Where(t => t.Activo)
-            .OrderByDescending(t => t.FechaMedicion)
-            .FirstOrDefault();
-
-        var alergia = b.Alergias.FirstOrDefault(a => a.Activo);
-
-        return new BeneficiarioDto
+        var result = new List<BeneficiarioDto>();
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
         {
-            Id                      = b.Id,
-            NombreMenor             = b.Nombre,
-            FechaNacimiento         = b.FechaNacimiento ?? DateOnly.MinValue,
-            TipoDocumento           = b.TipoDocumento?.Codigo ?? "",
-            NumeroDocumento         = b.NumeroDocumento,
-            Eps                     = b.Salud?.Eps?.Nombre,
-            TallaCamisa             = talla?.TallaCamisa,
-            TallaPantalon           = talla?.TallaPantalon,
-            TallaZapatos            = talla?.TallaZapatos,
-            PesoKg                  = talla?.PesoKg,
-            TallaCm                 = talla?.TallaCm,
-            TieneAlergia            = b.Alergias.Any(a => a.Activo) ? "si" : "no",
-            DescripcionAlergia      = alergia?.Descripcion,
-            ObservacionesSalud      = b.Salud?.Observaciones,
-            TieneDiscapacidad       = b.TieneDiscapacidad,
-            DescripcionDiscapacidad = b.DescripcionDiscapacidad,
-            NombreAcudiente         = principal?.Acudiente?.Nombre ?? "",
-            Parentesco              = principal?.Parentesco?.Nombre,
-            Whatsapp                = principal?.Acudiente?.Whatsapp,
-            Direccion               = principal?.Acudiente?.Direccion,
-            ViveConNino             = b.ViveConNino,
-            PaisNacimiento          = b.PaisNacimiento,
-            DepartamentoNacimiento  = b.DepartamentoNacimiento,
-            CiudadNacimiento        = b.CiudadNacimiento,
-            Barrio                  = b.Barrio,
-            NumPersonasVive         = b.NumPersonasVive,
-            NumHermanos             = b.NumHermanos,
-            NombreColegio           = b.NombreColegio,
-            GradoEscolar            = b.GradoEscolar,
-            Genero                  = b.Genero,
-            Autorizacion            = b.Autorizacion,
-            FotoMenorUrl            = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto del menor")?.Url,
-            FotoDocumentoUrl        = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto documento")?.Url,
-            FotoDocumentoReversoUrl = archivos.FirstOrDefault(a => a.TipoArchivo?.Nombre == "Foto documento (reverso)")?.Url,
-            CreatedAt               = b.FechaCreacion,
-            Activo                  = b.Activo,
-            MotivoBaja              = b.MotivoBaja
-        };
+            result.Add(new BeneficiarioDto
+            {
+                Id                      = r.GetGuid(0),
+                NombreMenor             = r.GetString(1),
+                FechaNacimiento         = r.IsDBNull(2)  ? DateOnly.MinValue : DateOnly.FromDateTime(r.GetDateTime(2)),
+                NumeroDocumento         = r.IsDBNull(3)  ? null : r.GetString(3),
+                Activo                  = r.GetBoolean(4),
+                MotivoBaja              = r.IsDBNull(5)  ? null : r.GetString(5),
+                CreatedAt               = r.GetDateTime(6),
+                PaisNacimiento          = r.IsDBNull(7)  ? null : r.GetString(7),
+                DepartamentoNacimiento  = r.IsDBNull(8)  ? null : r.GetString(8),
+                CiudadNacimiento        = r.IsDBNull(9)  ? null : r.GetString(9),
+                Barrio                  = r.IsDBNull(10) ? null : r.GetString(10),
+                NumPersonasVive         = r.IsDBNull(11) ? null : r.GetInt32(11),
+                NumHermanos             = r.IsDBNull(12) ? null : r.GetInt32(12),
+                NombreColegio           = r.IsDBNull(13) ? null : r.GetString(13),
+                GradoEscolar            = r.IsDBNull(14) ? null : r.GetString(14),
+                TieneDiscapacidad       = r.GetBoolean(15),
+                DescripcionDiscapacidad = r.IsDBNull(16) ? null : r.GetString(16),
+                ViveConNino             = r.IsDBNull(17) ? null : r.GetBoolean(17),
+                Genero                  = r.IsDBNull(18) ? null : r.GetString(18),
+                Autorizacion            = r.GetBoolean(19),
+                TipoDocumento           = r.GetString(20),
+                ObservacionesSalud      = r.IsDBNull(21) ? null : r.GetString(21),
+                Eps                     = r.IsDBNull(22) ? null : r.GetString(22),
+                NombreAcudiente         = r.IsDBNull(23) ? "" : r.GetString(23),
+                Whatsapp                = r.IsDBNull(24) ? null : r.GetString(24),
+                Direccion               = r.IsDBNull(25) ? null : r.GetString(25),
+                Parentesco              = r.IsDBNull(26) ? null : r.GetString(26),
+                TallaCamisa             = r.IsDBNull(27) ? null : r.GetString(27),
+                TallaPantalon           = r.IsDBNull(28) ? null : r.GetString(28),
+                TallaZapatos            = r.IsDBNull(29) ? null : r.GetString(29),
+                PesoKg                  = r.IsDBNull(30) ? null : r.GetDecimal(30),
+                TallaCm                 = r.IsDBNull(31) ? null : r.GetInt32(31),
+                DescripcionAlergia      = r.IsDBNull(32) ? null : r.GetString(32),
+                TieneAlergia            = r.GetInt32(33) > 0 ? "si" : "no",
+                FotoMenorUrl            = r.IsDBNull(34) ? null : r.GetString(34),
+                FotoDocumentoUrl        = r.IsDBNull(35) ? null : r.GetString(35),
+                FotoDocumentoReversoUrl = r.IsDBNull(36) ? null : r.GetString(36),
+            });
+        }
+        return result;
     }
 }

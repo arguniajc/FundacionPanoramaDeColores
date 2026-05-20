@@ -17,6 +17,7 @@ const ProgramasPage      = lazy(() => import('../modules/programas/pages/Program
 const InscripcionesPage  = lazy(() => import('../modules/inscripciones/pages/InscripcionesPage'));
 const InventarioPage     = lazy(() => import('../modules/inventario/pages/InventarioPage'));
 const DonacionesPage     = lazy(() => import('../modules/donaciones/pages/DonacionesPage'));
+const DonantesPage       = lazy(() => import('../modules/donantes/pages/DonantesPage'));
 const VoluntariosPage    = lazy(() => import('../modules/voluntarios/pages/VoluntariosPage'));
 const ConfiguracionPage  = lazy(() => import('../modules/configuracion/pages/ConfiguracionPage'));
 const EquipoPage         = lazy(() => import('../modules/equipo/pages/EquipoPage'));
@@ -50,7 +51,7 @@ export default function AppRoutes() {
       <Route path="/sede/beneficiarios" element={<Pagina modulo="beneficiarios"><BeneficiariosPage /></Pagina>} />
       <Route path="/sede/sedes"         element={<Pagina modulo="sedes"><SedesPage /></Pagina>} />
       <Route path="/sede/log-descargas" element={<Pagina modulo="log_descargas"><LogDescargasPage /></Pagina>} />
-      <Route path="/sede/donantes"      element={<Navigate to="/sede/donaciones" replace />} />
+      <Route path="/sede/donantes"      element={<Pagina modulo="donantes"><DonantesPage /></Pagina>} />
       <Route path="/sede/donaciones"    element={<Pagina modulo="donaciones"><DonacionesPage /></Pagina>} />
       <Route path="/sede/proyectos"     element={<Pagina modulo="programas"><ProgramasPage /></Pagina>} />
       <Route path="/sede/inscripciones" element={<Pagina modulo="inscripciones"><InscripcionesPage /></Pagina>} />

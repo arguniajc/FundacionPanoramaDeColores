@@ -250,6 +250,8 @@ public static class DbMigrations
         await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS documento      VARCHAR(50)",                             "donantes.documento");
         await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS tipo_documento VARCHAR(30)",                             "donantes.tipo_documento");
         await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS ciudad         VARCHAR(100)",                           "donantes.ciudad");
+        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS pais           VARCHAR(100)",                           "donantes.pais");
+        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS departamento   VARCHAR(100)",                           "donantes.departamento");
         await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS notas          TEXT",                                   "donantes.notas");
 
         await Migrar("""
@@ -945,5 +947,7 @@ public static class DbMigrations
         await Migrar("CREATE INDEX IF NOT EXISTS idx_inscripciones_activo_estado   ON inscripciones(activo, estado)",                   "idx.inscripciones_activo_estado");
         await Migrar("CREATE INDEX IF NOT EXISTS idx_organigrama_activo            ON organigrama_personas(activo, orden)",              "idx.organigrama_activo");
         await Migrar("CREATE INDEX IF NOT EXISTS idx_voluntarios_activo            ON voluntarios(activo)",                              "idx.voluntarios_activo");
+        await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS pais          VARCHAR(100)", "voluntarios.pais");
+        await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS departamento  VARCHAR(100)", "voluntarios.departamento");
     }
 }

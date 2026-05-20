@@ -4,7 +4,7 @@ import {
   DialogContent, DialogTitle, Grid, TextField,
 } from '@mui/material';
 import { voluntariosRepository } from '../../../../../infrastructure/repositories/voluntariosRepository';
-import { CampoFecha, CampoDocumento, CampoCiudad } from '../../../../../shared/components/form/FormControles';
+import { CampoFecha, CampoDocumento, SelectorUbicacion } from '../../../../../shared/components/form/FormControles';
 import { COLOR, VACIO_VOL, toInputDate } from './helpers';
 
 export function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
@@ -22,6 +22,8 @@ export function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
       documento:       voluntario.documento ?? '',
       email:           voluntario.email ?? '',
       telefono:        voluntario.telefono ?? '',
+      pais:            voluntario.pais ?? 'Colombia',
+      departamento:    voluntario.departamento ?? '',
       ciudad:          voluntario.ciudad ?? '',
       fechaNacimiento: toInputDate(voluntario.fechaNacimiento),
       fechaInicio:     toInputDate(voluntario.fechaInicio),
@@ -42,6 +44,8 @@ export function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
         documento:       form.documento.trim() || null,
         email:           form.email.trim() || null,
         telefono:        form.telefono.trim() || null,
+        pais:            form.pais.trim() || null,
+        departamento:    form.departamento.trim() || null,
         ciudad:          form.ciudad.trim() || null,
         fechaNacimiento: form.fechaNacimiento || null,
         fechaInicio:     form.fechaInicio || null,
@@ -85,8 +89,11 @@ export function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
             <TextField fullWidth size="small" label="Teléfono" value={form.telefono}
               onChange={e => set('telefono', e.target.value)} />
           </Grid>
-          <Grid size={6}>
-            <CampoCiudad value={form.ciudad} onChange={v => set('ciudad', v)} />
+          <Grid size={12}>
+            <SelectorUbicacion
+              pais={form.pais} departamento={form.departamento} ciudad={form.ciudad}
+              onChange={set}
+            />
           </Grid>
           <Grid size={6}>
             <TextField fullWidth size="small" label="Profesión / Oficio" value={form.profesion}

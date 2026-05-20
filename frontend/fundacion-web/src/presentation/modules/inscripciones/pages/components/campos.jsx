@@ -1,5 +1,5 @@
 // Helpers, constantes y componentes de campo compartidos del módulo de inscripciones.
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Autocomplete, Box, Button, Chip, FormControl, FormControlLabel, Grid,
   InputAdornment, InputLabel, MenuItem, Select, Switch, TextField, Tooltip, Typography,
@@ -10,6 +10,7 @@ import {
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
   TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
   GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION, RELACIONES_TUTOR,
+  getCiudadesDeUbicacion, getEstadosDePais,
 } from '../../../../../shared/utils/geodata';
 import FirmaPad from '../../../../../shared/components/FirmaPad';
 
@@ -498,6 +499,10 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
     const setD = (k, v) => onChange(JSON.stringify({ ...d, [k]: v }));
     const SC      = '#7B3FC4';
     const esTutor = campo.tipo === 'datos_tutor';
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const estadosPanel  = useMemo(() => getEstadosDePais(d.pais || 'Colombia'), [d.pais]);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const ciudadesPanel = useMemo(() => getCiudadesDeUbicacion(d.pais), [d.pais]);
     const subcampos = esTutor ? '17 sub-campos' : '16 sub-campos';
     const tieneToggle = !esTutor && !!onToggle;
     return (
@@ -570,20 +575,22 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
                   value={d.fechaNac ?? ''} onChange={e => setD('fechaNac', e.target.value)}
                   slotProps={{ inputLabel: { shrink: true } }} />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Autocomplete freeSolo options={PAISES} value={d.pais ?? ''}
-                  onInputChange={(_, v) => setD('pais', v)}
-                  onChange={(_, v) => setD('pais', v ?? '')}
+                  onInputChange={(_, v) => { setD('pais', v); setD('departamento', ''); setD('ciudad', ''); }}
+                  onChange={(_, v) => { setD('pais', v ?? ''); setD('departamento', ''); setD('ciudad', ''); }}
                   renderInput={p => <TextField {...p} size="small" label="País" fullWidth />} />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Autocomplete freeSolo options={DEPARTAMENTOS_COLOMBIA} value={d.departamento ?? ''}
-                  onInputChange={(_, v) => setD('departamento', v)}
-                  onChange={(_, v) => setD('departamento', v ?? '')}
-                  renderInput={p => <TextField {...p} size="small" label="Departamento" fullWidth />} />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Autocomplete freeSolo options={CIUDADES_COLOMBIA} value={d.ciudad ?? ''}
+              {estadosPanel.length > 0 && (
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Autocomplete freeSolo options={estadosPanel} value={d.departamento ?? ''}
+                    onInputChange={(_, v) => { setD('departamento', v); setD('ciudad', ''); }}
+                    onChange={(_, v) => { setD('departamento', v ?? ''); setD('ciudad', ''); }}
+                    renderInput={p => <TextField {...p} size="small" label="Departamento / Estado" fullWidth />} />
+                </Grid>
+              )}
+              <Grid size={{ xs: 12, sm: estadosPanel.length > 0 ? 4 : 8 }}>
+                <Autocomplete freeSolo options={ciudadesPanel} value={d.ciudad ?? ''}
                   onInputChange={(_, v) => setD('ciudad', v)}
                   onChange={(_, v) => setD('ciudad', v ?? '')}
                   renderInput={p => <TextField {...p} size="small" label="Ciudad" fullWidth />} />

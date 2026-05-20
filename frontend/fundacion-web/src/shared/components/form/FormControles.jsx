@@ -8,13 +8,14 @@
  *   SelectorUbicacion — cascada país / departamento / ciudad
  *   CampoMedidas      — peso (kg) + talla (cm)
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   TextField, FormControl, InputLabel, Select, MenuItem,
   Grid, InputAdornment, Autocomplete,
 } from '@mui/material';
 import {
-  TIPOS_DOCUMENTO, PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
+  TIPOS_DOCUMENTO, PAISES, CIUDADES_COLOMBIA,
+  getEstadosDePais, getCiudadesDeUbicacion,
 } from '../../utils/geodata';
 
 // ── CampoFecha ────────────────────────────────────────────────────────────────
@@ -90,8 +91,9 @@ export function CampoCiudad({
 
 // ── SelectorUbicacion ─────────────────────────────────────────────────────────
 // onChange(campo, valor) donde campo es 'pais' | 'departamento' | 'ciudad'
-// Al cambiar país se limpian departamento y ciudad.
+// Al cambiar país se limpian departamento y ciudad automáticamente.
 // Al cambiar departamento se limpia ciudad.
+// Carga estados y ciudades dinámicamente según el país seleccionado.
 export function SelectorUbicacion({
   pais = '', departamento = '', ciudad = '',
   onChange,
@@ -99,7 +101,9 @@ export function SelectorUbicacion({
   mostrarPais = true,
   mostrarDepartamento = true,
 }) {
-  const esColombia = !pais || pais === 'Colombia';
+  const estados  = useMemo(() => getEstadosDePais(pais || 'Colombia'), [pais]);
+  const ciudades = useMemo(() => getCiudadesDeUbicacion(pais), [pais]);
+  const tieneEstados = estados.length > 0;
 
   const handlePais = v => {
     onChange('pais', v ?? '');
@@ -111,9 +115,9 @@ export function SelectorUbicacion({
     onChange('ciudad', '');
   };
 
-  const colPais  = mostrarPais ? 4 : 0;
-  const colDep   = mostrarDepartamento && esColombia ? 4 : 0;
-  const colCiudad = 12 - colPais - colDep || 12;
+  const colPais   = mostrarPais ? 4 : 0;
+  const colDep    = mostrarDepartamento && tieneEstados ? 4 : 0;
+  const colCiudad = Math.max(12 - colPais - colDep, 4);
 
   return (
     <Grid container spacing={2}>
@@ -129,19 +133,21 @@ export function SelectorUbicacion({
           />
         </Grid>
       )}
-      {mostrarDepartamento && esColombia && (
+      {mostrarDepartamento && tieneEstados && (
         <Grid size={{ xs: 12, sm: mostrarPais ? 4 : 6 }}>
           <Autocomplete
-            options={DEPARTAMENTOS_COLOMBIA}
+            options={estados}
+            freeSolo
             value={departamento || null}
             onChange={(_, v) => handleDep(v)}
-            renderInput={p => <TextField {...p} size={size} label="Departamento" />}
+            onInputChange={(_, v, reason) => { if (reason === 'input') handleDep(v); }}
+            renderInput={p => <TextField {...p} size={size} label="Departamento / Estado" />}
           />
         </Grid>
       )}
-      <Grid size={{ xs: 12, sm: colCiudad > 0 ? colCiudad : 4 }}>
+      <Grid size={{ xs: 12, sm: colCiudad }}>
         <Autocomplete
-          options={CIUDADES_COLOMBIA}
+          options={ciudades}
           freeSolo
           value={ciudad || null}
           onChange={(_, v) => onChange('ciudad', v ?? '')}

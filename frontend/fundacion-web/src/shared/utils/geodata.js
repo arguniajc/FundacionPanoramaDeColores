@@ -1,14 +1,29 @@
 import { countries } from 'countries-list';
-import colombiaStates from './colombia_states.json';
 import colombiaCities from './colombia_cities.json';
+import worldStates    from './world_states.json';
 
 export const PAISES = Object.values(countries)
   .map(c => c.name)
   .sort((a, b) => a.localeCompare(b, 'es'));
 
-export const DEPARTAMENTOS_COLOMBIA = colombiaStates.map(s => s.name);
+export const DEPARTAMENTOS_COLOMBIA = (worldStates['Colombia'] ?? [])
+  .slice()
+  .sort((a, b) => a.localeCompare(b, 'es'));
 
-export const CIUDADES_COLOMBIA = colombiaCities;
+export const CIUDADES_COLOMBIA = [...colombiaCities]
+  .sort((a, b) => a.localeCompare(b, 'es'));
+
+export function getEstadosDePais(paisNombre) {
+  const estados = worldStates[paisNombre || 'Colombia'] ?? [];
+  return estados.slice().sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+// Colombia → autocomplete with all municipalities.
+// Other countries → [] so the city field stays freeSolo (user escribe libremente).
+export function getCiudadesDeUbicacion(paisNombre) {
+  const esColombia = !paisNombre || paisNombre === 'Colombia';
+  return esColombia ? CIUDADES_COLOMBIA : [];
+}
 
 export const TIPOS_DOCUMENTO    = ['RC', 'TI', 'CC', 'CE', 'PA', 'PEP', 'PPT', 'NIT', 'Otro'];
 export const GENEROS            = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];

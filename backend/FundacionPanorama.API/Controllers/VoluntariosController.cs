@@ -15,6 +15,8 @@ public record VoluntarioDto(
     string?   Email,
     string?   Telefono,
     string?   Ciudad,
+    string?   Pais,
+    string?   Departamento,
     DateTime? FechaNacimiento,
     DateTime? FechaInicio,
     string?   Profesion,
@@ -33,6 +35,8 @@ public record CrearVoluntarioDto(
     [EmailAddress][StringLength(150)] string?   Email,
     [Phone][StringLength(30)]         string?   Telefono,
     [StringLength(100)]               string?   Ciudad,
+    [StringLength(100)]               string?   Pais,
+    [StringLength(100)]               string?   Departamento,
     DateTime?                                   FechaNacimiento,
     DateTime?                                   FechaInicio,
     [StringLength(150)]               string?   Profesion,
@@ -107,6 +111,7 @@ public class VoluntariosController : ControllerBase
         var w = where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "";
         cmd.CommandText = $@"
             SELECT v.id, v.nombre, v.tipo_documento, v.documento, v.email, v.telefono, v.ciudad,
+                   v.pais, v.departamento,
                    v.fecha_nacimiento, v.fecha_inicio, v.profesion, v.notas, v.activo,
                    v.fecha_creacion, v.fecha_modificacion,
                    COUNT(DISTINCT vp.id) AS total_programas,
@@ -115,6 +120,7 @@ public class VoluntariosController : ControllerBase
             LEFT JOIN voluntario_programas vp ON vp.voluntario_id = v.id AND vp.activo = true
             {w}
             GROUP BY v.id, v.nombre, v.tipo_documento, v.documento, v.email, v.telefono, v.ciudad,
+                     v.pais, v.departamento,
                      v.fecha_nacimiento, v.fecha_inicio, v.profesion, v.notas, v.activo,
                      v.fecha_creacion, v.fecha_modificacion
             ORDER BY v.nombre
@@ -186,9 +192,9 @@ public class VoluntariosController : ControllerBase
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             INSERT INTO voluntarios
-                (nombre,tipo_documento,documento,email,telefono,ciudad,fecha_nacimiento,fecha_inicio,profesion,notas)
-            VALUES (@nom,@tdoc,@doc,@email,@tel,@ciu,@fnac,@fi,@prof,@notas)
-            RETURNING id,nombre,tipo_documento,documento,email,telefono,ciudad,
+                (nombre,tipo_documento,documento,email,telefono,ciudad,pais,departamento,fecha_nacimiento,fecha_inicio,profesion,notas)
+            VALUES (@nom,@tdoc,@doc,@email,@tel,@ciu,@pais,@dep,@fnac,@fi,@prof,@notas)
+            RETURNING id,nombre,tipo_documento,documento,email,telefono,ciudad,pais,departamento,
                       fecha_nacimiento,fecha_inicio,profesion,notas,activo,
                       fecha_creacion,fecha_modificacion,0,0";
         AgregarParamsVoluntario(cmd, dto);
@@ -209,10 +215,11 @@ public class VoluntariosController : ControllerBase
         cmd.CommandText = @"
             UPDATE voluntarios
             SET nombre=@nom, tipo_documento=@tdoc, documento=@doc, email=@email,
-                telefono=@tel, ciudad=@ciu, fecha_nacimiento=@fnac, fecha_inicio=@fi,
+                telefono=@tel, ciudad=@ciu, pais=@pais, departamento=@dep,
+                fecha_nacimiento=@fnac, fecha_inicio=@fi,
                 profesion=@prof, notas=@notas, fecha_modificacion=NOW()
             WHERE id=@id
-            RETURNING id,nombre,tipo_documento,documento,email,telefono,ciudad,
+            RETURNING id,nombre,tipo_documento,documento,email,telefono,ciudad,pais,departamento,
                       fecha_nacimiento,fecha_inicio,profesion,notas,activo,
                       fecha_creacion,fecha_modificacion,0,0";
         cmd.Parameters.AddWithValue("id", id);
@@ -379,6 +386,8 @@ public class VoluntariosController : ControllerBase
         cmd.Parameters.AddWithValue("email", (object?)dto.Email?.Trim()                ?? DBNull.Value);
         cmd.Parameters.AddWithValue("tel",   (object?)dto.Telefono?.Trim()             ?? DBNull.Value);
         cmd.Parameters.AddWithValue("ciu",   (object?)dto.Ciudad?.Trim()               ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("pais",  (object?)dto.Pais?.Trim()                 ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("dep",   (object?)dto.Departamento?.Trim()         ?? DBNull.Value);
         cmd.Parameters.AddWithValue("fnac",  (object?)dto.FechaNacimiento?.Date        ?? DBNull.Value);
         cmd.Parameters.AddWithValue("fi",    (object?)dto.FechaInicio?.Date            ?? DBNull.Value);
         cmd.Parameters.AddWithValue("prof",  (object?)dto.Profesion?.Trim()            ?? DBNull.Value);
@@ -386,22 +395,24 @@ public class VoluntariosController : ControllerBase
     }
 
     private static VoluntarioDto LeerVoluntario(System.Data.Common.DbDataReader r) => new(
-        r.GetGuid(0),
-        r.GetString(1),
-        r.IsDBNull(2)  ? null : r.GetString(2),
-        r.IsDBNull(3)  ? null : r.GetString(3),
-        r.IsDBNull(4)  ? null : r.GetString(4),
-        r.IsDBNull(5)  ? null : r.GetString(5),
-        r.IsDBNull(6)  ? null : r.GetString(6),
-        r.IsDBNull(7)  ? null : (DateTime?)r.GetDateTime(7),
-        r.IsDBNull(8)  ? null : (DateTime?)r.GetDateTime(8),
-        r.IsDBNull(9)  ? null : r.GetString(9),
-        r.IsDBNull(10) ? null : r.GetString(10),
-        r.GetBoolean(11),
-        r.GetDateTime(12),
-        r.GetDateTime(13),
-        r.IsDBNull(14) ? 0    : Convert.ToInt32(r.GetValue(14)),
-        r.IsDBNull(15) ? 0m   : Convert.ToDecimal(r.GetValue(15))
+        r.GetGuid(0),                                           // Id
+        r.GetString(1),                                         // Nombre
+        r.IsDBNull(2)  ? null : r.GetString(2),                // TipoDocumento
+        r.IsDBNull(3)  ? null : r.GetString(3),                // Documento
+        r.IsDBNull(4)  ? null : r.GetString(4),                // Email
+        r.IsDBNull(5)  ? null : r.GetString(5),                // Telefono
+        r.IsDBNull(6)  ? null : r.GetString(6),                // Ciudad
+        r.IsDBNull(7)  ? null : r.GetString(7),                // Pais
+        r.IsDBNull(8)  ? null : r.GetString(8),                // Departamento
+        r.IsDBNull(9)  ? null : (DateTime?)r.GetDateTime(9),   // FechaNacimiento
+        r.IsDBNull(10) ? null : (DateTime?)r.GetDateTime(10),  // FechaInicio
+        r.IsDBNull(11) ? null : r.GetString(11),               // Profesion
+        r.IsDBNull(12) ? null : r.GetString(12),               // Notas
+        r.GetBoolean(13),                                       // Activo
+        r.GetDateTime(14),                                      // FechaCreacion
+        r.GetDateTime(15),                                      // FechaModificacion
+        r.IsDBNull(16) ? 0    : Convert.ToInt32(r.GetValue(16)),
+        r.IsDBNull(17) ? 0m   : Convert.ToDecimal(r.GetValue(17))
     );
 
     private static AsignacionVolDto LeerAsignacion(System.Data.Common.DbDataReader r) => new(

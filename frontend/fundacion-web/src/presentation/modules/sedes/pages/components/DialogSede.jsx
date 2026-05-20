@@ -4,6 +4,7 @@ import {
   Grid, TextField, useMediaQuery, useTheme,
 } from '@mui/material';
 import apiClient from '../../../../../infrastructure/http/apiClient';
+import { CampoCiudad } from '../../../../../shared/components/form/FormControles';
 
 export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   const [form,     setForm]     = useState({ nombre: '', direccion: '', ciudad: '', telefono: '' });
@@ -55,7 +56,7 @@ export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
             <TextField fullWidth label="Dirección" size="small" value={form.direccion} onChange={set('direccion')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Ciudad" size="small" value={form.ciudad} onChange={set('ciudad')} />
+            <CampoCiudad value={form.ciudad} onChange={v => setForm(p => ({ ...p, ciudad: v }))} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Teléfono" size="small" value={form.telefono} onChange={set('telefono')} />

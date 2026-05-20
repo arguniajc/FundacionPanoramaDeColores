@@ -12,7 +12,8 @@ export function toInputDate(d) {
 
 export const VACIO_VOL = {
   nombre: '', tipoDocumento: '', documento: '', email: '', telefono: '',
-  ciudad: '', fechaNacimiento: '', fechaInicio: '', profesion: '', notas: '',
+  pais: 'Colombia', departamento: '', ciudad: '',
+  fechaNacimiento: '', fechaInicio: '', profesion: '', notas: '',
 };
 
 export const FORM_VACIO_ASIG = { sedeId: '', programaId: '', horasSemanales: '', fechaInicio: '' };

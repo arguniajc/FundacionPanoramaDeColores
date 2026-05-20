@@ -791,7 +791,7 @@ public static class DbMigrations
         await Migrar("""
             CREATE TABLE IF NOT EXISTS cat_eps (
                 id     SMALLSERIAL  PRIMARY KEY,
-                nombre VARCHAR(100) NOT NULL,
+                nombre VARCHAR(100) NOT NULL UNIQUE,
                 activo BOOLEAN      NOT NULL DEFAULT true
             )
             """, "cat_eps");
@@ -799,17 +799,19 @@ public static class DbMigrations
         await Migrar("""
             CREATE TABLE IF NOT EXISTS cat_parentescos (
                 id     SMALLSERIAL  PRIMARY KEY,
-                nombre VARCHAR(100) NOT NULL,
+                nombre VARCHAR(100) NOT NULL UNIQUE,
                 activo BOOLEAN      NOT NULL DEFAULT true
             )
             """, "cat_parentescos");
+
+        await Migrar("CREATE UNIQUE INDEX IF NOT EXISTS idx_cat_parentescos_nombre ON cat_parentescos(LOWER(nombre))", "cat_parentescos.unique_nombre");
 
         await Migrar("""
             INSERT INTO cat_parentescos (nombre) VALUES
                 ('Madre'), ('Padre'), ('Abuela'), ('Abuelo'),
                 ('Tía'), ('Tío'), ('Hermana'), ('Hermano'),
                 ('Madrastra'), ('Padrastro'), ('Tutora'), ('Tutor'), ('Otro')
-            ON CONFLICT DO NOTHING
+            ON CONFLICT (nombre) DO NOTHING
             """, "cat_parentescos.seed");
 
         await Migrar("""

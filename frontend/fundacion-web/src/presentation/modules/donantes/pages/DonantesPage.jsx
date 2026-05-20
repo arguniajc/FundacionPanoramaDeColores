@@ -18,6 +18,7 @@ import EmailIcon           from '@mui/icons-material/Email';
 import PhoneIcon           from '@mui/icons-material/Phone';
 import LocationOnIcon      from '@mui/icons-material/LocationOn';
 import { donantesRepository } from '../../../../infrastructure/repositories/donantesRepository';
+import { CampoDocumento, CampoCiudad } from '../../../../shared/components/form/FormControles';
 
 const COLOR = '#2D984F';
 
@@ -112,7 +113,7 @@ function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
           {donante.documento && (
             <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-              Doc: <strong>{donante.documento}</strong>
+              {donante.tipoDocumento ? `${donante.tipoDocumento}: ` : 'Doc: '}<strong>{donante.documento}</strong>
             </Typography>
           )}
           {donante.email && (
@@ -157,7 +158,7 @@ function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) {
 }
 
 // ── Dialog: Nuevo / Editar donante ────────────────────────────────────────────
-const VACIO = { nombre: '', tipo: 'persona', documento: '', email: '', telefono: '', ciudad: '', notas: '' };
+const VACIO = { nombre: '', tipo: 'persona', tipoDocumento: '', documento: '', email: '', telefono: '', ciudad: '', notas: '' };
 
 function DonanteDialog({ open, donante, onClose, onGuardado }) {
   const editando = !!donante;
@@ -168,7 +169,8 @@ function DonanteDialog({ open, donante, onClose, onGuardado }) {
   useEffect(() => {
     if (open) {
       setForm(donante
-        ? { nombre: donante.nombre, tipo: donante.tipo, documento: donante.documento ?? '',
+        ? { nombre: donante.nombre, tipo: donante.tipo,
+            tipoDocumento: donante.tipoDocumento ?? '', documento: donante.documento ?? '',
             email: donante.email ?? '', telefono: donante.telefono ?? '',
             ciudad: donante.ciudad ?? '', notas: donante.notas ?? '' }
         : VACIO);
@@ -213,13 +215,17 @@ function DonanteDialog({ open, donante, onClose, onGuardado }) {
               <MenuItem value="empresa">Empresa</MenuItem>
             </TextField>
           </Grid>
-          <Grid size={6}>
-            <TextField fullWidth size="small" label="Documento / NIT" value={form.documento}
-              onChange={e => set('documento', e.target.value)} />
+          <Grid size={12}>
+            <CampoDocumento
+              tipoDocumento={form.tipoDocumento}
+              documento={form.documento}
+              onChangeTipo={v => set('tipoDocumento', v)}
+              onChangeNumero={v => set('documento', v)}
+              labelNumero="Documento / NIT"
+            />
           </Grid>
           <Grid size={6}>
-            <TextField fullWidth size="small" label="Ciudad" value={form.ciudad}
-              onChange={e => set('ciudad', e.target.value)} />
+            <CampoCiudad value={form.ciudad} onChange={v => set('ciudad', v)} />
           </Grid>
           <Grid size={6}>
             <TextField fullWidth size="small" label="Email" type="email" value={form.email}

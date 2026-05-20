@@ -246,10 +246,11 @@ public static class DbMigrations
             )
             """, "donantes");
 
-        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS tipo      VARCHAR(20)  NOT NULL DEFAULT 'persona'", "donantes.tipo");
-        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS documento VARCHAR(50)",                             "donantes.documento");
-        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS ciudad    VARCHAR(100)",                           "donantes.ciudad");
-        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS notas     TEXT",                                   "donantes.notas");
+        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS tipo           VARCHAR(20)  NOT NULL DEFAULT 'persona'", "donantes.tipo");
+        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS documento      VARCHAR(50)",                             "donantes.documento");
+        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS tipo_documento VARCHAR(30)",                             "donantes.tipo_documento");
+        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS ciudad         VARCHAR(100)",                           "donantes.ciudad");
+        await Migrar("ALTER TABLE donantes ADD COLUMN IF NOT EXISTS notas          TEXT",                                   "donantes.notas");
 
         await Migrar("""
             CREATE TABLE IF NOT EXISTS donaciones (

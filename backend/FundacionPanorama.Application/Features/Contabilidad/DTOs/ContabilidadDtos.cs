@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 namespace FundacionPanorama.Application.Features.Contabilidad.DTOs;
 
 // ── Categorías ────────────────────────────────────────────────────────────────
@@ -21,10 +22,10 @@ public record CuentaCajaDto(
     bool    Activo);
 
 public record CrearCuentaCajaDto(
-    string  Nombre,
-    string  Tipo,
-    string? Banco,
-    string? NumeroCuenta,
+    [Required][StringLength(100)] string  Nombre,
+    [Required][StringLength(20)]  string  Tipo,
+    [StringLength(100)]           string? Banco,
+    [StringLength(50)]            string? NumeroCuenta,
     decimal SaldoInicial);
 
 // ── Movimientos ───────────────────────────────────────────────────────────────
@@ -48,30 +49,30 @@ public record MovimientoDto(
     DateTime FechaCreacion);
 
 public record CrearMovimientoDto(
-    string   Tipo,
+    [Required][StringLength(10)]  string   Tipo,
     DateOnly Fecha,
-    string   Concepto,
+    [Required][StringLength(500)] string   Concepto,
     decimal  Monto,
     Guid     CuentaId,
     int      CategoriaId,
     Guid?    ProgramaId,
-    string?  TerceroNombre,
-    string?  TerceroDocumento,
-    string?  NumeroSoporte,
-    string?  Descripcion);
+    [StringLength(200)] string?  TerceroNombre,
+    [StringLength(50)]  string?  TerceroDocumento,
+    [StringLength(50)]  string?  NumeroSoporte,
+    [StringLength(1000)] string? Descripcion);
 
 public record ActualizarMovimientoDto(
-    string   Tipo,
+    [Required][StringLength(10)]  string   Tipo,
     DateOnly Fecha,
-    string   Concepto,
+    [Required][StringLength(500)] string   Concepto,
     decimal  Monto,
     Guid     CuentaId,
     int      CategoriaId,
     Guid?    ProgramaId,
-    string?  TerceroNombre,
-    string?  TerceroDocumento,
-    string?  NumeroSoporte,
-    string?  Descripcion);
+    [StringLength(200)] string?  TerceroNombre,
+    [StringLength(50)]  string?  TerceroDocumento,
+    [StringLength(50)]  string?  NumeroSoporte,
+    [StringLength(1000)] string? Descripcion);
 
 // ── Presupuesto ───────────────────────────────────────────────────────────────
 public record PresupuestoDto(
@@ -157,13 +158,13 @@ public record CrearArqueoDto(
     Guid     CuentaId,
     DateOnly Fecha,
     decimal  SaldoFisico,
-    string?  Observacion,
-    string?  Responsable);
+    [StringLength(500)] string? Observacion,
+    [StringLength(100)] string? Responsable);
 
 public record CrearReposicionDto(
     Guid     CuentaCajaId,
     Guid     CuentaOrigenId,
     DateOnly Fecha,
     decimal  Monto,
-    string?  NumeroSoporte,
-    string?  Observacion);
+    [StringLength(50)]  string? NumeroSoporte,
+    [StringLength(500)] string? Observacion);

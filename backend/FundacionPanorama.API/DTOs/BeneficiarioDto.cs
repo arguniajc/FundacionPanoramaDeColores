@@ -1,5 +1,6 @@
 // DTOs del módulo Beneficiarios: salida (BeneficiarioDto), entrada (CrearBeneficiarioDto),
 // paginación (BeneficiarioListDto) y estadísticas (BeneficiarioStatsDto).
+using System.ComponentModel.DataAnnotations;
 namespace FundacionPanorama.API.DTOs;
 
 // Forma plana que consume el frontend — combina datos del menor, acudiente, tallas y archivos.
@@ -55,47 +56,72 @@ public class BeneficiarioDto
 
 public class CrearBeneficiarioDto
 {
+    [Required][StringLength(200)]
     public string    NombreMenor        { get; set; } = string.Empty;
     public DateOnly  FechaNacimiento    { get; set; }
+    [StringLength(20)]
     public string    TipoDocumento      { get; set; } = string.Empty;
+    [StringLength(30)]
     public string?   NumeroDocumento    { get; set; }
+    [StringLength(100)]
     public string?   Eps                { get; set; }
     // ── Tallas ────────────────────────────────────────────────────────────────
+    [StringLength(10)]
     public string?   TallaCamisa        { get; set; }
+    [StringLength(10)]
     public string?   TallaPantalon      { get; set; }
+    [StringLength(10)]
     public string?   TallaZapatos       { get; set; }
     public decimal?  PesoKg             { get; set; }
     public int?      TallaCm            { get; set; }
     // ── Salud ─────────────────────────────────────────────────────────────────
+    [StringLength(10)]
     public string    TieneAlergia       { get; set; } = "no";
+    [StringLength(500)]
     public string?   DescripcionAlergia { get; set; }
+    [StringLength(1000)]
     public string?   ObservacionesSalud { get; set; }
     public bool      TieneDiscapacidad  { get; set; }
+    [StringLength(500)]
     public string?   DescripcionDiscapacidad { get; set; }
     // ── Acudiente ─────────────────────────────────────────────────────────────
+    [Required][StringLength(200)]
     public string    NombreAcudiente    { get; set; } = string.Empty;
+    [StringLength(50)]
     public string?   Parentesco         { get; set; }
+    [Phone][StringLength(30)]
     public string?   Whatsapp           { get; set; }
+    [StringLength(200)]
     public string?   Direccion          { get; set; }
     public bool?     ViveConNino        { get; set; }
     // ── Lugar de nacimiento ───────────────────────────────────────────────────
+    [StringLength(100)]
     public string?   PaisNacimiento          { get; set; }
+    [StringLength(100)]
     public string?   DepartamentoNacimiento  { get; set; }
+    [StringLength(100)]
     public string?   CiudadNacimiento        { get; set; }
+    [StringLength(100)]
     public string?   Barrio                  { get; set; }
     // ── Composición familiar ──────────────────────────────────────────────────
     public int?      NumPersonasVive    { get; set; }
     public int?      NumHermanos        { get; set; }
     // ── Educación ─────────────────────────────────────────────────────────────
+    [StringLength(200)]
     public string?   NombreColegio      { get; set; }
+    [StringLength(50)]
     public string?   GradoEscolar       { get; set; }
     // ── Género ────────────────────────────────────────────────────────────────
+    [StringLength(20)]
     public string?   Genero             { get; set; }
     // ── Autorización ──────────────────────────────────────────────────────────
     public bool      Autorizacion       { get; set; }
     // ── Archivos ──────────────────────────────────────────────────────────────
+    [Url][StringLength(500)]
     public string?   FotoMenorUrl            { get; set; }
+    [Url][StringLength(500)]
     public string?   FotoDocumentoUrl        { get; set; }
+    [Url][StringLength(500)]
     public string?   FotoDocumentoReversoUrl { get; set; }
 }
 

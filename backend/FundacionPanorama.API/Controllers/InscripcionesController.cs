@@ -1,4 +1,5 @@
 // CRUD de inscripciones usando Npgsql directo (sin EF Core). Requiere JWT.
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using FundacionPanorama.API.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -25,9 +26,17 @@ public record InscripcionDto(
     DateTime FechaCreacion
 );
 
-public record CrearInscripcionDto(Guid BeneficiarioId, Guid ProgramaId, string Datos, string? Observaciones);
-public record ActualizarInscripcionDto(string Datos, string? Observaciones);
-public record CambiarEstadoDto(string Estado);
+public record CrearInscripcionDto(
+    Guid BeneficiarioId,
+    Guid ProgramaId,
+    [Required] string Datos,
+    [StringLength(1000)] string? Observaciones);
+
+public record ActualizarInscripcionDto(
+    [Required] string Datos,
+    [StringLength(1000)] string? Observaciones);
+
+public record CambiarEstadoDto([Required][StringLength(20)] string Estado);
 
 [ApiController]
 [Route("api/inscripciones")]

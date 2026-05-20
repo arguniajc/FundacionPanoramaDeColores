@@ -20,9 +20,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 EXPOSE 8080
 
-# Usuario sin privilegios para reducir superficie de ataque
-RUN addgroup --system appgroup \
- && adduser  --system --ingroup appgroup --no-create-home appuser
+# Usuario sin privilegios para reducir superficie de ataque (Debian: groupadd/useradd)
+RUN groupadd --system appgroup \
+ && useradd  --system --gid appgroup --no-create-home appuser
 
 COPY --from=build --chown=appuser:appgroup /app/publish .
 

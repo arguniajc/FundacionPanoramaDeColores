@@ -16,6 +16,8 @@ public record DonanteDto(
     string?  Email,
     string?  Telefono,
     string?  Ciudad,
+    string?  Pais,
+    string?  Departamento,
     string?  Notas,
     bool     Activo,
     DateTime FechaCreacion,
@@ -35,6 +37,8 @@ public record CrearDonanteDto(
     [EmailAddress][StringLength(150)] string? Email,
     [Phone][StringLength(30)]     string? Telefono,
     [StringLength(100)]           string? Ciudad,
+    [StringLength(100)]           string? Pais,
+    [StringLength(100)]           string? Departamento,
     [StringLength(1000)]          string? Notas
 );
 
@@ -72,7 +76,8 @@ public class DonantesController : ControllerBase
 
         var w = where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "";
         cmd.CommandText = $@"
-            SELECT d.id, d.nombre, d.tipo, d.documento, d.tipo_documento, d.email, d.telefono, d.ciudad, d.notas,
+            SELECT d.id, d.nombre, d.tipo, d.documento, d.tipo_documento, d.email, d.telefono,
+                   d.ciudad, d.pais, d.departamento, d.notas,
                    d.activo, d.fecha_creacion, d.fecha_modificacion,
                    COUNT(dn.id)                                                    AS total_donaciones,
                    COALESCE(SUM(CASE WHEN dn.tipo='dinero'  THEN dn.monto  ELSE 0 END), 0) AS total_dinero,
@@ -81,7 +86,8 @@ public class DonantesController : ControllerBase
             FROM donantes d
             LEFT JOIN donaciones dn ON dn.donante_id = d.id AND dn.activo = true
             {w}
-            GROUP BY d.id, d.nombre, d.tipo, d.documento, d.tipo_documento, d.email, d.telefono, d.ciudad, d.notas,
+            GROUP BY d.id, d.nombre, d.tipo, d.documento, d.tipo_documento, d.email, d.telefono,
+                     d.ciudad, d.pais, d.departamento, d.notas,
                      d.activo, d.fecha_creacion, d.fecha_modificacion
             ORDER BY d.nombre
             LIMIT @lim OFFSET @off";
@@ -101,7 +107,8 @@ public class DonantesController : ControllerBase
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            SELECT d.id, d.nombre, d.tipo, d.documento, d.tipo_documento, d.email, d.telefono, d.ciudad, d.notas,
+            SELECT d.id, d.nombre, d.tipo, d.documento, d.tipo_documento, d.email, d.telefono,
+                   d.ciudad, d.pais, d.departamento, d.notas,
                    d.activo, d.fecha_creacion, d.fecha_modificacion,
                    COUNT(dn.id),
                    COALESCE(SUM(CASE WHEN dn.tipo='dinero'  THEN dn.monto  ELSE 0 END), 0),
@@ -110,7 +117,8 @@ public class DonantesController : ControllerBase
             FROM donantes d
             LEFT JOIN donaciones dn ON dn.donante_id = d.id AND dn.activo = true
             WHERE d.id = @id
-            GROUP BY d.id, d.nombre, d.tipo, d.documento, d.tipo_documento, d.email, d.telefono, d.ciudad, d.notas,
+            GROUP BY d.id, d.nombre, d.tipo, d.documento, d.tipo_documento, d.email, d.telefono,
+                     d.ciudad, d.pais, d.departamento, d.notas,
                      d.activo, d.fecha_creacion, d.fecha_modificacion";
         cmd.Parameters.AddWithValue("id", id);
         await using var r = await cmd.ExecuteReaderAsync();
@@ -128,9 +136,9 @@ public class DonantesController : ControllerBase
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            INSERT INTO donantes (nombre,tipo,documento,tipo_documento,email,telefono,ciudad,notas)
-            VALUES (@nom,@tipo,@doc,@tipdoc,@email,@tel,@ciu,@notas)
-            RETURNING id,nombre,tipo,documento,tipo_documento,email,telefono,ciudad,notas,
+            INSERT INTO donantes (nombre,tipo,documento,tipo_documento,email,telefono,ciudad,pais,departamento,notas)
+            VALUES (@nom,@tipo,@doc,@tipdoc,@email,@tel,@ciu,@pais,@dep,@notas)
+            RETURNING id,nombre,tipo,documento,tipo_documento,email,telefono,ciudad,pais,departamento,notas,
                       activo,fecha_creacion,fecha_modificacion,
                       0,0,0,NULL";
         cmd.Parameters.AddWithValue("nom",    dto.Nombre.Trim());
@@ -140,6 +148,8 @@ public class DonantesController : ControllerBase
         cmd.Parameters.AddWithValue("email",  (object?)dto.Email?.Trim()          ?? DBNull.Value);
         cmd.Parameters.AddWithValue("tel",    (object?)dto.Telefono?.Trim()       ?? DBNull.Value);
         cmd.Parameters.AddWithValue("ciu",    (object?)dto.Ciudad?.Trim()         ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("pais",   (object?)dto.Pais?.Trim()           ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("dep",    (object?)dto.Departamento?.Trim()   ?? DBNull.Value);
         cmd.Parameters.AddWithValue("notas",  (object?)dto.Notas?.Trim()          ?? DBNull.Value);
         await using var r = await cmd.ExecuteReaderAsync();
         await r.ReadAsync();
@@ -158,9 +168,10 @@ public class DonantesController : ControllerBase
         cmd.CommandText = @"
             UPDATE donantes
             SET nombre=@nom, tipo=@tipo, documento=@doc, tipo_documento=@tipdoc,
-                email=@email, telefono=@tel, ciudad=@ciu, notas=@notas, fecha_modificacion=NOW()
+                email=@email, telefono=@tel, ciudad=@ciu, pais=@pais, departamento=@dep,
+                notas=@notas, fecha_modificacion=NOW()
             WHERE id=@id
-            RETURNING id,nombre,tipo,documento,tipo_documento,email,telefono,ciudad,notas,
+            RETURNING id,nombre,tipo,documento,tipo_documento,email,telefono,ciudad,pais,departamento,notas,
                       activo,fecha_creacion,fecha_modificacion,
                       0,0,0,NULL";
         cmd.Parameters.AddWithValue("id",     id);
@@ -171,6 +182,8 @@ public class DonantesController : ControllerBase
         cmd.Parameters.AddWithValue("email",  (object?)dto.Email?.Trim()          ?? DBNull.Value);
         cmd.Parameters.AddWithValue("tel",    (object?)dto.Telefono?.Trim()       ?? DBNull.Value);
         cmd.Parameters.AddWithValue("ciu",    (object?)dto.Ciudad?.Trim()         ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("pais",   (object?)dto.Pais?.Trim()           ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("dep",    (object?)dto.Departamento?.Trim()   ?? DBNull.Value);
         cmd.Parameters.AddWithValue("notas",  (object?)dto.Notas?.Trim()          ?? DBNull.Value);
         await using var r = await cmd.ExecuteReaderAsync();
         if (!await r.ReadAsync()) return NotFound();
@@ -220,21 +233,23 @@ public class DonantesController : ControllerBase
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static DonanteDto LeerDonante(System.Data.Common.DbDataReader r) => new(
-        r.GetGuid(0),                                          // Id
-        r.GetString(1),                                        // Nombre
-        r.GetString(2),                                        // Tipo
-        r.IsDBNull(3)  ? null : r.GetString(3),               // Documento
-        r.IsDBNull(4)  ? null : r.GetString(4),               // TipoDocumento
-        r.IsDBNull(5)  ? null : r.GetString(5),               // Email
-        r.IsDBNull(6)  ? null : r.GetString(6),               // Telefono
-        r.IsDBNull(7)  ? null : r.GetString(7),               // Ciudad
-        r.IsDBNull(8)  ? null : r.GetString(8),               // Notas
-        r.GetBoolean(9),                                       // Activo
-        r.GetDateTime(10),                                     // FechaCreacion
-        r.GetDateTime(11),                                     // FechaModificacion
-        r.IsDBNull(12) ? 0    : Convert.ToInt32(r.GetInt64(12)),
-        r.IsDBNull(13) ? 0m   : Convert.ToDecimal(r.GetValue(13)),
+        r.GetGuid(0),                                           // Id
+        r.GetString(1),                                         // Nombre
+        r.GetString(2),                                         // Tipo
+        r.IsDBNull(3)  ? null : r.GetString(3),                // Documento
+        r.IsDBNull(4)  ? null : r.GetString(4),                // TipoDocumento
+        r.IsDBNull(5)  ? null : r.GetString(5),                // Email
+        r.IsDBNull(6)  ? null : r.GetString(6),                // Telefono
+        r.IsDBNull(7)  ? null : r.GetString(7),                // Ciudad
+        r.IsDBNull(8)  ? null : r.GetString(8),                // Pais
+        r.IsDBNull(9)  ? null : r.GetString(9),                // Departamento
+        r.IsDBNull(10) ? null : r.GetString(10),               // Notas
+        r.GetBoolean(11),                                       // Activo
+        r.GetDateTime(12),                                      // FechaCreacion
+        r.GetDateTime(13),                                      // FechaModificacion
         r.IsDBNull(14) ? 0    : Convert.ToInt32(r.GetInt64(14)),
-        r.IsDBNull(15) ? null : (DateTime?)r.GetDateTime(15)
+        r.IsDBNull(15) ? 0m   : Convert.ToDecimal(r.GetValue(15)),
+        r.IsDBNull(16) ? 0    : Convert.ToInt32(r.GetInt64(16)),
+        r.IsDBNull(17) ? null : (DateTime?)r.GetDateTime(17)
     );
 }

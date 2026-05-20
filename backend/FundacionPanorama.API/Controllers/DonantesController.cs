@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,13 +27,13 @@ public record DonanteDto(
 );
 
 public record CrearDonanteDto(
-    string  Nombre,
-    string  Tipo,
-    string? Documento,
-    string? Email,
-    string? Telefono,
-    string? Ciudad,
-    string? Notas
+    [Required][StringLength(200)] string  Nombre,
+    [StringLength(50)]            string  Tipo,
+    [StringLength(30)]            string? Documento,
+    [EmailAddress][StringLength(150)] string? Email,
+    [Phone][StringLength(30)]     string? Telefono,
+    [StringLength(100)]           string? Ciudad,
+    [StringLength(1000)]          string? Notas
 );
 
 [ApiController]
@@ -47,12 +48,17 @@ public class DonantesController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> Listar(
-        [FromQuery] string? buscar = null,
-        [FromQuery] bool    soloActivos = false)
+        [FromQuery] string? buscar      = null,
+        [FromQuery] bool    soloActivos = false,
+        [FromQuery] int     pagina      = 1,
+        [FromQuery] int     porPagina   = 500)
     {
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
+
+        porPagina = Math.Clamp(porPagina, 1, 500);
+        pagina    = Math.Max(pagina, 1);
 
         var where = new List<string>();
         if (soloActivos) where.Add("d.activo = true");
@@ -75,7 +81,10 @@ public class DonantesController : ControllerBase
             {w}
             GROUP BY d.id, d.nombre, d.tipo, d.documento, d.email, d.telefono, d.ciudad, d.notas,
                      d.activo, d.fecha_creacion, d.fecha_modificacion
-            ORDER BY d.nombre";
+            ORDER BY d.nombre
+            LIMIT @lim OFFSET @off";
+        cmd.Parameters.AddWithValue("lim", porPagina);
+        cmd.Parameters.AddWithValue("off", (pagina - 1) * porPagina);
 
         var list = new List<DonanteDto>();
         await using var r = await cmd.ExecuteReaderAsync();

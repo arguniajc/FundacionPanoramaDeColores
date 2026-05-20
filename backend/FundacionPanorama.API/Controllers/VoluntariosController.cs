@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,16 +27,16 @@ public record VoluntarioDto(
 );
 
 public record CrearVoluntarioDto(
-    string    Nombre,
-    string?   TipoDocumento,
-    string?   Documento,
-    string?   Email,
-    string?   Telefono,
-    string?   Ciudad,
-    DateTime? FechaNacimiento,
-    DateTime? FechaInicio,
-    string?   Profesion,
-    string?   Notas
+    [Required][StringLength(200)]     string    Nombre,
+    [StringLength(50)]                string?   TipoDocumento,
+    [StringLength(30)]                string?   Documento,
+    [EmailAddress][StringLength(150)] string?   Email,
+    [Phone][StringLength(30)]         string?   Telefono,
+    [StringLength(100)]               string?   Ciudad,
+    DateTime?                                   FechaNacimiento,
+    DateTime?                                   FechaInicio,
+    [StringLength(150)]               string?   Profesion,
+    [StringLength(1000)]              string?   Notas
 );
 
 public record AsignacionVolDto(
@@ -83,12 +84,17 @@ public class VoluntariosController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> Listar(
-        [FromQuery] string? buscar     = null,
-        [FromQuery] bool    soloActivos = true)
+        [FromQuery] string? buscar      = null,
+        [FromQuery] bool    soloActivos = true,
+        [FromQuery] int     pagina      = 1,
+        [FromQuery] int     porPagina   = 500)
     {
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
+
+        porPagina = Math.Clamp(porPagina, 1, 500);
+        pagina    = Math.Max(pagina, 1);
 
         var where = new List<string>();
         if (soloActivos) where.Add("v.activo = true");
@@ -111,7 +117,10 @@ public class VoluntariosController : ControllerBase
             GROUP BY v.id, v.nombre, v.tipo_documento, v.documento, v.email, v.telefono, v.ciudad,
                      v.fecha_nacimiento, v.fecha_inicio, v.profesion, v.notas, v.activo,
                      v.fecha_creacion, v.fecha_modificacion
-            ORDER BY v.nombre";
+            ORDER BY v.nombre
+            LIMIT @lim OFFSET @off";
+        cmd.Parameters.AddWithValue("lim", porPagina);
+        cmd.Parameters.AddWithValue("off", (pagina - 1) * porPagina);
 
         var list = new List<VoluntarioDto>();
         await using var r = await cmd.ExecuteReaderAsync();

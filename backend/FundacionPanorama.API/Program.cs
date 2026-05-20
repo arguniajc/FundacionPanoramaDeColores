@@ -19,6 +19,10 @@ var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls($"http://+:{port}");
 
+// ── Límite de tamaño de request (10 MB — previene uploads abusivos) ───────────
+builder.WebHost.ConfigureKestrel(k =>
+    k.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
+
 // ── Base de datos (PostgreSQL via EF Core) ──────────────────────────────────
 // Cambiar la cadena de conexión en appsettings.json para apuntar a otra BD
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -170,6 +174,17 @@ app.Use(async (context, next) =>
 {
     context.Response.Headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups";
     await next();
+});
+
+// ── Observabilidad: log de cada request (método, ruta, status, duración) ────
+app.Use(async (ctx, next) =>
+{
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    await next();
+    sw.Stop();
+    var reqLogger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+    reqLogger.LogInformation("{Method} {Path} → {Status} en {Ms}ms",
+        ctx.Request.Method, ctx.Request.Path, ctx.Response.StatusCode, sw.ElapsedMilliseconds);
 });
 
 app.UseAuthentication();

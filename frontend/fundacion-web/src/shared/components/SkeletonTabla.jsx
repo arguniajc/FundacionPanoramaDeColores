@@ -1,5 +1,6 @@
 import { Skeleton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 
+/** @param {{ columnas?: number, filas?: number }} props */
 export default function SkeletonTabla({ columnas = 4, filas = 6 }) {
   return (
     <TableContainer component={Paper} sx={{ mt: 2 }}>

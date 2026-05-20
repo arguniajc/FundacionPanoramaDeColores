@@ -3,4 +3,5 @@
   <Project Path="FundacionPanorama.Domain/FundacionPanorama.Domain.csproj" />
   <Project Path="FundacionPanorama.Application/FundacionPanorama.Application.csproj" />
   <Project Path="FundacionPanorama.Infrastructure/FundacionPanorama.Infrastructure.csproj" />
+  <Project Path="FundacionPanorama.Tests/FundacionPanorama.Tests.csproj" />
 </Solution>

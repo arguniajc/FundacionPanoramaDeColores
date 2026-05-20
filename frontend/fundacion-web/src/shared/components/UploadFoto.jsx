@@ -12,6 +12,9 @@ import apiClient        from '../../infrastructure/http/apiClient';
 
 const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 
+/**
+ * @param {{ label: string, carpeta?: string, value: string|null, onChange: (url: string|null) => void }} props
+ */
 export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }) {
   const inputRef = useRef(null);
 

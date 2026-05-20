@@ -3,6 +3,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogContentText, Dialog
 
 const ConfirmContext = createContext(null);
 
+/** @param {{ children: React.ReactNode }} props */
 export function ConfirmProvider({ children }) {
   const [state, setState] = useState({ open: false, msg: '', title: 'Confirmar' });
   const resolveRef = useRef(null);

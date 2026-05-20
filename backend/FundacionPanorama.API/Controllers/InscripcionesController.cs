@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using FundacionPanorama.API.Data;
+using FundacionPanorama.API.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,7 @@ public class InscripcionesController : ControllerBase
     public InscripcionesController(AppDbContext db) => _db = db;
 
     [HttpGet]
+    [RequierePermiso("inscripciones", "ver")]
     public async Task<IActionResult> Listar(
         [FromQuery] Guid?   programaId     = null,
         [FromQuery] Guid?   beneficiarioId = null,
@@ -65,6 +67,7 @@ public class InscripcionesController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [RequierePermiso("inscripciones", "ver")]
     public async Task<IActionResult> ObtenerPorId(Guid id)
     {
         var rows = await EjecutarSelectAsync(
@@ -76,6 +79,7 @@ public class InscripcionesController : ControllerBase
     }
 
     [HttpPost]
+    [RequierePermiso("inscripciones", "crear")]
     public async Task<IActionResult> Crear([FromBody] CrearInscripcionDto dto)
     {
         if (!EsJsonValido(dto.Datos))
@@ -116,6 +120,7 @@ public class InscripcionesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [RequierePermiso("inscripciones", "editar")]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] ActualizarInscripcionDto dto)
     {
         if (!EsJsonValido(dto.Datos))
@@ -137,6 +142,7 @@ public class InscripcionesController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/estado")]
+    [RequierePermiso("inscripciones", "editar")]
     public async Task<IActionResult> CambiarEstado(Guid id, [FromBody] CambiarEstadoDto dto)
     {
         var validos = new[] { "activa", "suspendida", "completada", "baja" };
@@ -158,6 +164,7 @@ public class InscripcionesController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [RequierePermiso("inscripciones", "eliminar")]
     public async Task<IActionResult> Eliminar(Guid id)
     {
         await using var conn = AbrirConexion();

@@ -590,6 +590,11 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         }
         await rCat.CloseAsync();
 
+        if (catEntrada == 0 || catSalida == 0)
+            throw new InvalidOperationException(
+                "No se encontraron las categorías de traslado (TR-01 / TR-02). " +
+                "Verifique la configuración de categorías contables.");
+
         // Nombres de las cuentas para el concepto
         await using var cmdNom = conn.CreateCommand();
         cmdNom.CommandText = "SELECT id, nombre FROM cuentas_caja WHERE id = @cajaId OR id = @origenId";

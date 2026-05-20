@@ -137,8 +137,15 @@ public class ContabilidadController(ContabilidadService svc) : ControllerBase
     [RequierePermiso("contabilidad", "crear")]
     public async Task<IActionResult> ReponerCaja([FromBody] CrearReposicionDto dto, CancellationToken ct)
     {
-        var (entrada, salida) = await svc.ReponerCajaAsync(dto, ct);
-        return Ok(new { entrada, salida });
+        try
+        {
+            var (entrada, salida) = await svc.ReponerCajaAsync(dto, ct);
+            return Ok(new { entrada, salida });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // ── Dashboard / Reporte ────────────────────────────────────────────────────

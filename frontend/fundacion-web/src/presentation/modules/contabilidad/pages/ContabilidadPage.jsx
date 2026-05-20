@@ -24,6 +24,7 @@ import {
 } from 'recharts';
 import apiClient from '../../../../infrastructure/http/apiClient';
 import { useAuth } from '../../../../application/auth/AuthContext';
+import { useConfirm } from '../../../../shared/components/ConfirmDialog';
 import { fmt, fmtFecha, hoy, MESES, ANIOS, KpiCard, SectionHeader } from './components/helpers';
 import { DialogMovimiento }  from './components/DialogMovimiento';
 import { DialogCuenta }      from './components/DialogCuenta';
@@ -34,6 +35,7 @@ import { DialogReposicion }  from './components/DialogReposicion';
 // â”€â”€ PÃ¡gina principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ContabilidadPage() {
   const { puedo } = useAuth();
+  const confirm    = useConfirm();
   const puedeCrear  = puedo('contabilidad', 'crear');
   const puedeEditar = puedo('contabilidad', 'editar');
 
@@ -186,7 +188,7 @@ export default function ContabilidadPage() {
   };
 
   const eliminarMovimiento = async (id) => {
-    if (!confirm('Â¿Eliminar este movimiento? El saldo de la cuenta se ajustarÃ¡ automÃ¡ticamente.')) return;
+    if (!await confirm('Â¿Eliminar este movimiento? El saldo de la cuenta se ajustarÃ¡ automÃ¡ticamente.')) return;
     await apiClient.delete(`/api/contabilidad/movimientos/${id}`);
     await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
     if (tab === 5) await cargarCajaMenor();
@@ -205,7 +207,7 @@ export default function ContabilidadPage() {
   };
 
   const eliminarArqueo = async (id) => {
-    if (!confirm('Â¿Eliminar este arqueo?')) return;
+    if (!await confirm('Â¿Eliminar este arqueo?')) return;
     await apiClient.delete(`/api/contabilidad/caja-menor/arqueos/${id}`);
     await cargarCajaMenor();
   };
@@ -235,7 +237,7 @@ export default function ContabilidadPage() {
   };
 
   const eliminarCuenta = async (id) => {
-    if (!confirm('Â¿Eliminar esta cuenta? Solo es posible si no tiene movimientos registrados.')) return;
+    if (!await confirm('Â¿Eliminar esta cuenta? Solo es posible si no tiene movimientos registrados.')) return;
     try {
       await apiClient.delete(`/api/contabilidad/cuentas/${id}`);
       await Promise.all([cargarCuentas(), cargarStats()]);
@@ -258,7 +260,7 @@ export default function ContabilidadPage() {
   };
 
   const eliminarPresupuesto = async (id) => {
-    if (!confirm('Â¿Eliminar esta lÃ­nea presupuestal?')) return;
+    if (!await confirm('Â¿Eliminar esta lÃ­nea presupuestal?')) return;
     await apiClient.delete(`/api/contabilidad/presupuesto/${id}`);
     await cargarPresupuesto();
   };

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using FundacionPanorama.API.Data;
+using FundacionPanorama.API.Filters;
 using System.Security.Claims;
 
 namespace FundacionPanorama.API.Controllers;
@@ -115,6 +116,7 @@ public class InventarioController : ControllerBase
     // ── Items ─────────────────────────────────────────────────────────────────
 
     [HttpGet("items")]
+    [RequierePermiso("inventario", "ver")]
     public async Task<IActionResult> ListarItems(
         [FromQuery] Guid?   sedeId    = null,
         [FromQuery] string? buscar    = null,
@@ -156,6 +158,7 @@ public class InventarioController : ControllerBase
     }
 
     [HttpGet("items/{id:guid}")]
+    [RequierePermiso("inventario", "ver")]
     public async Task<IActionResult> ObtenerItem(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -176,6 +179,7 @@ public class InventarioController : ControllerBase
     }
 
     [HttpPost("items")]
+    [RequierePermiso("inventario", "crear")]
     public async Task<IActionResult> CrearItem([FromBody] CrearItemDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Nombre))
@@ -218,6 +222,7 @@ public class InventarioController : ControllerBase
     }
 
     [HttpPut("items/{id:guid}")]
+    [RequierePermiso("inventario", "editar")]
     public async Task<IActionResult> ActualizarItem(Guid id, [FromBody] ActualizarItemDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Nombre))
@@ -261,6 +266,7 @@ public class InventarioController : ControllerBase
     }
 
     [HttpDelete("items/{id:guid}")]
+    [RequierePermiso("inventario", "eliminar")]
     public async Task<IActionResult> EliminarItem(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -288,6 +294,7 @@ public class InventarioController : ControllerBase
     // ── Movimientos ───────────────────────────────────────────────────────────
 
     [HttpGet("movimientos")]
+    [RequierePermiso("inventario", "ver")]
     public async Task<IActionResult> ListarMovimientos(
         [FromQuery] Guid? itemId = null,
         [FromQuery] Guid? sedeId = null)
@@ -325,6 +332,7 @@ public class InventarioController : ControllerBase
     }
 
     [HttpPost("movimientos")]
+    [RequierePermiso("inventario", "crear")]
     public async Task<IActionResult> RegistrarMovimiento([FromBody] RegistrarMovimientoDto dto)
     {
         if (dto.Cantidad <= 0) return BadRequest(new { mensaje = "La cantidad debe ser mayor a cero." });
@@ -398,6 +406,7 @@ public class InventarioController : ControllerBase
     // ── Transferencia entre sedes ─────────────────────────────────────────────
 
     [HttpPost("transferencia")]
+    [RequierePermiso("inventario", "editar")]
     public async Task<IActionResult> Transferir([FromBody] TransferenciaDto dto)
     {
         if (dto.Cantidad <= 0) return BadRequest(new { mensaje = "La cantidad debe ser mayor a cero." });
@@ -565,6 +574,7 @@ public class InventarioController : ControllerBase
     // ── Tipos de movimiento ───────────────────────────────────────────────────
 
     [HttpGet("tipos")]
+    [RequierePermiso("inventario", "ver")]
     public async Task<IActionResult> ListarTipos()
     {
         await using var conn = AbrirConexion();
@@ -583,6 +593,7 @@ public class InventarioController : ControllerBase
     // ── Donantes (búsqueda rápida para autocomplete) ──────────────────────────
 
     [HttpGet("donantes")]
+    [RequierePermiso("inventario", "ver")]
     public async Task<IActionResult> BuscarDonantes([FromQuery] string? buscar = null)
     {
         await using var conn = AbrirConexion();
@@ -610,6 +621,7 @@ public class InventarioController : ControllerBase
     // ── Estadísticas ──────────────────────────────────────────────────────────
 
     [HttpGet("stats")]
+    [RequierePermiso("inventario", "ver")]
     public async Task<IActionResult> ObtenerStats([FromQuery] Guid? sedeId = null)
     {
         await using var conn = AbrirConexion();

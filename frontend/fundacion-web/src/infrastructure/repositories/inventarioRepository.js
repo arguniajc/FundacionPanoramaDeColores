@@ -23,4 +23,7 @@ export const inventarioRepository = {
 
   // Estadísticas (opcional: filtrar por sedeId)
   stats: (params) => apiClient.get('/api/inventario/stats', { params }),
+
+  // Ingresar artículo al inventario desde una donación en especie
+  ingresarDesdeDonacion: (datos) => apiClient.post('/api/inventario/desde-donacion', datos),
 };

@@ -99,6 +99,18 @@ public record StatsInventarioDto(
 
 public record DonanteResumenDto(Guid Id, string Nombre, string Tipo, string? Documento);
 
+public record IngresarDesdeDonacionDto(
+    Guid?   ItemId,
+    string  NombreItem,
+    string? Categoria,
+    string? UnidadMedida,
+    Guid?   SedeId,
+    decimal Cantidad,
+    Guid?   DonanteId,
+    string? NombreDonante,
+    Guid?   DonacionId
+);
+
 // ── Controller ────────────────────────────────────────────────────────────────
 
 [ApiController]
@@ -659,6 +671,101 @@ public class InventarioController : ControllerBase
         }
 
         return Ok(new StatsInventarioDto(totalItems, stockBajo, movimientosMes, sinStock));
+    }
+
+    // ── Ingresar desde donación ───────────────────────────────────────────────
+
+    [HttpPost("desde-donacion")]
+    [RequierePermiso("inventario", "crear")]
+    public async Task<IActionResult> IngresarDesdeDonacion([FromBody] IngresarDesdeDonacionDto dto)
+    {
+        if (dto.Cantidad <= 0) return BadRequest(new { mensaje = "La cantidad debe ser mayor a cero." });
+        var nombre = dto.NombreItem?.Trim();
+        if (string.IsNullOrEmpty(nombre)) return BadRequest(new { mensaje = "El nombre del artículo es obligatorio." });
+
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var tx = await conn.BeginTransactionAsync();
+        try
+        {
+            // Obtener id del tipo DONACION_RECIBIDA
+            int tipoId;
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = "SELECT id FROM cat_tipo_movimiento_inv WHERE codigo='DONACION_RECIBIDA' LIMIT 1";
+                var val = await cmd.ExecuteScalarAsync();
+                if (val is null) return BadRequest(new { mensaje = "Tipo de movimiento DONACION_RECIBIDA no configurado." });
+                tipoId = Convert.ToInt32(val);
+            }
+
+            Guid itemId;
+            decimal nuevoStock;
+
+            if (dto.ItemId.HasValue)
+            {
+                // Usar ítem existente
+                decimal stockActual;
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = tx;
+                    cmd.CommandText = "SELECT stock_actual FROM inventario_items WHERE id=@id AND activo=true FOR UPDATE";
+                    cmd.Parameters.AddWithValue("id", dto.ItemId.Value);
+                    var val = await cmd.ExecuteScalarAsync();
+                    if (val is null) return NotFound(new { mensaje = "Artículo no encontrado." });
+                    stockActual = Convert.ToDecimal(val);
+                }
+                nuevoStock = stockActual + dto.Cantidad;
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = tx;
+                    cmd.CommandText = "UPDATE inventario_items SET stock_actual=@s, fecha_modificacion=NOW() WHERE id=@id";
+                    cmd.Parameters.AddWithValue("s", nuevoStock);
+                    cmd.Parameters.AddWithValue("id", dto.ItemId.Value);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                itemId = dto.ItemId.Value;
+            }
+            else
+            {
+                // Crear nuevo ítem con stock inicial
+                nuevoStock = dto.Cantidad;
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = tx;
+                    cmd.CommandText = @"INSERT INTO inventario_items (sede_id,nombre,unidad_medida,categoria,stock_actual,stock_minimo)
+                        VALUES (@sid,@nom,@uni,@cat,@sa,0) RETURNING id";
+                    cmd.Parameters.AddWithValue("sid", (object?)dto.SedeId     ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("nom", nombre);
+                    cmd.Parameters.AddWithValue("uni", string.IsNullOrWhiteSpace(dto.UnidadMedida) ? "unidad" : dto.UnidadMedida.Trim());
+                    cmd.Parameters.AddWithValue("cat", string.IsNullOrWhiteSpace(dto.Categoria)    ? "Donaciones" : dto.Categoria.Trim());
+                    cmd.Parameters.AddWithValue("sa",  nuevoStock);
+                    itemId = (Guid)(await cmd.ExecuteScalarAsync())!;
+                }
+            }
+
+            // Registrar movimiento
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = @"INSERT INTO inventario_movimientos
+                    (item_id,tipo_movimiento_id,cantidad,stock_resultante,donante_id,donante,donacion_id,usuario_email)
+                    VALUES (@iid,@tid,@cant,@sr,@did,@don,@donid,@email)";
+                cmd.Parameters.AddWithValue("iid",   itemId);
+                cmd.Parameters.AddWithValue("tid",   tipoId);
+                cmd.Parameters.AddWithValue("cant",  dto.Cantidad);
+                cmd.Parameters.AddWithValue("sr",    nuevoStock);
+                cmd.Parameters.AddWithValue("did",   (object?)dto.DonanteId     ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("don",   (object?)dto.NombreDonante ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("donid", (object?)dto.DonacionId    ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("email", (object?)EmailUsuario      ?? DBNull.Value);
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            await tx.CommitAsync();
+            return Ok(new { itemId, nuevoStock });
+        }
+        catch { await tx.RollbackAsync(); throw; }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

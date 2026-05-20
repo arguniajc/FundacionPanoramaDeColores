@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Alert, Autocomplete, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
-  FormControl, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
-  ToggleButton, ToggleButtonGroup,
+  Alert, Autocomplete, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent,
+  DialogTitle, FormControl, FormControlLabel, Grid, InputAdornment, InputLabel, MenuItem,
+  Select, TextField, ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import Inventory2Icon  from '@mui/icons-material/Inventory2';
@@ -15,7 +15,7 @@ import { COLOR_DONACIONES, COLOR_ESPECIE, hoy } from './helpers';
 const VACIO = {
   tipo: 'dinero', monto: '', reciboNumero: '', nombreItem: '',
   cantidad: '', unidadMedida: '', sedeId: '', programaId: '',
-  descripcion: '', fechaDonacion: hoy(),
+  descripcion: '', fechaDonacion: hoy(), ingresarInventario: false,
 };
 
 export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada, sedes }) {
@@ -100,6 +100,21 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
         descripcion:  form.descripcion.trim() || null,
         fechaDonacion: form.fechaDonacion || hoy(),
       });
+      if (form.tipo === 'especie' && form.ingresarInventario) {
+        try {
+          await inventarioRepository.ingresarDesdeDonacion({
+            itemId:       itemSel?.id ?? null,
+            nombreItem:   itemSel?.nombre ?? form.nombreItem.trim(),
+            categoria:    'Donaciones',
+            unidadMedida: form.unidadMedida.trim() || 'unidad',
+            sedeId:       form.sedeId || null,
+            cantidad:     Number(form.cantidad),
+            donanteId:    donante?.id ?? null,
+            nombreDonante: donante?.nombre ?? null,
+            donacionId:   data.id,
+          });
+        } catch { /* silencioso — el inventario se puede agregar manualmente */ }
+      }
       onGuardada(data);
     } catch (e) {
       setError(e?.response?.data?.mensaje || 'Error al guardar.');
@@ -194,6 +209,20 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
               <TextField fullWidth size="small" label="Unidad de medida"
                 value={form.unidadMedida} onChange={e => set('unidadMedida', e.target.value)}
                 placeholder="kg, und, litros…" />
+            </Grid>
+            <Grid size={12}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={form.ingresarInventario}
+                    onChange={e => set('ingresarInventario', e.target.checked)}
+                    size="small"
+                    sx={{ color: COLOR_ESPECIE, '&.Mui-checked': { color: COLOR_ESPECIE } }}
+                  />
+                }
+                label="Ingresar al inventario automáticamente"
+                sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.85rem' } }}
+              />
             </Grid>
           </>}
 

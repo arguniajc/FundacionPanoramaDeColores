@@ -949,5 +949,7 @@ public static class DbMigrations
         await Migrar("CREATE INDEX IF NOT EXISTS idx_voluntarios_activo            ON voluntarios(activo)",                              "idx.voluntarios_activo");
         await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS pais          VARCHAR(100)", "voluntarios.pais");
         await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS departamento  VARCHAR(100)", "voluntarios.departamento");
+
+        await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS donacion_id UUID", "inventario_movimientos.donacion_id");
     }
 }

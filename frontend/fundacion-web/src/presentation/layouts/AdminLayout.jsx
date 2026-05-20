@@ -51,8 +51,7 @@ const MENU = [
     grupo: 'MÓDULOS FUNCIONALES',
     items: [
       { label: 'Beneficiarios',             icon: <ChildCareIcon />,         ruta: '/sede/beneficiarios', modulo: 'beneficiarios' },
-      { label: 'Donantes',                   icon: <VolunteerActivismIcon />, ruta: '/sede/donantes',      modulo: 'donantes'   },
-      { label: 'Donaciones',                 icon: <MonetizationOnIcon />,    ruta: '/sede/donaciones',    modulo: 'donaciones' },
+      { label: 'Donantes y Donaciones',       icon: <VolunteerActivismIcon />, ruta: '/sede/donaciones',    modulo: 'donaciones' },
       { label: 'Proyectos',                 icon: <FolderSpecialIcon />,     ruta: '/sede/proyectos',     modulo: 'programas' },
       { label: 'Inscripciones a proyectos', icon: <HowToRegIcon />,          ruta: '/sede/inscripciones', modulo: 'inscripciones' },
       { label: 'Sedes',                     icon: <LocationOnIcon />,        ruta: '/sede/sedes',         modulo: 'sedes' },

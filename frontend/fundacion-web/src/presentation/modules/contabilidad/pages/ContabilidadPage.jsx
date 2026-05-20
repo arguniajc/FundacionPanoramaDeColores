@@ -1,86 +1,37 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Grid, Card, CardContent, Tabs, Tab, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, MenuItem, CircularProgress, Tooltip, Divider, LinearProgress,
-  Select, FormControl, InputLabel, FormControlLabel, RadioGroup, Radio,
-  InputAdornment, Alert,
+  Chip, IconButton, CircularProgress, Tooltip, Divider, LinearProgress,
+  Select, FormControl, InputLabel, Alert,
 } from '@mui/material';
-import AddIcon            from '@mui/icons-material/Add';
-import SkeletonTabla     from '../../../../shared/components/SkeletonTabla';
-import EditIcon           from '@mui/icons-material/Edit';
-import DeleteIcon         from '@mui/icons-material/Delete';
-import TrendingUpIcon     from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon   from '@mui/icons-material/TrendingDown';
+import AddIcon                  from '@mui/icons-material/Add';
+import SkeletonTabla            from '../../../../shared/components/SkeletonTabla';
+import EditIcon                 from '@mui/icons-material/Edit';
+import DeleteIcon               from '@mui/icons-material/Delete';
+import TrendingUpIcon           from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon         from '@mui/icons-material/TrendingDown';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import BalanceIcon        from '@mui/icons-material/Balance';
-import PrintIcon          from '@mui/icons-material/Print';
-import SyncAltIcon        from '@mui/icons-material/SyncAlt';
-import FactCheckIcon      from '@mui/icons-material/FactCheck';
-import SavingsIcon        from '@mui/icons-material/Savings';
+import BalanceIcon              from '@mui/icons-material/Balance';
+import PrintIcon                from '@mui/icons-material/Print';
+import SyncAltIcon              from '@mui/icons-material/SyncAlt';
+import FactCheckIcon            from '@mui/icons-material/FactCheck';
+import SavingsIcon              from '@mui/icons-material/Savings';
+import MenuItem                 from '@mui/material/MenuItem';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip,
   ResponsiveContainer, Legend,
 } from 'recharts';
 import apiClient from '../../../../infrastructure/http/apiClient';
 import { useAuth } from '../../../../application/auth/AuthContext';
+import { fmt, fmtFecha, hoy, MESES, ANIOS, KpiCard, SectionHeader } from './components/helpers';
+import { DialogMovimiento }  from './components/DialogMovimiento';
+import { DialogCuenta }      from './components/DialogCuenta';
+import { DialogPresupuesto } from './components/DialogPresupuesto';
+import { DialogArqueo }      from './components/DialogArqueo';
+import { DialogReposicion }  from './components/DialogReposicion';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const fmt = (v) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v ?? 0);
-
-const fmtFecha = (d) =>
-  d ? new Date(d + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-
-const hoy = () => new Date().toISOString().split('T')[0];
-
-const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const ANIOS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
-
-// ── Subcomponentes locales ────────────────────────────────────────────────────
-function KpiCard({ label, value, icon, color }) {
-  return (
-    <Card sx={{
-      borderLeft: `4px solid ${color}`,
-      height: '100%',
-      transition: 'box-shadow 0.2s',
-      '&:hover': { boxShadow: 4 },
-    }}>
-      <CardContent sx={{
-        display: 'flex', alignItems: 'center', gap: 2,
-        p: '20px !important',
-      }}>
-        <Box sx={{
-          color: 'white', fontSize: 22, bgcolor: color,
-          borderRadius: 2, p: 1.25, display: 'flex',
-          alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>{icon}</Box>
-        <Box>
-          <Typography variant="caption" color="text.secondary"
-            sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
-            {label}
-          </Typography>
-          <Typography variant="h6" fontWeight="bold" lineHeight={1.2} sx={{ mt: 0.25 }}>
-            {value}
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
-
-function SectionHeader({ title }) {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-      <Box sx={{ width: 4, height: 20, bgcolor: '#4E1B95', borderRadius: 1 }} />
-      <Typography variant="subtitle1" fontWeight="bold">{title}</Typography>
-    </Box>
-  );
-}
-
-// ── Página principal ──────────────────────────────────────────────────────────
+// â”€â”€ PÃ¡gina principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ContabilidadPage() {
   const { puedo } = useAuth();
   const puedeCrear  = puedo('contabilidad', 'crear');
@@ -116,7 +67,7 @@ export default function ContabilidadPage() {
   const [dlgPres,   setDlgPres]   = useState({ open: false, modo: 'crear', data: null });
   const [guardando, setGuardando] = useState(false);
 
-  // ── Estado Tab Caja Menor ───────────────────────────────────────────────────
+  // â”€â”€ Estado Tab Caja Menor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [cajaCuentaId,  setCajaCuentaId]  = useState('');
   const [cajaMes,       setCajaMes]       = useState(now.getMonth() + 1);
   const [cajaAnio,      setCajaAnio]      = useState(now.getFullYear());
@@ -126,7 +77,7 @@ export default function ContabilidadPage() {
   const [dlgArqueo,     setDlgArqueo]     = useState({ open: false });
   const [dlgReposicion, setDlgReposicion] = useState({ open: false });
 
-  // ── Carga inicial ───────────────────────────────────────────────────────────
+  // â”€â”€ Carga inicial â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const init = async () => {
       setCargando(true);
@@ -149,7 +100,7 @@ export default function ContabilidadPage() {
         );
         setProgramas(progs);
       } catch {
-        setError('No se pudo cargar el módulo de contabilidad.');
+        setError('No se pudo cargar el mÃ³dulo de contabilidad.');
       } finally {
         setCargando(false);
       }
@@ -158,7 +109,7 @@ export default function ContabilidadPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Recargas por tab ────────────────────────────────────────────────────────
+  // â”€â”€ Recargas por tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const cargarMovimientos = useCallback(async () => {
     const params = {};
     if (filtroTipo) params.tipo = filtroTipo;
@@ -220,7 +171,7 @@ export default function ContabilidadPage() {
     setReporte(data);
   };
 
-  // ── Movimientos CRUD ────────────────────────────────────────────────────────
+  // â”€â”€ Movimientos CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const guardarMovimiento = async (form) => {
     setGuardando(true);
     try {
@@ -235,13 +186,13 @@ export default function ContabilidadPage() {
   };
 
   const eliminarMovimiento = async (id) => {
-    if (!confirm('¿Eliminar este movimiento? El saldo de la cuenta se ajustará automáticamente.')) return;
+    if (!confirm('Â¿Eliminar este movimiento? El saldo de la cuenta se ajustarÃ¡ automÃ¡ticamente.')) return;
     await apiClient.delete(`/api/contabilidad/movimientos/${id}`);
     await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
     if (tab === 5) await cargarCajaMenor();
   };
 
-  // ── Caja Menor CRUD ──────────────────────────────────────────────────────────
+  // â”€â”€ Caja Menor CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const guardarArqueo = async (form) => {
     setGuardando(true);
     try {
@@ -254,7 +205,7 @@ export default function ContabilidadPage() {
   };
 
   const eliminarArqueo = async (id) => {
-    if (!confirm('¿Eliminar este arqueo?')) return;
+    if (!confirm('Â¿Eliminar este arqueo?')) return;
     await apiClient.delete(`/api/contabilidad/caja-menor/arqueos/${id}`);
     await cargarCajaMenor();
   };
@@ -270,7 +221,7 @@ export default function ContabilidadPage() {
     }
   };
 
-  // ── Cuentas CRUD ────────────────────────────────────────────────────────────
+  // â”€â”€ Cuentas CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const guardarCuenta = async (form) => {
     setGuardando(true);
     try {
@@ -284,7 +235,7 @@ export default function ContabilidadPage() {
   };
 
   const eliminarCuenta = async (id) => {
-    if (!confirm('¿Eliminar esta cuenta? Solo es posible si no tiene movimientos registrados.')) return;
+    if (!confirm('Â¿Eliminar esta cuenta? Solo es posible si no tiene movimientos registrados.')) return;
     try {
       await apiClient.delete(`/api/contabilidad/cuentas/${id}`);
       await Promise.all([cargarCuentas(), cargarStats()]);
@@ -293,7 +244,7 @@ export default function ContabilidadPage() {
     }
   };
 
-  // ── Presupuesto CRUD ────────────────────────────────────────────────────────
+  // â”€â”€ Presupuesto CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const guardarPresupuesto = async (form) => {
     setGuardando(true);
     try {
@@ -307,12 +258,12 @@ export default function ContabilidadPage() {
   };
 
   const eliminarPresupuesto = async (id) => {
-    if (!confirm('¿Eliminar esta línea presupuestal?')) return;
+    if (!confirm('Â¿Eliminar esta lÃ­nea presupuestal?')) return;
     await apiClient.delete(`/api/contabilidad/presupuesto/${id}`);
     await cargarPresupuesto();
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (cargando) return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <SkeletonTabla columnas={6} filas={10} />
@@ -335,7 +286,7 @@ export default function ContabilidadPage() {
           <Box>
             <Typography variant="h5" fontWeight="bold">Contabilidad</Typography>
             <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-              Registra ingresos y egresos con categorías PUC. Los datos quedan organizados para entregar al contador.
+              Registra ingresos y egresos con categorÃ­as PUC. Los datos quedan organizados para entregar al contador.
             </Typography>
           </Box>
         </Box>
@@ -365,7 +316,7 @@ export default function ContabilidadPage() {
         </Grid>
       </Grid>
 
-      {/* Acciones rápidas */}
+      {/* Acciones rÃ¡pidas */}
       {puedeCrear && (
         <Paper variant="outlined" sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', p: 2, borderRadius: 2, bgcolor: 'grey.50' }}>
           <Button variant="contained" color="success" startIcon={<AddIcon />}
@@ -389,14 +340,14 @@ export default function ContabilidadPage() {
         <Tab label="Caja Menor" icon={<SavingsIcon fontSize="small" />} iconPosition="start" />
       </Tabs>
 
-      {/* ── Tab 0: Resumen ───────────────────────────────────────────────────── */}
+      {/* â”€â”€ Tab 0: Resumen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {tab === 0 && (
         <Grid container spacing={3} sx={{ pt: 1 }}>
           {(stats?.ultimosDosMeses ?? []).length > 0 && (
             <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Typography variant="subtitle2" fontWeight="bold" mb={2}>Últimos 2 meses</Typography>
+                  <Typography variant="subtitle2" fontWeight="bold" mb={2}>Ãšltimos 2 meses</Typography>
                   <ResponsiveContainer width="100%" height={190}>
                     <BarChart data={stats.ultimosDosMeses} margin={{ top: 0, right: 8, left: 8, bottom: 0 }}>
                       <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
@@ -418,7 +369,7 @@ export default function ContabilidadPage() {
                 <Typography variant="subtitle2" fontWeight="bold" mb={1.5}>Saldos por cuenta</Typography>
                 {cuentas.length === 0
                   ? <Typography variant="body2" color="text.secondary">
-                      No hay cuentas. Agrégalas en la pestaña "Cuentas".
+                      No hay cuentas. AgrÃ©galas en la pestaÃ±a "Cuentas".
                     </Typography>
                   : cuentas.map(c => (
                     <Box key={c.id} sx={{ display: 'flex', justifyContent: 'space-between', py: .75,
@@ -426,7 +377,7 @@ export default function ContabilidadPage() {
                       <Box>
                         <Typography variant="body2">{c.nombre}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {c.tipo === 'cuenta_bancaria' ? `${c.banco ?? ''} · ${c.numeroCuenta ?? ''}` : c.tipo === 'caja_menor' ? 'Caja menor' : 'Caja efectivo'}
+                          {c.tipo === 'cuenta_bancaria' ? `${c.banco ?? ''} Â· ${c.numeroCuenta ?? ''}` : c.tipo === 'caja_menor' ? 'Caja menor' : 'Caja efectivo'}
                         </Typography>
                       </Box>
                       <Typography variant="body2" fontWeight="bold"
@@ -444,7 +395,7 @@ export default function ContabilidadPage() {
             <Card>
               <CardContent>
                 <Typography variant="subtitle2" fontWeight="bold" mb={1.5}>
-                  Últimos movimientos — {MESES[now.getMonth()]} {now.getFullYear()}
+                  Ãšltimos movimientos â€” {MESES[now.getMonth()]} {now.getFullYear()}
                 </Typography>
                 <TableContainer>
                   <Table size="small">
@@ -453,7 +404,7 @@ export default function ContabilidadPage() {
                         <TableCell>Fecha</TableCell>
                         <TableCell>Tipo</TableCell>
                         <TableCell>Concepto</TableCell>
-                        <TableCell>Categoría PUC</TableCell>
+                        <TableCell>CategorÃ­a PUC</TableCell>
                         <TableCell>Cuenta</TableCell>
                         <TableCell align="right">Monto</TableCell>
                       </TableRow>
@@ -476,7 +427,7 @@ export default function ContabilidadPage() {
                           <TableCell align="right">
                             <Typography fontWeight="bold"
                               color={m.tipo === 'ingreso' ? 'success.main' : 'error.main'}>
-                              {m.tipo === 'ingreso' ? '+' : '−'}{fmt(m.monto)}
+                              {m.tipo === 'ingreso' ? '+' : 'âˆ’'}{fmt(m.monto)}
                             </Typography>
                           </TableCell>
                         </TableRow>
@@ -497,7 +448,7 @@ export default function ContabilidadPage() {
         </Grid>
       )}
 
-      {/* ── Tab 1: Movimientos ───────────────────────────────────────────────── */}
+      {/* â”€â”€ Tab 1: Movimientos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {tab === 1 && (
         <Box>
           <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
@@ -518,8 +469,8 @@ export default function ContabilidadPage() {
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 100 }}>
-              <InputLabel>Año</InputLabel>
-              <Select value={filtroAnio} label="Año" onChange={e => setFiltroAnio(e.target.value)}>
+              <InputLabel>AÃ±o</InputLabel>
+              <Select value={filtroAnio} label="AÃ±o" onChange={e => setFiltroAnio(e.target.value)}>
                 {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
               </Select>
             </FormControl>
@@ -534,7 +485,7 @@ export default function ContabilidadPage() {
                   <TableCell>Fecha</TableCell>
                   <TableCell>Tipo</TableCell>
                   <TableCell>Concepto</TableCell>
-                  <TableCell>Categoría PUC</TableCell>
+                  <TableCell>CategorÃ­a PUC</TableCell>
                   <TableCell>Cuenta</TableCell>
                   <TableCell>Programa</TableCell>
                   <TableCell>Soporte</TableCell>
@@ -562,12 +513,12 @@ export default function ContabilidadPage() {
                       </Tooltip>
                     </TableCell>
                     <TableCell>{m.cuentaNombre}</TableCell>
-                    <TableCell>{m.programaNombre ?? '—'}</TableCell>
-                    <TableCell>{m.numeroSoporte ?? '—'}</TableCell>
+                    <TableCell>{m.programaNombre ?? 'â€”'}</TableCell>
+                    <TableCell>{m.numeroSoporte ?? 'â€”'}</TableCell>
                     <TableCell align="right">
                       <Typography fontWeight="bold"
                         color={m.tipo === 'ingreso' ? 'success.main' : 'error.main'}>
-                        {m.tipo === 'ingreso' ? '+' : '−'}{fmt(m.monto)}
+                        {m.tipo === 'ingreso' ? '+' : 'âˆ’'}{fmt(m.monto)}
                       </Typography>
                     </TableCell>
                     {puedeEditar && (
@@ -596,7 +547,7 @@ export default function ContabilidadPage() {
         </Box>
       )}
 
-      {/* ── Tab 2: Cuentas ───────────────────────────────────────────────────── */}
+      {/* â”€â”€ Tab 2: Cuentas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {tab === 2 && (
         <Box>
           {puedeCrear && (
@@ -665,14 +616,14 @@ export default function ContabilidadPage() {
         </Box>
       )}
 
-      {/* ── Tab 3: Presupuesto ───────────────────────────────────────────────── */}
+      {/* â”€â”€ Tab 3: Presupuesto â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {tab === 3 && (
         <Box>
           <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <FormControl size="small" sx={{ minWidth: 100 }}>
-              <InputLabel>Año</InputLabel>
-              <Select value={presAnio} label="Año" onChange={e => setPresAnio(e.target.value)}>
+              <InputLabel>AÃ±o</InputLabel>
+              <Select value={presAnio} label="AÃ±o" onChange={e => setPresAnio(e.target.value)}>
                 {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
               </Select>
             </FormControl>
@@ -680,7 +631,7 @@ export default function ContabilidadPage() {
             {puedeCrear && (
               <Button variant="contained" startIcon={<AddIcon />}
                 onClick={() => setDlgPres({ open: true, modo: 'crear', data: null })}>
-                Agregar línea
+                Agregar lÃ­nea
               </Button>
             )}
             </Box>
@@ -691,12 +642,12 @@ export default function ContabilidadPage() {
               <TableHead>
                 <TableRow sx={{ bgcolor: 'grey.50' }}>
                   <TableCell>PUC</TableCell>
-                  <TableCell>Categoría</TableCell>
+                  <TableCell>CategorÃ­a</TableCell>
                   <TableCell>Programa</TableCell>
                   <TableCell align="right">Presupuestado</TableCell>
                   <TableCell align="right">Ejecutado</TableCell>
                   <TableCell align="right">Disponible</TableCell>
-                  <TableCell>% Ejecución</TableCell>
+                  <TableCell>% EjecuciÃ³n</TableCell>
                   {puedeEditar && <TableCell />}
                 </TableRow>
               </TableHead>
@@ -756,7 +707,7 @@ export default function ContabilidadPage() {
         </Box>
       )}
 
-      {/* ── Tab 4: Reporte Contador ──────────────────────────────────────────── */}
+      {/* â”€â”€ Tab 4: Reporte Contador â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {tab === 4 && (
         <Box>
           <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
@@ -768,8 +719,8 @@ export default function ContabilidadPage() {
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 100 }}>
-              <InputLabel>Año</InputLabel>
-              <Select value={repAnio} label="Año" onChange={e => setRepAnio(e.target.value)}>
+              <InputLabel>AÃ±o</InputLabel>
+              <Select value={repAnio} label="AÃ±o" onChange={e => setRepAnio(e.target.value)}>
                 {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
               </Select>
             </FormControl>
@@ -784,7 +735,7 @@ export default function ContabilidadPage() {
 
           {!reporte && (
             <Typography color="text.secondary" textAlign="center" sx={{ py: 6 }}>
-              Selecciona el mes y año, luego haz clic en "Generar Reporte"
+              Selecciona el mes y aÃ±o, luego haz clic en "Generar Reporte"
             </Typography>
           )}
 
@@ -794,7 +745,7 @@ export default function ContabilidadPage() {
               <Card sx={{ mb: 2 }}>
                 <CardContent>
                   <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    Reporte Contable — {reporte.periodo}
+                    Reporte Contable â€” {reporte.periodo}
                   </Typography>
                   <Grid container spacing={2}>
                     {[
@@ -917,11 +868,11 @@ export default function ContabilidadPage() {
                             </TableCell>
                             <TableCell>{m.concepto}</TableCell>
                             <TableCell><Typography variant="caption">{m.codigoPuc}</Typography></TableCell>
-                            <TableCell>{m.terceroNombre ?? '—'}</TableCell>
-                            <TableCell>{m.numeroSoporte ?? '—'}</TableCell>
+                            <TableCell>{m.terceroNombre ?? 'â€”'}</TableCell>
+                            <TableCell>{m.numeroSoporte ?? 'â€”'}</TableCell>
                             <TableCell align="right" sx={{ fontWeight: 'bold',
                               color: m.tipo === 'ingreso' ? 'success.main' : 'error.main' }}>
-                              {m.tipo === 'ingreso' ? '+' : '−'}{fmt(m.monto)}
+                              {m.tipo === 'ingreso' ? '+' : 'âˆ’'}{fmt(m.monto)}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -944,7 +895,7 @@ export default function ContabilidadPage() {
         </Box>
       )}
 
-      {/* ── Tab 5: Caja Menor ───────────────────────────────────────────────── */}
+      {/* â”€â”€ Tab 5: Caja Menor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {tab === 5 && (
         <Box>
           {/* Selector de cuenta + filtros */}
@@ -962,13 +913,13 @@ export default function ContabilidadPage() {
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Mes</InputLabel>
               <Select value={cajaMes} label="Mes" onChange={e => setCajaMes(e.target.value)}>
-                <MenuItem value="">Todo el año</MenuItem>
+                <MenuItem value="">Todo el aÃ±o</MenuItem>
                 {MESES.map((m, i) => <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>)}
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 100 }}>
-              <InputLabel>Año</InputLabel>
-              <Select value={cajaAnio} label="Año" onChange={e => setCajaAnio(e.target.value)}>
+              <InputLabel>AÃ±o</InputLabel>
+              <Select value={cajaAnio} label="AÃ±o" onChange={e => setCajaAnio(e.target.value)}>
                 {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
               </Select>
             </FormControl>
@@ -978,7 +929,7 @@ export default function ContabilidadPage() {
 
           {!cajaCuentaId
             ? <Alert severity="info">
-                Crea una cuenta de tipo <strong>Caja Menor</strong> en la pestaña "Cuentas" para usar este módulo.
+                Crea una cuenta de tipo <strong>Caja Menor</strong> en la pestaÃ±a "Cuentas" para usar este mÃ³dulo.
               </Alert>
             : (() => {
                 const cuenta = cuentas.find(c => c.id === cajaCuentaId);
@@ -1003,7 +954,7 @@ export default function ContabilidadPage() {
                       </Grid>
                       <Grid item xs={12} sm={6} md={3}>
                         <KpiCard
-                          label="Último arqueo"
+                          label="Ãšltimo arqueo"
                           value={ultimoArqueo ? fmtFecha(ultimoArqueo.fecha) : 'Sin arqueos'}
                           icon={<BalanceIcon fontSize="inherit" />}
                           color={ultimoArqueo
@@ -1037,7 +988,7 @@ export default function ContabilidadPage() {
 
                     {/* Libro auxiliar */}
                     <Divider sx={{ mb: 2 }} />
-                    <SectionHeader title={`Libro Auxiliar — ${cuenta?.nombre}`} />
+                    <SectionHeader title={`Libro Auxiliar â€” ${cuenta?.nombre}`} />
                     {cargandoCaja
                       ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={28} /></Box>
                       : (
@@ -1048,7 +999,7 @@ export default function ContabilidadPage() {
                                 <TableCell>Fecha</TableCell>
                                 <TableCell>Tipo</TableCell>
                                 <TableCell>Concepto</TableCell>
-                                <TableCell>Categoría PUC</TableCell>
+                                <TableCell>CategorÃ­a PUC</TableCell>
                                 <TableCell>Programa</TableCell>
                                 <TableCell>Tercero / Soporte</TableCell>
                                 <TableCell align="right" sx={{ color: 'success.main' }}>Ingreso</TableCell>
@@ -1070,7 +1021,7 @@ export default function ContabilidadPage() {
                                       <Typography variant="caption">{row.codigoPuc}</Typography>
                                     </Tooltip>
                                   </TableCell>
-                                  <TableCell>{row.programaNombre ?? '—'}</TableCell>
+                                  <TableCell>{row.programaNombre ?? 'â€”'}</TableCell>
                                   <TableCell>
                                     {row.terceroNombre && (
                                       <Typography variant="body2">{row.terceroNombre}</Typography>
@@ -1083,12 +1034,12 @@ export default function ContabilidadPage() {
                                   </TableCell>
                                   <TableCell align="right">
                                     <Typography sx={{ color: 'success.main', fontWeight: row.ingreso > 0 ? 'bold' : 'normal' }}>
-                                      {row.ingreso > 0 ? fmt(row.ingreso) : '—'}
+                                      {row.ingreso > 0 ? fmt(row.ingreso) : 'â€”'}
                                     </Typography>
                                   </TableCell>
                                   <TableCell align="right">
                                     <Typography sx={{ color: 'error.main', fontWeight: row.egreso > 0 ? 'bold' : 'normal' }}>
-                                      {row.egreso > 0 ? fmt(row.egreso) : '—'}
+                                      {row.egreso > 0 ? fmt(row.egreso) : 'â€”'}
                                     </Typography>
                                   </TableCell>
                                   <TableCell align="right">
@@ -1103,7 +1054,7 @@ export default function ContabilidadPage() {
                                 <TableRow>
                                   <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                                     <Typography color="text.secondary">
-                                      No hay movimientos en este período
+                                      No hay movimientos en este perÃ­odo
                                     </Typography>
                                   </TableCell>
                                 </TableRow>
@@ -1123,10 +1074,10 @@ export default function ContabilidadPage() {
                           <TableRow sx={{ bgcolor: 'grey.50' }}>
                             <TableCell>Fecha</TableCell>
                             <TableCell align="right">Saldo Sistema</TableCell>
-                            <TableCell align="right">Conteo Físico</TableCell>
+                            <TableCell align="right">Conteo FÃ­sico</TableCell>
                             <TableCell align="right">Diferencia</TableCell>
                             <TableCell>Responsable</TableCell>
-                            <TableCell>Observación</TableCell>
+                            <TableCell>ObservaciÃ³n</TableCell>
                             {puedeEditar && <TableCell />}
                           </TableRow>
                         </TableHead>
@@ -1140,14 +1091,14 @@ export default function ContabilidadPage() {
                                 <Typography fontWeight="bold"
                                   color={a.diferencia === 0 ? 'success.main' : a.diferencia > 0 ? 'primary.main' : 'error.main'}>
                                   {a.diferencia > 0 ? '+' : ''}{fmt(a.diferencia)}
-                                  {a.diferencia === 0 && ' ✓'}
+                                  {a.diferencia === 0 && ' âœ“'}
                                   {a.diferencia > 0 && ' (Sobrante)'}
                                   {a.diferencia < 0 && ' (Faltante)'}
                                 </Typography>
                               </TableCell>
-                              <TableCell>{a.responsable ?? '—'}</TableCell>
+                              <TableCell>{a.responsable ?? 'â€”'}</TableCell>
                               <TableCell sx={{ maxWidth: 200 }}>
-                                <Typography variant="body2" noWrap>{a.observacion ?? '—'}</Typography>
+                                <Typography variant="body2" noWrap>{a.observacion ?? 'â€”'}</Typography>
                               </TableCell>
                               {puedeEditar && (
                                 <TableCell>
@@ -1177,7 +1128,7 @@ export default function ContabilidadPage() {
         </Box>
       )}
 
-      {/* ── Dialogs ──────────────────────────────────────────────────────────── */}
+      {/* Dialogs */}
       <DialogMovimiento
         open={dlgMov.open}
         modo={dlgMov.modo}
@@ -1226,443 +1177,5 @@ export default function ContabilidadPage() {
         onGuardar={guardarPresupuesto}
       />
     </Box>
-  );
-}
-
-// ── Dialog Movimiento ─────────────────────────────────────────────────────────
-function DialogMovimiento({ open, modo, data, tipoPreset, cuentaPreset, cuentas, categorias, programas, guardando, onClose, onGuardar }) {
-  const EMPTY = {
-    tipo: tipoPreset ?? 'ingreso',
-    fecha: hoy(),
-    concepto: '',
-    monto: '',
-    cuentaId: '',
-    categoriaId: '',
-    programaId: '',
-    terceroNombre: '',
-    terceroDocumento: '',
-    numeroSoporte: '',
-    descripcion: '',
-  };
-  const [form, setForm] = useState(EMPTY);
-
-  useEffect(() => {
-    if (!open) return;
-    if (modo === 'editar' && data) {
-      setForm({
-        tipo: data.tipo,
-        fecha: data.fecha,
-        concepto: data.concepto,
-        monto: String(data.monto),
-        cuentaId: data.cuentaId,
-        categoriaId: String(data.categoriaId),
-        programaId: data.programaId ?? '',
-        terceroNombre: data.terceroNombre ?? '',
-        terceroDocumento: data.terceroDocumento ?? '',
-        numeroSoporte: data.numeroSoporte ?? '',
-        descripcion: data.descripcion ?? '',
-      });
-    } else {
-      setForm({ ...EMPTY, tipo: tipoPreset ?? 'ingreso', cuentaId: cuentaPreset ?? cuentas[0]?.id ?? '' });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-  const setTipo = e => setForm(f => ({ ...f, tipo: e.target.value, categoriaId: '' }));
-
-  const catsFiltradas = categorias.filter(c => c.tipo === form.tipo);
-  const canSave = form.fecha && form.concepto.trim() && form.monto && form.cuentaId && form.categoriaId;
-
-  const handleSubmit = () => onGuardar({
-    tipo: form.tipo,
-    fecha: form.fecha,
-    concepto: form.concepto.trim(),
-    monto: parseFloat(form.monto),
-    cuentaId: form.cuentaId,
-    categoriaId: parseInt(form.categoriaId),
-    programaId: form.programaId || null,
-    terceroNombre: form.terceroNombre || null,
-    terceroDocumento: form.terceroDocumento || null,
-    numeroSoporte: form.numeroSoporte || null,
-    descripcion: form.descripcion || null,
-  });
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        {modo === 'crear'
-          ? (form.tipo === 'ingreso' ? 'Registrar Ingreso' : 'Registrar Egreso')
-          : 'Editar Movimiento'}
-      </DialogTitle>
-      <DialogContent sx={{ pt: 2 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <RadioGroup row value={form.tipo} onChange={setTipo}>
-              <FormControlLabel value="ingreso" control={<Radio color="success" />} label="Ingreso" />
-              <FormControlLabel value="egreso"  control={<Radio color="error"   />} label="Egreso"  />
-            </RadioGroup>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Fecha *" type="date" size="small"
-              value={form.fecha} onChange={set('fecha')} InputLabelProps={{ shrink: true }} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Monto *" type="number" size="small"
-              value={form.monto} onChange={set('monto')}
-              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField fullWidth label="Concepto *" size="small"
-              value={form.concepto} onChange={set('concepto')} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Cuenta *</InputLabel>
-              <Select value={form.cuentaId} label="Cuenta *" onChange={set('cuentaId')}>
-                {cuentas.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Categoría PUC *</InputLabel>
-              <Select value={form.categoriaId} label="Categoría PUC *" onChange={set('categoriaId')}>
-                {catsFiltradas.map(c => (
-                  <MenuItem key={c.id} value={String(c.id)}>{c.codigoPuc} — {c.nombre}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Programa (opcional)</InputLabel>
-              <Select value={form.programaId} label="Programa (opcional)" onChange={set('programaId')}>
-                <MenuItem value="">Sin programa</MenuItem>
-                {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Nombre del tercero" size="small"
-              value={form.terceroNombre} onChange={set('terceroNombre')} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Documento del tercero" size="small"
-              value={form.terceroDocumento} onChange={set('terceroDocumento')} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="N° soporte / factura" size="small"
-              value={form.numeroSoporte} onChange={set('numeroSoporte')} />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField fullWidth label="Descripción adicional" size="small" multiline rows={2}
-              value={form.descripcion} onChange={set('descripcion')} />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={!canSave || guardando}
-          color={form.tipo === 'ingreso' ? 'success' : 'error'}>
-          {guardando ? 'Guardando…' : (modo === 'crear' ? 'Registrar' : 'Guardar')}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-// ── Dialog Cuenta ─────────────────────────────────────────────────────────────
-function DialogCuenta({ open, modo, data, guardando, onClose, onGuardar }) {
-  const [form, setForm] = useState({ nombre: '', tipo: 'caja', banco: '', numeroCuenta: '', saldoInicial: '0' });
-
-  useEffect(() => {
-    if (!open) return;
-    if (modo === 'editar' && data) {
-      setForm({
-        nombre: data.nombre,
-        tipo: data.tipo,
-        banco: data.banco ?? '',
-        numeroCuenta: data.numeroCuenta ?? '',
-        saldoInicial: String(data.saldoInicial ?? 0),
-      });
-    } else {
-      setForm({ nombre: '', tipo: 'caja', banco: '', numeroCuenta: '', saldoInicial: '0' });
-    }
-  }, [open, modo, data]);
-
-  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{modo === 'crear' ? 'Nueva Cuenta' : 'Editar Cuenta'}</DialogTitle>
-      <DialogContent sx={{ pt: 2 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <TextField fullWidth label="Nombre *" size="small" value={form.nombre} onChange={set('nombre')} />
-          </Grid>
-          <Grid item xs={12}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Tipo *</InputLabel>
-              <Select value={form.tipo} label="Tipo *" onChange={set('tipo')}>
-                <MenuItem value="caja_menor">Caja Menor</MenuItem>
-                <MenuItem value="caja">Caja efectivo (general)</MenuItem>
-                <MenuItem value="cuenta_bancaria">Cuenta bancaria</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          {form.tipo === 'cuenta_bancaria' && (
-            <>
-              <Grid item xs={12}>
-                <TextField fullWidth label="Banco" size="small" value={form.banco} onChange={set('banco')} />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField fullWidth label="Número de cuenta" size="small"
-                  value={form.numeroCuenta} onChange={set('numeroCuenta')} />
-              </Grid>
-            </>
-          )}
-          {modo === 'crear' && (
-            <Grid item xs={12}>
-              <TextField fullWidth label="Saldo inicial" type="number" size="small"
-                value={form.saldoInicial} onChange={set('saldoInicial')}
-                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
-            </Grid>
-          )}
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" disabled={!form.nombre.trim() || guardando}
-          onClick={() => onGuardar({
-            nombre: form.nombre.trim(),
-            tipo: form.tipo,
-            banco: form.banco || null,
-            numeroCuenta: form.numeroCuenta || null,
-            saldoInicial: parseFloat(form.saldoInicial) || 0,
-          })}>
-          {guardando ? 'Guardando…' : (modo === 'crear' ? 'Crear' : 'Guardar')}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-// ── Dialog Presupuesto ────────────────────────────────────────────────────────
-function DialogPresupuesto({ open, modo, data, categorias, programas, presAnio, guardando, onClose, onGuardar }) {
-  const [form, setForm] = useState({ anio: presAnio, categoriaId: '', programaId: '', montoPresupuestado: '' });
-
-  useEffect(() => {
-    if (!open) return;
-    if (modo === 'editar' && data) {
-      setForm({
-        anio: data.anio,
-        categoriaId: String(data.categoriaId),
-        programaId: data.programaId ?? '',
-        montoPresupuestado: String(data.montoPresupuestado),
-      });
-    } else {
-      setForm({ anio: presAnio, categoriaId: '', programaId: '', montoPresupuestado: '' });
-    }
-  }, [open, modo, data, presAnio]);
-
-  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{modo === 'crear' ? 'Agregar línea presupuestal' : 'Editar presupuesto'}</DialogTitle>
-      <DialogContent sx={{ pt: 2 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Categoría PUC *</InputLabel>
-              <Select value={form.categoriaId} label="Categoría PUC *" onChange={set('categoriaId')}>
-                {categorias.map(c => (
-                  <MenuItem key={c.id} value={String(c.id)}>
-                    {c.codigoPuc} — {c.nombre} ({c.tipo})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Programa (opcional)</InputLabel>
-              <Select value={form.programaId} label="Programa (opcional)" onChange={set('programaId')}>
-                <MenuItem value="">General (sin programa)</MenuItem>
-                {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12}>
-            <TextField fullWidth label="Monto presupuestado *" type="number" size="small"
-              value={form.montoPresupuestado} onChange={set('montoPresupuestado')}
-              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained"
-          disabled={!form.categoriaId || !form.montoPresupuestado || guardando}
-          onClick={() => onGuardar({
-            anio: parseInt(form.anio),
-            categoriaId: parseInt(form.categoriaId),
-            programaId: form.programaId || null,
-            montoPresupuestado: parseFloat(form.montoPresupuestado),
-          })}>
-          {guardando ? 'Guardando…' : (modo === 'crear' ? 'Agregar' : 'Guardar')}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-// ── Dialog Arqueo de Caja ──────────────────────────────────────────────────────
-function DialogArqueo({ open, cuenta, guardando, onClose, onGuardar }) {
-  const [form, setForm] = useState({ fecha: hoy(), saldoFisico: '', observacion: '', responsable: '' });
-
-  useEffect(() => {
-    if (open) setForm({ fecha: hoy(), saldoFisico: '', observacion: '', responsable: '' });
-  }, [open]);
-
-  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-  const saldoFisicoNum = parseFloat(form.saldoFisico) || 0;
-  const diferencia     = form.saldoFisico !== '' ? saldoFisicoNum - (cuenta?.saldoActual ?? 0) : null;
-  const canSave = form.fecha && form.saldoFisico !== '';
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Arqueo de Caja — {cuenta?.nombre}</DialogTitle>
-      <DialogContent sx={{ pt: 2 }}>
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Saldo registrado en sistema: <strong>
-            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(cuenta?.saldoActual ?? 0)}
-          </strong>
-        </Alert>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Fecha del arqueo *" type="date" size="small"
-              value={form.fecha} onChange={set('fecha')} InputLabelProps={{ shrink: true }} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Conteo físico (efectivo) *" type="number" size="small"
-              value={form.saldoFisico} onChange={set('saldoFisico')}
-              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
-              helperText="Cuente el efectivo físico en caja" />
-          </Grid>
-          {diferencia !== null && (
-            <Grid item xs={12}>
-              <Alert severity={diferencia === 0 ? 'success' : diferencia > 0 ? 'warning' : 'error'}>
-                <strong>Diferencia: {diferencia > 0 ? '+' : ''}
-                  {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(diferencia)}
-                </strong>
-                {diferencia === 0 && ' — Cuadre exacto ✓'}
-                {diferencia > 0 && ' — Sobrante de caja'}
-                {diferencia < 0 && ' — Faltante de caja'}
-              </Alert>
-            </Grid>
-          )}
-          <Grid item xs={12}>
-            <TextField fullWidth label="Responsable del arqueo" size="small"
-              value={form.responsable} onChange={set('responsable')} />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField fullWidth label="Observaciones" size="small" multiline rows={2}
-              value={form.observacion} onChange={set('observacion')} />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" disabled={!canSave || guardando}
-          onClick={() => onGuardar({
-            cuentaId:    cuenta?.id,
-            fecha:       form.fecha,
-            saldoFisico: saldoFisicoNum,
-            observacion: form.observacion || null,
-            responsable: form.responsable || null,
-          })}>
-          {guardando ? 'Guardando…' : 'Registrar Arqueo'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-// ── Dialog Reposición de Caja ──────────────────────────────────────────────────
-function DialogReposicion({ open, cuentaCajaId, cuentas, guardando, onClose, onGuardar }) {
-  const fmt2 = v => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v ?? 0);
-  const bancos = cuentas.filter(c => c.tipo === 'cuenta_bancaria');
-  const cajaNombre = cuentas.find(c => c.id === cuentaCajaId)?.nombre ?? 'Caja';
-
-  const [form, setForm] = useState({ cuentaOrigenId: '', fecha: hoy(), monto: '', numeroSoporte: '', observacion: '' });
-
-  useEffect(() => {
-    if (open) setForm({ cuentaOrigenId: bancos[0]?.id ?? '', fecha: hoy(), monto: '', numeroSoporte: '', observacion: '' });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-  const canSave = form.cuentaOrigenId && form.fecha && form.monto;
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Reposición de Caja Menor</DialogTitle>
-      <DialogContent sx={{ pt: 2 }}>
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Se trasladarán fondos hacia <strong>{cajaNombre}</strong>. Se registrará un egreso
-          en la cuenta bancaria y un ingreso en la caja.
-        </Alert>
-        {bancos.length === 0 && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            No hay cuentas bancarias configuradas. Créalas en la pestaña "Cuentas".
-          </Alert>
-        )}
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Transferir desde *</InputLabel>
-              <Select value={form.cuentaOrigenId} label="Transferir desde *" onChange={set('cuentaOrigenId')}>
-                {bancos.map(b => (
-                  <MenuItem key={b.id} value={b.id}>{b.nombre} — {fmt2(b.saldoActual)}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Fecha *" type="date" size="small"
-              value={form.fecha} onChange={set('fecha')} InputLabelProps={{ shrink: true }} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Monto a reponer *" type="number" size="small"
-              value={form.monto} onChange={set('monto')}
-              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField fullWidth label="N° transferencia / comprobante" size="small"
-              value={form.numeroSoporte} onChange={set('numeroSoporte')} />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField fullWidth label="Observación" size="small" multiline rows={2}
-              value={form.observacion} onChange={set('observacion')} />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" color="primary" disabled={!canSave || !bancos.length || guardando}
-          onClick={() => onGuardar({
-            cuentaCajaId,
-            cuentaOrigenId: form.cuentaOrigenId,
-            fecha:          form.fecha,
-            monto:          parseFloat(form.monto),
-            numeroSoporte:  form.numeroSoporte  || null,
-            observacion:    form.observacion    || null,
-          })}>
-          {guardando ? 'Procesando…' : 'Registrar Reposición'}
-        </Button>
-      </DialogActions>
-    </Dialog>
   );
 }

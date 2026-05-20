@@ -18,6 +18,7 @@ const DEFAULTS = {
 };
 
 const CACHE_KEY = 'fundacion_config_cache';
+const CACHE_TTL = 5 * 60 * 1000;
 
 function aplicarCssVars(colorPrimario, colorSidebar) {
   const root = document.documentElement;
@@ -28,14 +29,18 @@ function aplicarCssVars(colorPrimario, colorSidebar) {
 function cargarCache() {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // soporte para cache antiguo sin timestamp
+    if (!parsed.ts) return parsed;
+    return Date.now() - parsed.ts < CACHE_TTL ? parsed.data : null;
   } catch {
     return null;
   }
 }
 
 function guardarCache(data) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* noop */ }
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch { /* noop */ }
 }
 
 const ConfiguracionCtx = createContext({ ...DEFAULTS, actualizarConfig: () => {} });
@@ -71,7 +76,14 @@ export function ConfiguracionProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // Usa el endpoint público para cargar colores sin requerir auth (sirve en login también)
+    // Si el cache está vigente (< 5 min) no se necesita llamar al backend
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.ts && Date.now() - parsed.ts < CACHE_TTL) return;
+      } catch { /* ignorar cache corrupto */ }
+    }
     configuracionRepository.obtenerPublica()
       .then(({ data }) => actualizar(data))
       .catch(() => { /* sin configuración guardada — usar defaults/cache */ });

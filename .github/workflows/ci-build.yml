@@ -18,10 +18,13 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore
-        run: dotnet restore backend/FundacionPanorama.API/FundacionPanorama.API.csproj
+        run: dotnet restore backend/FundacionPanorama.slnx
 
       - name: Build (Release)
-        run: dotnet build backend/FundacionPanorama.API/FundacionPanorama.API.csproj --no-restore -c Release
+        run: dotnet build backend/FundacionPanorama.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test backend/FundacionPanorama.Tests/FundacionPanorama.Tests.csproj --no-build -c Release --logger "console;verbosity=minimal"
 
   frontend:
     name: Frontend (React/Vite)

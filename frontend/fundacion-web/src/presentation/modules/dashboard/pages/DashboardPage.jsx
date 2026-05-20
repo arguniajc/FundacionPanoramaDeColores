@@ -15,6 +15,7 @@ import PublicIcon           from '@mui/icons-material/Public';
 import LocationOnIcon       from '@mui/icons-material/LocationOn';
 import InfoOutlinedIcon     from '@mui/icons-material/InfoOutlined';
 import ExpandMoreIcon       from '@mui/icons-material/ExpandMore';
+import WarningAmberIcon     from '@mui/icons-material/WarningAmber';
 import { useAuth }      from '../../../../application/auth/AuthContext';
 import { useThemeMode } from '../../../../shared/theme/ThemeContext';
 import apiClient        from '../../../../infrastructure/http/apiClient';
@@ -122,6 +123,22 @@ function SeccionHeader({ titulo }) {
   );
 }
 
+// ── Chip de alerta clickeable ─────────────────────────────────────────────
+function AlertaChip({ count, label, color, onClick }) {
+  return (
+    <Box onClick={onClick} sx={{
+      display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.8,
+      bgcolor: `${color}15`, border: `1px solid ${color}40`,
+      borderRadius: 2, cursor: 'pointer', userSelect: 'none',
+      '&:hover': { bgcolor: `${color}28` },
+    }}>
+      <WarningAmberIcon sx={{ fontSize: 16, color }} />
+      <Typography fontSize="0.82rem" fontWeight={800} sx={{ color }}>{count}</Typography>
+      <Typography fontSize="0.82rem" color="text.secondary">{label}</Typography>
+    </Box>
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { mode } = useThemeMode();
@@ -131,12 +148,26 @@ export default function DashboardPage() {
 
   const [stats,    setStats]    = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [alertas,  setAlertas]  = useState(null);
 
   useEffect(() => {
     apiClient.get('/api/beneficiarios/stats-ninos')
       .then(({ data }) => setStats(data))
       .catch(() => {/* silencioso – no bloquea el dashboard */})
       .finally(() => setCargando(false));
+  }, []);
+
+  useEffect(() => {
+    Promise.all([
+      apiClient.get('/api/talento-humano/stats'),
+      apiClient.get('/api/inventario/stats'),
+    ]).then(([th, inv]) => {
+      const contratosVencer     = th.data.contratosProximosVencer ?? 0;
+      const novedadesPendientes = th.data.novedadesPendientes     ?? 0;
+      const stockBajo           = inv.data.stockBajo              ?? 0;
+      if (contratosVencer > 0 || novedadesPendientes > 0 || stockBajo > 0)
+        setAlertas({ contratosVencer, novedadesPendientes, stockBajo });
+    }).catch(() => { /* silencioso */ });
   }, []);
 
   const chartData = stats?.porRango?.map((r, i) => ({
@@ -191,6 +222,36 @@ export default function DashboardPage() {
           Bienvenido al panel administrativo · Fundación Panorama de Colores
         </Typography>
       </Box>
+
+      {/* ── Alertas operativas ──────────────────────────────────────── */}
+      {alertas && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 3 }}>
+          {alertas.contratosVencer > 0 && (
+            <AlertaChip
+              count={alertas.contratosVencer}
+              label={`contrato${alertas.contratosVencer > 1 ? 's vencen' : ' vence'} en 30 días`}
+              color="#F59E0B"
+              onClick={() => navigate('/sede/talento-humano')}
+            />
+          )}
+          {alertas.novedadesPendientes > 0 && (
+            <AlertaChip
+              count={alertas.novedadesPendientes}
+              label={`novedad${alertas.novedadesPendientes > 1 ? 'es pendientes' : ' pendiente'}`}
+              color="#EF4444"
+              onClick={() => navigate('/sede/talento-humano')}
+            />
+          )}
+          {alertas.stockBajo > 0 && (
+            <AlertaChip
+              count={alertas.stockBajo}
+              label={`ítem${alertas.stockBajo > 1 ? 's con stock bajo' : ' con stock bajo'}`}
+              color="#0EA5E9"
+              onClick={() => navigate('/sede/inventario')}
+            />
+          )}
+        </Box>
+      )}
 
       {/* ── KPIs principales ────────────────────────────────────────── */}
       <SeccionHeader titulo="Niños activos" />

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useConfirm } from '../../../../shared/components/ConfirmDialog';
 import {
   Box, Typography, Grid, Button, TextField, Dialog, DialogTitle, DialogContent,
-  DialogActions, MenuItem, Select, FormControl, InputLabel, IconButton, Tooltip,
+  DialogActions, MenuItem, IconButton, Tooltip,
   Chip, Avatar, Divider, CircularProgress, Snackbar, Alert, InputAdornment,
 } from '@mui/material';
 import AddIcon             from '@mui/icons-material/Add';
@@ -207,13 +207,11 @@ function DonanteDialog({ open, donante, onClose, onGuardado }) {
               onChange={e => set('nombre', e.target.value)} />
           </Grid>
           <Grid size={4}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Tipo</InputLabel>
-              <Select value={form.tipo} label="Tipo" onChange={e => set('tipo', e.target.value)}>
-                <MenuItem value="persona">Persona</MenuItem>
-                <MenuItem value="empresa">Empresa</MenuItem>
-              </Select>
-            </FormControl>
+            <TextField select fullWidth size="small" label="Tipo"
+              value={form.tipo} onChange={e => set('tipo', e.target.value)}>
+              <MenuItem value="persona">Persona</MenuItem>
+              <MenuItem value="empresa">Empresa</MenuItem>
+            </TextField>
           </Grid>
           <Grid size={6}>
             <TextField fullWidth size="small" label="Documento / NIT" value={form.documento}

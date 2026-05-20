@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
-  Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
-  FormControl, Grid, InputLabel, MenuItem, Select, TextField,
+  Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
+  FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography,
 } from '@mui/material';
 import { inventarioRepository } from '../../../../../infrastructure/repositories/inventarioRepository';
 import { COLOR, CATEGORIAS } from './helpers';
 import { CampoUnidadMedida } from '../../../../../shared/components/form/FormControles';
 
-const ITEM_VACIO = { codigo: '', nombre: '', descripcion: '', unidadMedida: 'unidad', categoria: 'Otros', stockActual: 0, stockMinimo: 0 };
+const ITEM_VACIO = { nombre: '', descripcion: '', unidadMedida: 'unidad', categoria: 'Otros', stockActual: 0, stockMinimo: 0 };
 
 export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuardado }) {
   const editando = !!item;
@@ -18,7 +18,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
   useEffect(() => {
     if (open) {
       setForm(item
-        ? { codigo: item.codigo ?? '', nombre: item.nombre, descripcion: item.descripcion ?? '',
+        ? { nombre: item.nombre, descripcion: item.descripcion ?? '',
             unidadMedida: item.unidadMedida, categoria: item.categoria, stockActual: item.stockActual, stockMinimo: item.stockMinimo }
         : { ...ITEM_VACIO, sedeId: sedeSelId ?? '' });
       setError('');
@@ -36,7 +36,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
       let result;
       if (editando) {
         const { data } = await inventarioRepository.actualizarItem(item.id, {
-          codigo: form.codigo || null, nombre: form.nombre, descripcion: form.descripcion || null,
+          nombre: form.nombre, descripcion: form.descripcion || null,
           unidadMedida: form.unidadMedida, categoria: form.categoria,
           stockMinimo: Number(form.stockMinimo),
         });
@@ -44,7 +44,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
       } else {
         const { data } = await inventarioRepository.crearItem({
           sedeId: form.sedeId || null,
-          codigo: form.codigo || null, nombre: form.nombre, descripcion: form.descripcion || null,
+          nombre: form.nombre, descripcion: form.descripcion || null,
           unidadMedida: form.unidadMedida, categoria: form.categoria,
           stockActual: Number(form.stockActual), stockMinimo: Number(form.stockMinimo),
         });
@@ -76,14 +76,20 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
               </FormControl>
             </Grid>
           )}
-          <Grid size={8}>
+          <Grid size={editando ? 8 : 12}>
             <TextField fullWidth size="small" label="Nombre *" value={form.nombre}
               onChange={e => set('nombre', e.target.value)} />
           </Grid>
-          <Grid size={4}>
-            <TextField fullWidth size="small" label="Código" value={form.codigo}
-              onChange={e => set('codigo', e.target.value)} />
-          </Grid>
+          {editando && item?.codigo && (
+            <Grid size={4}>
+              <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, px: 1.5, py: '6px', bgcolor: 'action.hover' }}>
+                <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', lineHeight: 1 }}>Código</Typography>
+                <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, fontFamily: 'monospace' }}>
+                  {item.codigo}
+                </Typography>
+              </Box>
+            </Grid>
+          )}
           <Grid size={6}>
             <FormControl fullWidth size="small">
               <InputLabel>Categoría</InputLabel>

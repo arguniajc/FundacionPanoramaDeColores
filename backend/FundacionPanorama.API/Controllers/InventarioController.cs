@@ -28,7 +28,6 @@ public record ItemInventarioDto(
 
 public record CrearItemDto(
     Guid?   SedeId,
-    string? Codigo,
     string  Nombre,
     string? Descripcion,
     string  UnidadMedida,
@@ -38,7 +37,6 @@ public record CrearItemDto(
 );
 
 public record ActualizarItemDto(
-    string? Codigo,
     string  Nombre,
     string? Descripcion,
     string  UnidadMedida,
@@ -199,38 +197,66 @@ public class InventarioController : ControllerBase
         if (dto.StockActual < 0 || dto.StockMinimo < 0)
             return BadRequest(new { mensaje = "El stock no puede ser negativo." });
 
+        var cat      = string.IsNullOrWhiteSpace(dto.Categoria) ? "Otros" : dto.Categoria.Trim();
+        var prefix   = CatPrefix(cat);
+        var yy       = DateTime.UtcNow.ToString("yy");
+
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            INSERT INTO inventario_items (sede_id,codigo,nombre,descripcion,unidad_medida,categoria,stock_actual,stock_minimo)
-            VALUES (@sid,@cod,@nom,@des,@uni,@cat,@sa,@sm)
-            RETURNING id, sede_id, '' AS nombre_sede,
-                      codigo,nombre,descripcion,unidad_medida,categoria,
-                      stock_actual,stock_minimo,activo,fecha_creacion,fecha_modificacion";
-        cmd.Parameters.AddWithValue("sid", (object?)dto.SedeId                      ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("cod", (object?)dto.Codigo?.Trim()              ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("nom", dto.Nombre.Trim());
-        cmd.Parameters.AddWithValue("des", (object?)dto.Descripcion?.Trim()         ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("uni", string.IsNullOrWhiteSpace(dto.UnidadMedida) ? "unidad" : dto.UnidadMedida.Trim());
-        cmd.Parameters.AddWithValue("cat", string.IsNullOrWhiteSpace(dto.Categoria) ? "Otros" : dto.Categoria.Trim());
-        cmd.Parameters.AddWithValue("sa",  dto.StockActual);
-        cmd.Parameters.AddWithValue("sm",  dto.StockMinimo);
-        await using var r = await cmd.ExecuteReaderAsync();
-        await r.ReadAsync();
-        var item = LeerItem(r);
-        await r.CloseAsync();
-
-        // Enriquecer nombre de sede
-        if (item.SedeId.HasValue)
+        await using var tx = await conn.BeginTransactionAsync();
+        try
         {
-            await using var s = conn.CreateCommand();
-            s.CommandText = "SELECT nombre FROM sedes WHERE id=@id";
-            s.Parameters.AddWithValue("id", item.SedeId.Value);
-            var nombreSede = (string?)await s.ExecuteScalarAsync() ?? "";
-            item = item with { NombreSede = nombreSede };
+            // Obtener siguiente número de secuencia para este prefijo+año (con lock implícito por tx)
+            int seq;
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = @"
+                    SELECT COALESCE(MAX(CAST(SPLIT_PART(codigo, '-', 3) AS INTEGER)), 0) + 1
+                    FROM inventario_items
+                    WHERE codigo ~ ('^' || @pre || '-' || @yy || '-[0-9]+$')";
+                cmd.Parameters.AddWithValue("pre", prefix);
+                cmd.Parameters.AddWithValue("yy",  yy);
+                seq = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+            }
+            var codigoGenerado = $"{prefix}-{yy}-{seq:D4}";
+
+            ItemInventarioDto item;
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = @"
+                    INSERT INTO inventario_items (sede_id,codigo,nombre,descripcion,unidad_medida,categoria,stock_actual,stock_minimo)
+                    VALUES (@sid,@cod,@nom,@des,@uni,@cat,@sa,@sm)
+                    RETURNING id, sede_id, '' AS nombre_sede,
+                              codigo,nombre,descripcion,unidad_medida,categoria,
+                              stock_actual,stock_minimo,activo,fecha_creacion,fecha_modificacion";
+                cmd.Parameters.AddWithValue("sid", (object?)dto.SedeId              ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("cod", codigoGenerado);
+                cmd.Parameters.AddWithValue("nom", dto.Nombre.Trim());
+                cmd.Parameters.AddWithValue("des", (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("uni", string.IsNullOrWhiteSpace(dto.UnidadMedida) ? "unidad" : dto.UnidadMedida.Trim());
+                cmd.Parameters.AddWithValue("cat", cat);
+                cmd.Parameters.AddWithValue("sa",  dto.StockActual);
+                cmd.Parameters.AddWithValue("sm",  dto.StockMinimo);
+                await using var r = await cmd.ExecuteReaderAsync();
+                await r.ReadAsync();
+                item = LeerItem(r);
+            }
+
+            await tx.CommitAsync();
+
+            if (item.SedeId.HasValue)
+            {
+                await using var s = conn.CreateCommand();
+                s.CommandText = "SELECT nombre FROM sedes WHERE id=@id";
+                s.Parameters.AddWithValue("id", item.SedeId.Value);
+                var nombreSede = (string?)await s.ExecuteScalarAsync() ?? "";
+                item = item with { NombreSede = nombreSede };
+            }
+            return Ok(item);
         }
-        return Ok(item);
+        catch { await tx.RollbackAsync(); throw; }
     }
 
     [HttpPut("items/{id:guid}")]
@@ -247,7 +273,7 @@ public class InventarioController : ControllerBase
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             UPDATE inventario_items
-            SET codigo=@cod, nombre=@nom, descripcion=@des,
+            SET nombre=@nom, descripcion=@des,
                 unidad_medida=@uni, categoria=@cat, stock_minimo=@sm,
                 fecha_modificacion=NOW()
             WHERE id=@id
@@ -255,7 +281,6 @@ public class InventarioController : ControllerBase
                       codigo,nombre,descripcion,unidad_medida,categoria,
                       stock_actual,stock_minimo,activo,fecha_creacion,fecha_modificacion";
         cmd.Parameters.AddWithValue("id",  id);
-        cmd.Parameters.AddWithValue("cod", (object?)dto.Codigo?.Trim()              ?? DBNull.Value);
         cmd.Parameters.AddWithValue("nom", dto.Nombre.Trim());
         cmd.Parameters.AddWithValue("des", (object?)dto.Descripcion?.Trim()         ?? DBNull.Value);
         cmd.Parameters.AddWithValue("uni", string.IsNullOrWhiteSpace(dto.UnidadMedida) ? "unidad" : dto.UnidadMedida.Trim());
@@ -769,6 +794,19 @@ public class InventarioController : ControllerBase
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static string CatPrefix(string categoria) => categoria switch
+    {
+        "Material escolar"     => "MAT",
+        "Equipos electrónicos" => "EQU",
+        "Deportivo"            => "DEP",
+        "Ropa y calzado"       => "ROP",
+        "Alimentos"            => "ALI",
+        "Medicamentos"         => "MED",
+        "Muebles y enseres"    => "MUE",
+        "Herramientas"         => "HER",
+        _                      => "OTR",
+    };
 
     private static ItemInventarioDto LeerItem(System.Data.Common.DbDataReader r) => new(
         r.GetGuid(0),

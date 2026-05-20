@@ -4,10 +4,10 @@ import {
   Grid, MenuItem, TextField,
 } from '@mui/material';
 import { donantesRepository } from '../../../../../infrastructure/repositories/donantesRepository';
-import { CampoDocumento, CampoCiudad } from '../../../../../shared/components/form/FormControles';
+import { CampoDocumento, SelectorUbicacion } from '../../../../../shared/components/form/FormControles';
 import { COLOR_DONANTES } from './helpers';
 
-const VACIO = { nombre: '', tipo: 'persona', tipoDocumento: '', documento: '', email: '', telefono: '', ciudad: '', notas: '' };
+const VACIO = { nombre: '', tipo: 'persona', tipoDocumento: '', documento: '', email: '', telefono: '', pais: 'Colombia', departamento: '', ciudad: '', notas: '' };
 
 export function DonanteDialog({ open, donante, onClose, onGuardado }) {
   const editando = !!donante;
@@ -21,6 +21,7 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
         ? { nombre: donante.nombre, tipo: donante.tipo,
             tipoDocumento: donante.tipoDocumento ?? '', documento: donante.documento ?? '',
             email: donante.email ?? '', telefono: donante.telefono ?? '',
+            pais: donante.pais ?? 'Colombia', departamento: donante.departamento ?? '',
             ciudad: donante.ciudad ?? '', notas: donante.notas ?? '' }
         : VACIO);
       setError('');
@@ -72,8 +73,11 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
               labelNumero="Documento / NIT"
             />
           </Grid>
-          <Grid size={6}>
-            <CampoCiudad value={form.ciudad} onChange={v => set('ciudad', v)} />
+          <Grid size={12}>
+            <SelectorUbicacion
+              pais={form.pais} departamento={form.departamento} ciudad={form.ciudad}
+              onChange={set}
+            />
           </Grid>
           <Grid size={6}>
             <TextField fullWidth size="small" label="Email" type="email" value={form.email}

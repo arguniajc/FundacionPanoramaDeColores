@@ -18,7 +18,7 @@ import EmailIcon           from '@mui/icons-material/Email';
 import PhoneIcon           from '@mui/icons-material/Phone';
 import LocationOnIcon      from '@mui/icons-material/LocationOn';
 import { donantesRepository } from '../../../../infrastructure/repositories/donantesRepository';
-import { CampoDocumento, CampoCiudad } from '../../../../shared/components/form/FormControles';
+import { CampoDocumento, SelectorUbicacion } from '../../../../shared/components/form/FormControles';
 
 const COLOR = '#2D984F';
 
@@ -128,10 +128,14 @@ function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) {
               <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{donante.telefono}</Typography>
             </Box>
           )}
-          {donante.ciudad && (
+          {(donante.ciudad || donante.pais) && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <LocationOnIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
-              <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{donante.ciudad}</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                {[donante.ciudad, donante.departamento,
+                  donante.pais && donante.pais !== 'Colombia' ? donante.pais : null
+                ].filter(Boolean).join(', ')}
+              </Typography>
             </Box>
           )}
         </Box>
@@ -158,7 +162,7 @@ function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) {
 }
 
 // ── Dialog: Nuevo / Editar donante ────────────────────────────────────────────
-const VACIO = { nombre: '', tipo: 'persona', tipoDocumento: '', documento: '', email: '', telefono: '', ciudad: '', notas: '' };
+const VACIO = { nombre: '', tipo: 'persona', tipoDocumento: '', documento: '', email: '', telefono: '', pais: 'Colombia', departamento: '', ciudad: '', notas: '' };
 
 function DonanteDialog({ open, donante, onClose, onGuardado }) {
   const editando = !!donante;
@@ -172,6 +176,7 @@ function DonanteDialog({ open, donante, onClose, onGuardado }) {
         ? { nombre: donante.nombre, tipo: donante.tipo,
             tipoDocumento: donante.tipoDocumento ?? '', documento: donante.documento ?? '',
             email: donante.email ?? '', telefono: donante.telefono ?? '',
+            pais: donante.pais ?? 'Colombia', departamento: donante.departamento ?? '',
             ciudad: donante.ciudad ?? '', notas: donante.notas ?? '' }
         : VACIO);
       setError('');
@@ -224,8 +229,11 @@ function DonanteDialog({ open, donante, onClose, onGuardado }) {
               labelNumero="Documento / NIT"
             />
           </Grid>
-          <Grid size={6}>
-            <CampoCiudad value={form.ciudad} onChange={v => set('ciudad', v)} />
+          <Grid size={12}>
+            <SelectorUbicacion
+              pais={form.pais} departamento={form.departamento} ciudad={form.ciudad}
+              onChange={set}
+            />
           </Grid>
           <Grid size={6}>
             <TextField fullWidth size="small" label="Email" type="email" value={form.email}

@@ -88,10 +88,14 @@ export function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) 
               <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{donante.telefono}</Typography>
             </Box>
           )}
-          {donante.ciudad && (
+          {(donante.ciudad || donante.pais) && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <LocationOnIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
-              <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{donante.ciudad}</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                {[donante.ciudad, donante.departamento,
+                  donante.pais && donante.pais !== 'Colombia' ? donante.pais : null
+                ].filter(Boolean).join(', ')}
+              </Typography>
             </Box>
           )}
         </Box>

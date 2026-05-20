@@ -60,6 +60,12 @@ export const GRADOS_COLOMBIA = [
 ];
 export const JORNADAS_ESCOLARES = ['Mañana', 'Tarde', 'Noche', 'Única', 'Sabatina', 'Fin de semana'];
 
+export const CATEGORIAS_INVENTARIO = [
+  'Material escolar', 'Equipos electrónicos', 'Deportivo',
+  'Ropa y calzado', 'Alimentos', 'Medicamentos',
+  'Muebles y enseres', 'Herramientas', 'Otros',
+];
+
 export const UNIDADES_MEDIDA = [
   'unidad', 'par', 'set', 'kit',
   'kg', 'g', 'mg', 'lb',

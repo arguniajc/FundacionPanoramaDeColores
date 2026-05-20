@@ -12,11 +12,13 @@ import { sedesRepository }      from '../../../../../infrastructure/repositories
 import { inventarioRepository } from '../../../../../infrastructure/repositories/inventarioRepository';
 import { COLOR_DONACIONES, COLOR_ESPECIE, hoy } from './helpers';
 import { CampoUnidadMedida } from '../../../../../shared/components/form/FormControles';
+import { CATEGORIAS_INVENTARIO } from '../../../../../shared/utils/geodata';
 
 const VACIO = {
   tipo: 'dinero', monto: '', reciboNumero: '', nombreItem: '',
   cantidad: '', unidadMedida: '', sedeId: '', programaId: '',
-  descripcion: '', fechaDonacion: hoy(), ingresarInventario: false,
+  descripcion: '', fechaDonacion: hoy(),
+  ingresarInventario: false, categoriaInv: 'Otros', stockMinimoInv: '',
 };
 
 export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada, sedes }) {
@@ -106,8 +108,9 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
           await inventarioRepository.ingresarDesdeDonacion({
             itemId:       itemSel?.id ?? null,
             nombreItem:   itemSel?.nombre ?? form.nombreItem.trim(),
-            categoria:    'Donaciones',
+            categoria:    itemSel ? undefined : form.categoriaInv,
             unidadMedida: form.unidadMedida.trim() || 'unidad',
+            stockMinimo:  form.stockMinimoInv ? Number(form.stockMinimoInv) : 0,
             sedeId:       form.sedeId || null,
             cantidad:     Number(form.cantidad),
             donanteId:    donante?.id ?? null,
@@ -150,7 +153,10 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
 
           <Grid size={12}>
             <ToggleButtonGroup value={form.tipo} exclusive size="small"
-              onChange={(_, v) => v && set('tipo', v)} sx={{ width: '100%' }}>
+              onChange={(_, v) => v && setForm(p => ({
+                ...p, tipo: v,
+                ...(v === 'dinero' ? { ingresarInventario: false } : {}),
+              }))} sx={{ width: '100%' }}>
               <ToggleButton value="dinero"  sx={{ flex: 1, fontWeight: 700 }}>
                 <AttachMoneyIcon sx={{ fontSize: 17, mr: 0.5 }} /> Dinero
               </ToggleButton>
@@ -223,6 +229,24 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
                 sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.85rem' } }}
               />
             </Grid>
+            {form.ingresarInventario && !itemSel && <>
+              <Grid size={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Categoría *</InputLabel>
+                  <Select value={form.categoriaInv} label="Categoría *"
+                    onChange={e => set('categoriaInv', e.target.value)}>
+                    {CATEGORIAS_INVENTARIO.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={6}>
+                <TextField fullWidth size="small" label="Stock mínimo" type="number"
+                  value={form.stockMinimoInv}
+                  onChange={e => set('stockMinimoInv', e.target.value)}
+                  inputProps={{ min: 0, step: 1 }}
+                  helperText="Alerta de stock bajo (opcional)" />
+              </Grid>
+            </>}
           </>}
 
           <Grid size={6}>

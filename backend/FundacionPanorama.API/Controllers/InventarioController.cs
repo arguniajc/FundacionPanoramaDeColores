@@ -102,6 +102,7 @@ public record IngresarDesdeDonacionDto(
     string  NombreItem,
     string? Categoria,
     string? UnidadMedida,
+    decimal StockMinimo,
     Guid?   SedeId,
     decimal Cantidad,
     Guid?   DonanteId,
@@ -759,12 +760,13 @@ public class InventarioController : ControllerBase
                 {
                     cmd.Transaction = tx;
                     cmd.CommandText = @"INSERT INTO inventario_items (sede_id,nombre,unidad_medida,categoria,stock_actual,stock_minimo)
-                        VALUES (@sid,@nom,@uni,@cat,@sa,0) RETURNING id";
+                        VALUES (@sid,@nom,@uni,@cat,@sa,@sm) RETURNING id";
                     cmd.Parameters.AddWithValue("sid", (object?)dto.SedeId     ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("nom", nombre);
                     cmd.Parameters.AddWithValue("uni", string.IsNullOrWhiteSpace(dto.UnidadMedida) ? "unidad" : dto.UnidadMedida.Trim());
-                    cmd.Parameters.AddWithValue("cat", string.IsNullOrWhiteSpace(dto.Categoria)    ? "Donaciones" : dto.Categoria.Trim());
+                    cmd.Parameters.AddWithValue("cat", string.IsNullOrWhiteSpace(dto.Categoria)    ? "Otros"   : dto.Categoria.Trim());
                     cmd.Parameters.AddWithValue("sa",  nuevoStock);
+                    cmd.Parameters.AddWithValue("sm",  dto.StockMinimo >= 0 ? dto.StockMinimo : 0);
                     itemId = (Guid)(await cmd.ExecuteScalarAsync())!;
                 }
             }

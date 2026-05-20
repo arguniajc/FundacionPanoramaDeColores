@@ -19,6 +19,7 @@ import apiClient         from '../../../../infrastructure/http/apiClient';
 import { useAuth }       from '../../../../application/auth/AuthContext';
 import { DialogEmpleado } from './components/DialogEmpleado';
 import { PanelEmpleado }  from './components/PanelEmpleado';
+import { PanelNovedades } from './components/PanelNovedades';
 import { OrgChartTab }    from './components/OrgChartTab';
 
 const CONTRATO_COLORS = {
@@ -266,22 +267,10 @@ export default function TalentoHumanoPage() {
                 <Button size="small" onClick={() => setPanelEmpleado(null)}>Cerrar</Button>
               </Box>
               {tabPanel === 0 && (
-                <PanelEmpleado
-                  empleado={panelEmpleado}
-                  onClose={() => setPanelEmpleado(null)}
-                  onEdit={() => { setEditEmpleado(panelEmpleado); setDialogEmpleado(true); }}
-                  onDeleted={() => { setPanelEmpleado(null); cargar(); }}
-                  puedo={puedo}
-                />
+                <PanelEmpleado empleado={panelEmpleado} puedo={puedo} />
               )}
               {tabPanel === 1 && (
-                <PanelEmpleado
-                  empleado={panelEmpleado}
-                  onClose={() => setPanelEmpleado(null)}
-                  onEdit={() => { setEditEmpleado(panelEmpleado); setDialogEmpleado(true); }}
-                  onDeleted={() => { setPanelEmpleado(null); cargar(); }}
-                  puedo={puedo}
-                />
+                <PanelNovedades empleado={panelEmpleado} puedo={puedo} />
               )}
             </CardContent>
           </Card>

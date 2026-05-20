@@ -761,6 +761,31 @@ public static class DbMigrations
               ON inscripciones USING GIN (datos jsonb_path_ops)
             """, "inscripciones.idx_datos_gin");
 
+        // ── Catálogo tipos de documento ───────────────────────────────────────
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS cat_tipos_documento (
+                id     SMALLSERIAL  PRIMARY KEY,
+                codigo VARCHAR(10)  NOT NULL UNIQUE,
+                nombre VARCHAR(100) NOT NULL,
+                activo BOOLEAN      NOT NULL DEFAULT true
+            )
+            """, "cat_tipos_documento");
+
+        await Migrar("""
+            INSERT INTO cat_tipos_documento (codigo, nombre) VALUES
+                ('CC',   'Cédula de ciudadanía'),
+                ('TI',   'Tarjeta de identidad'),
+                ('RC',   'Registro civil'),
+                ('CE',   'Cédula de extranjería'),
+                ('PAS',  'Pasaporte'),
+                ('NIT',  'NIT'),
+                ('NUIP', 'NUIP'),
+                ('PPT',  'Permiso de protección temporal')
+            ON CONFLICT (codigo) DO NOTHING
+            """, "cat_tipos_documento.seed");
+
+        await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS tipo_documento_id SMALLINT REFERENCES cat_tipos_documento(id)", "beneficiarios.tipo_documento_id");
+
         // ── A2: Índices de rendimiento ────────────────────────────────────────
         await Migrar("CREATE INDEX IF NOT EXISTS idx_beneficiarios_activo          ON beneficiarios(activo)",                            "idx.beneficiarios_activo");
         await Migrar("CREATE INDEX IF NOT EXISTS idx_beneficiarios_activo_fecha    ON beneficiarios(activo, fecha_creacion)",            "idx.beneficiarios_activo_fecha");

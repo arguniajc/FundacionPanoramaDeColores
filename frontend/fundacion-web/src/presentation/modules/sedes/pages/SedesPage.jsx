@@ -1,279 +1,14 @@
-﻿// CRUD de sedes y sus programas. Cada sede es una tarjeta expandible con su tabla de programas.
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Typography, Paper, Button, IconButton, Chip, Tooltip,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  Collapse, Divider, CircularProgress, Alert, Snackbar, Grid,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  useMediaQuery, useTheme,
+  Alert, Box, Button, CircularProgress, Dialog, DialogActions,
+  DialogContent, DialogTitle, Grid, Paper, Snackbar, Typography,
 } from '@mui/material';
 import AddIcon        from '@mui/icons-material/Add';
-import EditIcon       from '@mui/icons-material/Edit';
-import DeleteIcon     from '@mui/icons-material/Delete';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import SchoolIcon     from '@mui/icons-material/School';
-import ToggleOnIcon   from '@mui/icons-material/ToggleOn';
-import ToggleOffIcon  from '@mui/icons-material/ToggleOff';
-import apiClient      from '../../../../infrastructure/http/apiClient';
-
-function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
-  const [form, setForm] = useState({ nombre: '', direccion: '', ciudad: '', telefono: '' });
-  const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState('');
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  // Reinicia los campos del formulario y limpia el error cada vez que el diálogo se abre o cambia la sede inicial
-  useEffect(() => {
-    if (abierto) setForm({ nombre: inicial?.nombre ?? '', direccion: inicial?.direccion ?? '', ciudad: inicial?.ciudad ?? '', telefono: inicial?.telefono ?? '' });
-    setError('');
-  }, [abierto, inicial]);
-
-  // Manejador genérico de campo — actualiza una sola clave en el estado del formulario
-  const set = campo => e => setForm(p => ({ ...p, [campo]: e.target.value }));
-
-  // Crea o actualiza una sede en la API y pasa el resultado guardado al componente padre
-  const handleGuardar = async () => {
-    if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
-    setGuardando(true);
-    setError('');
-    try {
-      let resp;
-      if (inicial?.id) {
-        resp = await apiClient.put(`/api/sedes/${inicial.id}`, form);
-      } else {
-        resp = await apiClient.post('/api/sedes', form);
-      }
-      onGuardado(resp.data);
-    } catch {
-      setError('Error al guardar. Intenta de nuevo.');
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  return (
-    <Dialog open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2 } }}>
-      <DialogTitle sx={{ bgcolor: 'var(--color-primario)', color: 'white', fontWeight: 700 }}>
-        {inicial?.id ? 'Editar sede' : 'Nueva sede'}
-      </DialogTitle>
-      <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Grid container spacing={2.5} mt={0}>
-          <Grid size={12}>
-            <TextField fullWidth label="Nombre *" size="small" value={form.nombre} onChange={set('nombre')} />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 8 }}>
-            <TextField fullWidth label="Dirección" size="small" value={form.direccion} onChange={set('direccion')} />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Ciudad" size="small" value={form.ciudad} onChange={set('ciudad')} />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Teléfono" size="small" value={form.telefono} onChange={set('telefono')} />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
-        <Button variant="contained" onClick={handleGuardar} disabled={guardando || !form.nombre.trim()}
-          sx={{ bgcolor: 'var(--color-primario)' }}>
-          {guardando ? 'Guardando…' : 'Guardar'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial }) {
-  const [form, setForm] = useState({ nombre: '', descripcion: '', cupoMaximo: '' });
-  const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState('');
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  // Reinicia los campos del formulario y limpia el error cada vez que el diálogo se abre o cambia el programa inicial
-  useEffect(() => {
-    if (abierto) setForm({ nombre: inicial?.nombre ?? '', descripcion: inicial?.descripcion ?? '', cupoMaximo: inicial?.cupoMaximo ?? '' });
-    setError('');
-  }, [abierto, inicial]);
-
-  // Manejador genérico de campo — actualiza una sola clave en el estado del formulario
-  const set = campo => e => setForm(p => ({ ...p, [campo]: e.target.value }));
-
-  // Crea o actualiza un programa en la API y pasa el resultado guardado al componente padre
-  const handleGuardar = async () => {
-    if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
-    setGuardando(true);
-    setError('');
-    try {
-      const payload = { sedeId, nombre: form.nombre, descripcion: form.descripcion || null, cupoMaximo: form.cupoMaximo ? parseInt(form.cupoMaximo) : null };
-      let resp;
-      if (inicial?.id) {
-        resp = await apiClient.put(`/api/sedes/programas/${inicial.id}`, payload);
-      } else {
-        resp = await apiClient.post('/api/sedes/programas', payload);
-      }
-      onGuardado(resp.data);
-    } catch {
-      setError('Error al guardar. Intenta de nuevo.');
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  return (
-    <Dialog open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2 } }}>
-      <DialogTitle sx={{ bgcolor: '#2D984F', color: 'white', fontWeight: 700 }}>
-        {inicial?.id ? 'Editar programa' : 'Nuevo programa'}
-      </DialogTitle>
-      <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Grid container spacing={2.5} mt={0}>
-          <Grid size={12}>
-            <TextField fullWidth label="Nombre *" size="small" value={form.nombre} onChange={set('nombre')} />
-          </Grid>
-          <Grid size={12}>
-            <TextField fullWidth label="Descripción" size="small" multiline rows={2} value={form.descripcion} onChange={set('descripcion')} />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Cupo máximo" size="small" type="number" value={form.cupoMaximo} onChange={set('cupoMaximo')} />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
-        <Button variant="contained" onClick={handleGuardar} disabled={guardando || !form.nombre.trim()}
-          sx={{ bgcolor: '#2D984F' }}>
-          {guardando ? 'Guardando…' : 'Guardar'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarPrograma, onEliminarPrograma, onTogglePrograma, onNuevoPrograma }) {
-  const [expandida, setExpandida] = useState(false);
-
-  return (
-    <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
-      <Box
-        sx={{
-          display: 'flex', alignItems: 'center', gap: 2,
-          px: 2.5, py: 2, bgcolor: '#fdfbff',
-          borderBottom: expandida ? '1px solid' : 'none', borderColor: 'divider',
-        }}
-      >
-        <LocationOnIcon sx={{ color: 'var(--color-primario)', flexShrink: 0 }} />
-        <Box flex={1} minWidth={0}>
-          <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
-            <Typography fontWeight={700} noWrap>{sede.nombre}</Typography>
-            <Chip label={sede.activo ? 'Activa' : 'Inactiva'} size="small"
-              color={sede.activo ? 'success' : 'default'} />
-          </Box>
-          {(sede.ciudad || sede.direccion) && (
-            <Typography variant="caption" color="text.secondary" noWrap>
-              {[sede.ciudad, sede.direccion].filter(Boolean).join(' · ')}
-            </Typography>
-          )}
-        </Box>
-        <Box display="flex" gap={1} flexShrink={0}>
-          <Tooltip title={sede.activo ? 'Desactivar' : 'Activar'}>
-            <IconButton size="small" onClick={() => onToggle(sede)}>
-              {sede.activo ? <ToggleOnIcon sx={{ color: '#2D984F' }} /> : <ToggleOffIcon sx={{ color: '#aaa' }} />}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Editar sede">
-            <IconButton size="small" onClick={() => onEditar(sede)}>
-              <EditIcon fontSize="small" sx={{ color: '#1565C0' }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Eliminar sede">
-            <IconButton size="small" onClick={() => onEliminar(sede)}>
-              <DeleteIcon fontSize="small" sx={{ color: '#c62828' }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={expandida ? 'Ocultar programas' : 'Ver programas'}>
-            <IconButton size="small" onClick={() => setExpandida(p => !p)}>
-              {expandida ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
-
-      <Collapse in={expandida}>
-        <Box sx={{ px: 2.5, py: 2, overflowX: 'auto' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} mb={1.5}>
-            <Typography variant="body2" fontWeight={700} color="#2D984F" display="flex" alignItems="center" gap={0.5}>
-              <SchoolIcon fontSize="small" /> Programas ({sede.programas?.length ?? 0})
-            </Typography>
-            <Button size="small" startIcon={<AddIcon />} onClick={() => onNuevoPrograma(sede)}
-              sx={{ color: '#2D984F', textTransform: 'none' }}>
-              Agregar
-            </Button>
-          </Box>
-
-          {(!sede.programas || sede.programas.length === 0) ? (
-            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', py: 1 }}>
-              No hay programas. Haz clic en Agregar para crear uno.
-            </Typography>
-          ) : (
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario)' }}>Programa</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario)' }}>Cupo</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario)' }}>Estado</TableCell>
-                    <TableCell align="right" />
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {sede.programas.map(prog => (
-                    <TableRow key={prog.id} hover>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600}>{prog.nombre}</Typography>
-                        {prog.descripcion && <Typography variant="caption" color="text.secondary">{prog.descripcion}</Typography>}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{prog.cupoMaximo ?? '—'}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip label={prog.activo ? 'Activo' : 'Inactivo'} size="small"
-                          color={prog.activo ? 'success' : 'default'} />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Tooltip title={prog.activo ? 'Desactivar' : 'Activar'}>
-                          <IconButton size="small" onClick={() => onTogglePrograma(prog)}>
-                            {prog.activo ? <ToggleOnIcon fontSize="small" sx={{ color: '#2D984F' }} /> : <ToggleOffIcon fontSize="small" sx={{ color: '#aaa' }} />}
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Editar">
-                          <IconButton size="small" onClick={() => onEditarPrograma(sede, prog)}>
-                            <EditIcon fontSize="small" sx={{ color: '#1565C0' }} />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Eliminar">
-                          <IconButton size="small" onClick={() => onEliminarPrograma(prog)}>
-                            <DeleteIcon fontSize="small" sx={{ color: '#c62828' }} />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </Box>
-      </Collapse>
-    </Paper>
-  );
-}
+import apiClient from '../../../../infrastructure/http/apiClient';
+import { DialogSede }     from './components/DialogSede';
+import { DialogPrograma } from './components/DialogPrograma';
+import { TarjetaSede }    from './components/TarjetaSede';
 
 export default function SedesPage() {
   const [sedes,    setSedes]    = useState([]);
@@ -286,10 +21,8 @@ export default function SedesPage() {
   const [confirmEliminar, setConfirmEliminar] = useState(null);
   const [eliminando,      setEliminando]      = useState(false);
 
-  // Obtiene todas las sedes (con sus programas anidados) desde la API
   const cargar = useCallback(async () => {
-    setCargando(true);
-    setError('');
+    setCargando(true); setError('');
     try {
       const { data } = await apiClient.get('/api/sedes');
       setSedes(data);
@@ -300,10 +33,8 @@ export default function SedesPage() {
     }
   }, []);
 
-  // Carga las sedes una sola vez al montar el componente
   useEffect(() => { cargar(); }, [cargar]);
 
-  // Inserta o actualiza la sede guardada en el estado local y cierra el diálogo
   const handleGuardadoSede = (sedeActualizada) => {
     setSedes(prev => {
       const existe = prev.find(s => s.id === sedeActualizada.id);
@@ -314,7 +45,6 @@ export default function SedesPage() {
     setToast('Sede guardada correctamente');
   };
 
-  // Cambia el estado activo/inactivo de una sede en la API y actualiza el estado local
   const handleToggleSede = async (sede) => {
     try {
       const { data } = await apiClient.patch(`/api/sedes/${sede.id}/toggle`);
@@ -322,7 +52,6 @@ export default function SedesPage() {
     } catch { setError('Error al cambiar estado de la sede.'); }
   };
 
-  // Elimina una sede en la API y la quita del estado local
   const handleEliminarSede = async () => {
     if (!confirmEliminar) return;
     setEliminando(true);
@@ -335,7 +64,6 @@ export default function SedesPage() {
     finally { setEliminando(false); }
   };
 
-  // Inserta o actualiza el programa guardado en la lista de programas de su sede
   const handleGuardadoPrograma = (prog) => {
     setSedes(prev => prev.map(s => {
       if (s.id !== prog.sedeId) return s;
@@ -349,7 +77,6 @@ export default function SedesPage() {
     setToast('Programa guardado correctamente');
   };
 
-  // Cambia el estado activo/inactivo de un programa en la API y actualiza el estado local
   const handleTogglePrograma = async (prog) => {
     try {
       const { data } = await apiClient.patch(`/api/sedes/programas/${prog.id}/toggle`);
@@ -360,7 +87,6 @@ export default function SedesPage() {
     } catch { setError('Error al cambiar estado del programa.'); }
   };
 
-  // Elimina un programa en la API y lo quita de la lista de su sede padre
   const handleEliminarPrograma = async () => {
     if (!confirmEliminar) return;
     setEliminando(true);
@@ -376,21 +102,18 @@ export default function SedesPage() {
     finally { setEliminando(false); }
   };
 
-  // Delega en handleEliminarSede o handleEliminarPrograma según el tipo de confirmación
   const handleConfirmarEliminar = () => {
-    if (confirmEliminar?.tipo === 'sede') return handleEliminarSede();
+    if (confirmEliminar?.tipo === 'sede')    return handleEliminarSede();
     if (confirmEliminar?.tipo === 'programa') return handleEliminarPrograma();
   };
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-      <Box
-        sx={{
-          background: 'linear-gradient(135deg, var(--color-primario), #2D984F)',
-          borderRadius: 3, p: { xs: 2, sm: 3 }, mb: 3, color: 'white',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2,
-        }}
-      >
+      <Box sx={{
+        background: 'linear-gradient(135deg, var(--color-primario), #2D984F)',
+        borderRadius: 3, p: { xs: 2, sm: 3 }, mb: 3, color: 'white',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2,
+      }}>
         <Box display="flex" alignItems="center" gap={1.5}>
           <LocationOnIcon sx={{ fontSize: 32, opacity: 0.85 }} />
           <Box>
@@ -400,12 +123,9 @@ export default function SedesPage() {
             </Typography>
           </Box>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
+        <Button variant="contained" startIcon={<AddIcon />}
           onClick={() => setDialogSede({ abierto: true, inicial: null })}
-          sx={{ bgcolor: 'rgba(255,255,255,0.2)', '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }, fontWeight: 700 }}
-        >
+          sx={{ bgcolor: 'rgba(255,255,255,0.2)', '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }, fontWeight: 700 }}>
           Nueva sede
         </Button>
       </Box>
@@ -420,7 +140,8 @@ export default function SedesPage() {
         <Paper elevation={0} sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 2, p: 5, textAlign: 'center' }}>
           <LocationOnIcon sx={{ fontSize: 48, color: '#ccc', mb: 1 }} />
           <Typography color="text.secondary">No hay sedes registradas.</Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogSede({ abierto: true, inicial: null })}
+          <Button variant="contained" startIcon={<AddIcon />}
+            onClick={() => setDialogSede({ abierto: true, inicial: null })}
             sx={{ mt: 2, bgcolor: 'var(--color-primario)' }}>
             Crear primera sede
           </Button>
@@ -429,35 +150,26 @@ export default function SedesPage() {
         <Grid container spacing={2} alignItems="flex-start">
           {sedes.map(sede => (
             <Grid key={sede.id} size={{ xs: 12, lg: 6 }}>
-              <TarjetaSede
-                sede={sede}
+              <TarjetaSede sede={sede}
                 onEditar={s    => setDialogSede({ abierto: true, inicial: s })}
                 onEliminar={s  => setConfirmEliminar({ tipo: 'sede', item: s })}
                 onToggle={handleToggleSede}
-                onNuevoPrograma={s => setDialogPrograma({ abierto: true, sedeId: s.id, inicial: null })}
+                onNuevoPrograma={s    => setDialogPrograma({ abierto: true, sedeId: s.id, inicial: null })}
                 onEditarPrograma={(s, p) => setDialogPrograma({ abierto: true, sedeId: s.id, inicial: p })}
                 onEliminarPrograma={p => setConfirmEliminar({ tipo: 'programa', item: p })}
-                onTogglePrograma={handleTogglePrograma}
-              />
+                onTogglePrograma={handleTogglePrograma} />
             </Grid>
           ))}
         </Grid>
       )}
 
-      <DialogSede
-        abierto={dialogSede.abierto}
-        inicial={dialogSede.inicial}
+      <DialogSede abierto={dialogSede.abierto} inicial={dialogSede.inicial}
         onCerrar={() => setDialogSede({ abierto: false, inicial: null })}
-        onGuardado={handleGuardadoSede}
-      />
+        onGuardado={handleGuardadoSede} />
 
-      <DialogPrograma
-        abierto={dialogPrograma.abierto}
-        sedeId={dialogPrograma.sedeId}
-        inicial={dialogPrograma.inicial}
+      <DialogPrograma abierto={dialogPrograma.abierto} sedeId={dialogPrograma.sedeId} inicial={dialogPrograma.inicial}
         onCerrar={() => setDialogPrograma({ abierto: false, sedeId: null, inicial: null })}
-        onGuardado={handleGuardadoPrograma}
-      />
+        onGuardado={handleGuardadoPrograma} />
 
       <Dialog open={!!confirmEliminar} onClose={() => setConfirmEliminar(null)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ color: '#c62828', fontWeight: 700 }}>

@@ -761,6 +761,153 @@ public static class DbMigrations
               ON inscripciones USING GIN (datos jsonb_path_ops)
             """, "inscripciones.idx_datos_gin");
 
+        // ── Tablas base de beneficiarios (esquema original) ──────────────────
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS beneficiarios (
+                id                        UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                nombre                    VARCHAR(200) NOT NULL,
+                fecha_nacimiento          DATE,
+                tipo_documento_id         SMALLINT,
+                numero_documento          VARCHAR(50),
+                pais_nacimiento           VARCHAR(100),
+                departamento_nacimiento   VARCHAR(100),
+                ciudad_nacimiento         VARCHAR(100),
+                barrio                    VARCHAR(100),
+                num_personas_vive         INT,
+                num_hermanos              INT,
+                nombre_colegio            VARCHAR(200),
+                grado_escolar             VARCHAR(50),
+                tiene_discapacidad        BOOLEAN      NOT NULL DEFAULT false,
+                descripcion_discapacidad  TEXT,
+                vive_con_nino             BOOLEAN,
+                genero                    VARCHAR(20),
+                autorizacion              BOOLEAN      NOT NULL DEFAULT false,
+                motivo_baja               VARCHAR(500),
+                activo                    BOOLEAN      NOT NULL DEFAULT true,
+                fecha_creacion            TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            )
+            """, "beneficiarios.create");
+
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS cat_eps (
+                id     SMALLSERIAL  PRIMARY KEY,
+                nombre VARCHAR(100) NOT NULL,
+                activo BOOLEAN      NOT NULL DEFAULT true
+            )
+            """, "cat_eps");
+
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS cat_parentescos (
+                id     SMALLSERIAL  PRIMARY KEY,
+                nombre VARCHAR(100) NOT NULL,
+                activo BOOLEAN      NOT NULL DEFAULT true
+            )
+            """, "cat_parentescos");
+
+        await Migrar("""
+            INSERT INTO cat_parentescos (nombre) VALUES
+                ('Madre'), ('Padre'), ('Abuela'), ('Abuelo'),
+                ('Tía'), ('Tío'), ('Hermana'), ('Hermano'),
+                ('Madrastra'), ('Padrastro'), ('Tutora'), ('Tutor'), ('Otro')
+            ON CONFLICT DO NOTHING
+            """, "cat_parentescos.seed");
+
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS cat_tipo_archivo (
+                id     SMALLSERIAL  PRIMARY KEY,
+                nombre VARCHAR(100) NOT NULL UNIQUE,
+                activo BOOLEAN      NOT NULL DEFAULT true
+            )
+            """, "cat_tipo_archivo");
+
+        await Migrar("""
+            INSERT INTO cat_tipo_archivo (nombre) VALUES
+                ('Foto del menor'),
+                ('Foto documento'),
+                ('Foto documento reverso')
+            ON CONFLICT (nombre) DO NOTHING
+            """, "cat_tipo_archivo.seed");
+
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS acudientes (
+                id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                nombre         VARCHAR(200) NOT NULL,
+                whatsapp       VARCHAR(30),
+                direccion      VARCHAR(300),
+                activo         BOOLEAN      NOT NULL DEFAULT true,
+                fecha_creacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            )
+            """, "acudientes");
+
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS beneficiario_acudiente (
+                id              UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+                beneficiario_id UUID     NOT NULL,
+                acudiente_id    UUID     NOT NULL,
+                parentesco_id   SMALLINT,
+                es_principal    BOOLEAN  NOT NULL DEFAULT false,
+                activo          BOOLEAN  NOT NULL DEFAULT true
+            )
+            """, "beneficiario_acudiente");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_ben_acudiente_ben ON beneficiario_acudiente(beneficiario_id)", "beneficiario_acudiente.idx");
+
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS beneficiario_salud (
+                id              UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+                beneficiario_id UUID     NOT NULL UNIQUE,
+                eps_id          SMALLINT,
+                observaciones   TEXT,
+                activo          BOOLEAN  NOT NULL DEFAULT true
+            )
+            """, "beneficiario_salud");
+
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS alergias_catalogo (
+                id     UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                nombre VARCHAR(200) NOT NULL,
+                activo BOOLEAN      NOT NULL DEFAULT true
+            )
+            """, "alergias_catalogo");
+
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS beneficiario_alergia (
+                id              UUID  PRIMARY KEY DEFAULT gen_random_uuid(),
+                beneficiario_id UUID  NOT NULL,
+                alergia_id      UUID  NOT NULL,
+                descripcion     TEXT,
+                activo          BOOLEAN NOT NULL DEFAULT true
+            )
+            """, "beneficiario_alergia");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_ben_alergia_ben ON beneficiario_alergia(beneficiario_id)", "beneficiario_alergia.idx");
+
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS beneficiario_talla (
+                id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                beneficiario_id UUID         NOT NULL,
+                talla_camisa    VARCHAR(10),
+                talla_pantalon  VARCHAR(10),
+                talla_zapatos   VARCHAR(10),
+                peso_kg         DECIMAL(5,2),
+                talla_cm        INT,
+                fecha_medicion  DATE         NOT NULL DEFAULT CURRENT_DATE,
+                activo          BOOLEAN      NOT NULL DEFAULT true,
+                fecha_creacion  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            )
+            """, "beneficiario_talla.create");
+
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS archivos (
+                id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                entidad_tipo   VARCHAR(50)  NOT NULL,
+                entidad_id     UUID         NOT NULL,
+                tipo_archivo_id SMALLINT,
+                url            TEXT         NOT NULL,
+                activo         BOOLEAN      NOT NULL DEFAULT true,
+                fecha_creacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            )
+            """, "archivos.create");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_archivos_entidad_base ON archivos(entidad_tipo, entidad_id)", "archivos.idx_entidad_base");
+
         // ── Catálogo tipos de documento ───────────────────────────────────────
         await Migrar("""
             CREATE TABLE IF NOT EXISTS cat_tipos_documento (

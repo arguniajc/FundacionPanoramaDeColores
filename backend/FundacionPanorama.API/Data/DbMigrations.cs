@@ -951,5 +951,12 @@ public static class DbMigrations
         await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS departamento  VARCHAR(100)", "voluntarios.departamento");
 
         await Migrar("ALTER TABLE inventario_movimientos ADD COLUMN IF NOT EXISTS donacion_id UUID", "inventario_movimientos.donacion_id");
+
+        // ── Mejoras ESAL/RTE en movimientos_contables ─────────────────────────────
+        await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS consecutivo          INTEGER",       "movimientos_contables.consecutivo");
+        await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS tipo_soporte         VARCHAR(30)",   "movimientos_contables.tipo_soporte");
+        await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS retencion_practicada NUMERIC(14,2)", "movimientos_contables.retencion_practicada");
+        await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS tarifa_retencion     NUMERIC(5,2)",  "movimientos_contables.tarifa_retencion");
+        await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS concepto_retencion   VARCHAR(100)",  "movimientos_contables.concepto_retencion");
     }
 }

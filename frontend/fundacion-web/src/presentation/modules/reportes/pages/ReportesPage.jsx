@@ -6,18 +6,21 @@ import FolderIcon            from '@mui/icons-material/Folder';
 import InventoryIcon         from '@mui/icons-material/Inventory';
 import PeopleIcon            from '@mui/icons-material/People';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
-import { TabBeneficiarios } from './components/TabBeneficiarios';
-import { TabProgramas }     from './components/TabProgramas';
-import { TabInventario }    from './components/TabInventario';
-import { TabActividades }   from './components/TabActividades';
-import { TabDonaciones }    from './components/TabDonaciones';
+import AccountBalanceIcon    from '@mui/icons-material/AccountBalance';
+import { TabBeneficiarios }      from './components/TabBeneficiarios';
+import { TabProgramas }          from './components/TabProgramas';
+import { TabInventario }         from './components/TabInventario';
+import { TabActividades }        from './components/TabActividades';
+import { TabDonaciones }         from './components/TabDonaciones';
+import { TabContabilidadEsal }   from './components/TabContabilidadEsal';
 
 const TABS = [
-  { label: 'Beneficiarios', icon: <PeopleIcon />,            component: <TabBeneficiarios /> },
-  { label: 'Programas',     icon: <FolderIcon />,            component: <TabProgramas /> },
-  { label: 'Inventario',    icon: <InventoryIcon />,         component: <TabInventario /> },
-  { label: 'Actividades',   icon: <EventIcon />,             component: <TabActividades /> },
-  { label: 'Donaciones',    icon: <VolunteerActivismIcon />, component: <TabDonaciones /> },
+  { label: 'Beneficiarios',     icon: <PeopleIcon />,            component: <TabBeneficiarios /> },
+  { label: 'Programas',         icon: <FolderIcon />,            component: <TabProgramas /> },
+  { label: 'Inventario',        icon: <InventoryIcon />,         component: <TabInventario /> },
+  { label: 'Actividades',       icon: <EventIcon />,             component: <TabActividades /> },
+  { label: 'Donaciones',        icon: <VolunteerActivismIcon />, component: <TabDonaciones /> },
+  { label: 'Contabilidad ESAL', icon: <AccountBalanceIcon />,   component: <TabContabilidadEsal /> },
 ];
 
 export default function ReportesPage() {

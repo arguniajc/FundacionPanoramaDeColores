@@ -46,7 +46,12 @@ public record MovimientoDto(
     string?  TerceroDocumento,
     string?  NumeroSoporte,
     string?  Descripcion,
-    DateTime FechaCreacion);
+    DateTime FechaCreacion,
+    int?     Consecutivo,
+    string?  TipoSoporte,
+    decimal? RetencionPracticada,
+    decimal? TarifaRetencion,
+    string?  ConceptoRetencion);
 
 public record CrearMovimientoDto(
     [Required][StringLength(10)]  string   Tipo,
@@ -59,7 +64,11 @@ public record CrearMovimientoDto(
     [StringLength(200)] string?  TerceroNombre,
     [StringLength(50)]  string?  TerceroDocumento,
     [StringLength(50)]  string?  NumeroSoporte,
-    [StringLength(1000)] string? Descripcion);
+    [StringLength(1000)] string? Descripcion,
+    [StringLength(30)]  string?  TipoSoporte,
+    decimal? RetencionPracticada,
+    decimal? TarifaRetencion,
+    [StringLength(100)] string?  ConceptoRetencion);
 
 public record ActualizarMovimientoDto(
     [Required][StringLength(10)]  string   Tipo,
@@ -72,7 +81,11 @@ public record ActualizarMovimientoDto(
     [StringLength(200)] string?  TerceroNombre,
     [StringLength(50)]  string?  TerceroDocumento,
     [StringLength(50)]  string?  NumeroSoporte,
-    [StringLength(1000)] string? Descripcion);
+    [StringLength(1000)] string? Descripcion,
+    [StringLength(30)]  string?  TipoSoporte,
+    decimal? RetencionPracticada,
+    decimal? TarifaRetencion,
+    [StringLength(100)] string?  ConceptoRetencion);
 
 // ── Presupuesto ───────────────────────────────────────────────────────────────
 public record PresupuestoDto(

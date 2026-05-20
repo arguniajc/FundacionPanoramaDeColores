@@ -1,0 +1,1 @@
+import{t as e}from"./apiClient-ZJDUiuYe.js";var t={listarCuentas:()=>e.get(`/api/contabilidad/cuentas`),listarCategorias:t=>e.get(`/api/contabilidad/categorias`,{params:t?{tipo:t}:{}}),crearMovimiento:t=>e.post(`/api/contabilidad/movimientos`,t),reporte:(t,n)=>e.get(`/api/contabilidad/reporte`,{params:{mes:t,anio:n}})};export{t};

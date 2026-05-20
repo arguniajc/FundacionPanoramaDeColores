@@ -115,7 +115,9 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                    m.categoria_id, cat.nombre AS cat_nombre, cat.codigo_puc,
                    m.programa_id,  p.nombre   AS prog_nombre,
                    m.tercero_nombre, m.tercero_documento,
-                   m.numero_soporte, m.descripcion, m.fecha_creacion
+                   m.numero_soporte, m.descripcion, m.fecha_creacion,
+                   m.consecutivo, m.tipo_soporte, m.retencion_practicada,
+                   m.tarifa_retencion, m.concepto_retencion
             FROM movimientos_contables m
             JOIN  cuentas_caja c    ON c.id   = m.cuenta_id
             JOIN  cat_contable cat  ON cat.id = m.categoria_id
@@ -150,19 +152,33 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         await conn.OpenAsync(ct);
         await using var tx = await conn.BeginTransactionAsync(ct);
 
+        await using var cmdSeq = conn.CreateCommand();
+        cmdSeq.Transaction = tx;
+        cmdSeq.CommandText = """
+            SELECT COALESCE(MAX(consecutivo), 0) + 1
+            FROM movimientos_contables
+            WHERE EXTRACT(YEAR FROM fecha) = @anio
+            """;
+        cmdSeq.Parameters.AddWithValue("anio", dto.Fecha.Year);
+        var consecutivo = Convert.ToInt32(await cmdSeq.ExecuteScalarAsync(ct));
+
         await using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = """
             INSERT INTO movimientos_contables
                 (tipo, fecha, concepto, monto, cuenta_id, categoria_id, programa_id,
-                 tercero_nombre, tercero_documento, numero_soporte, descripcion)
+                 tercero_nombre, tercero_documento, numero_soporte, descripcion,
+                 consecutivo, tipo_soporte, retencion_practicada, tarifa_retencion, concepto_retencion)
             VALUES
                 (@tipo, @fecha, @concepto, @monto, @cuentaId, @catId, @progId,
-                 @tercNombre, @tercDoc, @numSoporte, @desc)
+                 @tercNombre, @tercDoc, @numSoporte, @desc,
+                 @consecutivo, @tipoSoporte, @retPracticada, @tarifaRet, @conceptoRet)
             RETURNING id
             """;
         AddMovimientoParams(cmd, dto.Tipo, dto.Fecha, dto.Concepto, dto.Monto, dto.CuentaId, dto.CategoriaId,
-            dto.ProgramaId, dto.TerceroNombre, dto.TerceroDocumento, dto.NumeroSoporte, dto.Descripcion);
+            dto.ProgramaId, dto.TerceroNombre, dto.TerceroDocumento, dto.NumeroSoporte, dto.Descripcion,
+            dto.TipoSoporte, dto.RetencionPracticada, dto.TarifaRetencion, dto.ConceptoRetencion);
+        cmd.Parameters.AddWithValue("consecutivo", consecutivo);
         var newId = (Guid)(await cmd.ExecuteScalarAsync(ct))!;
 
         await ActualizarSaldoAsync(conn, tx, dto.CuentaId, dto.Tipo, dto.Monto, ct);
@@ -188,11 +204,14 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                 tipo = @tipo, fecha = @fecha, concepto = @concepto, monto = @monto,
                 cuenta_id = @cuentaId, categoria_id = @catId, programa_id = @progId,
                 tercero_nombre = @tercNombre, tercero_documento = @tercDoc,
-                numero_soporte = @numSoporte, descripcion = @desc
+                numero_soporte = @numSoporte, descripcion = @desc,
+                tipo_soporte = @tipoSoporte, retencion_practicada = @retPracticada,
+                tarifa_retencion = @tarifaRet, concepto_retencion = @conceptoRet
             WHERE id = @id
             """;
         AddMovimientoParams(cmd, dto.Tipo, dto.Fecha, dto.Concepto, dto.Monto, dto.CuentaId, dto.CategoriaId,
-            dto.ProgramaId, dto.TerceroNombre, dto.TerceroDocumento, dto.NumeroSoporte, dto.Descripcion);
+            dto.ProgramaId, dto.TerceroNombre, dto.TerceroDocumento, dto.NumeroSoporte, dto.Descripcion,
+            dto.TipoSoporte, dto.RetencionPracticada, dto.TarifaRetencion, dto.ConceptoRetencion);
         cmd.Parameters.AddWithValue("id", id);
         await cmd.ExecuteNonQueryAsync(ct);
 
@@ -701,7 +720,9 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                    m.categoria_id, cat.nombre AS cat_nombre, cat.codigo_puc,
                    m.programa_id,  p.nombre   AS prog_nombre,
                    m.tercero_nombre, m.tercero_documento,
-                   m.numero_soporte, m.descripcion, m.fecha_creacion
+                   m.numero_soporte, m.descripcion, m.fecha_creacion,
+                   m.consecutivo, m.tipo_soporte, m.retencion_practicada,
+                   m.tarifa_retencion, m.concepto_retencion
             FROM movimientos_contables m
             JOIN  cuentas_caja c    ON c.id   = m.cuenta_id
             JOIN  cat_contable cat  ON cat.id = m.categoria_id
@@ -716,19 +737,24 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
     static void AddMovimientoParams(NpgsqlCommand cmd,
         string tipo, DateOnly fecha, string concepto, decimal monto,
         Guid cuentaId, int catId, Guid? programaId,
-        string? tercNombre, string? tercDoc, string? numSoporte, string? desc)
+        string? tercNombre, string? tercDoc, string? numSoporte, string? desc,
+        string? tipoSoporte, decimal? retPracticada, decimal? tarifaRet, string? conceptoRet)
     {
-        cmd.Parameters.AddWithValue("tipo",       tipo);
-        cmd.Parameters.AddWithValue("fecha",      fecha);
-        cmd.Parameters.AddWithValue("concepto",   concepto);
-        cmd.Parameters.AddWithValue("monto",      monto);
-        cmd.Parameters.AddWithValue("cuentaId",   cuentaId);
-        cmd.Parameters.AddWithValue("catId",      catId);
-        cmd.Parameters.AddWithValue("progId",     (object?)programaId ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("tercNombre", (object?)tercNombre ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("tercDoc",    (object?)tercDoc    ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("numSoporte", (object?)numSoporte ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("desc",       (object?)desc       ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("tipo",         tipo);
+        cmd.Parameters.AddWithValue("fecha",        fecha);
+        cmd.Parameters.AddWithValue("concepto",     concepto);
+        cmd.Parameters.AddWithValue("monto",        monto);
+        cmd.Parameters.AddWithValue("cuentaId",     cuentaId);
+        cmd.Parameters.AddWithValue("catId",        catId);
+        cmd.Parameters.AddWithValue("progId",       (object?)programaId   ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("tercNombre",   (object?)tercNombre   ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("tercDoc",      (object?)tercDoc      ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("numSoporte",   (object?)numSoporte   ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("desc",         (object?)desc         ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("tipoSoporte",  (object?)tipoSoporte  ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("retPracticada",(object?)retPracticada ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("tarifaRet",    (object?)tarifaRet    ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("conceptoRet",  (object?)conceptoRet  ?? DBNull.Value);
     }
 
     static CuentaCajaDto MapCuenta(NpgsqlDataReader r) => new(
@@ -747,5 +773,10 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         r.IsDBNull(13) ? null : r.GetString(13),
         r.IsDBNull(14) ? null : r.GetString(14),
         r.IsDBNull(15) ? null : r.GetString(15),
-        r.GetDateTime(16));
+        r.GetDateTime(16),
+        r.IsDBNull(17) ? null : r.GetInt32(17),
+        r.IsDBNull(18) ? null : r.GetString(18),
+        r.IsDBNull(19) ? null : (decimal?)r[19],
+        r.IsDBNull(20) ? null : (decimal?)r[20],
+        r.IsDBNull(21) ? null : r.GetString(21));
 }

@@ -6,10 +6,11 @@ import {
 } from '@mui/material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import Inventory2Icon  from '@mui/icons-material/Inventory2';
-import { donantesRepository }   from '../../../../../infrastructure/repositories/donantesRepository';
-import { donacionesRepository } from '../../../../../infrastructure/repositories/donacionesRepository';
-import { sedesRepository }      from '../../../../../infrastructure/repositories/sedesRepository';
-import { inventarioRepository } from '../../../../../infrastructure/repositories/inventarioRepository';
+import { donantesRepository }      from '../../../../../infrastructure/repositories/donantesRepository';
+import { donacionesRepository }    from '../../../../../infrastructure/repositories/donacionesRepository';
+import { sedesRepository }         from '../../../../../infrastructure/repositories/sedesRepository';
+import { inventarioRepository }    from '../../../../../infrastructure/repositories/inventarioRepository';
+import { contabilidadRepository }  from '../../../../../infrastructure/repositories/contabilidadRepository';
 import { COLOR_DONACIONES, COLOR_ESPECIE, hoy } from './helpers';
 import { CampoUnidadMedida } from '../../../../../shared/components/form/FormControles';
 import { CATEGORIAS_INVENTARIO } from '../../../../../shared/utils/geodata';
@@ -19,6 +20,7 @@ const VACIO = {
   cantidad: '', unidadMedida: '', sedeId: '', programaId: '',
   descripcion: '', fechaDonacion: hoy(),
   ingresarInventario: false, categoriaInv: 'Otros', stockMinimoInv: '',
+  registrarContabilidad: false, cuentaContabId: '',
 };
 
 export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada, sedes }) {
@@ -32,6 +34,8 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
   const [opsItem,    setOpsItem]    = useState([]);
   const [buscandoI,  setBuscandoI]  = useState(false);
   const [itemSel,    setItemSel]    = useState(null);
+  const [cuentas,    setCuentas]    = useState([]);
+  const [catDonId,   setCatDonId]   = useState(null);
 
   useEffect(() => {
     if (!open) return;
@@ -46,6 +50,15 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
       setDonante(null);
       setOpsDonante([]);
     }
+    contabilidadRepository.listarCuentas()
+      .then(({ data }) => setCuentas(data.filter(c => c.activo)))
+      .catch(() => {});
+    contabilidadRepository.listarCategorias('ingreso')
+      .then(({ data }) => {
+        const cat = data.find(c => c.codigoPuc === '4120');
+        if (cat) setCatDonId(cat.id);
+      })
+      .catch(() => {});
   }, [open, donanteInicial]);
 
   useEffect(() => {
@@ -103,6 +116,23 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
         descripcion:  form.descripcion.trim() || null,
         fechaDonacion: form.fechaDonacion || hoy(),
       });
+      if (form.tipo === 'dinero' && form.registrarContabilidad && form.cuentaContabId && catDonId) {
+        try {
+          await contabilidadRepository.crearMovimiento({
+            tipo:              'ingreso',
+            fecha:             form.fechaDonacion || hoy(),
+            concepto:          `Donación - ${donante.nombre}`,
+            monto:             Number(form.monto),
+            cuentaId:          form.cuentaContabId,
+            categoriaId:       catDonId,
+            programaId:        form.programaId || null,
+            terceroNombre:     donante.nombre,
+            terceroDocumento:  donante.documento ?? null,
+            numeroSoporte:     form.reciboNumero.trim() || null,
+            descripcion:       form.descripcion.trim() || null,
+          });
+        } catch { /* silencioso — contabilidad se puede registrar manualmente */ }
+      }
       if (form.tipo === 'especie' && form.ingresarInventario) {
         try {
           await inventarioRepository.ingresarDesdeDonacion({
@@ -155,7 +185,8 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
             <ToggleButtonGroup value={form.tipo} exclusive size="small"
               onChange={(_, v) => v && setForm(p => ({
                 ...p, tipo: v,
-                ...(v === 'dinero' ? { ingresarInventario: false } : {}),
+                ...(v === 'dinero'  ? { ingresarInventario: false } : {}),
+                ...(v === 'especie' ? { registrarContabilidad: false } : {}),
               }))} sx={{ width: '100%' }}>
               <ToggleButton value="dinero"  sx={{ flex: 1, fontWeight: 700 }}>
                 <AttachMoneyIcon sx={{ fontSize: 17, mr: 0.5 }} /> Dinero
@@ -176,6 +207,36 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
               <TextField fullWidth size="small" label="N° Recibo" value={form.reciboNumero}
                 onChange={e => set('reciboNumero', e.target.value)} />
             </Grid>
+            <Grid size={12}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={form.registrarContabilidad}
+                    onChange={e => set('registrarContabilidad', e.target.checked)}
+                    size="small"
+                    sx={{ color: COLOR_DONACIONES, '&.Mui-checked': { color: COLOR_DONACIONES } }}
+                  />
+                }
+                label="Registrar ingreso en contabilidad"
+                sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.85rem' } }}
+              />
+            </Grid>
+            {form.registrarContabilidad && (
+              <Grid size={12}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>Cuenta destino *</InputLabel>
+                  <Select value={form.cuentaContabId} label="Cuenta destino *"
+                    onChange={e => set('cuentaContabId', e.target.value)}>
+                    <MenuItem value=""><em>Seleccione una cuenta…</em></MenuItem>
+                    {cuentas.map(c => (
+                      <MenuItem key={c.id} value={c.id}>
+                        {c.nombre}{c.banco ? ` — ${c.banco}` : ''}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
           </>}
 
           {form.tipo === 'especie' && <>

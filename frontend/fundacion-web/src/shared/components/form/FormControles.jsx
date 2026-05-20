@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import {
   TIPOS_DOCUMENTO, PAISES, CIUDADES_COLOMBIA,
-  getEstadosDePais, getCiudadesDeUbicacion,
+  getEstadosDePais, getCiudadesDeUbicacion, UNIDADES_MEDIDA,
 } from '../../utils/geodata';
 
 // ── CampoFecha ────────────────────────────────────────────────────────────────
@@ -156,6 +156,28 @@ export function SelectorUbicacion({
         />
       </Grid>
     </Grid>
+  );
+}
+
+// ── CampoUnidadMedida ─────────────────────────────────────────────────────────
+export function CampoUnidadMedida({
+  value = '', onChange,
+  label = 'Unidad de medida', size = 'small', fullWidth = true, required = false,
+}) {
+  return (
+    <Autocomplete
+      options={UNIDADES_MEDIDA}
+      freeSolo
+      value={value || null}
+      onChange={(_, v) => onChange(v ?? '')}
+      onInputChange={(_, v, reason) => { if (reason === 'input') onChange(v); }}
+      renderInput={p => (
+        <TextField {...p} size={size} fullWidth={fullWidth}
+          label={required ? `${label} *` : label}
+          placeholder="unidad, kg, lt, caja…"
+        />
+      )}
+    />
   );
 }
 

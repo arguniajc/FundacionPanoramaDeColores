@@ -11,6 +11,7 @@ import { donacionesRepository } from '../../../../../infrastructure/repositories
 import { sedesRepository }      from '../../../../../infrastructure/repositories/sedesRepository';
 import { inventarioRepository } from '../../../../../infrastructure/repositories/inventarioRepository';
 import { COLOR_DONACIONES, COLOR_ESPECIE, hoy } from './helpers';
+import { CampoUnidadMedida } from '../../../../../shared/components/form/FormControles';
 
 const VACIO = {
   tipo: 'dinero', monto: '', reciboNumero: '', nombreItem: '',
@@ -206,9 +207,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
                 value={form.cantidad} onChange={e => set('cantidad', e.target.value)} />
             </Grid>
             <Grid size={6}>
-              <TextField fullWidth size="small" label="Unidad de medida"
-                value={form.unidadMedida} onChange={e => set('unidadMedida', e.target.value)}
-                placeholder="kg, und, litros…" />
+              <CampoUnidadMedida value={form.unidadMedida} onChange={v => set('unidadMedida', v)} />
             </Grid>
             <Grid size={12}>
               <FormControlLabel

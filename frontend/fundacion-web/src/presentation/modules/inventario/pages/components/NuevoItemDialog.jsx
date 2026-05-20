@@ -4,7 +4,8 @@ import {
   FormControl, Grid, InputLabel, MenuItem, Select, TextField,
 } from '@mui/material';
 import { inventarioRepository } from '../../../../../infrastructure/repositories/inventarioRepository';
-import { COLOR, CATEGORIAS, UNIDADES } from './helpers';
+import { COLOR, CATEGORIAS } from './helpers';
+import { CampoUnidadMedida } from '../../../../../shared/components/form/FormControles';
 
 const ITEM_VACIO = { codigo: '', nombre: '', descripcion: '', unidadMedida: 'unidad', categoria: 'Otros', stockActual: 0, stockMinimo: 0 };
 
@@ -92,12 +93,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
             </FormControl>
           </Grid>
           <Grid size={6}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Unidad</InputLabel>
-              <Select value={form.unidadMedida} label="Unidad" onChange={e => set('unidadMedida', e.target.value)}>
-                {UNIDADES.map(u => <MenuItem key={u} value={u} sx={{ textTransform: 'capitalize' }}>{u}</MenuItem>)}
-              </Select>
-            </FormControl>
+            <CampoUnidadMedida value={form.unidadMedida} onChange={v => set('unidadMedida', v)} label="Unidad" />
           </Grid>
           <Grid size={12}>
             <TextField fullWidth size="small" label="Descripción" multiline rows={2}

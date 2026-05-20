@@ -59,3 +59,13 @@ export const GRADOS_COLOMBIA = [
   'Grado 10°', 'Grado 11°',
 ];
 export const JORNADAS_ESCOLARES = ['Mañana', 'Tarde', 'Noche', 'Única', 'Sabatina', 'Fin de semana'];
+
+export const UNIDADES_MEDIDA = [
+  'unidad', 'par', 'set', 'kit',
+  'kg', 'g', 'mg', 'lb',
+  'lt', 'ml', 'galón',
+  'metro', 'cm', 'rollo',
+  'caja', 'paquete', 'bolsa', 'sobre', 'bulto',
+  'hoja', 'resma',
+  'docena', 'otro',
+];

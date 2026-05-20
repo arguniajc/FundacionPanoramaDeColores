@@ -1,3 +1,6 @@
+import { UNIDADES_MEDIDA } from '../../../../../shared/utils/geodata';
+export { UNIDADES_MEDIDA as UNIDADES };
+
 export const COLOR = 'var(--color-primario)';
 
 export const CATEGORIAS = [
@@ -5,7 +8,6 @@ export const CATEGORIAS = [
   'Ropa y calzado', 'Alimentos', 'Medicamentos',
   'Muebles y enseres', 'Herramientas', 'Otros',
 ];
-export const UNIDADES = ['unidad','kg','g','lt','ml','metro','caja','paquete','rollo','hoja','otro'];
 
 export const CAT_COLOR = {
   'Material escolar':    '#7c3aed',

@@ -126,7 +126,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
               noOptionsText="Escriba para buscar…"
               renderInput={p => (
                 <TextField {...p} size="small" label="Donante *"
-                  InputProps={{ ...p.InputProps, endAdornment: <>{buscandoD && <CircularProgress size={16} />}{p.InputProps.endAdornment}</> }}
+                  InputProps={{ ...(p.InputProps ?? {}), endAdornment: <>{buscandoD && <CircularProgress size={16} />}{p.InputProps?.endAdornment}</> }}
                 />
               )}
             />
@@ -174,7 +174,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
                 renderInput={p => (
                   <TextField {...p} size="small" label="Artículo del inventario (opcional)"
                     placeholder="Buscar por nombre…"
-                    InputProps={{ ...p.InputProps, endAdornment: <>{buscandoI && <CircularProgress size={16} />}{p.InputProps.endAdornment}</> }}
+                    InputProps={{ ...(p.InputProps ?? {}), endAdornment: <>{buscandoI && <CircularProgress size={16} />}{p.InputProps?.endAdornment}</> }}
                   />
                 )}
               />

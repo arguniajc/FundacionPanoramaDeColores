@@ -490,8 +490,9 @@ export default function ContabilidadPage() {
                   <TableCell>CategorÃ­a PUC</TableCell>
                   <TableCell>Cuenta</TableCell>
                   <TableCell>Programa</TableCell>
-                  <TableCell>Soporte</TableCell>
+                  <TableCell>Soporte / Tipo</TableCell>
                   <TableCell align="right">Monto</TableCell>
+                  <TableCell>N° Comp.</TableCell>
                   {puedeEditar && <TableCell />}
                 </TableRow>
               </TableHead>
@@ -516,12 +517,23 @@ export default function ContabilidadPage() {
                     </TableCell>
                     <TableCell>{m.cuentaNombre}</TableCell>
                     <TableCell>{m.programaNombre ?? 'â€”'}</TableCell>
-                    <TableCell>{m.numeroSoporte ?? 'â€”'}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{m.numeroSoporte ?? '-'}</Typography>
+                      {m.tipoSoporte && <Typography variant="caption" color="text.secondary">{m.tipoSoporte}</Typography>}
+                    </TableCell>
                     <TableCell align="right">
                       <Typography fontWeight="bold"
                         color={m.tipo === 'ingreso' ? 'success.main' : 'error.main'}>
-                        {m.tipo === 'ingreso' ? '+' : 'âˆ’'}{fmt(m.monto)}
+                        {m.tipo === 'ingreso' ? '+' : '-'}{fmt(m.monto)}
                       </Typography>
+                      {m.retencionPracticada > 0 && (
+                        <Typography variant="caption" color="warning.dark" display="block">
+                          RTE: -{fmt(m.retencionPracticada)}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'text.secondary' }}>
+                      {m.consecutivo ? '#' + m.consecutivo + '-' + new Date(m.fecha).getFullYear() : '-'}
                     </TableCell>
                     {puedeEditar && (
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>
@@ -538,7 +550,7 @@ export default function ContabilidadPage() {
                 ))}
                 {movimientos.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                       <Typography color="text.secondary">No hay movimientos con los filtros actuales</Typography>
                     </TableCell>
                   </TableRow>
@@ -851,18 +863,23 @@ export default function ContabilidadPage() {
                     <Table size="small">
                       <TableHead>
                         <TableRow>
+                          <TableCell>N°</TableCell>
                           <TableCell>Fecha</TableCell>
                           <TableCell>Tipo</TableCell>
                           <TableCell>Concepto</TableCell>
                           <TableCell>PUC</TableCell>
-                          <TableCell>Tercero</TableCell>
-                          <TableCell>Soporte</TableCell>
+                          <TableCell>Tercero / NIT</TableCell>
+                          <TableCell>Soporte / Tipo</TableCell>
                           <TableCell align="right">Monto</TableCell>
+                          <TableCell>RTE</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {reporte.movimientos.map(m => (
                           <TableRow key={m.id}>
+                            <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'text.secondary' }}>
+                              {m.consecutivo ? '#' + m.consecutivo + '-' + new Date(m.fecha).getFullYear() : '-'}
+                            </TableCell>
                             <TableCell>{fmtFecha(m.fecha)}</TableCell>
                             <TableCell>
                               <Chip label={m.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'}
@@ -870,17 +887,26 @@ export default function ContabilidadPage() {
                             </TableCell>
                             <TableCell>{m.concepto}</TableCell>
                             <TableCell><Typography variant="caption">{m.codigoPuc}</Typography></TableCell>
-                            <TableCell>{m.terceroNombre ?? 'â€”'}</TableCell>
-                            <TableCell>{m.numeroSoporte ?? 'â€”'}</TableCell>
+                            <TableCell>
+                              <Typography variant="body2">{m.terceroNombre ?? '-'}</Typography>
+                              {m.terceroDocumento && <Typography variant="caption" color="text.secondary">{m.terceroDocumento}</Typography>}
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">{m.numeroSoporte ?? '-'}</Typography>
+                              {m.tipoSoporte && <Typography variant="caption" color="text.secondary">{m.tipoSoporte}</Typography>}
+                            </TableCell>
                             <TableCell align="right" sx={{ fontWeight: 'bold',
                               color: m.tipo === 'ingreso' ? 'success.main' : 'error.main' }}>
-                              {m.tipo === 'ingreso' ? '+' : 'âˆ’'}{fmt(m.monto)}
+                              {m.tipo === 'ingreso' ? '+' : '-'}{fmt(m.monto)}
+                            </TableCell>
+                            <TableCell align="right" sx={{ color: 'warning.dark', fontSize: '0.75rem' }}>
+                              {m.retencionPracticada > 0 ? '-' + fmt(m.retencionPracticada) : '-'}
                             </TableCell>
                           </TableRow>
                         ))}
                         {reporte.movimientos.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={7} align="center">
+                            <TableCell colSpan={9} align="center">
                               <Typography variant="caption" color="text.secondary">
                                 Sin movimientos en este periodo
                               </Typography>

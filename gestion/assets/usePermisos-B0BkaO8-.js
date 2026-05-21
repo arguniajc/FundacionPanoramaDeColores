@@ -1,1 +1,0 @@
-import{n as e}from"./AuthContext-BmewCcq8.js";function t(){let{puedo:t,esAdmin:n,rol:r,permisos:i}=e();return{puedo:t,esAdmin:n,rol:r,permisos:i}}export{t};

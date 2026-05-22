@@ -5,8 +5,10 @@ import {
   Dialog, DialogActions, DialogContent, DialogTitle,
   Grid, IconButton, TextField, Tooltip, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
-import EditIcon        from '@mui/icons-material/Edit';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import EditIcon           from '@mui/icons-material/Edit';
+import GavelIcon          from '@mui/icons-material/Gavel';
+import PictureAsPdfIcon   from '@mui/icons-material/PictureAsPdf';
+import WarningAmberIcon   from '@mui/icons-material/WarningAmber';
 import { beneficiariosRepository } from '../../../../../infrastructure/repositories/beneficiariosRepository';
 import { generarPdfInscripcion }   from '../../../../../shared/utils/generarPdfInscripcion';
 import { sedesRepository }         from '../../../../../infrastructure/repositories/sedesRepository';
@@ -27,6 +29,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [generandoPdf,  setGenerandoPdf]  = useState(false);
   const [error,         setError]         = useState('');
   const [beneficiario,  setBeneficiario]  = useState(null);
+  const [programa,      setPrograma]      = useState(null);
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -37,15 +40,18 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
     setEditando(false);
     setError('');
     setBeneficiario(null);
+    setPrograma(null);
     try { setDatos(JSON.parse(inscripcion.datos || '{}')); } catch { setDatos({}); }
     setObservaciones(inscripcion.observaciones ?? '');
     Promise.all([
       sedesRepository.listarCampos(inscripcion.programaId),
       beneficiariosRepository.obtener(inscripcion.beneficiarioId),
+      sedesRepository.obtenerPrograma(inscripcion.programaId),
     ])
-      .then(([camposRes, benefRes]) => {
+      .then(([camposRes, benefRes, progRes]) => {
         setCampos(camposRes.data);
         setBeneficiario(benefRes.data);
+        setPrograma(progRes.data);
         let datosActuales = {};
         try { datosActuales = JSON.parse(inscripcion.datos || '{}'); } catch {}
         const padresMadreIds = camposRes.data
@@ -102,15 +108,13 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const handleImprimir = async () => {
     setGenerandoPdf(true);
     try {
-      const [{ data: benef }, { data: programa }] = await Promise.all([
-        beneficiariosRepository.obtener(inscripcion.beneficiarioId),
-        sedesRepository.obtenerPrograma(inscripcion.programaId),
-      ]);
+      const benef = beneficiario ?? (await beneficiariosRepository.obtener(inscripcion.beneficiarioId)).data;
+      const prog  = programa     ?? (await sedesRepository.obtenerPrograma(inscripcion.programaId)).data;
       const doc = await generarPdfInscripcion({
         inscripcion, beneficiario: benef, campos, datos, observaciones,
-        conTercero: programa.tieneTercero ?? false,
-        nombreTercero: programa.nombreTercero ?? '',
-        programa,
+        conTercero: prog.tieneTercero ?? false,
+        nombreTercero: prog.nombreTercero ?? '',
+        programa: prog,
       });
       const blob   = doc.output('blob');
       const url    = URL.createObjectURL(blob);
@@ -388,6 +392,61 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             )}
             <FirmaAutorizacion datos={datos} setDatos={setDatos}
               panelActivo={panelActivo} campos={campos} disabled sx={{ mt: 1 }} />
+
+            {/* ── Firma del Representante Legal ──────────────────── */}
+            <Box sx={{ mt: 2, p: 2, borderRadius: 2, border: '1px solid',
+              borderColor: programa?.repAutorizado && programa?.repFirma ? '#d0c4f7' : 'warning.light',
+              bgcolor: programa?.repAutorizado && programa?.repFirma ? '#fdfbff' : '#fffde7' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5,
+                borderLeft: `4px solid ${programa?.repAutorizado && programa?.repFirma ? COLOR : '#f59e0b'}`,
+                pl: 1.5 }}>
+                {programa?.repAutorizado && programa?.repFirma
+                  ? <GavelIcon fontSize="small" sx={{ color: COLOR }} />
+                  : <WarningAmberIcon fontSize="small" sx={{ color: 'warning.main' }} />}
+                <Typography fontWeight={800} color={programa?.repAutorizado && programa?.repFirma ? COLOR : 'warning.dark'}
+                  sx={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  Firma Representante Legal — Fundación
+                </Typography>
+              </Box>
+              {programa?.repAutorizado && programa?.repFirma ? (
+                <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <Box component="img" src={programa.repFirma} alt="Firma representante"
+                    sx={{ height: 64, maxWidth: 200, objectFit: 'contain',
+                          border: '1px solid #e0d9f3', borderRadius: 1, bgcolor: 'white', p: 0.5 }} />
+                  <Box>
+                    <Typography fontWeight={700} variant="body2">{programa.repNombre ?? '—'}</Typography>
+                    {programa.repDocumento && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Doc: {programa.repDocumento}
+                      </Typography>
+                    )}
+                    {programa.repCargo && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        {programa.repCargo}
+                      </Typography>
+                    )}
+                    {programa.repAutorizacionFecha && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Autorizado: {new Date(programa.repAutorizacionFecha).toLocaleDateString('es-CO', { dateStyle: 'medium' })}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              ) : programa?.repAutorizado && !programa?.repFirma ? (
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>{programa.repNombre ?? '—'}</Typography>
+                  {programa.repCargo && <Typography variant="caption" color="text.secondary">{programa.repCargo}</Typography>}
+                  <Typography variant="caption" color="warning.dark" display="block" sx={{ mt: 0.5 }}>
+                    No hay firma capturada. Ve a Configuración → Representante Legal, sube la firma y luego re-autoriza el programa.
+                  </Typography>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="warning.dark">
+                  Este programa no tiene representante legal autorizado. Ve a <strong>Programas</strong> y haz clic en "Autorizar representante" para vincularlo.
+                </Typography>
+              )}
+            </Box>
+
             {observaciones && (
               <Box sx={{ borderLeft: `5px solid ${COLOR}`, bgcolor: 'rgba(78,27,149,0.07)',
                           borderRadius: '0 8px 8px 0', px: 1.5, py: 1, mt: 1 }}>

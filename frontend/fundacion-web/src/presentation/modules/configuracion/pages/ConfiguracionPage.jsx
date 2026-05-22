@@ -15,18 +15,20 @@ import { TabPaginaWeb }   from './components/TabPaginaWeb';
 
 export default function ConfiguracionPage() {
   const { actualizarConfig } = useConfiguracion();
-  const [form,      setForm]     = useState(VACIO_FORM);
-  const [webForm,   setWebForm]  = useState(DEFAULT_WEB);
-  const [tab,       setTab]      = useState(0);
-  const [cargando,  setCargando] = useState(true);
-  const [guardando, setGuardando]= useState(false);
-  const [error,     setError]    = useState('');
-  const [toast,     setToast]    = useState('');
+  const [form,       setForm]      = useState(VACIO_FORM);
+  const [formPrev,   setFormPrev]  = useState(VACIO_FORM);
+  const [webForm,    setWebForm]   = useState(DEFAULT_WEB);
+  const [tab,        setTab]       = useState(0);
+  const [cargando,   setCargando]  = useState(true);
+  const [guardando,  setGuardando] = useState(false);
+  const [error,      setError]     = useState('');
+  const [toast,      setToast]     = useState('');
+  const [avisoRep,   setAvisoRep]  = useState(false);
 
   useEffect(() => {
     configuracionRepository.obtener()
       .then(({ data }) => {
-        setForm({
+        const loaded = {
           nombreFundacion:   data.nombreFundacion   ?? '',
           nit:               data.nit               ?? '',
           direccion:         data.direccion         ?? '',
@@ -46,7 +48,9 @@ export default function ConfiguracionPage() {
           mensajeBienvenida: data.mensajeBienvenida  ?? '',
           footerTexto:       data.footerTexto        ?? '',
           webContenido:      data.webContenido       ?? '',
-        });
+        };
+        setForm(loaded);
+        setFormPrev(loaded);
         if (data.webContenido) {
           try {
             setWebForm(mergeDeep(DEFAULT_WEB, JSON.parse(data.webContenido)));
@@ -58,6 +62,13 @@ export default function ConfiguracionPage() {
   }, []);
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
+
+  const repCambiado = tab === 1 && (
+    form.nombreRepLegal !== formPrev.nombreRepLegal ||
+    form.documentoRep   !== formPrev.documentoRep   ||
+    form.cargoRep       !== formPrev.cargoRep        ||
+    form.firmaRep       !== formPrev.firmaRep
+  );
 
   const handleGuardar = async () => {
     setGuardando(true); setError('');
@@ -84,6 +95,8 @@ export default function ConfiguracionPage() {
         webContenido:      JSON.stringify(webForm),
       });
       actualizarConfig(data);
+      setFormPrev({ ...form });
+      if (repCambiado) setAvisoRep(true);
       setToast('Configuración guardada correctamente');
     } catch {
       setError('No se pudo guardar la configuración.');
@@ -107,6 +120,12 @@ export default function ConfiguracionPage() {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+      {avisoRep && (
+        <Alert severity="warning" sx={{ mb: 3 }} onClose={() => setAvisoRep(false)}>
+          <strong>Datos del representante legal actualizados.</strong> Para que la nueva firma aparezca en las inscripciones, ve a <strong>Programas</strong> y haz clic en "Autorizar representante" en cada programa. Los programas ya autorizados conservan la firma anterior hasta que los re-autorices.
+        </Alert>
+      )}
 
       {cargando ? (
         <Box display="flex" justifyContent="center" py={8}><CircularProgress sx={{ color: COLOR }} /></Box>

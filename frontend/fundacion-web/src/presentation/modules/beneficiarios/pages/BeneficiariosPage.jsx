@@ -328,6 +328,7 @@ export default function BeneficiariosPage() {
                   <TableCell>Nombre del menor</TableCell>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Documento</TableCell>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Edad</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Género</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>WhatsApp</TableCell>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Alergia</TableCell>
                   <TableCell>Estado</TableCell>
@@ -337,9 +338,9 @@ export default function BeneficiariosPage() {
 
               <TableBody>
                 {cargando ? (
-                  <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6 }}><CircularProgress size={32} sx={{ color: 'var(--color-primario)' }} /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} align="center" sx={{ py: 6 }}><CircularProgress size={32} sx={{ color: 'var(--color-primario)' }} /></TableCell></TableRow>
                 ) : inscripciones.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>No se encontraron beneficiarios.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>No se encontraron beneficiarios.</TableCell></TableRow>
                 ) : (
                   inscripciones.map((ins, idx) => (
                     <TableRow
@@ -385,6 +386,9 @@ export default function BeneficiariosPage() {
                       </TableCell>
                       <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.primary', display: { xs: 'none', sm: 'table-cell' } }}>
                         {calcularEdad(ins.fechaNacimiento)}
+                      </TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', lg: 'table-cell' }, fontSize: '0.82rem', color: 'text.secondary' }}>
+                        {ins.genero || '—'}
                       </TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'table-cell' } }}>
                         {ins.whatsapp ? (

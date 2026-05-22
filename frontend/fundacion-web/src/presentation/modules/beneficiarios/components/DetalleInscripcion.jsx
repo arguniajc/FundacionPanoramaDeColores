@@ -269,6 +269,12 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             <Campo label="Número de documento" value={ins.numeroDocumento || 'Sin documento'} />
           </Grid>
 
+          {ins.genero && (
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Campo label="Género" value={ins.genero} />
+            </Grid>
+          )}
+
           {/* Lugar de nacimiento */}
           {lugarNacimiento && (
             <Grid size={12}>

@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Typography, Box, Divider, CircularProgress, Chip,
 } from '@mui/material';
 import DownloadIcon  from '@mui/icons-material/Download';
 import ReceiptIcon   from '@mui/icons-material/Receipt';
-import { useConfiguracion } from '../../../../../shared/context/ConfiguracionContext';
+import { useConfiguracion }        from '../../../../../shared/context/ConfiguracionContext';
+import { configuracionRepository } from '../../../../../infrastructure/repositories/configuracionRepository';
 import { fmtMoney, fmtFecha } from './helpers';
 
-function generarPDF(don, config) {
+function generarPDF(don, config, firma) {
   import('jspdf').then(({ default: jsPDF }) => {
     const doc = new jsPDF({ unit: 'mm', format: 'a5' });
     const W = doc.internal.pageSize.getWidth();
@@ -129,19 +130,44 @@ function generarPDF(don, config) {
     y += 2;
     doc.setDrawColor(200, 200, 200);
     doc.line(14, y, W - 14, y);
-    y += 8;
+    y += 10;
 
-    // Firmas
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Firma representante legal', 14, y + 12);
+    // ── Firmas ───────────────────────────────────────────────────────────
+    const firmaW    = 55;
+    const firmaH    = 18;
+    const xRepLegal = 14;
+    const xDonante  = W - 14 - firmaW;
+
+    // Firma representante legal (imagen si existe)
+    if (firma.firmaRep) {
+      try {
+        doc.addImage(firma.firmaRep, 'PNG', xRepLegal, y, firmaW, firmaH);
+      } catch {
+        // si la imagen falla, dibujamos la línea de todos modos
+      }
+    }
+    y += firmaH;
+
     doc.setDrawColor(180, 180, 180);
-    doc.line(14, y + 11, 70, y + 11);
-    doc.text('Firma donante', W - 70, y + 12, { align: 'left' });
-    doc.line(W - 70, y + 11, W - 14, y + 11);
+    doc.line(xRepLegal, y, xRepLegal + firmaW, y);
+    doc.line(xDonante,  y, xDonante  + firmaW, y);
 
-    y += 26;
+    doc.setFontSize(7.5);
+    doc.setTextColor(60, 60, 60);
+    doc.setFont('helvetica', 'bold');
+    doc.text(firma.nombreRepLegal || 'Representante legal', xRepLegal, y + 4);
+    doc.text('Donante', xDonante, y + 4);
+
+    if (firma.cargoRep) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(120, 120, 120);
+      doc.text(firma.cargoRep, xRepLegal, y + 8);
+    }
+
+    y += 16;
     doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(150, 150, 150);
     doc.text(
       'Este recibo es prueba de la donación realizada. Gracias por su generosidad.',
@@ -156,10 +182,22 @@ function generarPDF(don, config) {
 export function ReciboDonacionDialog({ open, donacion, onClose }) {
   const config = useConfiguracion();
   const [generando, setGenerando] = useState(false);
+  const [firma,     setFirma]     = useState({ firmaRep: null, nombreRepLegal: null, cargoRep: null });
+
+  useEffect(() => {
+    if (!open) return;
+    configuracionRepository.obtener()
+      .then(({ data }) => setFirma({
+        firmaRep:       data.firmaRep       ?? null,
+        nombreRepLegal: data.nombreRepLegal ?? null,
+        cargoRep:       data.cargoRep       ?? null,
+      }))
+      .catch(() => {});
+  }, [open]);
 
   const handleDescargar = () => {
     setGenerando(true);
-    generarPDF(donacion, config);
+    generarPDF(donacion, config, firma);
     setTimeout(() => setGenerando(false), 800);
   };
 
@@ -236,6 +274,36 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
               <Typography variant="caption" color="text.secondary">Descripción</Typography>
               <Typography variant="body2">{donacion.descripcion}</Typography>
             </Box>
+          )}
+
+          {/* Vista previa firma */}
+          {firma.firmaRep && (
+            <>
+              <Divider />
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                    Firma representante legal
+                  </Typography>
+                  <Box
+                    component="img"
+                    src={firma.firmaRep}
+                    alt="Firma"
+                    sx={{ height: 44, maxWidth: '100%', objectFit: 'contain', display: 'block' }}
+                  />
+                  <Box sx={{ borderTop: '1px solid #ccc', pt: 0.5 }}>
+                    <Typography variant="caption" fontWeight={600}>
+                      {firma.nombreRepLegal || ''}
+                    </Typography>
+                    {firma.cargoRep && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        {firma.cargoRep}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            </>
           )}
         </Box>
       </DialogContent>

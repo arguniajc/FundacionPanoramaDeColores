@@ -22,6 +22,7 @@ import BarChartIcon         from '@mui/icons-material/BarChart';
 import PersonAddIcon        from '@mui/icons-material/PersonAdd';
 import SyncIcon             from '@mui/icons-material/Sync';
 import UploadFileIcon       from '@mui/icons-material/UploadFile';
+import DeleteForeverIcon    from '@mui/icons-material/DeleteForever';
 import * as XLSX from 'xlsx';
 import apiClient                                        from '../../../../infrastructure/http/apiClient';
 import { useAuth }          from '../../../../application/auth/AuthContext';
@@ -58,6 +59,9 @@ export default function BeneficiariosPage() {
   const [procesandoBaja, setProcesandoBaja] = useState(false);
   const [actualizando,   setActualizando]   = useState(false);
   const [importDialog,   setImportDialog]   = useState(false);
+  const [eliminar,       setEliminar]       = useState(null);   // { id, nombre }
+  const [eliminando,     setEliminando]     = useState(false);
+  const [errorEliminar,  setErrorEliminar]  = useState('');
 
   const cargarStatsDetalle = useCallback(async () => {
     setCargandoStats(true);
@@ -124,6 +128,21 @@ export default function BeneficiariosPage() {
       setToast('Beneficiario reactivado correctamente');
       limpiarCache(); cargar(true); cargarStatsDetalle();
     } catch { setError('No se pudo reactivar el beneficiario.'); }
+  };
+
+  const handleEliminarPermanente = async () => {
+    if (!eliminar) return;
+    setEliminando(true); setErrorEliminar('');
+    try {
+      await apiClient.delete(`/api/beneficiarios/${eliminar.id}`);
+      setEliminar(null);
+      setToast('Beneficiario eliminado permanentemente.');
+      limpiarCache(); cargar(true); cargarStatsDetalle();
+    } catch (e) {
+      setErrorEliminar(e?.response?.data?.mensaje || 'No se pudo eliminar el beneficiario.');
+    } finally {
+      setEliminando(false);
+    }
   };
 
   const handleGuardadoEdicion = () => {
@@ -454,6 +473,14 @@ export default function BeneficiariosPage() {
                             </IconButton>
                           </Tooltip>
                         ))}
+                        {esAdmin && (
+                          <Tooltip title="Eliminar de la BD (irreversible)">
+                            <IconButton size="small" sx={{ color: '#c62828', '&:hover': { bgcolor: 'rgba(198,40,40,0.1)' } }}
+                              onClick={() => { setEliminar({ id: ins.id, nombre: ins.nombreMenor }); setErrorEliminar(''); }}>
+                              <DeleteForeverIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -537,6 +564,30 @@ export default function BeneficiariosPage() {
           <Button variant="contained" onClick={handleDarDeBaja} disabled={procesandoBaja}
             sx={{ bgcolor: '#e65100', '&:hover': { bgcolor: '#bf360c' } }}>
             {procesandoBaja ? 'Procesando…' : 'Dar de baja'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!eliminar} onClose={() => { if (!eliminando) { setEliminar(null); setErrorEliminar(''); } }} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ color: '#c62828', fontWeight: 700, pb: 1 }}>
+          Eliminar beneficiario de la BD
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: errorEliminar ? 1.5 : 0 }}>
+            ¿Eliminar permanentemente a <strong>{eliminar?.nombre}</strong>?
+            Esta acción borra todos sus datos de perfil y <strong>no se puede deshacer</strong>.
+            Solo es posible si el beneficiario no tiene inscripciones ni movimientos de inventario vinculados.
+          </DialogContentText>
+          {errorEliminar && <Alert severity="error" sx={{ mt: 1 }}>{errorEliminar}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => { setEliminar(null); setErrorEliminar(''); }} disabled={eliminando} variant="outlined">
+            Cancelar
+          </Button>
+          <Button variant="contained" onClick={handleEliminarPermanente} disabled={eliminando}
+            startIcon={eliminando ? <CircularProgress size={16} color="inherit" /> : <DeleteForeverIcon />}
+            sx={{ bgcolor: '#c62828', '&:hover': { bgcolor: '#b71c1c' } }}>
+            {eliminando ? 'Eliminando…' : 'Eliminar permanentemente'}
           </Button>
         </DialogActions>
       </Dialog>

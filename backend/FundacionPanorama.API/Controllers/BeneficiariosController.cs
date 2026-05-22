@@ -679,12 +679,76 @@ public class BeneficiariosController : ControllerBase
     public async Task<IActionResult> Eliminar(Guid id)
     {
         if (!EsAdmin()) return Forbid();
+
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "DELETE FROM beneficiarios WHERE id = @id";
-        cmd.Parameters.AddWithValue("id", id);
-        return await cmd.ExecuteNonQueryAsync() == 0 ? NotFound() : NoContent();
+
+        // Existencia
+        await using var exCmd = conn.CreateCommand();
+        exCmd.CommandText = "SELECT COUNT(*)::int FROM beneficiarios WHERE id = @id";
+        exCmd.Parameters.AddWithValue("id", id);
+        if ((int)(await exCmd.ExecuteScalarAsync())! == 0) return NotFound();
+
+        // Tablas que bloquean la eliminación
+        await using var chkIns = conn.CreateCommand();
+        chkIns.CommandText = "SELECT COUNT(*)::int FROM inscripciones WHERE beneficiario_id = @id";
+        chkIns.Parameters.AddWithValue("id", id);
+        var cntIns = (int)(await chkIns.ExecuteScalarAsync())!;
+
+        await using var chkMov = conn.CreateCommand();
+        chkMov.CommandText = "SELECT COUNT(*)::int FROM inventario_movimientos WHERE beneficiario_id = @id";
+        chkMov.Parameters.AddWithValue("id", id);
+        var cntMov = (int)(await chkMov.ExecuteScalarAsync())!;
+
+        if (cntIns > 0 || cntMov > 0)
+        {
+            var partes = new List<string>();
+            if (cntIns > 0) partes.Add($"{cntIns} inscripción{(cntIns > 1 ? "es" : "")} a programa{(cntIns > 1 ? "s" : "")}");
+            if (cntMov > 0) partes.Add($"{cntMov} movimiento{(cntMov > 1 ? "s" : "")} de inventario");
+            return Conflict(new { mensaje = $"No se puede eliminar: el beneficiario tiene {string.Join(" y ", partes)} vinculados." });
+        }
+
+        // Eliminar en orden: sub-tablas de perfil → archivos → log → beneficiario
+        await using var tx = await conn.BeginTransactionAsync();
+        try
+        {
+            foreach (var tabla in new[] { "beneficiario_alergia", "beneficiario_talla",
+                                          "beneficiario_salud",   "beneficiario_acudiente",
+                                          "actividad_asistencia" })
+            {
+                await using var del = conn.CreateCommand();
+                del.Transaction  = tx;
+                del.CommandText  = $"DELETE FROM {tabla} WHERE beneficiario_id = @id";
+                del.Parameters.AddWithValue("id", id);
+                await del.ExecuteNonQueryAsync();
+            }
+
+            await using var delArch = conn.CreateCommand();
+            delArch.Transaction = tx;
+            delArch.CommandText = "DELETE FROM archivos WHERE entidad_tipo = 'beneficiario' AND entidad_id = @id";
+            delArch.Parameters.AddWithValue("id", id);
+            await delArch.ExecuteNonQueryAsync();
+
+            await using var delLog = conn.CreateCommand();
+            delLog.Transaction = tx;
+            delLog.CommandText = "DELETE FROM log_descargas WHERE beneficiario_id = @id";
+            delLog.Parameters.AddWithValue("id", id);
+            await delLog.ExecuteNonQueryAsync();
+
+            await using var delBen = conn.CreateCommand();
+            delBen.Transaction = tx;
+            delBen.CommandText = "DELETE FROM beneficiarios WHERE id = @id";
+            delBen.Parameters.AddWithValue("id", id);
+            await delBen.ExecuteNonQueryAsync();
+
+            await tx.CommitAsync();
+            return NoContent();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     // Devuelve true si el JWT corresponde a un administrador (o sesión legacy sin claim de rol).

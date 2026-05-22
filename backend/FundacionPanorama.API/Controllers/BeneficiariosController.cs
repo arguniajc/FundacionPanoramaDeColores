@@ -640,6 +640,7 @@ public class BeneficiariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> DarDeBaja(Guid id, [FromBody] DarDeBajaDto? dto)
     {
+        if (!EsAdmin()) return Forbid();
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
@@ -677,12 +678,20 @@ public class BeneficiariosController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Eliminar(Guid id)
     {
+        if (!EsAdmin()) return Forbid();
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = "DELETE FROM beneficiarios WHERE id = @id";
         cmd.Parameters.AddWithValue("id", id);
         return await cmd.ExecuteNonQueryAsync() == 0 ? NotFound() : NoContent();
+    }
+
+    // Devuelve true si el JWT corresponde a un administrador (o sesión legacy sin claim de rol).
+    private bool EsAdmin()
+    {
+        var rol = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        return string.IsNullOrEmpty(rol) || rol is "administrador" or "Admin";
     }
 
     // =========================================================================

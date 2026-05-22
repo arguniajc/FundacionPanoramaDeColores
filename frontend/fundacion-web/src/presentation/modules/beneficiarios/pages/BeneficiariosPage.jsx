@@ -24,6 +24,7 @@ import SyncIcon             from '@mui/icons-material/Sync';
 import UploadFileIcon       from '@mui/icons-material/UploadFile';
 import * as XLSX from 'xlsx';
 import apiClient                                        from '../../../../infrastructure/http/apiClient';
+import { useAuth }          from '../../../../application/auth/AuthContext';
 import { cacheKey, leerCache, escribirCache, limpiarCache } from '../../../../infrastructure/cache/sessionCache';
 import { calcularEdad }     from '../../../../shared/utils/fecha';
 import DetalleInscripcion   from '../components/DetalleInscripcion';
@@ -35,6 +36,7 @@ import { ImportarBeneficiariosDialog } from './components/ImportarBeneficiariosD
 const POR_PAGINA = 15;
 
 export default function BeneficiariosPage() {
+  const { esAdmin } = useAuth();
   const [inscripciones,  setInscripciones]  = useState([]);
   const [total,          setTotal]          = useState(0);
   const [pagina,         setPagina]         = useState(1);
@@ -439,7 +441,7 @@ export default function BeneficiariosPage() {
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        {ins.activo ? (
+                        {esAdmin && (ins.activo ? (
                           <Tooltip title="Dar de baja">
                             <IconButton size="small" sx={{ color: '#e65100', '&:hover': { bgcolor: 'rgba(230,81,0,0.1)' } }} onClick={() => setIdBaja(ins.id)}>
                               <BlockIcon fontSize="small" />
@@ -451,7 +453,7 @@ export default function BeneficiariosPage() {
                               <CheckCircleIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                        )}
+                        ))}
                       </TableCell>
                     </TableRow>
                   ))

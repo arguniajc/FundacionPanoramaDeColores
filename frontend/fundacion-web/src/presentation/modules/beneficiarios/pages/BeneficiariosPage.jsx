@@ -21,6 +21,7 @@ import WhatsAppIcon         from '@mui/icons-material/WhatsApp';
 import BarChartIcon         from '@mui/icons-material/BarChart';
 import PersonAddIcon        from '@mui/icons-material/PersonAdd';
 import SyncIcon             from '@mui/icons-material/Sync';
+import UploadFileIcon       from '@mui/icons-material/UploadFile';
 import * as XLSX from 'xlsx';
 import apiClient                                        from '../../../../infrastructure/http/apiClient';
 import { cacheKey, leerCache, escribirCache, limpiarCache } from '../../../../infrastructure/cache/sessionCache';
@@ -29,6 +30,7 @@ import DetalleInscripcion   from '../components/DetalleInscripcion';
 import EditarInscripcion    from '../components/EditarInscripcion';
 import NuevoBeneficiario    from '../components/NuevoBeneficiario';
 import { ModalEstadisticas, StatCard } from './components/ModalEstadisticas';
+import { ImportarBeneficiariosDialog } from './components/ImportarBeneficiariosDialog';
 
 const POR_PAGINA = 15;
 
@@ -53,6 +55,7 @@ export default function BeneficiariosPage() {
   const [motivoBaja,     setMotivoBaja]     = useState('');
   const [procesandoBaja, setProcesandoBaja] = useState(false);
   const [actualizando,   setActualizando]   = useState(false);
+  const [importDialog,   setImportDialog]   = useState(false);
 
   const cargarStatsDetalle = useCallback(async () => {
     setCargandoStats(true);
@@ -213,6 +216,21 @@ export default function BeneficiariosPage() {
               <StatCard icon={<VerifiedUserIcon />} label="Activos" value={stats.activos} color="#81c784" />
               <StatCard icon={<PersonOffIcon />}    label="Baja"    value={stats.baja}    color="#ef9a9a" />
             </Box>
+            <Button
+              variant="contained" size="small"
+              startIcon={<UploadFileIcon />}
+              onClick={() => setImportDialog(true)}
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.12)',
+                border: '1.5px solid rgba(255,255,255,0.25)',
+                color: '#fff', fontWeight: 700,
+                borderRadius: 2, whiteSpace: 'nowrap',
+                backdropFilter: 'blur(6px)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.22)' },
+              }}
+            >
+              Importar CSV
+            </Button>
             <Button
               variant="contained" size="small"
               startIcon={<PersonAddIcon />}
@@ -468,6 +486,12 @@ export default function BeneficiariosPage() {
 
         </Container>
       </Box>
+
+      <ImportarBeneficiariosDialog
+        open={importDialog}
+        onClose={() => setImportDialog(false)}
+        onImportado={() => { limpiarCache(); cargar(true); cargarStatsDetalle(); }}
+      />
 
       <ModalEstadisticas
         open={modalStats}

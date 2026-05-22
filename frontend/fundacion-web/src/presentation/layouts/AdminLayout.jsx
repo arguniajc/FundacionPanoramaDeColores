@@ -30,6 +30,7 @@ import LightModeIcon         from '@mui/icons-material/LightMode';
 import DownloadIcon          from '@mui/icons-material/Download';
 import LocationOnIcon        from '@mui/icons-material/LocationOn';
 import HowToRegIcon          from '@mui/icons-material/HowToReg';
+import AccountTreeIcon        from '@mui/icons-material/AccountTree';
 import { useAuth }           from '../../application/auth/AuthContext';
 import { useThemeMode }      from '../../shared/theme/ThemeContext';
 import { useConfiguracion }  from '../../shared/context/ConfiguracionContext';
@@ -63,6 +64,7 @@ const MENU = [
     grupo: 'RECURSOS',
     items: [
       { label: 'Talento Humano', icon: <BadgeIcon />,          ruta: '/sede/talento-humano', modulo: 'talento_humano' },
+      { label: 'Organigrama',    icon: <AccountTreeIcon />,    ruta: '/sede/organigrama',    modulo: 'talento_humano' },
       { label: 'Contabilidad',   icon: <AccountBalanceIcon />, ruta: '/sede/contabilidad',   modulo: 'contabilidad' },
       { label: 'Inventario',     icon: <InventoryIcon />,      ruta: '/sede/inventario',     modulo: 'inventario' },
     ],

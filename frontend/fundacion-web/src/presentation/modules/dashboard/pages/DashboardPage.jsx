@@ -161,12 +161,15 @@ export default function DashboardPage() {
     Promise.all([
       apiClient.get('/api/talento-humano/stats'),
       apiClient.get('/api/inventario/stats'),
-    ]).then(([th, inv]) => {
+      apiClient.get('/api/inventario/comodatos-proximos'),
+    ]).then(([th, inv, com]) => {
       const contratosVencer     = th.data.contratosProximosVencer ?? 0;
       const novedadesPendientes = th.data.novedadesPendientes     ?? 0;
       const stockBajo           = inv.data.stockBajo              ?? 0;
-      if (contratosVencer > 0 || novedadesPendientes > 0 || stockBajo > 0)
-        setAlertas({ contratosVencer, novedadesPendientes, stockBajo });
+      const sinStock            = inv.data.sinStock               ?? 0;
+      const comodatosVencer     = Array.isArray(com.data) ? com.data.length : 0;
+      if (contratosVencer > 0 || novedadesPendientes > 0 || stockBajo > 0 || sinStock > 0 || comodatosVencer > 0)
+        setAlertas({ contratosVencer, novedadesPendientes, stockBajo, sinStock, comodatosVencer });
     }).catch(() => { /* silencioso */ });
   }, []);
 
@@ -247,6 +250,22 @@ export default function DashboardPage() {
               count={alertas.stockBajo}
               label={`ítem${alertas.stockBajo > 1 ? 's con stock bajo' : ' con stock bajo'}`}
               color="#0EA5E9"
+              onClick={() => navigate('/sede/inventario')}
+            />
+          )}
+          {alertas.sinStock > 0 && (
+            <AlertaChip
+              count={alertas.sinStock}
+              label={`ítem${alertas.sinStock > 1 ? 's sin stock' : ' sin stock'}`}
+              color="#DC2626"
+              onClick={() => navigate('/sede/inventario')}
+            />
+          )}
+          {alertas.comodatosVencer > 0 && (
+            <AlertaChip
+              count={alertas.comodatosVencer}
+              label={`comodato${alertas.comodatosVencer > 1 ? 's vencen' : ' vence'} en 30 días`}
+              color="#B45309"
               onClick={() => navigate('/sede/inventario')}
             />
           )}

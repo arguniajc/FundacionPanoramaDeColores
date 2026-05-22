@@ -25,6 +25,7 @@ const SeguridadPage      = lazy(() => import('../modules/seguridad/pages/Segurid
 const ReportesPage       = lazy(() => import('../modules/reportes/pages/ReportesPage'));
 const TalentoHumanoPage  = lazy(() => import('../modules/talento_humano/pages/TalentoHumanoPage'));
 const ContabilidadPage   = lazy(() => import('../modules/contabilidad/pages/ContabilidadPage'));
+const OrganigramaPage    = lazy(() => import('../modules/organigrama/pages/OrganigramaPage'));
 
 // Envuelve en layout + auth + permiso de módulo
 function Pagina({ modulo, children }) {
@@ -57,6 +58,7 @@ export default function AppRoutes() {
       <Route path="/sede/actividades"   element={<Pagina modulo="actividades"><ActividadesPage /></Pagina>} />
       <Route path="/sede/voluntarios"   element={<Pagina modulo="voluntarios"><VoluntariosPage /></Pagina>} />
       <Route path="/sede/talento-humano" element={<Pagina modulo="talento_humano"><TalentoHumanoPage /></Pagina>} />
+      <Route path="/sede/organigrama"    element={<Pagina modulo="talento_humano"><OrganigramaPage /></Pagina>} />
       <Route path="/sede/contabilidad"  element={<Pagina modulo="contabilidad"><ContabilidadPage /></Pagina>} />
       <Route path="/sede/inventario"    element={<Pagina modulo="inventario"><InventarioPage /></Pagina>} />
       <Route path="/sede/reportes"      element={<Pagina modulo="reportes"><ReportesPage /></Pagina>} />

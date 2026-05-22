@@ -686,6 +686,145 @@ public class BeneficiariosController : ControllerBase
     }
 
     // =========================================================================
+    // POST api/beneficiarios/importar-csv
+    // =========================================================================
+    [HttpPost("importar-csv")]
+    [Authorize]
+    [RequestSizeLimit(5_242_880)]
+    public async Task<IActionResult> ImportarCsv(IFormFile archivo)
+    {
+        if (archivo is null || archivo.Length == 0)
+            return BadRequest(new { mensaje = "Archivo CSV requerido." });
+
+        using var reader = new System.IO.StreamReader(archivo.OpenReadStream(), System.Text.Encoding.UTF8);
+        var lineas = new List<string>();
+        string? linea;
+        while ((linea = await reader.ReadLineAsync()) is not null)
+            lineas.Add(linea);
+
+        if (lineas.Count < 2)
+            return BadRequest(new { mensaje = "El archivo debe tener al menos una fila de datos además del encabezado." });
+
+        var headers = ParseCsvRow(lineas[0]).Select(h => h.Trim().ToLowerInvariant()).ToArray();
+        int IdxOf(string name) => Array.IndexOf(headers, name);
+
+        var iNombre  = IdxOf("nombre");
+        var iFn      = IdxOf("fecha_nacimiento");
+        var iTdoc    = IdxOf("tipo_documento");
+        var iNdoc    = IdxOf("numero_documento");
+        var iGenero  = IdxOf("genero");
+        var iPais    = IdxOf("pais_nacimiento");
+        var iDepto   = IdxOf("departamento_nacimiento");
+        var iCiudad  = IdxOf("ciudad_nacimiento");
+        var iBarrio  = IdxOf("barrio");
+        var iColegio = IdxOf("nombre_colegio");
+        var iGrado   = IdxOf("grado_escolar");
+
+        if (iNombre < 0)
+            return BadRequest(new { mensaje = "El CSV debe tener una columna 'nombre'." });
+
+        var insertados = 0;
+        var omitidos   = 0;
+        var errores    = new List<object>();
+
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+
+        for (int fi = 1; fi < lineas.Count; fi++)
+        {
+            var row = ParseCsvRow(lineas[fi]);
+            if (row.Length == 0 || (row.Length == 1 && string.IsNullOrWhiteSpace(row[0]))) continue;
+
+            string Cell(int idx) => idx >= 0 && idx < row.Length ? row[idx].Trim() : "";
+
+            var nombre = Cell(iNombre);
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                errores.Add(new { fila = fi + 1, nombre = "(vacío)", motivo = "El nombre es obligatorio." });
+                continue;
+            }
+
+            var ndoc = Cell(iNdoc);
+            if (!string.IsNullOrWhiteSpace(ndoc))
+            {
+                await using var chk = conn.CreateCommand();
+                chk.CommandText = "SELECT COUNT(*)::int FROM beneficiarios WHERE numero_documento = @doc";
+                chk.Parameters.AddWithValue("doc", ndoc);
+                if ((int)(await chk.ExecuteScalarAsync())! > 0) { omitidos++; continue; }
+            }
+
+            await using var tx = await conn.BeginTransactionAsync();
+            try
+            {
+                DateOnly? fechaNac = null;
+                var fnStr = Cell(iFn);
+                if (!string.IsNullOrWhiteSpace(fnStr) && DateOnly.TryParse(fnStr, out var fd))
+                    fechaNac = fd;
+
+                var tipoDocId = await ResolverTipoDocumentoIdAsync(conn, tx, Cell(iTdoc));
+
+                await using var ins = conn.CreateCommand();
+                ins.Transaction = tx;
+                ins.CommandText = """
+                    INSERT INTO beneficiarios (
+                      nombre, fecha_nacimiento, tipo_documento_id, numero_documento,
+                      pais_nacimiento, departamento_nacimiento, ciudad_nacimiento, barrio,
+                      nombre_colegio, grado_escolar, tiene_discapacidad, genero,
+                      autorizacion, activo
+                    ) VALUES (
+                      @nombre, @fn, @tdoc, @ndoc,
+                      @pais, @depto, @ciudad, @barrio,
+                      @col, @grado, false, @genero,
+                      false, true
+                    )
+                    """;
+                ins.Parameters.AddWithValue("nombre", nombre);
+                ins.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object?)fechaNac ?? DBNull.Value });
+                ins.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = (object?)tipoDocId ?? DBNull.Value });
+                ins.Parameters.AddWithValue("ndoc",   string.IsNullOrWhiteSpace(ndoc)           ? DBNull.Value : (object)ndoc);
+                ins.Parameters.AddWithValue("pais",   string.IsNullOrWhiteSpace(Cell(iPais))    ? DBNull.Value : (object)Cell(iPais));
+                ins.Parameters.AddWithValue("depto",  string.IsNullOrWhiteSpace(Cell(iDepto))   ? DBNull.Value : (object)Cell(iDepto));
+                ins.Parameters.AddWithValue("ciudad", string.IsNullOrWhiteSpace(Cell(iCiudad))  ? DBNull.Value : (object)Cell(iCiudad));
+                ins.Parameters.AddWithValue("barrio", string.IsNullOrWhiteSpace(Cell(iBarrio))  ? DBNull.Value : (object)Cell(iBarrio));
+                ins.Parameters.AddWithValue("col",    string.IsNullOrWhiteSpace(Cell(iColegio)) ? DBNull.Value : (object)Cell(iColegio));
+                ins.Parameters.AddWithValue("grado",  string.IsNullOrWhiteSpace(Cell(iGrado))   ? DBNull.Value : (object)Cell(iGrado));
+                ins.Parameters.AddWithValue("genero", string.IsNullOrWhiteSpace(Cell(iGenero))  ? DBNull.Value : (object)Cell(iGenero));
+
+                await ins.ExecuteNonQueryAsync();
+                await tx.CommitAsync();
+                insertados++;
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                errores.Add(new { fila = fi + 1, nombre, motivo = ex.Message });
+            }
+        }
+
+        return Ok(new { total = lineas.Count - 1, insertados, omitidos, errores });
+    }
+
+    private static string[] ParseCsvRow(string line)
+    {
+        var result  = new List<string>();
+        var current = new System.Text.StringBuilder();
+        bool inQuotes = false;
+        for (int i = 0; i < line.Length; i++)
+        {
+            char c = line[i];
+            if (c == '"')
+            {
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"') { current.Append('"'); i++; }
+                else inQuotes = !inQuotes;
+            }
+            else if (c == ',' && !inQuotes) { result.Add(current.ToString()); current.Clear(); }
+            else current.Append(c);
+        }
+        result.Add(current.ToString());
+        return result.ToArray();
+    }
+
+    // =========================================================================
     // HELPERS PRIVADOS
     // =========================================================================
 

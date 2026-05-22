@@ -3,16 +3,26 @@ backend/**/bin/
 backend/**/obj/
 backend/**/*.user
 backend/**/appsettings.Development.json
+backend/**/appsettings.Production.json
+backend/**/*.pfx
 
 # Node / React
 frontend/**/node_modules/
+frontend/**/dist/
 frontend/**/.env
 frontend/**/.env.local
+frontend/**/.env.production
 
-# Visual Studio
+# Visual Studio / Rider
 .vs/
+.idea/
 *.sln.user
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Temp / scripts
+patch_*.py
+__pycache__/

@@ -178,7 +178,9 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
                    ph.dia_semana,
                    TO_CHAR(ph.hora_inicio,'HH24:MI') AS hora_inicio,
                    TO_CHAR(ph.hora_fin,   'HH24:MI') AS hora_fin,
-                   ph.lugar, ph.activo
+                   ph.lugar, ph.activo,
+                   TO_CHAR(ph.fecha_inicio_vigencia,'YYYY-MM-DD') AS fecha_inicio_vigencia,
+                   TO_CHAR(ph.fecha_fin_vigencia,   'YYYY-MM-DD') AS fecha_fin_vigencia
             FROM programa_horarios ph
             JOIN programas p ON p.id = ph.programa_id
             JOIN sedes     s ON s.id = p.sede_id
@@ -198,8 +200,8 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         await conn.OpenAsync(ct);
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
-            INSERT INTO programa_horarios (programa_id, dia_semana, hora_inicio, hora_fin, lugar)
-            VALUES (@pid, @dia, @hi::time, @hf::time, @lugar)
+            INSERT INTO programa_horarios (programa_id, dia_semana, hora_inicio, hora_fin, lugar, fecha_inicio_vigencia, fecha_fin_vigencia)
+            VALUES (@pid, @dia, @hi::time, @hf::time, @lugar, @fiv::date, @ffv::date)
             RETURNING id
             """;
         cmd.Parameters.AddWithValue("pid",   dto.ProgramaId);
@@ -207,6 +209,8 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         cmd.Parameters.AddWithValue("hi",    dto.HoraInicio);
         cmd.Parameters.AddWithValue("hf",    dto.HoraFin);
         cmd.Parameters.AddWithValue("lugar", (object?)dto.Lugar?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("fiv",   (object?)dto.FechaInicioVigencia ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("ffv",   (object?)dto.FechaFinVigencia    ?? DBNull.Value);
         var newId = (Guid)(await cmd.ExecuteScalarAsync(ct))!;
         return (await ListarHorariosAsync(null, ct)).First(h => h.Id == newId);
     }
@@ -218,12 +222,14 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             UPDATE programa_horarios SET
-                programa_id = @pid,
-                dia_semana  = @dia,
-                hora_inicio = @hi::time,
-                hora_fin    = @hf::time,
-                lugar       = @lugar,
-                activo      = @activo
+                programa_id            = @pid,
+                dia_semana             = @dia,
+                hora_inicio            = @hi::time,
+                hora_fin               = @hf::time,
+                lugar                  = @lugar,
+                activo                 = @activo,
+                fecha_inicio_vigencia  = @fiv::date,
+                fecha_fin_vigencia     = @ffv::date
             WHERE id = @id
             """;
         cmd.Parameters.AddWithValue("pid",   dto.ProgramaId);
@@ -232,6 +238,8 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         cmd.Parameters.AddWithValue("hf",    dto.HoraFin);
         cmd.Parameters.AddWithValue("lugar", (object?)dto.Lugar?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("activo", dto.Activo);
+        cmd.Parameters.AddWithValue("fiv",   (object?)dto.FechaInicioVigencia ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("ffv",   (object?)dto.FechaFinVigencia    ?? DBNull.Value);
         cmd.Parameters.AddWithValue("id",    id);
         var rows = await cmd.ExecuteNonQueryAsync(ct);
         if (rows == 0) return null;
@@ -269,8 +277,10 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         r.GetInt16(4),
         r.GetString(5),
         r.GetString(6),
-        r.IsDBNull(7) ? null : r.GetString(7),
-        r.GetBoolean(8));
+        r.IsDBNull(7)  ? null : r.GetString(7),
+        r.GetBoolean(8),
+        r.IsDBNull(9)  ? null : r.GetString(9),
+        r.IsDBNull(10) ? null : r.GetString(10));
 
     static ActividadDto MapDetalle(NpgsqlDataReader r) => new(
         r.GetGuid(0),

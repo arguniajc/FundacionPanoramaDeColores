@@ -8,8 +8,9 @@ import DeleteIcon     from '@mui/icons-material/Delete';
 import EditIcon       from '@mui/icons-material/Edit';
 import PauseIcon      from '@mui/icons-material/Pause';
 import PlayArrowIcon  from '@mui/icons-material/PlayArrow';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import PlaceIcon      from '@mui/icons-material/Place';
+import AccessTimeIcon    from '@mui/icons-material/AccessTime';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import PlaceIcon         from '@mui/icons-material/Place';
 import { actividadesRepository } from '../../../../../infrastructure/repositories/actividadesRepository';
 import { useConfirm }            from '../../../../../shared/components/ConfirmDialog';
 import { DialogHorario }         from './DialogHorario';
@@ -151,17 +152,33 @@ export function TabHorarios({ programas, puedo, onCambio }) {
                         }}
                       />
 
-                      {/* Hora */}
-                      <Box display="flex" alignItems="center" gap={0.5} flex={1}>
-                        <AccessTimeIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
-                        <Typography variant="body2" fontWeight={700}>
-                          {h.horaInicio} – {h.horaFin}
-                        </Typography>
-                        {h.lugar && (
-                          <>
-                            <PlaceIcon sx={{ fontSize: 14, color: 'text.secondary', ml: 0.5 }} />
-                            <Typography variant="caption" color="text.secondary">{h.lugar}</Typography>
-                          </>
+                      {/* Hora y vigencia */}
+                      <Box flex={1}>
+                        <Box display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                          <AccessTimeIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
+                          <Typography variant="body2" fontWeight={700}>
+                            {h.horaInicio} – {h.horaFin}
+                          </Typography>
+                          {h.lugar && (
+                            <>
+                              <PlaceIcon sx={{ fontSize: 14, color: 'text.secondary', ml: 0.5 }} />
+                              <Typography variant="caption" color="text.secondary">{h.lugar}</Typography>
+                            </>
+                          )}
+                        </Box>
+                        {(h.fechaInicioVigencia || h.fechaFinVigencia) && (
+                          <Box display="flex" alignItems="center" gap={0.4} mt={0.3}>
+                            <CalendarTodayIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                              {h.fechaInicioVigencia
+                                ? new Date(h.fechaInicioVigencia + 'T00:00:00').toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })
+                                : '—'}
+                              {' → '}
+                              {h.fechaFinVigencia
+                                ? new Date(h.fechaFinVigencia + 'T00:00:00').toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })
+                                : 'sin fecha fin'}
+                            </Typography>
+                          </Box>
                         )}
                       </Box>
 

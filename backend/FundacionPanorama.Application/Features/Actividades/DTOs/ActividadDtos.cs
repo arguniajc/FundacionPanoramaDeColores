@@ -63,14 +63,18 @@ public record HorarioDto(
     string  HoraInicio,
     string  HoraFin,
     string? Lugar,
-    bool    Activo);
+    bool    Activo,
+    string? FechaInicioVigencia,
+    string? FechaFinVigencia);
 
 public record CrearHorarioDto(
     Guid    ProgramaId,
     int     DiaSemana,
     string  HoraInicio,
     string  HoraFin,
-    string? Lugar);
+    string? Lugar,
+    string? FechaInicioVigencia,
+    string? FechaFinVigencia);
 
 public record ActualizarHorarioDto(
     Guid    ProgramaId,
@@ -78,4 +82,6 @@ public record ActualizarHorarioDto(
     string  HoraInicio,
     string  HoraFin,
     string? Lugar,
-    bool    Activo);
+    bool    Activo,
+    string? FechaInicioVigencia,
+    string? FechaFinVigencia);

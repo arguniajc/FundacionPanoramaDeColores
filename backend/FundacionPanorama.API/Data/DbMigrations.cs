@@ -728,6 +728,9 @@ public static class DbMigrations
             )
             """, "programa_horarios");
 
+        await Migrar("ALTER TABLE programa_horarios ADD COLUMN IF NOT EXISTS fecha_inicio_vigencia DATE", "programa_horarios.fecha_inicio_vigencia");
+        await Migrar("ALTER TABLE programa_horarios ADD COLUMN IF NOT EXISTS fecha_fin_vigencia    DATE", "programa_horarios.fecha_fin_vigencia");
+
         await Migrar("""
             CREATE TABLE IF NOT EXISTS organigrama_personas (
                 id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -35,26 +35,37 @@ const COLORES_PROGRAMA = [
   '#4E1B95','#1976d2','#388e3c','#f57c00','#c62828','#00838f','#6a1b9a',
 ];
 
-// Expande los horarios recurrentes en eventos del calendario para un rango dado
+// Expande los horarios recurrentes en eventos del calendario para un rango dado,
+// respetando las fechas de vigencia configuradas en cada horario.
 function expandirHorarios(horarios, start, end) {
   const eventos = [];
   for (const h of horarios) {
     if (!h.activo) continue;
-    const cur = new Date(start);
+
+    // Límites de vigencia del horario (si están configurados)
+    const vigDesde = h.fechaInicioVigencia ? new Date(h.fechaInicioVigencia + 'T00:00:00') : null;
+    const vigHasta = h.fechaFinVigencia    ? new Date(h.fechaFinVigencia    + 'T23:59:59') : null;
+
+    // Rango efectivo = intersección entre vista del calendario y vigencia
+    const desde = vigDesde && vigDesde > start ? vigDesde : new Date(start);
+    const hasta = vigHasta && vigHasta < end   ? vigHasta : new Date(end);
+
+    if (desde > hasta) continue;
+
+    const cur = new Date(desde);
     cur.setHours(0, 0, 0, 0);
-    while (cur <= end) {
-      // JS getDay(): 0=Dom,1=Lun,...,6=Sáb — coincide con nuestro dia_semana
+    while (cur <= hasta) {
       if (cur.getDay() === h.diaSemana) {
         const fecha = cur.toISOString().slice(0, 10);
         eventos.push({
-          id:             `horario-${h.id}-${fecha}`,
-          title:          h.programaNombre,
-          start:          `${fecha}T${h.horaInicio}`,
-          end:            `${fecha}T${h.horaFin}`,
+          id:              `horario-${h.id}-${fecha}`,
+          title:           h.programaNombre,
+          start:           `${fecha}T${h.horaInicio}`,
+          end:             `${fecha}T${h.horaFin}`,
           backgroundColor: '#e8def8',
           borderColor:     COLOR,
           textColor:       COLOR,
-          extendedProps:  { tipo: 'horario', horario: h },
+          extendedProps:   { tipo: 'horario', horario: h },
         });
       }
       cur.setDate(cur.getDate() + 1);

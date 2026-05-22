@@ -8,8 +8,10 @@
 const PREFIX = 'ben_';
 const TTL_MS = 2 * 60 * 1000;
 
-export const cacheKey = (estado, pagina, buscar) =>
-  `${PREFIX}${estado}_${pagina}_${buscar ?? ''}`;
+export const cacheKey = (estado, pagina, buscar, filtros = {}) => {
+  const f = `${filtros.genero ?? ''}_${filtros.edadMin ?? ''}_${filtros.edadMax ?? ''}_${filtros.eps ?? ''}_${filtros.tieneAlergia ?? ''}`;
+  return `${PREFIX}${estado}_${pagina}_${buscar ?? ''}_${f}`;
+};
 
 export function leerCache(key) {
   try {

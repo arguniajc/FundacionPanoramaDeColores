@@ -33,10 +33,15 @@ public class BeneficiariosController : ControllerBase
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> Listar(
-        [FromQuery] int     pagina    = 1,
-        [FromQuery] int     porPagina = 10,
-        [FromQuery] string? buscar    = null,
-        [FromQuery] string  estado    = "activos")
+        [FromQuery] int     pagina       = 1,
+        [FromQuery] int     porPagina    = 10,
+        [FromQuery] string? buscar       = null,
+        [FromQuery] string  estado       = "activos",
+        [FromQuery] string? genero       = null,
+        [FromQuery] int?    edadMin      = null,
+        [FromQuery] int?    edadMax      = null,
+        [FromQuery] string? eps          = null,
+        [FromQuery] string? tieneAlergia = null)
     {
         pagina    = Math.Max(1, pagina);
         porPagina = Math.Clamp(porPagina, 1, 100);
@@ -63,14 +68,42 @@ public class BeneficiariosController : ControllerBase
                      AND (ac2.nombre ILIKE @buscar OR ac2.whatsapp ILIKE @buscar)
                  ))
                 """);
+        if (!string.IsNullOrWhiteSpace(genero))
+            filters.Add("b.genero = @genero");
+        if (edadMin.HasValue)
+            filters.Add("DATE_PART('year', AGE(b.fecha_nacimiento::date))::int >= @edadMin");
+        if (edadMax.HasValue)
+            filters.Add("DATE_PART('year', AGE(b.fecha_nacimiento::date))::int <= @edadMax");
+        if (!string.IsNullOrWhiteSpace(eps))
+            filters.Add("""
+                EXISTS (
+                    SELECT 1 FROM beneficiario_salud bs2
+                    JOIN cat_eps ce2 ON ce2.id = bs2.eps_id
+                    WHERE bs2.beneficiario_id = b.id
+                    AND ce2.nombre ILIKE @eps
+                )
+                """);
+        if (tieneAlergia == "si")
+            filters.Add("EXISTS (SELECT 1 FROM beneficiario_alergia ba2 WHERE ba2.beneficiario_id = b.id AND ba2.activo = true)");
+        else if (tieneAlergia == "no")
+            filters.Add("NOT EXISTS (SELECT 1 FROM beneficiario_alergia ba2 WHERE ba2.beneficiario_id = b.id AND ba2.activo = true)");
 
         var where = filters.Count > 0 ? "WHERE " + string.Join(" AND ", filters) : "";
+
+        // Agrega los parámetros de filtro avanzado a un comando dado
+        void AgregarFiltrosAvanzados(NpgsqlCommand cmd)
+        {
+            if (!string.IsNullOrWhiteSpace(buscar))  cmd.Parameters.AddWithValue("buscar",  $"%{buscar}%");
+            if (!string.IsNullOrWhiteSpace(genero))  cmd.Parameters.AddWithValue("genero",  genero.Trim());
+            if (edadMin.HasValue)                    cmd.Parameters.AddWithValue("edadMin", edadMin.Value);
+            if (edadMax.HasValue)                    cmd.Parameters.AddWithValue("edadMax", edadMax.Value);
+            if (!string.IsNullOrWhiteSpace(eps))     cmd.Parameters.AddWithValue("eps",     $"%{eps.Trim()}%");
+        }
 
         // Count
         await using var cmdCount = conn.CreateCommand();
         cmdCount.CommandText = $"SELECT COUNT(*)::int FROM beneficiarios b {where}";
-        if (!string.IsNullOrWhiteSpace(buscar))
-            cmdCount.Parameters.AddWithValue("buscar", $"%{buscar}%");
+        AgregarFiltrosAvanzados(cmdCount);
         var total = (int)(await cmdCount.ExecuteScalarAsync())!;
 
         // IDs page
@@ -80,8 +113,7 @@ public class BeneficiariosController : ControllerBase
             ORDER BY b.fecha_creacion DESC
             LIMIT @pp OFFSET @off
             """;
-        if (!string.IsNullOrWhiteSpace(buscar))
-            cmdIds.Parameters.AddWithValue("buscar", $"%{buscar}%");
+        AgregarFiltrosAvanzados(cmdIds);
         cmdIds.Parameters.AddWithValue("pp",  porPagina);
         cmdIds.Parameters.AddWithValue("off", (pagina - 1) * porPagina);
 

@@ -5,9 +5,11 @@ import {
   Paper, IconButton, Chip, TextField, InputAdornment, Pagination,
   CircularProgress, Alert, Dialog, DialogTitle, DialogContent,
   DialogContentText, DialogActions, Tooltip, Button, Snackbar, Tabs, Tab,
-  Divider, Stack,
+  Divider, Stack, Collapse, MenuItem, Select, FormControl, InputLabel,
 } from '@mui/material';
 import SearchIcon           from '@mui/icons-material/Search';
+import FilterListIcon       from '@mui/icons-material/FilterList';
+import FilterListOffIcon    from '@mui/icons-material/FilterListOff';
 import VisibilityIcon       from '@mui/icons-material/Visibility';
 import EditIcon             from '@mui/icons-material/Edit';
 import DownloadIcon         from '@mui/icons-material/Download';
@@ -43,6 +45,12 @@ export default function BeneficiariosPage() {
   const [pagina,         setPagina]         = useState(1);
   const [buscar,         setBuscar]         = useState('');
   const [estado,         setEstado]         = useState('activos');
+  const [filtrosOpen,    setFiltrosOpen]    = useState(false);
+  const [fGenero,        setFGenero]        = useState('');
+  const [fEdadMin,       setFEdadMin]       = useState('');
+  const [fEdadMax,       setFEdadMax]       = useState('');
+  const [fEps,           setFEps]           = useState('');
+  const [fAlergia,       setFAlergia]       = useState('');
   const [cargando,       setCargando]       = useState(false);
   const [error,          setError]          = useState('');
   const [toast,          setToast]          = useState('');
@@ -73,8 +81,23 @@ export default function BeneficiariosPage() {
     finally { setCargandoStats(false); }
   }, []);
 
+  const filtrosAvanzados = { genero: fGenero, edadMin: fEdadMin, edadMax: fEdadMax, eps: fEps, tieneAlergia: fAlergia };
+  const hayFiltrosAvanzados = !!(fGenero || fEdadMin || fEdadMax || fEps || fAlergia);
+
+  const limpiarFiltros = () => { setFGenero(''); setFEdadMin(''); setFEdadMax(''); setFEps(''); setFAlergia(''); };
+
+  const buildParams = () => {
+    const p = { pagina, porPagina: POR_PAGINA, buscar: buscar || undefined, estado };
+    if (fGenero)  p.genero  = fGenero;
+    if (fEdadMin) p.edadMin = fEdadMin;
+    if (fEdadMax) p.edadMax = fEdadMax;
+    if (fEps)     p.eps     = fEps;
+    if (fAlergia) p.tieneAlergia = fAlergia;
+    return p;
+  };
+
   const cargar = useCallback(async (forzar = false) => {
-    const key    = cacheKey(estado, pagina, buscar);
+    const key    = cacheKey(estado, pagina, buscar, filtrosAvanzados);
     const cached = !forzar && leerCache(key);
 
     if (cached) {
@@ -82,9 +105,7 @@ export default function BeneficiariosPage() {
       setTotal(cached.total);
       setActualizando(true);
       try {
-        const { data } = await apiClient.get('/api/beneficiarios', {
-          params: { pagina, porPagina: POR_PAGINA, buscar: buscar || undefined, estado },
-        });
+        const { data } = await apiClient.get('/api/beneficiarios', { params: buildParams() });
         setInscripciones(data.data);
         setTotal(data.total);
         escribirCache(key, data.data, data.total);
@@ -95,20 +116,19 @@ export default function BeneficiariosPage() {
 
     setCargando(true); setActualizando(false); setError('');
     try {
-      const { data } = await apiClient.get('/api/beneficiarios', {
-        params: { pagina, porPagina: POR_PAGINA, buscar: buscar || undefined, estado },
-      });
+      const { data } = await apiClient.get('/api/beneficiarios', { params: buildParams() });
       setInscripciones(data.data);
       setTotal(data.total);
       escribirCache(key, data.data, data.total);
     } catch {
       setError('No se pudieron cargar los beneficiarios.');
     } finally { setCargando(false); }
-  }, [pagina, buscar, estado]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagina, buscar, estado, fGenero, fEdadMin, fEdadMax, fEps, fAlergia]);
 
   useEffect(() => { cargarStatsDetalle(); }, [cargarStatsDetalle]);
   useEffect(() => { cargar(); },     [cargar]);
-  useEffect(() => { setPagina(1); }, [buscar, estado]);
+  useEffect(() => { setPagina(1); }, [buscar, estado, fGenero, fEdadMin, fEdadMax, fEps, fAlergia]);
 
   const handleDarDeBaja = async () => {
     if (!idBaja) return;
@@ -274,7 +294,7 @@ export default function BeneficiariosPage() {
       <Box sx={{ flex: 1 }}>
         <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 2 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 1 }}>
             <TextField
               placeholder="Buscar nombre, documento, acudiente…"
               size="small" fullWidth
@@ -292,6 +312,21 @@ export default function BeneficiariosPage() {
               }}
             />
             <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+              <Tooltip title={filtrosOpen ? 'Ocultar filtros avanzados' : 'Filtros avanzados'}>
+                <Button
+                  size="small" variant={hayFiltrosAvanzados ? 'contained' : 'outlined'}
+                  startIcon={hayFiltrosAvanzados ? <FilterListOffIcon /> : <FilterListIcon />}
+                  onClick={() => setFiltrosOpen(v => !v)}
+                  sx={{
+                    fontWeight: 700, borderRadius: 2, whiteSpace: 'nowrap',
+                    ...(hayFiltrosAvanzados
+                      ? { bgcolor: '#7c3aed', '&:hover': { bgcolor: '#5b21b6' }, color: '#fff' }
+                      : { borderColor: 'divider' }),
+                  }}
+                >
+                  Filtros{hayFiltrosAvanzados ? ` (${[fGenero,fEdadMin||fEdadMax,fEps,fAlergia].filter(Boolean).length})` : ''}
+                </Button>
+              </Tooltip>
               <Tooltip title="Ver estadísticas detalladas de beneficiarios">
                 <Button
                   variant="contained" size="small"
@@ -315,6 +350,45 @@ export default function BeneficiariosPage() {
               </Tooltip>
             </Box>
           </Stack>
+
+          <Collapse in={filtrosOpen}>
+            <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: '#faf5ff', borderColor: '#e9d5ff' }}>
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Género</InputLabel>
+                  <Select value={fGenero} label="Género" onChange={e => setFGenero(e.target.value)}>
+                    <MenuItem value="">Todos</MenuItem>
+                    <MenuItem value="Masculino">Masculino</MenuItem>
+                    <MenuItem value="Femenino">Femenino</MenuItem>
+                    <MenuItem value="Otro">Otro</MenuItem>
+                  </Select>
+                </FormControl>
+                <TextField size="small" label="Edad mínima" type="number" value={fEdadMin}
+                  onChange={e => setFEdadMin(e.target.value)} sx={{ width: 130 }}
+                  inputProps={{ min: 0, max: 30 }} />
+                <TextField size="small" label="Edad máxima" type="number" value={fEdadMax}
+                  onChange={e => setFEdadMax(e.target.value)} sx={{ width: 130 }}
+                  inputProps={{ min: 0, max: 30 }} />
+                <TextField size="small" label="EPS" value={fEps}
+                  onChange={e => setFEps(e.target.value)} sx={{ width: 180 }}
+                  placeholder="Ej: Sanitas, Sura…" />
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Alergia</InputLabel>
+                  <Select value={fAlergia} label="Alergia" onChange={e => setFAlergia(e.target.value)}>
+                    <MenuItem value="">Todos</MenuItem>
+                    <MenuItem value="si">Con alergia</MenuItem>
+                    <MenuItem value="no">Sin alergia</MenuItem>
+                  </Select>
+                </FormControl>
+                {hayFiltrosAvanzados && (
+                  <Button size="small" variant="outlined" color="error" startIcon={<FilterListOffIcon />}
+                    onClick={limpiarFiltros} sx={{ fontWeight: 700, borderRadius: 2 }}>
+                    Limpiar filtros
+                  </Button>
+                )}
+              </Box>
+            </Paper>
+          </Collapse>
 
           <Tabs
             value={estado} onChange={(_, v) => setEstado(v)}

@@ -18,9 +18,10 @@ import ScheduleIcon   from '@mui/icons-material/Schedule';
 import { actividadesRepository } from '../../../../infrastructure/repositories/actividadesRepository';
 import usePermisos   from '../../../../shared/hooks/usePermisos';
 import apiClient     from '../../../../infrastructure/http/apiClient';
-import { DialogActividad }  from './components/DialogActividad';
-import { DialogAsistencia } from './components/DialogAsistencia';
-import { TabHorarios }      from './components/TabHorarios';
+import { DialogActividad }       from './components/DialogActividad';
+import { DialogAsistencia }      from './components/DialogAsistencia';
+import { DialogNuevaActividad }  from './components/DialogNuevaActividad';
+import { TabHorarios }           from './components/TabHorarios';
 
 const COLOR = '#4E1B95';
 
@@ -83,9 +84,12 @@ export default function ActividadesPage() {
   const [actividades,        setActividades]        = useState([]);
   const [horarios,           setHorarios]           = useState([]);
   const [programas,          setProgramas]          = useState([]);
-  const [dialogOpen,         setDialogOpen]         = useState(false);
-  const [editando,           setEditando]           = useState(null);
+  // Dialog "Nueva actividad" unificado
+  const [nuevaOpen,          setNuevaOpen]          = useState(false);
   const [fechaInicialSug,    setFechaInicialSug]    = useState('');
+  // Dialog editar actividad existente
+  const [editDialogOpen,     setEditDialogOpen]     = useState(false);
+  const [editando,           setEditando]           = useState(null);
   const [asistenciaOpen,     setAsistenciaOpen]     = useState(false);
   const [actividadSel,       setActividadSel]       = useState(null);
   const [rangoCalendario,    setRangoCalendario]    = useState(null);
@@ -141,16 +145,14 @@ export default function ActividadesPage() {
 
   const eventos = [...eventosUnicos, ...eventosRecurrentes];
 
-  const abrirCrear = (dateInfo) => {
-    setEditando(null);
+  const abrirNueva = (dateInfo) => {
     setFechaInicialSug(dateInfo?.dateStr ? `${dateInfo.dateStr}T08:00` : new Date().toISOString().slice(0, 16));
-    setDialogOpen(true);
+    setNuevaOpen(true);
   };
 
   const abrirEditar = (a) => {
     setEditando(a);
-    setFechaInicialSug('');
-    setDialogOpen(true);
+    setEditDialogOpen(true);
   };
 
   const eliminar = async (id) => {
@@ -178,9 +180,9 @@ export default function ActividadesPage() {
           </Typography>
           <Typography variant="h5" fontWeight={800} color={COLOR}>Actividades</Typography>
         </Box>
-        {tab === 0 && puedo('actividades', 'crear') && (
+        {puedo('actividades', 'crear') && (
           <Button variant="contained" startIcon={<AddIcon />}
-            onClick={() => abrirCrear()}
+            onClick={() => abrirNueva()}
             sx={{ bgcolor: COLOR, flexShrink: 0 }}>
             Nueva actividad
           </Button>
@@ -228,7 +230,7 @@ export default function ActividadesPage() {
               headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listMonth' }}
               buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', list: 'Lista' }}
               events={eventos}
-              dateClick={puedo('actividades', 'crear') ? abrirCrear : undefined}
+              dateClick={puedo('actividades', 'crear') ? abrirNueva : undefined}
               eventClick={({ event }) => {
                 const props = event.extendedProps;
                 if (props.tipo === 'actividad' && puedo('actividades', 'editar')) {
@@ -337,11 +339,20 @@ export default function ActividadesPage() {
         />
       )}
 
-      <DialogActividad
-        open={dialogOpen} editando={editando}
-        fechaInicialSugerida={fechaInicialSug}
+      {/* Dialog unificado para CREAR */}
+      <DialogNuevaActividad
+        open={nuevaOpen}
         programas={programas}
-        onClose={() => setDialogOpen(false)}
+        fechaInicialSugerida={fechaInicialSug}
+        onClose={() => setNuevaOpen(false)}
+        onGuardado={() => { cargar(); cargarHorarios(); }} />
+
+      {/* Dialog para EDITAR una actividad existente */}
+      <DialogActividad
+        open={editDialogOpen} editando={editando}
+        fechaInicialSugerida={''}
+        programas={programas}
+        onClose={() => setEditDialogOpen(false)}
         onGuardado={cargar} />
 
       <DialogAsistencia

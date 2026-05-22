@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Alert, Box, Button, Chip, CircularProgress, Divider,
+  Alert, Box, Chip, CircularProgress, Divider,
   IconButton, Tooltip, Typography,
 } from '@mui/material';
-import AddIcon        from '@mui/icons-material/Add';
 import DeleteIcon     from '@mui/icons-material/Delete';
 import EditIcon       from '@mui/icons-material/Edit';
 import PauseIcon      from '@mui/icons-material/Pause';
@@ -28,6 +27,7 @@ export function TabHorarios({ programas, puedo, onCambio }) {
   const [horarios,  setHorarios]  = useState([]);
   const [cargando,  setCargando]  = useState(true);
   const [error,     setError]     = useState('');
+  // Solo edición desde la lista; la creación se hace desde el botón principal
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando,   setEditando]   = useState(null);
 
@@ -78,18 +78,10 @@ export function TabHorarios({ programas, puedo, onCambio }) {
     <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      <Box mb={2}>
         <Typography variant="subtitle2" color="text.secondary">
-          Horarios recurrentes semanales por programa
+          Horarios recurrentes semanales por programa. Para agregar uno nuevo, usa el botón <strong>"Nueva actividad"</strong> arriba.
         </Typography>
-        {puedo('actividades', 'crear') && (
-          <Button variant="contained" size="small" startIcon={<AddIcon />}
-            onClick={() => { setEditando(null); setDialogOpen(true); }}
-            disabled={programas.length === 0}
-            sx={{ bgcolor: COLOR }}>
-            Nuevo horario
-          </Button>
-        )}
       </Box>
 
       {cargando ? (

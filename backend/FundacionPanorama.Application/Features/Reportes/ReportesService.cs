@@ -5,8 +5,8 @@ namespace FundacionPanorama.Application.Features.Reportes;
 
 public class ReportesService(IReportesRepository repo)
 {
-    public Task<BeneficiariosReporteDto> BeneficiariosAsync(CancellationToken ct = default)
-        => repo.BeneficiariosAsync(ct);
+    public Task<BeneficiariosReporteDto> BeneficiariosAsync(int? anio = null, CancellationToken ct = default)
+        => repo.BeneficiariosAsync(anio, ct);
 
     public Task<ProgramasReporteDto> ProgramasAsync(CancellationToken ct = default)
         => repo.ProgramasAsync(ct);
@@ -14,9 +14,9 @@ public class ReportesService(IReportesRepository repo)
     public Task<InventarioReporteDto> InventarioAsync(CancellationToken ct = default)
         => repo.InventarioAsync(ct);
 
-    public Task<ActividadesReporteDto> ActividadesAsync(CancellationToken ct = default)
-        => repo.ActividadesAsync(ct);
+    public Task<ActividadesReporteDto> ActividadesAsync(int? anio = null, CancellationToken ct = default)
+        => repo.ActividadesAsync(anio, ct);
 
-    public Task<DonacionesReporteDto> DonacionesAsync(CancellationToken ct = default)
-        => repo.DonacionesAsync(ct);
+    public Task<DonacionesReporteDto> DonacionesAsync(int? anio = null, CancellationToken ct = default)
+        => repo.DonacionesAsync(anio, ct);
 }

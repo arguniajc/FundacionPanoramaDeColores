@@ -8,8 +8,9 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
 {
     // ── Beneficiarios ─────────────────────────────────────────────────────────
 
-    public async Task<BeneficiariosReporteDto> BeneficiariosAsync(CancellationToken ct)
+    public async Task<BeneficiariosReporteDto> BeneficiariosAsync(int? anio, CancellationToken ct)
     {
+        int year = anio ?? DateTime.UtcNow.Year;
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
 
@@ -57,11 +58,11 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
             GROUP BY etiqueta
             ORDER BY cantidad DESC
             """);
-        var nuevosPorMes    = await QuerySerieMes(conn, ct, """
+        var nuevosPorMes    = await QuerySerieMes(conn, ct, $"""
             SELECT TO_CHAR(DATE_TRUNC('month', fecha_creacion), 'Mon YYYY') AS mes,
                    COUNT(*) AS cantidad
             FROM beneficiarios
-            WHERE fecha_creacion >= NOW() - INTERVAL '12 months'
+            WHERE EXTRACT(YEAR FROM fecha_creacion) = {year}
             GROUP BY DATE_TRUNC('month', fecha_creacion)
             ORDER BY DATE_TRUNC('month', fecha_creacion)
             """);
@@ -231,27 +232,29 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
 
     // ── Actividades ───────────────────────────────────────────────────────────
 
-    public async Task<ActividadesReporteDto> ActividadesAsync(CancellationToken ct)
+    public async Task<ActividadesReporteDto> ActividadesAsync(int? anio, CancellationToken ct)
     {
+        int year = anio ?? DateTime.UtcNow.Year;
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
 
-        var resumen = await QueryResumenActividades(conn, ct);
+        var resumen = await QueryResumenActividades(conn, ct, year);
 
-        var porEstado = await QueryGrupo(conn, ct, """
+        var porEstado = await QueryGrupo(conn, ct, $"""
             SELECT estado AS etiqueta, COUNT(*) AS cantidad
             FROM actividades
+            WHERE EXTRACT(YEAR FROM fecha_inicio) = {year}
             GROUP BY estado
             ORDER BY cantidad DESC
             """);
 
-        var asistencia = await QueryAsistencia(conn, ct);
+        var asistencia = await QueryAsistencia(conn, ct, year);
 
-        var porMes = await QuerySerieMes(conn, ct, """
+        var porMes = await QuerySerieMes(conn, ct, $"""
             SELECT TO_CHAR(DATE_TRUNC('month', fecha_inicio), 'Mon YYYY') AS mes,
                    COUNT(*) AS cantidad
             FROM actividades
-            WHERE fecha_inicio >= NOW() - INTERVAL '12 months'
+            WHERE EXTRACT(YEAR FROM fecha_inicio) = {year}
             GROUP BY DATE_TRUNC('month', fecha_inicio)
             ORDER BY DATE_TRUNC('month', fecha_inicio)
             """);
@@ -259,19 +262,25 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
         return new ActividadesReporteDto(resumen, porEstado, asistencia, porMes);
     }
 
-    static async Task<ResumenActividadesDto> QueryResumenActividades(NpgsqlConnection conn, CancellationToken ct)
+    static async Task<ResumenActividadesDto> QueryResumenActividades(NpgsqlConnection conn, CancellationToken ct, int year)
     {
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             SELECT COUNT(*),
                    SUM(CASE WHEN estado = 'completada'   THEN 1 ELSE 0 END),
                    SUM(CASE WHEN estado = 'en_curso'     THEN 1 ELSE 0 END),
                    SUM(CASE WHEN estado = 'planificada'  THEN 1 ELSE 0 END),
-                   COALESCE((SELECT COUNT(*) FROM actividad_asistencia WHERE asistio = true), 0),
+                   COALESCE((SELECT COUNT(*) FROM actividad_asistencia aa
+                              JOIN actividades a2 ON a2.id = aa.actividad_id
+                              WHERE aa.asistio = true AND EXTRACT(YEAR FROM a2.fecha_inicio) = {year}), 0),
                    COALESCE((SELECT AVG(sub.cnt) FROM (
-                       SELECT COUNT(*) AS cnt FROM actividad_asistencia WHERE asistio = true GROUP BY actividad_id
+                       SELECT COUNT(*) AS cnt FROM actividad_asistencia aa
+                       JOIN actividades a3 ON a3.id = aa.actividad_id
+                       WHERE aa.asistio = true AND EXTRACT(YEAR FROM a3.fecha_inicio) = {year}
+                       GROUP BY aa.actividad_id
                    ) sub), 0)
             FROM actividades
+            WHERE EXTRACT(YEAR FROM fecha_inicio) = {year}
             """;
         await using var r = await cmd.ExecuteReaderAsync(ct);
         await r.ReadAsync(ct);
@@ -281,15 +290,15 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
             r.IsDBNull(5) ? 0 : Math.Round(Convert.ToDouble(r[5]), 1));
     }
 
-    static async Task<IReadOnlyList<AsistenciaItemDto>> QueryAsistencia(NpgsqlConnection conn, CancellationToken ct)
+    static async Task<IReadOnlyList<AsistenciaItemDto>> QueryAsistencia(NpgsqlConnection conn, CancellationToken ct, int year)
     {
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             SELECT a.titulo,
                    (SELECT COUNT(*) FROM actividad_asistencia aa WHERE aa.actividad_id = a.id) AS inscritos,
                    (SELECT COUNT(*) FROM actividad_asistencia aa WHERE aa.actividad_id = a.id AND aa.asistio = true) AS asistieron
             FROM actividades a
-            WHERE a.estado = 'completada'
+            WHERE a.estado = 'completada' AND EXTRACT(YEAR FROM a.fecha_inicio) = {year}
             ORDER BY a.fecha_inicio DESC
             LIMIT 10
             """;
@@ -302,31 +311,29 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
 
     // ── Donaciones ────────────────────────────────────────────────────────────
 
-    public async Task<DonacionesReporteDto> DonacionesAsync(CancellationToken ct)
+    public async Task<DonacionesReporteDto> DonacionesAsync(int? anio, CancellationToken ct)
     {
+        int year = anio ?? DateTime.UtcNow.Year;
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
 
-        var resumen = await QueryResumenDonaciones(conn, ct);
-
-        var porTipo = await QueryTipoDonacion(conn, ct);
-
-        var porMes = await QuerySerieDinero(conn, ct);
-
-        var topDonantes = await QueryTopDonantes(conn, ct);
+        var resumen     = await QueryResumenDonaciones(conn, ct, year);
+        var porTipo     = await QueryTipoDonacion(conn, ct, year);
+        var porMes      = await QuerySerieDinero(conn, ct, year);
+        var topDonantes = await QueryTopDonantes(conn, ct, year);
 
         return new DonacionesReporteDto(resumen, porTipo, porMes, topDonantes);
     }
 
-    static async Task<ResumenDonacionesDto> QueryResumenDonaciones(NpgsqlConnection conn, CancellationToken ct)
+    static async Task<ResumenDonacionesDto> QueryResumenDonaciones(NpgsqlConnection conn, CancellationToken ct, int year)
     {
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             SELECT COUNT(*),
                    COALESCE(SUM(CASE WHEN tipo = 'dinero' THEN monto ELSE 0 END), 0),
                    COALESCE(AVG(CASE WHEN tipo = 'dinero' THEN monto END), 0)
             FROM donaciones
-            WHERE activo = true
+            WHERE activo = true AND EXTRACT(YEAR FROM fecha_donacion) = {year}
             """;
         await using var r = await cmd.ExecuteReaderAsync(ct);
         await r.ReadAsync(ct);
@@ -336,13 +343,13 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
             r.IsDBNull(2) ? 0 : Math.Round((decimal)(double)r[2], 0));
     }
 
-    static async Task<IReadOnlyList<TipoDonacionDto>> QueryTipoDonacion(NpgsqlConnection conn, CancellationToken ct)
+    static async Task<IReadOnlyList<TipoDonacionDto>> QueryTipoDonacion(NpgsqlConnection conn, CancellationToken ct, int year)
     {
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             SELECT tipo, COUNT(*) AS cantidad, COALESCE(SUM(monto), 0) AS monto_total
             FROM donaciones
-            WHERE activo = true
+            WHERE activo = true AND EXTRACT(YEAR FROM fecha_donacion) = {year}
             GROUP BY tipo
             ORDER BY cantidad DESC
             """;
@@ -353,15 +360,15 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
         return list;
     }
 
-    static async Task<IReadOnlyList<SerieMonetoDto>> QuerySerieDinero(NpgsqlConnection conn, CancellationToken ct)
+    static async Task<IReadOnlyList<SerieMonetoDto>> QuerySerieDinero(NpgsqlConnection conn, CancellationToken ct, int year)
     {
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             SELECT TO_CHAR(DATE_TRUNC('month', fecha_donacion), 'Mon YYYY') AS mes,
                    COALESCE(SUM(monto), 0) AS monto_total,
                    COUNT(*) AS cantidad
             FROM donaciones
-            WHERE activo = true AND fecha_donacion >= NOW() - INTERVAL '12 months'
+            WHERE activo = true AND EXTRACT(YEAR FROM fecha_donacion) = {year}
             GROUP BY DATE_TRUNC('month', fecha_donacion)
             ORDER BY DATE_TRUNC('month', fecha_donacion)
             """;
@@ -372,14 +379,14 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
         return list;
     }
 
-    static async Task<IReadOnlyList<TopDonanteDto>> QueryTopDonantes(NpgsqlConnection conn, CancellationToken ct)
+    static async Task<IReadOnlyList<TopDonanteDto>> QueryTopDonantes(NpgsqlConnection conn, CancellationToken ct, int year)
     {
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             SELECT d.nombre, COALESCE(SUM(don.monto), 0) AS total_monto, COUNT(don.id) AS total_donaciones
             FROM donantes d
             JOIN donaciones don ON don.donante_id = d.id
-            WHERE don.activo = true
+            WHERE don.activo = true AND EXTRACT(YEAR FROM don.fecha_donacion) = {year}
             GROUP BY d.nombre
             ORDER BY total_monto DESC
             LIMIT 8

@@ -12,8 +12,8 @@ public class ReportesController(ReportesService svc) : ControllerBase
 {
     [HttpGet("beneficiarios")]
     [RequierePermiso("reportes", "ver")]
-    public async Task<IActionResult> Beneficiarios(CancellationToken ct)
-        => Ok(await svc.BeneficiariosAsync(ct));
+    public async Task<IActionResult> Beneficiarios([FromQuery] int? anio, CancellationToken ct)
+        => Ok(await svc.BeneficiariosAsync(anio, ct));
 
     [HttpGet("programas")]
     [RequierePermiso("reportes", "ver")]
@@ -27,11 +27,11 @@ public class ReportesController(ReportesService svc) : ControllerBase
 
     [HttpGet("actividades")]
     [RequierePermiso("reportes", "ver")]
-    public async Task<IActionResult> Actividades(CancellationToken ct)
-        => Ok(await svc.ActividadesAsync(ct));
+    public async Task<IActionResult> Actividades([FromQuery] int? anio, CancellationToken ct)
+        => Ok(await svc.ActividadesAsync(anio, ct));
 
     [HttpGet("donaciones")]
     [RequierePermiso("reportes", "ver")]
-    public async Task<IActionResult> Donaciones(CancellationToken ct)
-        => Ok(await svc.DonacionesAsync(ct));
+    public async Task<IActionResult> Donaciones([FromQuery] int? anio, CancellationToken ct)
+        => Ok(await svc.DonacionesAsync(anio, ct));
 }

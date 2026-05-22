@@ -25,4 +25,16 @@ public class ActividadesService(IActividadesRepository repo)
 
     public Task RegistrarAsistenciaAsync(Guid actividadId, RegistrarAsistenciaDto dto, CancellationToken ct = default)
         => repo.RegistrarAsistenciaAsync(actividadId, dto, ct);
+
+    public Task<IReadOnlyList<HorarioDto>> ListarHorariosAsync(Guid? programaId, CancellationToken ct = default)
+        => repo.ListarHorariosAsync(programaId, ct);
+
+    public Task<HorarioDto> CrearHorarioAsync(CrearHorarioDto dto, CancellationToken ct = default)
+        => repo.CrearHorarioAsync(dto, ct);
+
+    public Task<HorarioDto?> ActualizarHorarioAsync(Guid id, ActualizarHorarioDto dto, CancellationToken ct = default)
+        => repo.ActualizarHorarioAsync(id, dto, ct);
+
+    public Task<bool> EliminarHorarioAsync(Guid id, CancellationToken ct = default)
+        => repo.EliminarHorarioAsync(id, ct);
 }

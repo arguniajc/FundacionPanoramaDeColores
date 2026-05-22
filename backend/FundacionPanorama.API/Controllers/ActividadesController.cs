@@ -61,4 +61,32 @@ public class ActividadesController(ActividadesService svc) : ControllerBase
         await svc.RegistrarAsistenciaAsync(id, dto, ct);
         return NoContent();
     }
+
+    // ── Horarios de programas ──────────────────────────────────────────────────
+
+    [HttpGet("horarios")]
+    [RequierePermiso("actividades", "ver")]
+    public async Task<IActionResult> ListarHorarios([FromQuery] Guid? programaId, CancellationToken ct)
+        => Ok(await svc.ListarHorariosAsync(programaId, ct));
+
+    [HttpPost("horarios")]
+    [RequierePermiso("actividades", "crear")]
+    public async Task<IActionResult> CrearHorario([FromBody] CrearHorarioDto dto, CancellationToken ct)
+        => Ok(await svc.CrearHorarioAsync(dto, ct));
+
+    [HttpPut("horarios/{id:guid}")]
+    [RequierePermiso("actividades", "editar")]
+    public async Task<IActionResult> ActualizarHorario(Guid id, [FromBody] ActualizarHorarioDto dto, CancellationToken ct)
+    {
+        var result = await svc.ActualizarHorarioAsync(id, dto, ct);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpDelete("horarios/{id:guid}")]
+    [RequierePermiso("actividades", "eliminar")]
+    public async Task<IActionResult> EliminarHorario(Guid id, CancellationToken ct)
+    {
+        var ok = await svc.EliminarHorarioAsync(id, ct);
+        return ok ? NoContent() : NotFound();
+    }
 }

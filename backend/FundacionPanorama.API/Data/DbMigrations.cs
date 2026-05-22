@@ -716,6 +716,19 @@ public static class DbMigrations
             """, "actividad_asistencia");
 
         await Migrar("""
+            CREATE TABLE IF NOT EXISTS programa_horarios (
+                id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+                programa_id UUID        NOT NULL REFERENCES programas(id) ON DELETE CASCADE,
+                dia_semana  SMALLINT    NOT NULL,
+                hora_inicio TIME        NOT NULL,
+                hora_fin    TIME        NOT NULL,
+                lugar       VARCHAR(200),
+                activo      BOOLEAN     NOT NULL DEFAULT true,
+                created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+            """, "programa_horarios");
+
+        await Migrar("""
             CREATE TABLE IF NOT EXISTS organigrama_personas (
                 id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
                 cargo          VARCHAR(200) NOT NULL,

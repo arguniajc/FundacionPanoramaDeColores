@@ -11,4 +11,10 @@ public interface IActividadesRepository
     Task<bool>          EliminarAsync(Guid id, CancellationToken ct);
     Task<IReadOnlyList<AsistenciaItemDto>> ObtenerAsistenciaAsync(Guid actividadId, CancellationToken ct);
     Task RegistrarAsistenciaAsync(Guid actividadId, RegistrarAsistenciaDto dto, CancellationToken ct);
+
+    // Horarios de programas
+    Task<IReadOnlyList<HorarioDto>> ListarHorariosAsync(Guid? programaId, CancellationToken ct);
+    Task<HorarioDto>  CrearHorarioAsync(CrearHorarioDto dto, CancellationToken ct);
+    Task<HorarioDto?> ActualizarHorarioAsync(Guid id, ActualizarHorarioDto dto, CancellationToken ct);
+    Task<bool>        EliminarHorarioAsync(Guid id, CancellationToken ct);
 }

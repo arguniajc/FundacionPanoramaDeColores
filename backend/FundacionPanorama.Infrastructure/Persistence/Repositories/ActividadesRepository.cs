@@ -165,6 +165,89 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         }
     }
 
+    // ── Horarios ────────────────────────────────────────────────────────────────
+
+    public async Task<IReadOnlyList<HorarioDto>> ListarHorariosAsync(Guid? programaId, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT ph.id, ph.programa_id, p.nombre AS programa_nombre,
+                   s.nombre AS sede_nombre,
+                   ph.dia_semana,
+                   TO_CHAR(ph.hora_inicio,'HH24:MI') AS hora_inicio,
+                   TO_CHAR(ph.hora_fin,   'HH24:MI') AS hora_fin,
+                   ph.lugar, ph.activo
+            FROM programa_horarios ph
+            JOIN programas p ON p.id = ph.programa_id
+            JOIN sedes     s ON s.id = p.sede_id
+            {(programaId.HasValue ? "WHERE ph.programa_id = @pid" : "")}
+            ORDER BY p.nombre, ph.dia_semana, ph.hora_inicio
+            """;
+        if (programaId.HasValue) cmd.Parameters.AddWithValue("pid", programaId.Value);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        var list = new List<HorarioDto>();
+        while (await r.ReadAsync(ct)) list.Add(MapHorario(r));
+        return list;
+    }
+
+    public async Task<HorarioDto> CrearHorarioAsync(CrearHorarioDto dto, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO programa_horarios (programa_id, dia_semana, hora_inicio, hora_fin, lugar)
+            VALUES (@pid, @dia, @hi::time, @hf::time, @lugar)
+            RETURNING id
+            """;
+        cmd.Parameters.AddWithValue("pid",   dto.ProgramaId);
+        cmd.Parameters.AddWithValue("dia",   dto.DiaSemana);
+        cmd.Parameters.AddWithValue("hi",    dto.HoraInicio);
+        cmd.Parameters.AddWithValue("hf",    dto.HoraFin);
+        cmd.Parameters.AddWithValue("lugar", (object?)dto.Lugar?.Trim() ?? DBNull.Value);
+        var newId = (Guid)(await cmd.ExecuteScalarAsync(ct))!;
+        return (await ListarHorariosAsync(null, ct)).First(h => h.Id == newId);
+    }
+
+    public async Task<HorarioDto?> ActualizarHorarioAsync(Guid id, ActualizarHorarioDto dto, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            UPDATE programa_horarios SET
+                programa_id = @pid,
+                dia_semana  = @dia,
+                hora_inicio = @hi::time,
+                hora_fin    = @hf::time,
+                lugar       = @lugar,
+                activo      = @activo
+            WHERE id = @id
+            """;
+        cmd.Parameters.AddWithValue("pid",   dto.ProgramaId);
+        cmd.Parameters.AddWithValue("dia",   dto.DiaSemana);
+        cmd.Parameters.AddWithValue("hi",    dto.HoraInicio);
+        cmd.Parameters.AddWithValue("hf",    dto.HoraFin);
+        cmd.Parameters.AddWithValue("lugar", (object?)dto.Lugar?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("activo", dto.Activo);
+        cmd.Parameters.AddWithValue("id",    id);
+        var rows = await cmd.ExecuteNonQueryAsync(ct);
+        if (rows == 0) return null;
+        return (await ListarHorariosAsync(null, ct)).FirstOrDefault(h => h.Id == id);
+    }
+
+    public async Task<bool> EliminarHorarioAsync(Guid id, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM programa_horarios WHERE id = @id";
+        cmd.Parameters.AddWithValue("id", id);
+        return await cmd.ExecuteNonQueryAsync(ct) > 0;
+    }
+
     // ── Mappers ──────────────────────────────────────────────────────────────────
 
     static ActividadResumenDto MapResumen(NpgsqlDataReader r) => new(
@@ -177,6 +260,17 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         r.IsDBNull(6) ? null : r.GetString(6),
         r.GetString(7),
         (int)(long)r[8]);
+
+    static HorarioDto MapHorario(NpgsqlDataReader r) => new(
+        r.GetGuid(0),
+        r.GetGuid(1),
+        r.GetString(2),
+        r.GetString(3),
+        r.GetInt16(4),
+        r.GetString(5),
+        r.GetString(6),
+        r.IsDBNull(7) ? null : r.GetString(7),
+        r.GetBoolean(8));
 
     static ActividadDto MapDetalle(NpgsqlDataReader r) => new(
         r.GetGuid(0),

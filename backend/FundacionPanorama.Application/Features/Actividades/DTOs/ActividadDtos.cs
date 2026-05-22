@@ -51,3 +51,31 @@ public record AsistenciaItemDto(
 public record RegistrarAsistenciaDto(List<AsistenciaRegistroDto> Asistencias);
 
 public record AsistenciaRegistroDto(Guid BeneficiarioId, bool Asistio);
+
+// ── Horarios de programas ─────────────────────────────────────────────────────
+
+public record HorarioDto(
+    Guid    Id,
+    Guid    ProgramaId,
+    string  ProgramaNombre,
+    string  SedeNombre,
+    int     DiaSemana,
+    string  HoraInicio,
+    string  HoraFin,
+    string? Lugar,
+    bool    Activo);
+
+public record CrearHorarioDto(
+    Guid    ProgramaId,
+    int     DiaSemana,
+    string  HoraInicio,
+    string  HoraFin,
+    string? Lugar);
+
+public record ActualizarHorarioDto(
+    Guid    ProgramaId,
+    int     DiaSemana,
+    string  HoraInicio,
+    string  HoraFin,
+    string? Lugar,
+    bool    Activo);

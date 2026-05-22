@@ -8,4 +8,10 @@ export const actividadesRepository = {
   eliminar:   (id)     => apiClient.delete(`/api/actividades/${id}`),
   asistencia:          (id)       => apiClient.get(`/api/actividades/${id}/asistencia`),
   registrarAsistencia: (id, dto)  => apiClient.post(`/api/actividades/${id}/asistencia`, dto),
+
+  // Horarios recurrentes por programa
+  listarHorarios:     (programaId) => apiClient.get('/api/actividades/horarios', { params: programaId ? { programaId } : {} }),
+  crearHorario:       (dto)        => apiClient.post('/api/actividades/horarios', dto),
+  actualizarHorario:  (id, dto)    => apiClient.put(`/api/actividades/horarios/${id}`, dto),
+  eliminarHorario:    (id)         => apiClient.delete(`/api/actividades/horarios/${id}`),
 };

@@ -132,6 +132,13 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
     ? new Date(programa.repAutorizacionFecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })
     : null;
 
+  // Datos del representante de la entidad ejecutora (tercero)
+  const terceroRepFirma     = programa.terceroRepFirma     ?? null;
+  const terceroRepNombre    = programa.terceroRepNombre    ?? null;
+  const terceroRepTipoDoc   = programa.terceroRepTipoDoc   ?? null;
+  const terceroRepDocumento = programa.terceroRepDocumento ?? null;
+  const terceroRepCargo     = programa.terceroRepCargo     ?? null;
+
   // ─── helpers ───────────────────────────────────────────────────────────────
 
   function pageBreak(needed) {
@@ -458,7 +465,7 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
 
   // ─── Firmas ─────────────────────────────────────────────────────────────────
   const firmaPadre  = datos.__firma_padre__;
-  const tieneImagen = !!(firmaPadre || (repAutorizado && repFirma));
+  const tieneImagen = !!(firmaPadre || (repAutorizado && repFirma) || terceroRepFirma);
   const FIRMA_H     = tieneImagen ? 55 : 42;
   pageBreak(conTercero ? FIRMA_H + 15 : FIRMA_H);
   esp(6);
@@ -526,11 +533,33 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
       doc.text('Cargo: ________________________', ML + col + 4, lineY + 9);
       doc.text('Fecha: ________________________', ML + col + 4, lineY + 14);
     }
-    // Col 3 — Tercero
-    const etTercero = (nombreTercero || 'Entidad Ejecutora').slice(0, 28);
-    doc.text(`Firma: ${etTercero}`,             ML + col * 2 + 4,  lineY + 4);
-    doc.text('Cargo: ________________________', ML + col * 2 + 4,  lineY + 9);
-    doc.text('Fecha: ________________________', ML + col * 2 + 4,  lineY + 14);
+    // Col 3 — Tercero (entidad ejecutora)
+    if (terceroRepFirma && sigH > 0) {
+      try { doc.addImage(terceroRepFirma, 'PNG', ML + col * 2 + 4, y + 1, 50, sigH - 2); } catch {}
+      doc.setFontSize(6);
+      doc.setTextColor(...GRAY);
+      doc.text('✓ Firma digital capturada', ML + col * 2 + 4, y + sigH + 2);
+    }
+    const etTercero = (nombreTercero || 'Entidad Ejecutora').slice(0, 30);
+    doc.setFontSize(7);
+    doc.setTextColor(...GRAY);
+    doc.text(`Firma: ${etTercero}`, ML + col * 2 + 4, lineY + 4);
+    if (terceroRepNombre) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...DARK);
+      const nomLines = doc.splitTextToSize(terceroRepNombre, col - 8);
+      doc.text(nomLines[0], ML + col * 2 + 4, lineY + 9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      const docStr = terceroRepDocumento
+        ? `${terceroRepTipoDoc ? terceroRepTipoDoc + ' ' : ''}${terceroRepDocumento}`
+        : null;
+      if (docStr) doc.text(`Doc: ${docStr}`, ML + col * 2 + 4, lineY + 14);
+      if (terceroRepCargo) doc.text(terceroRepCargo.slice(0, 28), ML + col * 2 + 4, lineY + (docStr ? 19 : 14));
+    } else {
+      doc.text('Cargo: ________________________', ML + col * 2 + 4, lineY + 9);
+      doc.text('Fecha: ________________________', ML + col * 2 + 4, lineY + 14);
+    }
 
     y = lineY + 24;
   } else {

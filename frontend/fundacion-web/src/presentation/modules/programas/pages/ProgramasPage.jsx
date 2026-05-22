@@ -1,19 +1,35 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
   Divider, FormControl, FormControlLabel, Grid, IconButton, InputLabel,
   MenuItem, Select, Snackbar, Switch, TextField, Tooltip, Typography,
   useMediaQuery, useTheme,
 } from '@mui/material';
-import AddIcon         from '@mui/icons-material/Add';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import EditIcon        from '@mui/icons-material/Edit';
-import GavelIcon       from '@mui/icons-material/Gavel';
-import TuneIcon        from '@mui/icons-material/Tune';
-import { useSedes }    from '../../../../application/sedes/useSedes';
-import { COLOR }               from './components/helpers';
-import { chipEstado }         from './components/Chips';
-import { EditorCamposDialog }     from './components/EditorCamposDialog';
+import AddIcon          from '@mui/icons-material/Add';
+import CheckCircleIcon  from '@mui/icons-material/CheckCircle';
+import EditIcon         from '@mui/icons-material/Edit';
+import GavelIcon        from '@mui/icons-material/Gavel';
+import HandshakeIcon    from '@mui/icons-material/Handshake';
+import TuneIcon         from '@mui/icons-material/Tune';
+import UploadFileIcon   from '@mui/icons-material/UploadFile';
+import { useSedes }     from '../../../../application/sedes/useSedes';
+import { COLOR }                from './components/helpers';
+import { chipEstado }           from './components/Chips';
+import { EditorCamposDialog }   from './components/EditorCamposDialog';
+import FirmaPad                 from '../../../../shared/components/FirmaPad';
+import {
+  leerArchivoComoDataUrl,
+  redimensionarImagen,
+} from '../../../modules/configuracion/pages/components/helpers';
+
+const TIPOS_DOC = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI', 'PEP', 'PPT', 'Otro'];
+
+const FORM_VACIO = {
+  sedeId: '', nombre: '', descripcion: '', cupoMaximo: '',
+  tieneTercero: false, nombreTercero: '',
+  terceroRepNombre: '', terceroRepTipoDoc: 'CC',
+  terceroRepDocumento: '', terceroRepCargo: '', terceroRepFirma: '',
+};
 
 export default function ProgramasPage() {
   const {
@@ -28,33 +44,60 @@ export default function ProgramasPage() {
   const [errForm,        setErrForm]        = useState('');
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const fileRef  = useRef(null);
 
   const todosLosProgramas = sedes.flatMap(s =>
     (s.programas ?? []).map(p => ({ ...p, nombreSede: s.nombre }))
   );
 
   const abrirNuevoPrograma = () =>
-    setFormPrograma({ sedeId: sedes[0]?.id ?? '', nombre: '', descripcion: '', cupoMaximo: '', tieneTercero: false, nombreTercero: '' });
+    setFormPrograma({ ...FORM_VACIO, sedeId: sedes[0]?.id ?? '' });
 
   const abrirEditarPrograma = (p) =>
-    setFormPrograma({ id: p.id, sedeId: p.sedeId, nombre: p.nombre, descripcion: p.descripcion ?? '', cupoMaximo: p.cupoMaximo ?? '', tieneTercero: p.tieneTercero ?? false, nombreTercero: p.nombreTercero ?? '' });
+    setFormPrograma({
+      id: p.id, sedeId: p.sedeId,
+      nombre: p.nombre, descripcion: p.descripcion ?? '',
+      cupoMaximo: p.cupoMaximo ?? '', tieneTercero: p.tieneTercero ?? false,
+      nombreTercero: p.nombreTercero ?? '',
+      terceroRepNombre:    p.terceroRepNombre    ?? '',
+      terceroRepTipoDoc:   p.terceroRepTipoDoc   ?? 'CC',
+      terceroRepDocumento: p.terceroRepDocumento ?? '',
+      terceroRepCargo:     p.terceroRepCargo     ?? '',
+      terceroRepFirma:     p.terceroRepFirma     ?? '',
+    });
 
   const handleGuardarPrograma = async () => {
     if (!formPrograma.nombre.trim() || !formPrograma.sedeId) return;
     setGuardandoProg(true);
     setErrForm('');
     const dto = {
-      sedeId:        formPrograma.sedeId,
-      nombre:        formPrograma.nombre.trim(),
-      descripcion:   formPrograma.descripcion.trim() || null,
-      cupoMaximo:    formPrograma.cupoMaximo ? Number(formPrograma.cupoMaximo) : null,
-      tieneTercero:  formPrograma.tieneTercero,
-      nombreTercero: formPrograma.tieneTercero ? (formPrograma.nombreTercero.trim() || null) : null,
+      sedeId:              formPrograma.sedeId,
+      nombre:              formPrograma.nombre.trim(),
+      descripcion:         formPrograma.descripcion.trim() || null,
+      cupoMaximo:          formPrograma.cupoMaximo ? Number(formPrograma.cupoMaximo) : null,
+      tieneTercero:        formPrograma.tieneTercero,
+      nombreTercero:       formPrograma.tieneTercero ? (formPrograma.nombreTercero.trim() || null) : null,
+      terceroRepNombre:    formPrograma.tieneTercero ? (formPrograma.terceroRepNombre.trim()    || null) : null,
+      terceroRepTipoDoc:   formPrograma.tieneTercero ? (formPrograma.terceroRepTipoDoc          || null) : null,
+      terceroRepDocumento: formPrograma.tieneTercero ? (formPrograma.terceroRepDocumento.trim() || null) : null,
+      terceroRepCargo:     formPrograma.tieneTercero ? (formPrograma.terceroRepCargo.trim()     || null) : null,
+      terceroRepFirma:     formPrograma.tieneTercero ? (formPrograma.terceroRepFirma            || null) : null,
     };
     const ok = await guardarPrograma(dto, formPrograma.id);
     if (ok) { setFormPrograma(null); }
     else     { setErrForm('No se pudo guardar el programa.'); }
     setGuardandoProg(false);
+  };
+
+  const handleUploadFirmaTercero = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const raw      = await leerArchivoComoDataUrl(file);
+      const resizada = await redimensionarImagen(raw, 600);
+      setFormPrograma(p => ({ ...p, terceroRepFirma: resizada }));
+    } catch {}
+    e.target.value = '';
   };
 
   return (
@@ -124,6 +167,7 @@ export default function ProgramasPage() {
 
                 <Divider sx={{ my: 0.5 }} />
 
+                {/* ── Rep. Legal de la Fundación ── */}
                 <Box sx={{
                   border: `1px solid ${p.repAutorizado ? '#c8e6c9' : '#e2d9f3'}`,
                   borderRadius: 2, p: 1.2,
@@ -174,6 +218,45 @@ export default function ProgramasPage() {
                   )}
                 </Box>
 
+                {/* ── Entidad ejecutora (tercero) ── */}
+                {p.tieneTercero && (
+                  <Box sx={{
+                    border: `1px solid ${p.terceroRepNombre ? '#b3c6f7' : '#e2d9f3'}`,
+                    borderRadius: 2, p: 1.2,
+                    bgcolor: p.terceroRepNombre ? '#f0f4ff' : '#fdfbff',
+                  }}>
+                    <Box display="flex" alignItems="center" gap={0.8} mb={p.terceroRepNombre ? 0.5 : 0}>
+                      <HandshakeIcon sx={{ fontSize: 15, color: p.terceroRepNombre ? '#1565c0' : '#aaa' }} />
+                      <Typography variant="caption" fontWeight={700}
+                        sx={{ color: p.terceroRepNombre ? '#1565c0' : 'text.secondary', flex: 1 }}>
+                        Entidad ejecutora
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 600 }}>
+                      {p.nombreTercero || '—'}
+                    </Typography>
+                    {p.terceroRepNombre && (
+                      <>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.62rem' }}>
+                          Rep: {p.terceroRepNombre}
+                          {p.terceroRepDocumento ? ` · ${p.terceroRepTipoDoc} ${p.terceroRepDocumento}` : ''}
+                        </Typography>
+                        {p.terceroRepCargo && (
+                          <Typography variant="caption" color="text.secondary"
+                            sx={{ display: 'block', fontSize: '0.6rem' }}>
+                            {p.terceroRepCargo}
+                          </Typography>
+                        )}
+                        {p.terceroRepFirma && (
+                          <Box component="img" src={p.terceroRepFirma} alt="Firma entidad"
+                            sx={{ mt: 0.5, height: 32, maxWidth: '100%', objectFit: 'contain',
+                                  border: '1px solid #d0dcf7', borderRadius: 1, bgcolor: 'white' }} />
+                        )}
+                      </>
+                    )}
+                  </Box>
+                )}
+
                 <Box display="flex" gap={1} flexWrap="wrap">
                   <Button size="small" variant="outlined" startIcon={<TuneIcon />}
                     onClick={() => setCamposPrograma(p)}
@@ -206,7 +289,9 @@ export default function ProgramasPage() {
       )}
 
       {formPrograma && (
-        <Dialog open onClose={() => setFormPrograma(null)} maxWidth="xs" fullWidth fullScreen={isMobile}
+        <Dialog open onClose={() => setFormPrograma(null)}
+          maxWidth={formPrograma.tieneTercero ? 'sm' : 'xs'} fullWidth
+          fullScreen={isMobile}
           PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2 } }}>
           <DialogTitle sx={{ fontWeight: 700 }}>
             {formPrograma.id ? 'Editar proyecto' : 'Nuevo proyecto'}
@@ -252,12 +337,81 @@ export default function ProgramasPage() {
                 />
               </Grid>
               {formPrograma.tieneTercero && (
-                <Grid size={12}>
-                  <TextField fullWidth size="small" label="Nombre de la entidad ejecutora"
-                    placeholder="Ej: Fundación XYZ, Empresa ABC…"
-                    value={formPrograma.nombreTercero}
-                    onChange={e => setFormPrograma(p => ({ ...p, nombreTercero: e.target.value }))} />
-                </Grid>
+                <>
+                  <Grid size={12}>
+                    <TextField fullWidth size="small" label="Nombre de la entidad ejecutora"
+                      placeholder="Ej: Fundación XYZ, Club Deportivo AJAZZ F.C.…"
+                      value={formPrograma.nombreTercero}
+                      onChange={e => setFormPrograma(p => ({ ...p, nombreTercero: e.target.value }))} />
+                  </Grid>
+
+                  {/* Separador visual */}
+                  <Grid size={12}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                      <HandshakeIcon sx={{ fontSize: 16, color: COLOR }} />
+                      <Typography variant="caption" fontWeight={700} color={COLOR}
+                        sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Representante de la entidad ejecutora
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid size={12}>
+                    <TextField fullWidth size="small" label="Nombre completo del representante"
+                      placeholder="Ej: Juan Carlos Pérez Gómez"
+                      value={formPrograma.terceroRepNombre}
+                      onChange={e => setFormPrograma(p => ({ ...p, terceroRepNombre: e.target.value }))} />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 5 }}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Tipo de documento</InputLabel>
+                      <Select label="Tipo de documento" value={formPrograma.terceroRepTipoDoc}
+                        onChange={e => setFormPrograma(p => ({ ...p, terceroRepTipoDoc: e.target.value }))}>
+                        {TIPOS_DOC.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 7 }}>
+                    <TextField fullWidth size="small" label="Número de documento"
+                      value={formPrograma.terceroRepDocumento}
+                      onChange={e => setFormPrograma(p => ({ ...p, terceroRepDocumento: e.target.value }))} />
+                  </Grid>
+                  <Grid size={12}>
+                    <TextField fullWidth size="small" label="Cargo"
+                      placeholder="Ej: Presidente, Director Técnico…"
+                      value={formPrograma.terceroRepCargo}
+                      onChange={e => setFormPrograma(p => ({ ...p, terceroRepCargo: e.target.value }))} />
+                  </Grid>
+
+                  {/* Firma de la entidad */}
+                  <Grid size={12}>
+                    <Typography variant="caption" fontWeight={700} color="text.secondary"
+                      sx={{ textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
+                      Firma de la entidad ejecutora
+                    </Typography>
+                    <FirmaPad
+                      label="Firma de la entidad ejecutora"
+                      value={formPrograma.terceroRepFirma}
+                      onChange={v => setFormPrograma(p => ({ ...p, terceroRepFirma: v }))}
+                    />
+                    <Box display="flex" alignItems="center" gap={1} mt={1}>
+                      <Button size="small" variant="outlined" startIcon={<UploadFileIcon />}
+                        onClick={() => fileRef.current?.click()}
+                        sx={{ color: COLOR, borderColor: COLOR, fontSize: '0.75rem' }}>
+                        Subir imagen (JPG/PNG)
+                      </Button>
+                      {formPrograma.terceroRepFirma && (
+                        <Button size="small" color="error"
+                          onClick={() => setFormPrograma(p => ({ ...p, terceroRepFirma: '' }))}
+                          sx={{ fontSize: '0.75rem' }}>
+                          Borrar firma
+                        </Button>
+                      )}
+                    </Box>
+                    <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp"
+                      style={{ display: 'none' }} onChange={handleUploadFirmaTercero} />
+                  </Grid>
+                </>
               )}
             </Grid>
           </DialogContent>

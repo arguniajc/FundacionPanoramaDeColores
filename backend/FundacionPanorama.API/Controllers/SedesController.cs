@@ -10,9 +10,9 @@ using NpgsqlTypes;
 namespace FundacionPanorama.API.Controllers;
 
 public record SedeDto(Guid Id, string Nombre, string? Direccion, string? Ciudad, string? Telefono, bool Activo, DateTime FechaCreacion, DateTime FechaModificacion, List<ProgramaDto> Programas);
-public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, bool TieneTercero, string? NombreTercero, DateTime FechaCreacion, DateTime FechaModificacion, bool RepAutorizado, DateTime? RepAutorizacionFecha, string? RepFirma, string? RepNombre, string? RepDocumento, string? RepCargo);
+public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, bool TieneTercero, string? NombreTercero, DateTime FechaCreacion, DateTime FechaModificacion, bool RepAutorizado, DateTime? RepAutorizacionFecha, string? RepFirma, string? RepNombre, string? RepDocumento, string? RepCargo, string? TerceroRepNombre, string? TerceroRepTipoDoc, string? TerceroRepDocumento, string? TerceroRepCargo, string? TerceroRepFirma);
 public record CrearSedeDto(string Nombre, string? Direccion, string? Ciudad, string? Telefono);
-public record CrearProgramaDto(Guid SedeId, string Nombre, string? Descripcion, int? CupoMaximo, bool TieneTercero = false, string? NombreTercero = null);
+public record CrearProgramaDto(Guid SedeId, string Nombre, string? Descripcion, int? CupoMaximo, bool TieneTercero = false, string? NombreTercero = null, string? TerceroRepNombre = null, string? TerceroRepTipoDoc = null, string? TerceroRepDocumento = null, string? TerceroRepCargo = null, string? TerceroRepFirma = null);
 public record CampoDto(Guid Id, Guid ProgramaId, string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, bool Activo, string? Seccion, int Columnas, DateTime FechaCreacion, DateTime FechaModificacion);
 public record CrearCampoDto(string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, string? Seccion, int? Columnas);
 
@@ -197,8 +197,10 @@ public class SedesController : ControllerBase
         await using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = @"
-                INSERT INTO programas (sede_id, nombre, descripcion, cupo_maximo, activo, tiene_tercero, nombre_tercero)
-                VALUES (@sedeId, @nombre, @desc, @cupo, true, @tieneTercero, @nombreTercero)
+                INSERT INTO programas (sede_id, nombre, descripcion, cupo_maximo, activo, tiene_tercero, nombre_tercero,
+                    tercero_rep_nombre, tercero_rep_tipo_doc, tercero_rep_documento, tercero_rep_cargo, tercero_rep_firma)
+                VALUES (@sedeId, @nombre, @desc, @cupo, true, @tieneTercero, @nombreTercero,
+                    @trepNombre, @trepTipoDoc, @trepDoc, @trepCargo, @trepFirma)
                 RETURNING id";
             cmd.Parameters.AddWithValue("sedeId",       dto.SedeId);
             cmd.Parameters.AddWithValue("nombre",        dto.Nombre.Trim());
@@ -206,6 +208,11 @@ public class SedesController : ControllerBase
             cmd.Parameters.AddWithValue("cupo",          (object?)dto.CupoMaximo ?? DBNull.Value);
             cmd.Parameters.AddWithValue("tieneTercero",  dto.TieneTercero);
             cmd.Parameters.AddWithValue("nombreTercero", (object?)dto.NombreTercero?.Trim() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("trepNombre",    (object?)dto.TerceroRepNombre?.Trim()    ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("trepTipoDoc",   (object?)dto.TerceroRepTipoDoc           ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("trepDoc",       (object?)dto.TerceroRepDocumento?.Trim() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("trepCargo",     (object?)dto.TerceroRepCargo?.Trim()     ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("trepFirma",     (object?)dto.TerceroRepFirma             ?? DBNull.Value);
             newId = (Guid)(await cmd.ExecuteScalarAsync())!;
         }
 
@@ -228,7 +235,10 @@ public class SedesController : ControllerBase
             cmd.CommandText = @"
                 UPDATE programas
                 SET sede_id=@sedeId, nombre=@nombre, descripcion=@desc, cupo_maximo=@cupo,
-                    tiene_tercero=@tieneTercero, nombre_tercero=@nombreTercero, fecha_modificacion=NOW()
+                    tiene_tercero=@tieneTercero, nombre_tercero=@nombreTercero,
+                    tercero_rep_nombre=@trepNombre, tercero_rep_tipo_doc=@trepTipoDoc,
+                    tercero_rep_documento=@trepDoc, tercero_rep_cargo=@trepCargo,
+                    tercero_rep_firma=@trepFirma, fecha_modificacion=NOW()
                 WHERE id = @id";
             cmd.Parameters.AddWithValue("id",           id);
             cmd.Parameters.AddWithValue("sedeId",       dto.SedeId);
@@ -237,6 +247,11 @@ public class SedesController : ControllerBase
             cmd.Parameters.AddWithValue("cupo",          (object?)dto.CupoMaximo ?? DBNull.Value);
             cmd.Parameters.AddWithValue("tieneTercero",  dto.TieneTercero);
             cmd.Parameters.AddWithValue("nombreTercero", (object?)dto.NombreTercero?.Trim() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("trepNombre",    (object?)dto.TerceroRepNombre?.Trim()    ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("trepTipoDoc",   (object?)dto.TerceroRepTipoDoc           ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("trepDoc",       (object?)dto.TerceroRepDocumento?.Trim() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("trepCargo",     (object?)dto.TerceroRepCargo?.Trim()     ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("trepFirma",     (object?)dto.TerceroRepFirma             ?? DBNull.Value);
             var rows = await cmd.ExecuteNonQueryAsync();
             if (rows == 0) return NotFound();
         }
@@ -459,7 +474,8 @@ public class SedesController : ControllerBase
     private const string SqlSelectPrograma = @"
         SELECT p.id, p.sede_id, s.nombre AS nombre_sede, p.nombre, p.descripcion, p.cupo_maximo,
                p.activo, p.tiene_tercero, p.nombre_tercero, p.fecha_creacion, p.fecha_modificacion,
-               p.rep_autorizado, p.rep_autorizacion_fecha, p.rep_firma, p.rep_nombre, p.rep_documento, p.rep_cargo
+               p.rep_autorizado, p.rep_autorizacion_fecha, p.rep_firma, p.rep_nombre, p.rep_documento, p.rep_cargo,
+               p.tercero_rep_nombre, p.tercero_rep_tipo_doc, p.tercero_rep_documento, p.tercero_rep_cargo, p.tercero_rep_firma
         FROM programas p
         JOIN sedes s ON s.id = p.sede_id";
 
@@ -475,7 +491,12 @@ public class SedesController : ControllerBase
         r.IsDBNull(13) ? null : r.GetString(13),
         r.IsDBNull(14) ? null : r.GetString(14),
         r.IsDBNull(15) ? null : r.GetString(15),
-        r.IsDBNull(16) ? null : r.GetString(16)
+        r.IsDBNull(16) ? null : r.GetString(16),
+        r.IsDBNull(17) ? null : r.GetString(17),
+        r.IsDBNull(18) ? null : r.GetString(18),
+        r.IsDBNull(19) ? null : r.GetString(19),
+        r.IsDBNull(20) ? null : r.GetString(20),
+        r.IsDBNull(21) ? null : r.GetString(21)
     );
 
     private async Task<SedeDto?> CargarSedeAsync(NpgsqlConnection conn, Guid id)

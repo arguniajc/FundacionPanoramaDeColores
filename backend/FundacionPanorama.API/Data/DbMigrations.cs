@@ -89,6 +89,11 @@ public static class DbMigrations
         await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS fecha_modificacion TIMESTAMPTZ NOT NULL DEFAULT NOW()", "programas.fecha_modificacion");
         await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS tiene_tercero BOOLEAN NOT NULL DEFAULT FALSE",  "programas.tiene_tercero");
         await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS nombre_tercero VARCHAR(200)",                   "programas.nombre_tercero");
+        await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS tercero_rep_nombre    VARCHAR(200)", "programas.tercero_rep_nombre");
+        await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS tercero_rep_tipo_doc  VARCHAR(20)",  "programas.tercero_rep_tipo_doc");
+        await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS tercero_rep_documento VARCHAR(50)",  "programas.tercero_rep_documento");
+        await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS tercero_rep_cargo     VARCHAR(100)", "programas.tercero_rep_cargo");
+        await Migrar("ALTER TABLE programas ADD COLUMN IF NOT EXISTS tercero_rep_firma     TEXT",         "programas.tercero_rep_firma");
 
         // ── Tablas nuevas ─────────────────────────────────────────────────────
         await Migrar("""

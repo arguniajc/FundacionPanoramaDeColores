@@ -271,7 +271,7 @@ export default function AdminLayout({ children }) {
     setCollapsed(p => ({ ...p, [g]: !p[g] }))
   , []);
 
-  useInactividad(5, () => {
+  useInactividad(60, () => {
     logout();
     window.location.href = 'https://fundacionpanoramadecolores.org/gestion/#/acceso';
   }, !!user);

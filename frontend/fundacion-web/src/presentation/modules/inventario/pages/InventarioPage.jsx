@@ -11,6 +11,7 @@ import TrendingUpIcon   from '@mui/icons-material/TrendingUp';
 import SearchIcon       from '@mui/icons-material/Search';
 import CloseIcon        from '@mui/icons-material/Close';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
+import HandshakeIcon    from '@mui/icons-material/Handshake';
 import { inventarioRepository } from '../../../../infrastructure/repositories/inventarioRepository';
 import { sedesRepository }      from '../../../../infrastructure/repositories/sedesRepository';
 import { COLOR, CATEGORIAS, CAT_COLOR } from './components/helpers';
@@ -23,19 +24,21 @@ import { HistorialDialog }        from './components/HistorialDialog';
 
 export default function InventarioPage() {
   const confirm = useConfirm();
-  const [sedes,        setSedes]        = useState([]);
-  const [sedeSel,      setSedeSel]      = useState('');
-  const [categoriaFil, setCategoriaFil] = useState('');
-  const [items,        setItems]        = useState([]);
-  const [tipos,        setTipos]        = useState([]);
-  const [stats,        setStats]        = useState({ totalItems: 0, stockBajo: 0, movimientosMes: 0, sinStock: 0 });
-  const [cargando,     setCargando]     = useState(false);
-  const [buscar,       setBuscar]       = useState('');
-  const [dialItem,     setDialItem]     = useState({ open: false, item: null });
-  const [dialMov,      setDialMov]      = useState({ open: false, item: null });
-  const [dialTransf,   setDialTransf]   = useState({ open: false, item: null });
-  const [dialHistorial,setDialHistorial]= useState({ open: false, item: null });
-  const [snack,        setSnack]        = useState({ open: false, msg: '', sev: 'success' });
+  const [sedes,           setSedes]           = useState([]);
+  const [sedeSel,         setSedeSel]         = useState('');
+  const [categoriaFil,    setCategoriaFil]    = useState('');
+  const [tenenciaFil,     setTenenciaFil]     = useState('');
+  const [items,           setItems]           = useState([]);
+  const [tipos,           setTipos]           = useState([]);
+  const [stats,           setStats]           = useState({ totalItems: 0, stockBajo: 0, movimientosMes: 0, sinStock: 0 });
+  const [cargando,        setCargando]        = useState(false);
+  const [buscar,          setBuscar]          = useState('');
+  const [comodatosAlerta, setComodatosAlerta] = useState([]);
+  const [dialItem,        setDialItem]        = useState({ open: false, item: null });
+  const [dialMov,         setDialMov]         = useState({ open: false, item: null });
+  const [dialTransf,      setDialTransf]      = useState({ open: false, item: null });
+  const [dialHistorial,   setDialHistorial]   = useState({ open: false, item: null });
+  const [snack,           setSnack]           = useState({ open: false, msg: '', sev: 'success' });
 
   const ok  = msg => setSnack({ open: true, msg, sev: 'success' });
   const err = msg => setSnack({ open: true, msg, sev: 'error' });
@@ -51,6 +54,10 @@ export default function InventarioPage() {
 
     inventarioRepository.listarTipos()
       .then(r => setTipos(r.data))
+      .catch(() => {});
+
+    inventarioRepository.comodatosProximos(30)
+      .then(r => setComodatosAlerta(r.data))
       .catch(() => {});
   }, []);
 
@@ -73,13 +80,14 @@ export default function InventarioPage() {
   useEffect(() => {
     const t = setTimeout(() => {
       const params = {};
-      if (sedeSel)      params.sedeId    = sedeSel;
-      if (buscar)       params.buscar    = buscar;
-      if (categoriaFil) params.categoria = categoriaFil;
+      if (sedeSel)      params.sedeId       = sedeSel;
+      if (buscar)       params.buscar       = buscar;
+      if (categoriaFil) params.categoria    = categoriaFil;
+      if (tenenciaFil)  params.tipoTenencia = tenenciaFil;
       cargarItems(params);
     }, 260);
     return () => clearTimeout(t);
-  }, [sedeSel, buscar, categoriaFil, cargarItems]);
+  }, [sedeSel, buscar, categoriaFil, tenenciaFil, cargarItems]);
 
   const recargarStats = async () => {
     try {
@@ -151,7 +159,7 @@ export default function InventarioPage() {
       <Box sx={{ mb: 2.5 }}>
         <FormControl size="small" sx={{ minWidth: 260 }}>
           <InputLabel>Sede</InputLabel>
-          <Select value={sedeSel} label="Sede" onChange={e => { setSedeSel(e.target.value); setBuscar(''); setCategoriaFil(''); }}>
+          <Select value={sedeSel} label="Sede" onChange={e => { setSedeSel(e.target.value); setBuscar(''); setCategoriaFil(''); setTenenciaFil(''); }}>
             <MenuItem value="">Todas las sedes</MenuItem>
             {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
           </Select>
@@ -173,6 +181,20 @@ export default function InventarioPage() {
           <StatCard icon={<TrendingUpIcon />} label="Movimientos mes" value={stats.movimientosMes} color="#16a34a" loading={cargando} />
         </Grid>
       </Grid>
+
+      {/* Alerta comodatos próximos a vencer */}
+      {comodatosAlerta.length > 0 && (
+        <Alert severity="warning" icon={<HandshakeIcon />} sx={{ mb: 2.5, borderRadius: 2 }}>
+          <strong>{comodatosAlerta.length} comodato{comodatosAlerta.length > 1 ? 's' : ''}</strong> próximo{comodatosAlerta.length > 1 ? 's' : ''} a vencer (en 30 días):{' '}
+          {comodatosAlerta.map((c, i) => (
+            <span key={c.id}>
+              {i > 0 ? ', ' : ''}
+              <strong>{c.nombre}</strong>
+              {c.comodatoFechaFin && ` (${new Date(c.comodatoFechaFin + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })})`}
+            </span>
+          ))}
+        </Alert>
+      )}
 
       {/* Filtros */}
       <Box sx={{ mb: 2.5, display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -203,6 +225,27 @@ export default function InventarioPage() {
               sx={{
                 fontWeight: 600, fontSize: '0.72rem', cursor: 'pointer',
                 ...(categoriaFil === cat ? { bgcolor: CAT_COLOR[cat] ?? COLOR, color: '#fff' } : { borderColor: `${CAT_COLOR[cat]}80`, color: CAT_COLOR[cat] }),
+              }}
+            />
+          ))}
+        </Box>
+        <Box sx={{ display: 'flex', gap: 0.7, flexWrap: 'wrap' }}>
+          {[
+            { value: '',             label: 'Tenencia: todas' },
+            { value: 'propio',       label: 'Propios' },
+            { value: 'comodato',     label: 'Comodato' },
+            { value: 'donacion_uso', label: 'Donación uso' },
+            { value: 'arrendamiento',label: 'Arrendados' },
+          ].map(t => (
+            <Chip key={t.value} label={t.label}
+              onClick={() => setTenenciaFil(p => p === t.value ? '' : t.value)}
+              variant={tenenciaFil === t.value ? 'filled' : 'outlined'}
+              icon={t.value === 'comodato' ? <HandshakeIcon sx={{ fontSize: '13px !important' }} /> : undefined}
+              sx={{
+                fontWeight: 600, fontSize: '0.72rem', cursor: 'pointer',
+                ...(tenenciaFil === t.value
+                  ? { bgcolor: t.value === 'comodato' ? '#b45309' : COLOR, color: '#fff' }
+                  : {}),
               }}
             />
           ))}

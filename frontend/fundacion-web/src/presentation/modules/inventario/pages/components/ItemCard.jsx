@@ -1,17 +1,35 @@
 import {
   Avatar, Box, Chip, Divider, Grid, IconButton, LinearProgress, Tooltip, Typography, Button,
 } from '@mui/material';
-import EditIcon     from '@mui/icons-material/Edit';
-import DeleteIcon   from '@mui/icons-material/Delete';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import HistoryIcon  from '@mui/icons-material/History';
-import MoveDownIcon from '@mui/icons-material/MoveDown';
+import EditIcon       from '@mui/icons-material/Edit';
+import DeleteIcon     from '@mui/icons-material/Delete';
+import SwapHorizIcon  from '@mui/icons-material/SwapHoriz';
+import HistoryIcon    from '@mui/icons-material/History';
+import MoveDownIcon   from '@mui/icons-material/MoveDown';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import HandshakeIcon  from '@mui/icons-material/Handshake';
+import WarningIcon    from '@mui/icons-material/Warning';
 import { COLOR, CAT_COLOR, fmtNum, estadoStock } from './helpers';
 
+const TENENCIA_LABEL = {
+  comodato:      { label: 'Comodato',       color: '#b45309', bg: '#fef3c7' },
+  donacion_uso:  { label: 'Donación en uso', color: '#0369a1', bg: '#e0f2fe' },
+  arrendamiento: { label: 'Arrendamiento',  color: '#6d28d9', bg: '#ede9fe' },
+};
+
+function diasParaVencer(fechaStr) {
+  if (!fechaStr) return null;
+  const hoy  = new Date(); hoy.setHours(0,0,0,0);
+  const fin  = new Date(fechaStr + 'T00:00:00');
+  return Math.ceil((fin - hoy) / 86400000);
+}
+
 export function ItemCard({ item, onMovimiento, onEditar, onEliminar, onHistorial, onTransferir }) {
-  const est = estadoStock(item);
+  const est      = estadoStock(item);
   const catColor = CAT_COLOR[item.categoria] ?? '#6b7280';
+  const tenencia = TENENCIA_LABEL[item.tipoTenencia];
+  const diasVenc = item.tipoTenencia === 'comodato' ? diasParaVencer(item.comodatoFechaFin) : null;
+  const proxVencer = diasVenc !== null && diasVenc <= 30;
 
   return (
     <Box sx={{ border: '1.5px solid #e2d9f3', borderRadius: 2, overflow: 'hidden', bgcolor: '#fdfbff', display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -39,12 +57,46 @@ export function ItemCard({ item, onMovimiento, onEditar, onEliminar, onHistorial
         <Box sx={{ display: 'flex', gap: 0.7, flexWrap: 'wrap' }}>
           <Chip label={item.categoria} size="small"
             sx={{ bgcolor: `${catColor}15`, color: catColor, fontWeight: 700, fontSize: '0.68rem', height: 20 }} />
+          {tenencia && (
+            <Chip
+              icon={<HandshakeIcon sx={{ fontSize: '11px !important', color: `${tenencia.color} !important` }} />}
+              label={tenencia.label} size="small"
+              sx={{ bgcolor: tenencia.bg, color: tenencia.color, fontWeight: 700, fontSize: '0.68rem', height: 20, border: `1px solid ${tenencia.color}40` }} />
+          )}
           {item.nombreSede && (
             <Chip icon={<LocationOnIcon sx={{ fontSize: '12px !important' }} />}
               label={item.nombreSede} size="small" variant="outlined"
               sx={{ fontSize: '0.68rem', height: 20, borderColor: '#d9c9f5', color: 'text.secondary' }} />
           )}
         </Box>
+
+        {/* Info comodato */}
+        {item.tipoTenencia === 'comodato' && item.comodante && (
+          <Box sx={{ bgcolor: proxVencer ? '#fef3c7' : '#fafafa', border: `1px solid ${proxVencer ? '#f59e0b' : '#e5e7eb'}`, borderRadius: 1.5, px: 1.2, py: 0.8 }}>
+            <Box display="flex" alignItems="center" gap={0.5} mb={0.3}>
+              {proxVencer && <WarningIcon sx={{ fontSize: 13, color: '#d97706' }} />}
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: proxVencer ? '#b45309' : 'text.secondary' }}>
+                {item.comodante}
+              </Typography>
+              {item.comodatoContrato && (
+                <Typography sx={{ fontSize: '0.63rem', color: 'text.secondary' }}>· {item.comodatoContrato}</Typography>
+              )}
+            </Box>
+            {item.comodatoFechaFin && (
+              <Typography sx={{ fontSize: '0.63rem', color: proxVencer ? '#b45309' : 'text.secondary' }}>
+                Devolver:{' '}
+                {new Date(item.comodatoFechaFin + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                {diasVenc !== null && (
+                  diasVenc < 0
+                    ? ' · VENCIDO'
+                    : diasVenc === 0
+                    ? ' · Hoy'
+                    : ` · ${diasVenc} días`
+                )}
+              </Typography>
+            )}
+          </Box>
+        )}
 
         <Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>

@@ -23,7 +23,12 @@ public record ItemInventarioDto(
     decimal StockMinimo,
     bool    Activo,
     DateTime FechaCreacion,
-    DateTime FechaModificacion
+    DateTime FechaModificacion,
+    string   TipoTenencia,
+    string?  Comodante,
+    string?  ComodatoContrato,
+    string?  ComodatoFechaInicio,
+    string?  ComodatoFechaFin
 );
 
 public record CrearItemDto(
@@ -33,7 +38,12 @@ public record CrearItemDto(
     string  UnidadMedida,
     string  Categoria,
     decimal StockActual,
-    decimal StockMinimo
+    decimal StockMinimo,
+    string  TipoTenencia         = "propio",
+    string? Comodante            = null,
+    string? ComodatoContrato     = null,
+    string? ComodatoFechaInicio  = null,
+    string? ComodatoFechaFin     = null
 );
 
 public record ActualizarItemDto(
@@ -41,7 +51,12 @@ public record ActualizarItemDto(
     string? Descripcion,
     string  UnidadMedida,
     string  Categoria,
-    decimal StockMinimo
+    decimal StockMinimo,
+    string  TipoTenencia         = "propio",
+    string? Comodante            = null,
+    string? ComodatoContrato     = null,
+    string? ComodatoFechaInicio  = null,
+    string? ComodatoFechaFin     = null
 );
 
 public record TipoMovimientoDto(
@@ -129,9 +144,10 @@ public class InventarioController : ControllerBase
     [HttpGet("items")]
     [RequierePermiso("inventario", "ver")]
     public async Task<IActionResult> ListarItems(
-        [FromQuery] Guid?   sedeId    = null,
-        [FromQuery] string? buscar    = null,
-        [FromQuery] string? categoria = null)
+        [FromQuery] Guid?   sedeId       = null,
+        [FromQuery] string? buscar       = null,
+        [FromQuery] string? categoria    = null,
+        [FromQuery] string? tipoTenencia = null)
     {
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
@@ -144,12 +160,17 @@ public class InventarioController : ControllerBase
             where.Add("(LOWER(i.nombre) LIKE @b OR LOWER(COALESCE(i.codigo,'')) LIKE @b)");
         if (!string.IsNullOrWhiteSpace(categoria))
             where.Add("i.categoria = @cat");
+        if (!string.IsNullOrWhiteSpace(tipoTenencia))
+            where.Add("i.tipo_tenencia = @tten");
 
         cmd.CommandText = $@"
             SELECT i.id, i.sede_id, COALESCE(s.nombre,'') AS nombre_sede,
                    i.codigo, i.nombre, i.descripcion, i.unidad_medida,
                    i.categoria, i.stock_actual, i.stock_minimo,
-                   i.activo, i.fecha_creacion, i.fecha_modificacion
+                   i.activo, i.fecha_creacion, i.fecha_modificacion,
+                   i.tipo_tenencia, i.comodante, i.comodato_contrato,
+                   TO_CHAR(i.comodato_fecha_inicio,'YYYY-MM-DD') AS comodato_fecha_inicio,
+                   TO_CHAR(i.comodato_fecha_fin,'YYYY-MM-DD') AS comodato_fecha_fin
             FROM inventario_items i
             LEFT JOIN sedes s ON s.id = i.sede_id
             WHERE {string.Join(" AND ", where)}
@@ -161,6 +182,8 @@ public class InventarioController : ControllerBase
             cmd.Parameters.AddWithValue("b", $"%{buscar.ToLower().Trim()}%");
         if (!string.IsNullOrWhiteSpace(categoria))
             cmd.Parameters.AddWithValue("cat", categoria.Trim());
+        if (!string.IsNullOrWhiteSpace(tipoTenencia))
+            cmd.Parameters.AddWithValue("tten", tipoTenencia.Trim());
 
         var list = new List<ItemInventarioDto>();
         await using var r = await cmd.ExecuteReaderAsync();
@@ -179,7 +202,10 @@ public class InventarioController : ControllerBase
             SELECT i.id, i.sede_id, COALESCE(s.nombre,'') AS nombre_sede,
                    i.codigo, i.nombre, i.descripcion, i.unidad_medida,
                    i.categoria, i.stock_actual, i.stock_minimo,
-                   i.activo, i.fecha_creacion, i.fecha_modificacion
+                   i.activo, i.fecha_creacion, i.fecha_modificacion,
+                   i.tipo_tenencia, i.comodante, i.comodato_contrato,
+                   TO_CHAR(i.comodato_fecha_inicio,'YYYY-MM-DD') AS comodato_fecha_inicio,
+                   TO_CHAR(i.comodato_fecha_fin,'YYYY-MM-DD') AS comodato_fecha_fin
             FROM inventario_items i
             LEFT JOIN sedes s ON s.id = i.sede_id
             WHERE i.id=@id";
@@ -227,19 +253,26 @@ public class InventarioController : ControllerBase
             {
                 cmd.Transaction = tx;
                 cmd.CommandText = @"
-                    INSERT INTO inventario_items (sede_id,codigo,nombre,descripcion,unidad_medida,categoria,stock_actual,stock_minimo)
-                    VALUES (@sid,@cod,@nom,@des,@uni,@cat,@sa,@sm)
+                    INSERT INTO inventario_items (sede_id,codigo,nombre,descripcion,unidad_medida,categoria,stock_actual,stock_minimo,tipo_tenencia,comodante,comodato_contrato,comodato_fecha_inicio,comodato_fecha_fin)
+                    VALUES (@sid,@cod,@nom,@des,@uni,@cat,@sa,@sm,@tten,@cmod,@ccont,@cfdi::date,@cfdf::date)
                     RETURNING id, sede_id, '' AS nombre_sede,
                               codigo,nombre,descripcion,unidad_medida,categoria,
-                              stock_actual,stock_minimo,activo,fecha_creacion,fecha_modificacion";
-                cmd.Parameters.AddWithValue("sid", (object?)dto.SedeId              ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("cod", codigoGenerado);
-                cmd.Parameters.AddWithValue("nom", dto.Nombre.Trim());
-                cmd.Parameters.AddWithValue("des", (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("uni", string.IsNullOrWhiteSpace(dto.UnidadMedida) ? "unidad" : dto.UnidadMedida.Trim());
-                cmd.Parameters.AddWithValue("cat", cat);
-                cmd.Parameters.AddWithValue("sa",  dto.StockActual);
-                cmd.Parameters.AddWithValue("sm",  dto.StockMinimo);
+                              stock_actual,stock_minimo,activo,fecha_creacion,fecha_modificacion,
+                              tipo_tenencia, comodante, comodato_contrato,
+                              TO_CHAR(comodato_fecha_inicio,'YYYY-MM-DD'), TO_CHAR(comodato_fecha_fin,'YYYY-MM-DD')";
+                cmd.Parameters.AddWithValue("sid",  (object?)dto.SedeId              ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("cod",  codigoGenerado);
+                cmd.Parameters.AddWithValue("nom",  dto.Nombre.Trim());
+                cmd.Parameters.AddWithValue("des",  (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("uni",  string.IsNullOrWhiteSpace(dto.UnidadMedida) ? "unidad" : dto.UnidadMedida.Trim());
+                cmd.Parameters.AddWithValue("cat",  cat);
+                cmd.Parameters.AddWithValue("sa",   dto.StockActual);
+                cmd.Parameters.AddWithValue("sm",   dto.StockMinimo);
+                cmd.Parameters.AddWithValue("tten", string.IsNullOrWhiteSpace(dto.TipoTenencia) ? "propio" : dto.TipoTenencia.Trim());
+                cmd.Parameters.AddWithValue("cmod", (object?)dto.Comodante?.Trim()        ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("ccont",(object?)dto.ComodatoContrato?.Trim() ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("cfdi", (object?)dto.ComodatoFechaInicio       ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("cfdf", (object?)dto.ComodatoFechaFin          ?? DBNull.Value);
                 await using var r = await cmd.ExecuteReaderAsync();
                 await r.ReadAsync();
                 item = LeerItem(r);
@@ -276,17 +309,26 @@ public class InventarioController : ControllerBase
             UPDATE inventario_items
             SET nombre=@nom, descripcion=@des,
                 unidad_medida=@uni, categoria=@cat, stock_minimo=@sm,
+                tipo_tenencia=@tten, comodante=@cmod, comodato_contrato=@ccont,
+                comodato_fecha_inicio=@cfdi::date, comodato_fecha_fin=@cfdf::date,
                 fecha_modificacion=NOW()
             WHERE id=@id
             RETURNING id, sede_id, '' AS nombre_sede,
                       codigo,nombre,descripcion,unidad_medida,categoria,
-                      stock_actual,stock_minimo,activo,fecha_creacion,fecha_modificacion";
-        cmd.Parameters.AddWithValue("id",  id);
-        cmd.Parameters.AddWithValue("nom", dto.Nombre.Trim());
-        cmd.Parameters.AddWithValue("des", (object?)dto.Descripcion?.Trim()         ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("uni", string.IsNullOrWhiteSpace(dto.UnidadMedida) ? "unidad" : dto.UnidadMedida.Trim());
-        cmd.Parameters.AddWithValue("cat", string.IsNullOrWhiteSpace(dto.Categoria) ? "Otros" : dto.Categoria.Trim());
-        cmd.Parameters.AddWithValue("sm",  dto.StockMinimo);
+                      stock_actual,stock_minimo,activo,fecha_creacion,fecha_modificacion,
+                      tipo_tenencia, comodante, comodato_contrato,
+                      TO_CHAR(comodato_fecha_inicio,'YYYY-MM-DD'), TO_CHAR(comodato_fecha_fin,'YYYY-MM-DD')";
+        cmd.Parameters.AddWithValue("id",   id);
+        cmd.Parameters.AddWithValue("nom",  dto.Nombre.Trim());
+        cmd.Parameters.AddWithValue("des",  (object?)dto.Descripcion?.Trim()            ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("uni",  string.IsNullOrWhiteSpace(dto.UnidadMedida) ? "unidad" : dto.UnidadMedida.Trim());
+        cmd.Parameters.AddWithValue("cat",  string.IsNullOrWhiteSpace(dto.Categoria)    ? "Otros"  : dto.Categoria.Trim());
+        cmd.Parameters.AddWithValue("sm",   dto.StockMinimo);
+        cmd.Parameters.AddWithValue("tten", string.IsNullOrWhiteSpace(dto.TipoTenencia) ? "propio" : dto.TipoTenencia.Trim());
+        cmd.Parameters.AddWithValue("cmod", (object?)dto.Comodante?.Trim()        ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("ccont",(object?)dto.ComodatoContrato?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("cfdi", (object?)dto.ComodatoFechaInicio       ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("cfdf", (object?)dto.ComodatoFechaFin          ?? DBNull.Value);
         await using var r = await cmd.ExecuteReaderAsync();
         if (!await r.ReadAsync()) return NotFound();
         var item = LeerItem(r);
@@ -795,6 +837,37 @@ public class InventarioController : ControllerBase
         catch { await tx.RollbackAsync(); throw; }
     }
 
+    // ── Comodatos próximos a vencer ───────────────────────────────────────────
+
+    [HttpGet("comodatos-proximos")]
+    [RequierePermiso("inventario", "ver")]
+    public async Task<IActionResult> ComodatosProximos([FromQuery] int dias = 30)
+    {
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT i.id, i.sede_id, COALESCE(s.nombre,'') AS nombre_sede,
+                   i.codigo, i.nombre, i.descripcion, i.unidad_medida,
+                   i.categoria, i.stock_actual, i.stock_minimo,
+                   i.activo, i.fecha_creacion, i.fecha_modificacion,
+                   i.tipo_tenencia, i.comodante, i.comodato_contrato,
+                   TO_CHAR(i.comodato_fecha_inicio,'YYYY-MM-DD') AS comodato_fecha_inicio,
+                   TO_CHAR(i.comodato_fecha_fin,'YYYY-MM-DD') AS comodato_fecha_fin
+            FROM inventario_items i
+            LEFT JOIN sedes s ON s.id = i.sede_id
+            WHERE i.activo = true
+              AND i.tipo_tenencia = 'comodato'
+              AND i.comodato_fecha_fin IS NOT NULL
+              AND i.comodato_fecha_fin BETWEEN CURRENT_DATE AND CURRENT_DATE + (@dias || ' days')::interval
+            ORDER BY i.comodato_fecha_fin";
+        cmd.Parameters.AddWithValue("dias", dias);
+        var list = new List<ItemInventarioDto>();
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync()) list.Add(LeerItem(r));
+        return Ok(list);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static string CatPrefix(string categoria) => categoria switch
@@ -823,7 +896,12 @@ public class InventarioController : ControllerBase
         r.GetDecimal(9),
         r.GetBoolean(10),
         r.GetDateTime(11),
-        r.GetDateTime(12)
+        r.GetDateTime(12),
+        r.IsDBNull(13) ? "propio" : r.GetString(13),
+        r.IsDBNull(14) ? null : r.GetString(14),
+        r.IsDBNull(15) ? null : r.GetString(15),
+        r.IsDBNull(16) ? null : r.GetString(16),
+        r.IsDBNull(17) ? null : r.GetString(17)
     );
 
     private static MovimientoDto LeerMovimiento(System.Data.Common.DbDataReader r) => new(

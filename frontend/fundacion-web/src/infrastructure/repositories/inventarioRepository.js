@@ -26,4 +26,7 @@ export const inventarioRepository = {
 
   // Ingresar artículo al inventario desde una donación en especie
   ingresarDesdeDonacion: (datos) => apiClient.post('/api/inventario/desde-donacion', datos),
+
+  // Comodatos próximos a vencer
+  comodatosProximos: (dias = 30) => apiClient.get('/api/inventario/comodatos-proximos', { params: { dias } }),
 };

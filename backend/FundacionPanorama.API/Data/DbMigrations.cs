@@ -731,6 +731,13 @@ public static class DbMigrations
         await Migrar("ALTER TABLE programa_horarios ADD COLUMN IF NOT EXISTS fecha_inicio_vigencia DATE", "programa_horarios.fecha_inicio_vigencia");
         await Migrar("ALTER TABLE programa_horarios ADD COLUMN IF NOT EXISTS fecha_fin_vigencia    DATE", "programa_horarios.fecha_fin_vigencia");
 
+        // ── Comodato en inventario ─────────────────────────────────────────────
+        await Migrar("ALTER TABLE inventario_items ADD COLUMN IF NOT EXISTS tipo_tenencia         VARCHAR(20)  NOT NULL DEFAULT 'propio'", "inventario_items.tipo_tenencia");
+        await Migrar("ALTER TABLE inventario_items ADD COLUMN IF NOT EXISTS comodante             VARCHAR(200)",                           "inventario_items.comodante");
+        await Migrar("ALTER TABLE inventario_items ADD COLUMN IF NOT EXISTS comodato_contrato     VARCHAR(100)",                           "inventario_items.comodato_contrato");
+        await Migrar("ALTER TABLE inventario_items ADD COLUMN IF NOT EXISTS comodato_fecha_inicio DATE",                                    "inventario_items.comodato_fecha_inicio");
+        await Migrar("ALTER TABLE inventario_items ADD COLUMN IF NOT EXISTS comodato_fecha_fin    DATE",                                    "inventario_items.comodato_fecha_fin");
+
         await Migrar("""
             CREATE TABLE IF NOT EXISTS organigrama_personas (
                 id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

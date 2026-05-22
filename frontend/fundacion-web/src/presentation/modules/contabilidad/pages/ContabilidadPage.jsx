@@ -3,7 +3,8 @@ import {
   Box, Typography, Grid, Card, CardContent, Tabs, Tab, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
   Chip, IconButton, CircularProgress, Tooltip, Divider, LinearProgress,
-  Select, FormControl, InputLabel, Alert,
+  Select, FormControl, InputLabel, Alert, InputAdornment,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import AddIcon                  from '@mui/icons-material/Add';
 import SkeletonTabla            from '../../../../shared/components/SkeletonTabla';
@@ -17,6 +18,9 @@ import PrintIcon                from '@mui/icons-material/Print';
 import SyncAltIcon              from '@mui/icons-material/SyncAlt';
 import FactCheckIcon            from '@mui/icons-material/FactCheck';
 import SavingsIcon              from '@mui/icons-material/Savings';
+import SearchIcon               from '@mui/icons-material/Search';
+import DownloadIcon             from '@mui/icons-material/Download';
+import VisibilityIcon           from '@mui/icons-material/Visibility';
 import MenuItem                 from '@mui/material/MenuItem';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip,
@@ -68,6 +72,9 @@ export default function ContabilidadPage() {
   const [dlgCuenta, setDlgCuenta] = useState({ open: false, modo: 'crear', data: null });
   const [dlgPres,   setDlgPres]   = useState({ open: false, modo: 'crear', data: null });
   const [guardando, setGuardando] = useState(false);
+  const [busquedaMov, setBusquedaMov] = useState('');
+  const [dlgComprobante, setDlgComprobante] = useState(null);
+  const [resumenAnual, setResumenAnual] = useState(null);
 
   // â”€â”€ Estado Tab Caja Menor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [cajaCuentaId,  setCajaCuentaId]  = useState('');
@@ -266,6 +273,32 @@ export default function ContabilidadPage() {
   };
 
   // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const exportarCSV = () => {
+    const bq = busquedaMov.toLowerCase();
+    const filas = movimientos
+      .filter(m => !bq || (m.concepto + ' ' + (m.terceroNombre ?? '')).toLowerCase().includes(bq))
+      .map(m => [
+        m.consecutivo ? '#' + m.consecutivo + '-' + new Date(m.fecha).getFullYear() : '',
+        m.fecha, m.tipo, m.concepto, m.codigoPuc, m.categoriaNombre,
+        m.cuentaNombre, m.programaNombre ?? '', m.terceroNombre ?? '', m.terceroDocumento ?? '',
+        m.numeroSoporte ?? '', m.tipoSoporte ?? '',
+        m.monto, m.retencionPracticada ?? ''
+      ].join(','));
+    const header = 'N Comp.,Fecha,Tipo,Concepto,Cod.PUC,Categoria,Cuenta,Programa,Tercero,NIT,Soporte,TipoSoporte,Monto,RTE';
+    const csv = [header, ...filas].join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'movimientos_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+  };
+
+  const cargarResumenAnual = async (anio) => {
+    try {
+      const { data } = await apiClient.get('/api/contabilidad/resumen-anual', { params: { anio } });
+      setResumenAnual(data);
+    } catch { setResumenAnual(null); }
+  };
+
   if (cargando) return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <SkeletonTabla columnas={6} filas={10} />
@@ -477,6 +510,13 @@ export default function ContabilidadPage() {
               </Select>
             </FormControl>
             <Button variant="outlined" size="small" onClick={cargarMovimientos}>Filtrar</Button>
+            <TextField
+              size="small" placeholder="Buscar concepto / tercero..." value={busquedaMov}
+              onChange={e => setBusquedaMov(e.target.value)} sx={{ minWidth: 220 }}
+              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} />
+            <Button variant="outlined" size="small" startIcon={<DownloadIcon />} onClick={exportarCSV}>
+              CSV
+            </Button>
             </Box>
           </Paper>
 
@@ -493,11 +533,13 @@ export default function ContabilidadPage() {
                   <TableCell>Soporte / Tipo</TableCell>
                   <TableCell align="right">Monto</TableCell>
                   <TableCell>N° Comp.</TableCell>
-                  {puedeEditar && <TableCell />}
+                  <TableCell />
                 </TableRow>
               </TableHead>
               <TableBody>
-                {movimientos.map(m => (
+                {movimientos
+                  .filter(m => !busquedaMov || (m.concepto + ' ' + (m.terceroNombre ?? '')).toLowerCase().includes(busquedaMov.toLowerCase()))
+                  .map(m => (
                   <TableRow key={m.id} hover>
                     <TableCell>{fmtFecha(m.fecha)}</TableCell>
                     <TableCell>
@@ -535,8 +577,11 @@ export default function ContabilidadPage() {
                     <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'text.secondary' }}>
                       {m.consecutivo ? '#' + m.consecutivo + '-' + new Date(m.fecha).getFullYear() : '-'}
                     </TableCell>
-                    {puedeEditar && (
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      <IconButton size="small" onClick={() => setDlgComprobante(m)}>
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                      {puedeEditar && <>
                         <IconButton size="small"
                           onClick={() => setDlgMov({ open: true, modo: 'editar', data: m, tipoPreset: m.tipo })}>
                           <EditIcon fontSize="small" />
@@ -544,8 +589,8 @@ export default function ContabilidadPage() {
                         <IconButton size="small" color="error" onClick={() => eliminarMovimiento(m.id)}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
-                      </TableCell>
-                    )}
+                      </>}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {movimientos.length === 0 && (
@@ -558,10 +603,30 @@ export default function ContabilidadPage() {
               </TableBody>
             </Table>
           </TableContainer>
+          {movimientos.length > 0 && (() => {
+            const vis = movimientos.filter(m => !busquedaMov || (m.concepto + ' ' + (m.terceroNombre ?? '')).toLowerCase().includes(busquedaMov.toLowerCase()));
+            const totIng = vis.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
+            const totEgr = vis.filter(m => m.tipo === 'egreso').reduce((s, m) => s + m.monto, 0);
+            const bal = totIng - totEgr;
+            return (
+              <Box sx={{ display: 'flex', gap: 3, mt: 1.5, px: 1, flexWrap: 'wrap' }}>
+                <Typography variant="caption" color="success.main" fontWeight={700}>
+                  Ingresos: {fmt(totIng)} ({vis.filter(m => m.tipo === 'ingreso').length})
+                </Typography>
+                <Typography variant="caption" color="error.main" fontWeight={700}>
+                  Egresos: {fmt(totEgr)} ({vis.filter(m => m.tipo === 'egreso').length})
+                </Typography>
+                <Typography variant="caption" fontWeight={700}
+                  color={bal >= 0 ? 'primary.main' : 'warning.main'}>
+                  Balance: {fmt(bal)}
+                </Typography>
+              </Box>
+            );
+          })()}
         </Box>
       )}
 
-      {/* â”€â”€ Tab 2: Cuentas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Tab 2: Cuentas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {tab === 2 && (
         <Box>
           {puedeCrear && (
@@ -734,7 +799,7 @@ export default function ContabilidadPage() {
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 100 }}>
               <InputLabel>AÃ±o</InputLabel>
-              <Select value={repAnio} label="AÃ±o" onChange={e => setRepAnio(e.target.value)}>
+              <Select value={repAnio} label="AÃ±o" onChange={e => { setRepAnio(e.target.value); cargarResumenAnual(e.target.value); }}>
                 {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
               </Select>
             </FormControl>
@@ -746,6 +811,46 @@ export default function ContabilidadPage() {
             )}
           </Box>
           </Paper>
+
+          {resumenAnual && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+                Resumen anual {resumenAnual.anio}
+              </Typography>
+              <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+                <Table size="small">
+                  <TableHead sx={{ bgcolor: 'grey.50' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700 }}>Mes</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'success.main' }}>Ingresos</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'error.main' }}>Egresos</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>Balance</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {resumenAnual.meses.map(m => (
+                      <TableRow key={m.mes} hover sx={{ opacity: m.ingresos === 0 && m.egresos === 0 ? 0.4 : 1 }}>
+                        <TableCell>{m.label}</TableCell>
+                        <TableCell align="right" sx={{ color: 'success.main' }}>{fmt(m.ingresos)}</TableCell>
+                        <TableCell align="right" sx={{ color: 'error.main' }}>{fmt(m.egresos)}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600, color: m.balance >= 0 ? 'primary.main' : 'warning.main' }}>
+                          {fmt(m.balance)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow sx={{ bgcolor: 'grey.100' }}>
+                      <TableCell sx={{ fontWeight: 700 }}>TOTAL</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'success.main' }}>{fmt(resumenAnual.totalIngresos)}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'error.main' }}>{fmt(resumenAnual.totalEgresos)}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, color: resumenAnual.balance >= 0 ? 'primary.main' : 'warning.main' }}>
+                        {fmt(resumenAnual.balance)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          )}
 
           {!reporte && (
             <Typography color="text.secondary" textAlign="center" sx={{ py: 6 }}>
@@ -1157,6 +1262,61 @@ export default function ContabilidadPage() {
       )}
 
       {/* Dialogs */}
+      {/* Dialogo Comprobante */}
+      {dlgComprobante && (
+        <Dialog open onClose={() => setDlgComprobante(null)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Typography fontWeight={700}>
+                {dlgComprobante.consecutivo
+                  ? 'Comprobante #' + dlgComprobante.consecutivo + '-' + new Date(dlgComprobante.fecha).getFullYear()
+                  : 'Detalle del movimiento'}
+              </Typography>
+              <Chip
+                label={dlgComprobante.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'}
+                color={dlgComprobante.tipo === 'ingreso' ? 'success' : 'error'}
+                size="small" sx={{ mt: 0.5 }} />
+            </Box>
+            <Button size="small" onClick={() => window.print()}
+              startIcon={<PrintIcon />} variant="outlined">Imprimir</Button>
+          </DialogTitle>
+          <DialogContent dividers>
+            <Grid container spacing={1.5}>
+              {[['Fecha', fmtFecha(dlgComprobante.fecha)],
+                ['Concepto', dlgComprobante.concepto],
+                ['Monto', fmt(dlgComprobante.monto)],
+                ['Cuenta', dlgComprobante.cuentaNombre],
+                ['Categoria PUC', dlgComprobante.codigoPuc + ' - ' + (dlgComprobante.categoriaNombre ?? '')],
+                ['Programa', dlgComprobante.programaNombre ?? '-'],
+                ['Tercero', dlgComprobante.terceroNombre ?? '-'],
+                ['NIT / Doc.', dlgComprobante.terceroDocumento ?? '-'],
+                ['N Soporte', dlgComprobante.numeroSoporte ?? '-'],
+                ['Tipo soporte', dlgComprobante.tipoSoporte ?? '-'],
+                ...(dlgComprobante.retencionPracticada > 0 ? [
+                  ['Tarifa RTE', (dlgComprobante.tarifaRetencion ?? '') + '%'],
+                  ['Valor RTE', fmt(dlgComprobante.retencionPracticada)],
+                  ['Concepto RTE', dlgComprobante.conceptoRetencion ?? '-'],
+                ] : []),
+              ].map(([k, v]) => (
+                <Grid item xs={6} key={k}>
+                  <Typography variant="caption" color="text.secondary" display="block">{k}</Typography>
+                  <Typography variant="body2" fontWeight={500}>{v}</Typography>
+                </Grid>
+              ))}
+            </Grid>
+            {dlgComprobante.descripcion && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="caption" color="text.secondary">Descripcion</Typography>
+                <Typography variant="body2">{dlgComprobante.descripcion}</Typography>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDlgComprobante(null)}>Cerrar</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
       <DialogMovimiento
         open={dlgMov.open}
         modo={dlgMov.modo}

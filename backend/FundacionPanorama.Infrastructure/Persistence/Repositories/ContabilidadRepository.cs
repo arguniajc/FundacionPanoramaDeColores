@@ -470,6 +470,40 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
             porCuenta, porPrograma, movimientos);
     }
 
+    public async Task<ResumenAnualDto> ResumenAnualAsync(int anio, CancellationToken ct)
+    {
+        string[] labels = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                           "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT EXTRACT(MONTH FROM fecha)::int AS mes,
+                   COALESCE(SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN tipo = 'egreso'  THEN monto ELSE 0 END), 0)
+            FROM movimientos_contables
+            WHERE EXTRACT(YEAR FROM fecha) = @anio
+            GROUP BY mes ORDER BY mes
+            """;
+        cmd.Parameters.AddWithValue("anio", anio);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+
+        var datos = new Dictionary<int, (decimal Ing, decimal Egr)>();
+        while (await r.ReadAsync(ct))
+            datos[r.GetInt32(0)] = ((decimal)r[1], (decimal)r[2]);
+
+        var meses = Enumerable.Range(1, 12)
+            .Select(m => {
+                var (ing, egr) = datos.GetValueOrDefault(m, (0m, 0m));
+                return new ResumenMesDto(m, labels[m - 1], ing, egr, ing - egr);
+            }).ToList();
+
+        var totalIng = meses.Sum(m => m.Ingresos);
+        var totalEgr = meses.Sum(m => m.Egresos);
+        return new ResumenAnualDto(anio, meses, totalIng, totalEgr, totalIng - totalEgr);
+    }
+
     // ── Caja Menor ────────────────────────────────────────────────────────────
 
     public async Task<IReadOnlyList<LibroAuxiliarItemDto>> LibroAuxiliarAsync(

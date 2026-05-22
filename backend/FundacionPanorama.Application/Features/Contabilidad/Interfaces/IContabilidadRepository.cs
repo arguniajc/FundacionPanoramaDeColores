@@ -29,6 +29,7 @@ public interface IContabilidadRepository
     // Dashboard y reportes
     Task<ContabilidadStatsDto> StatsAsync(CancellationToken ct);
     Task<ReporteContadorDto>   ReporteAsync(int mes, int anio, CancellationToken ct);
+    Task<ResumenAnualDto>      ResumenAnualAsync(int anio, CancellationToken ct);
 
     // Caja Menor
     Task<IReadOnlyList<LibroAuxiliarItemDto>>          LibroAuxiliarAsync(Guid cuentaId, int? mes, int? anio, CancellationToken ct);

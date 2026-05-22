@@ -174,6 +174,9 @@ public record CrearArqueoDto(
     [StringLength(500)] string? Observacion,
     [StringLength(100)] string? Responsable);
 
+public record ResumenMesDto(int Mes, string Label, decimal Ingresos, decimal Egresos, decimal Balance);
+public record ResumenAnualDto(int Anio, IReadOnlyList<ResumenMesDto> Meses, decimal TotalIngresos, decimal TotalEgresos, decimal Balance);
+
 public record CrearReposicionDto(
     Guid     CuentaCajaId,
     Guid     CuentaOrigenId,

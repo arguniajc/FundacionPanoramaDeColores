@@ -165,4 +165,11 @@ public class ContabilidadController(ContabilidadService svc) : ControllerBase
         var now = DateTime.UtcNow;
         return Ok(await svc.ReporteAsync(mes ?? now.Month, anio ?? now.Year, ct));
     }
+
+    [HttpGet("resumen-anual")]
+    [RequierePermiso("contabilidad", "ver")]
+    public async Task<IActionResult> ResumenAnual(
+        [FromQuery] int? anio = null,
+        CancellationToken ct = default)
+        => Ok(await svc.ResumenAnualAsync(anio ?? DateTime.UtcNow.Year, ct));
 }

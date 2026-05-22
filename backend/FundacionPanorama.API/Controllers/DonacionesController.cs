@@ -155,6 +155,29 @@ public class DonacionesController : ControllerBase
         await using var tx = await conn.BeginTransactionAsync();
         try
         {
+            // Auto-generar número de recibo si no se proporcionó uno
+            string reciboNumero;
+            if (!string.IsNullOrWhiteSpace(dto.ReciboNumero))
+            {
+                reciboNumero = dto.ReciboNumero.Trim();
+            }
+            else
+            {
+                int anio = (dto.FechaDonacion ?? DateTime.UtcNow).Year;
+                await using var cmdSeq = conn.CreateCommand();
+                cmdSeq.Transaction = tx;
+                cmdSeq.CommandText = $"""
+                    SELECT COALESCE(MAX(
+                        CASE WHEN recibo_numero ~ '^REC-{anio}-[0-9]+$'
+                             THEN CAST(SPLIT_PART(recibo_numero, '-', 3) AS INTEGER)
+                             ELSE 0 END
+                    ), 0) + 1
+                    FROM donaciones
+                    """;
+                int siguiente = Convert.ToInt32(await cmdSeq.ExecuteScalarAsync());
+                reciboNumero = $"REC-{anio}-{siguiente:D4}";
+            }
+
             Guid newId;
             await using (var cmd = conn.CreateCommand())
             {
@@ -177,7 +200,7 @@ public class DonacionesController : ControllerBase
                 cmd.Parameters.AddWithValue("sid",    (object?)dto.SedeId                      ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("desc",   (object?)dto.Descripcion?.Trim()          ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("fecha",  (dto.FechaDonacion ?? DateTime.UtcNow).Date);
-                cmd.Parameters.AddWithValue("recibo", (object?)dto.ReciboNumero?.Trim()         ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("recibo", reciboNumero);
                 newId = (Guid)(await cmd.ExecuteScalarAsync())!;
             }
 

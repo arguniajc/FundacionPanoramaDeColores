@@ -16,7 +16,7 @@ import { CampoUnidadMedida } from '../../../../../shared/components/form/FormCon
 import { CATEGORIAS_INVENTARIO } from '../../../../../shared/utils/geodata';
 
 const VACIO = {
-  tipo: 'dinero', monto: '', reciboNumero: '', nombreItem: '',
+  tipo: 'dinero', monto: '', nombreItem: '',
   cantidad: '', unidadMedida: '', sedeId: '', programaId: '',
   descripcion: '', fechaDonacion: hoy(),
   ingresarInventario: false, categoriaInv: 'Otros', stockMinimoInv: '',
@@ -106,7 +106,6 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
         donanteId:    donante.id,
         tipo:         form.tipo,
         monto:        form.tipo === 'dinero' ? Number(form.monto) : null,
-        reciboNumero: form.reciboNumero.trim() || null,
         itemId:       itemSel?.id ?? null,
         nombreItem:   itemSel ? null : (form.nombreItem.trim() || null),
         cantidad:     form.tipo === 'especie' ? Number(form.cantidad) : null,
@@ -128,7 +127,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
             programaId:        form.programaId || null,
             terceroNombre:     donante.nombre,
             terceroDocumento:  donante.documento ?? null,
-            numeroSoporte:     form.reciboNumero.trim() || null,
+            numeroSoporte:     data.reciboNumero ?? null,
             descripcion:       form.descripcion.trim() || null,
           });
         } catch { /* silencioso — contabilidad se puede registrar manualmente */ }
@@ -198,14 +197,11 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
           </Grid>
 
           {form.tipo === 'dinero' && <>
-            <Grid size={6}>
+            <Grid size={12}>
               <TextField fullWidth size="small" label="Monto *" type="number"
                 value={form.monto} onChange={e => set('monto', e.target.value)}
-                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
-            </Grid>
-            <Grid size={6}>
-              <TextField fullWidth size="small" label="N° Recibo" value={form.reciboNumero}
-                onChange={e => set('reciboNumero', e.target.value)} />
+                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                helperText="El número de recibo se genera automáticamente" />
             </Grid>
             <Grid size={12}>
               <FormControlLabel

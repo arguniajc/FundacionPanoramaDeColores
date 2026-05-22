@@ -986,5 +986,21 @@ public static class DbMigrations
         await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS retencion_practicada NUMERIC(14,2)", "movimientos_contables.retencion_practicada");
         await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS tarifa_retencion     NUMERIC(5,2)",  "movimientos_contables.tarifa_retencion");
         await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS concepto_retencion   VARCHAR(100)",  "movimientos_contables.concepto_retencion");
+
+        // ── Historial de cambios (audit log) ──────────────────────────────────
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                entidad_tipo   VARCHAR(50)  NOT NULL,
+                entidad_id     UUID         NOT NULL,
+                entidad_nombre VARCHAR(300),
+                accion         VARCHAR(30)  NOT NULL,
+                usuario_email  VARCHAR(200),
+                detalle        TEXT,
+                fecha          TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            )
+            """, "audit_log.create");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_audit_log_entidad ON audit_log(entidad_tipo, entidad_id)", "audit_log.idx_entidad");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_audit_log_fecha   ON audit_log(fecha DESC)",               "audit_log.idx_fecha");
     }
 }

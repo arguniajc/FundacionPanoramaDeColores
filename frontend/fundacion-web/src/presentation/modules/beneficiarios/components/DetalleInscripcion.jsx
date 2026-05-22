@@ -35,10 +35,12 @@ import FamilyRestroomIcon       from '@mui/icons-material/FamilyRestroom';
 import LocationOnIcon           from '@mui/icons-material/LocationOn';
 import CheckCircleIcon          from '@mui/icons-material/CheckCircle';
 import CancelIcon               from '@mui/icons-material/Cancel';
+import HistoryIcon              from '@mui/icons-material/History';
 
-import apiClient           from '../../../../infrastructure/http/apiClient';
-import { calcularEdad }    from '../../../../shared/utils/fecha';
-import { abrirHojaDeVida } from '../../../../shared/utils/pdf';
+import apiClient                from '../../../../infrastructure/http/apiClient';
+import { calcularEdad }         from '../../../../shared/utils/fecha';
+import { abrirHojaDeVida }      from '../../../../shared/utils/pdf';
+import HistorialBeneficiario    from './HistorialBeneficiario';
 
 const COLOR_PRIMARIO = 'var(--color-primario)';
 const COLOR_HOVER    = '#3a1470';
@@ -553,6 +555,12 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             <Typography variant="caption" color="text.secondary">
               Inscrito el: {new Date(ins.createdAt).toLocaleString('es-CO')}
             </Typography>
+          </Grid>
+
+          {/* ── Historial de cambios ─────────────────────────────────────── */}
+          <Seccion titulo="Historial de cambios" icono={<HistoryIcon sx={{ fontSize: 18 }} />} />
+          <Grid size={12}>
+            <HistorialBeneficiario beneficiarioId={ins.id} />
           </Grid>
 
         </Grid>

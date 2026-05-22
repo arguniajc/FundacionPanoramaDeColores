@@ -15,4 +15,5 @@ export const beneficiariosRepository = {
   baja:            (id, motivo)  => apiClient.patch(`/api/beneficiarios/${id}/baja`, { motivo }),
   reactivar:       (id)          => apiClient.patch(`/api/beneficiarios/${id}/reactivar`),
   eliminar:        (id)          => apiClient.delete(`/api/beneficiarios/${id}`),
+  historial:       (id)          => apiClient.get(`/api/beneficiarios/${id}/historial`),
 };

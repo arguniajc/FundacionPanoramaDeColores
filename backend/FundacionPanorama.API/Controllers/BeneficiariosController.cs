@@ -564,6 +564,7 @@ public class BeneficiariosController : ControllerBase
         var newId = (Guid)(await ins.ExecuteScalarAsync())!;
 
         await GuardarDependientesAsync(conn, tx, newId, dto, epsId, isNew: true);
+        await RegistrarAuditAsync(conn, tx, newId, dto.NombreMenor.Trim(), "creado");
 
         await tx.CommitAsync();
 
@@ -654,6 +655,7 @@ public class BeneficiariosController : ControllerBase
         await upd.ExecuteNonQueryAsync();
 
         await GuardarDependientesAsync(conn, tx, id, dto, epsId, isNew: false);
+        await RegistrarAuditAsync(conn, tx, id, dto.NombreMenor.Trim(), "editado");
 
         await tx.CommitAsync();
 
@@ -682,6 +684,8 @@ public class BeneficiariosController : ControllerBase
         if (await cmd.ExecuteNonQueryAsync() == 0) return NotFound();
 
         var dtos = await CargarDtosAsync(conn, [id]);
+        var motivoLog = string.IsNullOrWhiteSpace(dto?.Motivo) ? null : $"Motivo: {dto.Motivo.Trim()}";
+        await RegistrarAuditAsync(conn, null, id, dtos[0].NombreMenor, "baja", motivoLog);
         return Ok(dtos[0]);
     }
 
@@ -700,6 +704,7 @@ public class BeneficiariosController : ControllerBase
         if (await cmd.ExecuteNonQueryAsync() == 0) return NotFound();
 
         var dtos = await CargarDtosAsync(conn, [id]);
+        await RegistrarAuditAsync(conn, null, id, dtos[0].NombreMenor, "reactivado");
         return Ok(dtos[0]);
     }
 
@@ -715,11 +720,12 @@ public class BeneficiariosController : ControllerBase
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
 
-        // Existencia
+        // Existencia y nombre (para audit log)
         await using var exCmd = conn.CreateCommand();
-        exCmd.CommandText = "SELECT COUNT(*)::int FROM beneficiarios WHERE id = @id";
+        exCmd.CommandText = "SELECT nombre FROM beneficiarios WHERE id = @id";
         exCmd.Parameters.AddWithValue("id", id);
-        if ((int)(await exCmd.ExecuteScalarAsync())! == 0) return NotFound();
+        var nombreBen = await exCmd.ExecuteScalarAsync() as string;
+        if (nombreBen == null) return NotFound();
 
         // Tablas que bloquean la eliminación
         await using var chkIns = conn.CreateCommand();
@@ -767,6 +773,8 @@ public class BeneficiariosController : ControllerBase
             delLog.Parameters.AddWithValue("id", id);
             await delLog.ExecuteNonQueryAsync();
 
+            await RegistrarAuditAsync(conn, tx, id, nombreBen, "eliminado");
+
             await using var delBen = conn.CreateCommand();
             delBen.Transaction = tx;
             delBen.CommandText = "DELETE FROM beneficiarios WHERE id = @id";
@@ -788,6 +796,70 @@ public class BeneficiariosController : ControllerBase
     {
         var rol = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
         return string.IsNullOrEmpty(rol) || rol is "administrador" or "Admin";
+    }
+
+    private string? UsuarioEmail() =>
+        User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+        ?? User.FindFirst("email")?.Value
+        ?? User.Identity?.Name;
+
+    private async Task RegistrarAuditAsync(
+        NpgsqlConnection conn, NpgsqlTransaction? tx,
+        Guid entidadId, string entidadNombre, string accion, string? detalle = null)
+    {
+        try
+        {
+            await using var cmd = conn.CreateCommand();
+            if (tx != null) cmd.Transaction = tx;
+            cmd.CommandText = """
+                INSERT INTO audit_log (entidad_tipo, entidad_id, entidad_nombre, accion, usuario_email, detalle)
+                VALUES ('beneficiario', @eid, @nombre, @accion, @email, @detalle)
+                """;
+            cmd.Parameters.AddWithValue("eid",    entidadId);
+            cmd.Parameters.AddWithValue("nombre", entidadNombre);
+            cmd.Parameters.AddWithValue("accion", accion);
+            cmd.Parameters.Add(new NpgsqlParameter("email",   NpgsqlDbType.Varchar) { Value = (object?)UsuarioEmail() ?? DBNull.Value });
+            cmd.Parameters.Add(new NpgsqlParameter("detalle", NpgsqlDbType.Text)    { Value = (object?)detalle ?? DBNull.Value });
+            await cmd.ExecuteNonQueryAsync();
+        }
+        catch { /* audit failures are non-fatal */ }
+    }
+
+    // =========================================================================
+    // GET api/beneficiarios/{id}/historial
+    // =========================================================================
+    [HttpGet("{id:guid}/historial")]
+    [Authorize]
+    public async Task<IActionResult> Historial(Guid id, [FromQuery] int limite = 50)
+    {
+        limite = Math.Clamp(limite, 1, 200);
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT id, accion, usuario_email, detalle, fecha
+            FROM audit_log
+            WHERE entidad_tipo = 'beneficiario' AND entidad_id = @id
+            ORDER BY fecha DESC
+            LIMIT @limite
+            """;
+        cmd.Parameters.AddWithValue("id",     id);
+        cmd.Parameters.AddWithValue("limite", limite);
+
+        var result = new List<object>();
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+        {
+            result.Add(new
+            {
+                id           = r.GetGuid(0),
+                accion       = r.GetString(1),
+                usuarioEmail = r.IsDBNull(2) ? null : r.GetString(2),
+                detalle      = r.IsDBNull(3) ? null : r.GetString(3),
+                fecha        = r.GetDateTime(4),
+            });
+        }
+        return Ok(result);
     }
 
     // =========================================================================

@@ -64,6 +64,7 @@ builder.Services.AddCors(options =>
 
 // ── Servicios propios ────────────────────────────────────────────────────────
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<FundacionPanorama.API.Services.EmailService>();
 builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection("Supabase"));
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<SupabaseStorageService>();

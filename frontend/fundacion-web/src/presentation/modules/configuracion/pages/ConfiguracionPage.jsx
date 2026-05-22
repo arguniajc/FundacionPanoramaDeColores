@@ -12,6 +12,7 @@ import { TabRepLegal }    from './components/TabRepLegal';
 import { TabApariencia }  from './components/TabApariencia';
 import { TabTextos }      from './components/TabTextos';
 import { TabPaginaWeb }   from './components/TabPaginaWeb';
+import { TabSmtp }        from './components/TabSmtp';
 
 export default function ConfiguracionPage() {
   const { actualizarConfig } = useConfiguracion();
@@ -48,6 +49,15 @@ export default function ConfiguracionPage() {
           mensajeBienvenida: data.mensajeBienvenida  ?? '',
           footerTexto:       data.footerTexto        ?? '',
           webContenido:      data.webContenido       ?? '',
+          // SMTP
+          smtpHost:          data.smtpHost           ?? '',
+          smtpPuerto:        data.smtpPuerto         ?? 587,
+          smtpUsuario:       data.smtpUsuario        ?? '',
+          smtpClave:         '',                          // nunca se precarga la clave
+          smtpClaveGuardada: data.smtpClaveGuardada  ?? false,
+          smtpDeNombre:      data.smtpDeNombre       ?? '',
+          smtpDeEmail:       data.smtpDeEmail        ?? '',
+          smtpSsl:           data.smtpSsl            ?? true,
         };
         setForm(loaded);
         setFormPrev(loaded);
@@ -93,6 +103,14 @@ export default function ConfiguracionPage() {
         mensajeBienvenida: form.mensajeBienvenida  || null,
         footerTexto:       form.footerTexto        || null,
         webContenido:      JSON.stringify(webForm),
+        // SMTP
+        smtpHost:      form.smtpHost      || null,
+        smtpPuerto:    form.smtpPuerto    ? Number(form.smtpPuerto) : null,
+        smtpUsuario:   form.smtpUsuario   || null,
+        smtpClave:     form.smtpClave     || null,   // vacío = no cambiar
+        smtpDeNombre:  form.smtpDeNombre  || null,
+        smtpDeEmail:   form.smtpDeEmail   || null,
+        smtpSsl:       form.smtpSsl       ?? true,
       });
       actualizarConfig(data);
       setFormPrev({ ...form });
@@ -105,7 +123,7 @@ export default function ConfiguracionPage() {
     }
   };
 
-  const TABS = ['Fundación', 'Representante Legal', 'Apariencia', 'Textos admin', 'Página Web'];
+  const TABS = ['Fundación', 'Representante Legal', 'Apariencia', 'Textos admin', 'Página Web', 'Correo'];
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 860, mx: 'auto' }}>
@@ -144,6 +162,7 @@ export default function ConfiguracionPage() {
           {tab === 2 && <TabApariencia  form={form} setForm={setForm} />}
           {tab === 3 && <TabTextos      form={form} set={set} />}
           {tab === 4 && <TabPaginaWeb   webForm={webForm} setWebForm={setWebForm} />}
+          {tab === 5 && <TabSmtp        form={form} set={set} />}
 
           <Divider sx={{ my: 3 }} />
           <Box display="flex" justifyContent="flex-end">

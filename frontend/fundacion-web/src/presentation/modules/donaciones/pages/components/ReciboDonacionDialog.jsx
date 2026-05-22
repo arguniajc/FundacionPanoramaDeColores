@@ -3,11 +3,15 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Typography, Box, Divider, CircularProgress, Chip,
 } from '@mui/material';
-import DownloadIcon  from '@mui/icons-material/Download';
-import ReceiptIcon   from '@mui/icons-material/Receipt';
+import DownloadIcon        from '@mui/icons-material/Download';
+import EmailIcon           from '@mui/icons-material/Email';
+import ReceiptIcon         from '@mui/icons-material/Receipt';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import { useConfiguracion }        from '../../../../../shared/context/ConfiguracionContext';
 import { configuracionRepository } from '../../../../../infrastructure/repositories/configuracionRepository';
+import { donacionesRepository }    from '../../../../../infrastructure/repositories/donacionesRepository';
 import { fmtMoney, fmtFecha } from './helpers';
+import { CertificadoDonacionDialog } from './CertificadoDonacionDialog';
 
 function generarPDF(don, config, firma) {
   import('jspdf').then(({ default: jsPDF }) => {
@@ -181,8 +185,11 @@ function generarPDF(don, config, firma) {
 
 export function ReciboDonacionDialog({ open, donacion, onClose }) {
   const config = useConfiguracion();
-  const [generando, setGenerando] = useState(false);
-  const [firma,     setFirma]     = useState({ firmaRep: null, nombreRepLegal: null, cargoRep: null });
+  const [generando,      setGenerando]      = useState(false);
+  const [enviando,       setEnviando]       = useState(false);
+  const [emailSnack,     setEmailSnack]     = useState('');
+  const [certOpen,       setCertOpen]       = useState(false);
+  const [firma,          setFirma]          = useState({ firmaRep: null, nombreRepLegal: null, cargoRep: null });
 
   useEffect(() => {
     if (!open) return;
@@ -198,7 +205,20 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
   const handleDescargar = () => {
     setGenerando(true);
     generarPDF(donacion, config, firma);
+    donacionesRepository.logEmision(donacion.id, { accion: 'descarga' }).catch(() => {});
     setTimeout(() => setGenerando(false), 800);
+  };
+
+  const handleEnviarEmail = async () => {
+    setEnviando(true);
+    try {
+      await donacionesRepository.enviarRecibo(donacion.id);
+      setEmailSnack('Recibo enviado por correo correctamente.');
+    } catch (e) {
+      setEmailSnack(e?.response?.data?.mensaje || 'No se pudo enviar el correo.');
+    } finally {
+      setEnviando(false);
+    }
   };
 
   if (!donacion) return null;
@@ -307,8 +327,24 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
           )}
         </Box>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose}>Cerrar</Button>
+      <DialogActions sx={{ px: 3, pb: 2, flexWrap: 'wrap', gap: 1 }}>
+        <Button onClick={onClose} sx={{ mr: 'auto' }}>Cerrar</Button>
+        {donacion.emailDonante && (
+          <Button size="small" variant="outlined"
+            startIcon={enviando ? <CircularProgress size={14} color="inherit" /> : <EmailIcon />}
+            onClick={handleEnviarEmail} disabled={enviando}
+            sx={{ borderColor: '#4E1B95', color: '#4E1B95' }}>
+            {enviando ? 'Enviando…' : 'Enviar por email'}
+          </Button>
+        )}
+        {donacion.tipo === 'dinero' && (
+          <Button size="small" variant="outlined"
+            startIcon={<WorkspacePremiumIcon />}
+            onClick={() => setCertOpen(true)}
+            sx={{ borderColor: '#4E1B95', color: '#4E1B95' }}>
+            Certificado
+          </Button>
+        )}
         <Button
           variant="contained"
           startIcon={generando ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
@@ -319,6 +355,24 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
           Descargar PDF
         </Button>
       </DialogActions>
+
+      {emailSnack && (
+        <Box sx={{ px: 3, pb: 2 }}>
+          <Chip
+            label={emailSnack}
+            size="small"
+            color={emailSnack.includes('correo correctamente') ? 'success' : 'error'}
+            onDelete={() => setEmailSnack('')}
+            sx={{ fontSize: '0.75rem' }}
+          />
+        </Box>
+      )}
+
+      <CertificadoDonacionDialog
+        open={certOpen}
+        donacion={donacion}
+        onClose={() => setCertOpen(false)}
+      />
     </Dialog>
   );
 }

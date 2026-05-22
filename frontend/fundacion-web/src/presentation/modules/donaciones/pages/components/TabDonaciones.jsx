@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import AddIcon               from '@mui/icons-material/Add';
 import AttachMoneyIcon       from '@mui/icons-material/AttachMoney';
+import BlockIcon             from '@mui/icons-material/Block';
 import CloseIcon             from '@mui/icons-material/Close';
 import DeleteIcon            from '@mui/icons-material/Delete';
 import Inventory2Icon        from '@mui/icons-material/Inventory2';
@@ -19,8 +20,9 @@ import { useAuth }              from '../../../../../application/auth/AuthContex
 import { useConfirm }           from '../../../../../shared/components/ConfirmDialog';
 import { COLOR_DONACIONES, COLOR_ESPECIE, fmtMoney, fmtFecha } from './helpers';
 import { StatCard } from './StatCard';
-import { NuevaDonacionDialog }  from './NuevaDonacionDialog';
-import { ReciboDonacionDialog } from './ReciboDonacionDialog';
+import { NuevaDonacionDialog }      from './NuevaDonacionDialog';
+import { ReciboDonacionDialog }     from './ReciboDonacionDialog';
+import { CertificadoDonacionDialog } from './CertificadoDonacionDialog';
 
 export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
   const { puedo } = useAuth();
@@ -33,6 +35,8 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
   const [dialOpen,      setDialOpen]      = useState(false);
   const [reciboOpen,    setReciboOpen]    = useState(false);
   const [reciboItem,    setReciboItem]    = useState(null);
+  const [certOpen,      setCertOpen]      = useState(false);
+  const [certItem,      setCertItem]      = useState(null);
 
   const [filtTipo,   setFiltTipo]   = useState('');
   const [filtSedeId, setFiltSedeId] = useState('');
@@ -91,6 +95,15 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
       ok('Donación eliminada.');
       recargarStats();
     } catch { err('No se pudo eliminar.'); }
+  };
+
+  const handleAnular = async (don) => {
+    if (!await confirm(`¿Anular el recibo N° ${don.reciboNumero || don.id.slice(0, 8)}? Esta acción no se puede deshacer.`)) return;
+    try {
+      await donacionesRepository.anular(don.id);
+      setDonaciones(prev => prev.map(d => d.id === don.id ? { ...d, reciboEstado: 'anulado' } : d));
+      ok('Recibo anulado.');
+    } catch { err('No se pudo anular el recibo.'); }
   };
 
   const hayFiltros = filtTipo || filtSedeId || filtDesde || filtHasta;
@@ -183,6 +196,7 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
                 <TableCell sx={{ fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>Tipo</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Detalle</TableCell>
                 <TableCell sx={{ fontWeight: 700, display: { xs: 'none', md: 'table-cell' } }}>Sede / Programa</TableCell>
+                <TableCell sx={{ fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>Estado</TableCell>
                 <TableCell />
               </TableRow>
             </TableHead>
@@ -229,6 +243,17 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
                       </Typography>
                     )}
                   </TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                    <Chip
+                      label={d.reciboEstado === 'anulado' ? 'Anulado' : 'Emitido'}
+                      size="small"
+                      sx={{
+                        bgcolor: d.reciboEstado === 'anulado' ? '#fee2e2' : '#dcfce7',
+                        color:   d.reciboEstado === 'anulado' ? '#991b1b' : '#166534',
+                        fontWeight: 700, fontSize: '0.68rem',
+                      }}
+                    />
+                  </TableCell>
                   <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                     <Tooltip title="Ver recibo">
                       <IconButton size="small" color="primary"
@@ -236,6 +261,22 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
                         <ReceiptIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
+                    {d.tipo === 'dinero' && (
+                      <Tooltip title="Certificado tributario">
+                        <IconButton size="small"
+                          sx={{ color: '#4E1B95' }}
+                          onClick={() => { setCertItem(d); setCertOpen(true); }}>
+                          <span style={{ fontSize: 16, lineHeight: 1 }}>🏅</span>
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {d.reciboEstado !== 'anulado' && puedo('donaciones', 'editar') && (
+                      <Tooltip title="Anular recibo">
+                        <IconButton size="small" sx={{ color: '#d97706' }} onClick={() => handleAnular(d)}>
+                          <BlockIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     {puedo('donaciones', 'eliminar') && (
                       <Tooltip title="Eliminar donación">
                         <IconButton size="small" color="error" onClick={() => handleEliminar(d)}>
@@ -255,6 +296,12 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
         open={reciboOpen}
         donacion={reciboItem}
         onClose={() => { setReciboOpen(false); setReciboItem(null); }}
+      />
+
+      <CertificadoDonacionDialog
+        open={certOpen}
+        donacion={certItem}
+        onClose={() => { setCertOpen(false); setCertItem(null); }}
       />
 
       <NuevaDonacionDialog

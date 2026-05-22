@@ -43,7 +43,24 @@ public class ConfiguracionController(ConfiguracionService svc, IMemoryCache cach
         var data = await svc.ObtenerAsync(ct);
         return Ok(data ?? new ConfiguracionDto(
             null,null,null,null,null,null,null,null,null,
-            null,null,null,null,null,null,null,null,null,null,null));
+            null,null,null,null,null,null,null,null,null,null,
+            null,null,null,false,null,null,true,null));
+    }
+
+    [HttpPost("probar-smtp")]
+    public async Task<IActionResult> ProbarSmtp(
+        [FromServices] FundacionPanorama.API.Services.EmailService emailSvc,
+        CancellationToken ct)
+    {
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                 ?? User.FindFirst("email")?.Value;
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest(new { mensaje = "No se encontró el email del usuario autenticado." });
+
+        var (ok, detalle) = await emailSvc.EnviarPruebaAsync(email, ct);
+        return ok
+            ? Ok(new { mensaje = $"Email de prueba enviado a {email}." })
+            : BadRequest(new { mensaje = detalle });
     }
 
     [HttpPut]

@@ -16,8 +16,11 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
                    nombre_rep_legal, tipo_doc_rep, documento_rep, cargo_rep, firma_rep,
                    color_primario, color_sidebar,
                    tagline, mision, vision,
-                   email_contacto, sitio_web, mensaje_bienvenida, footer_texto,
-                   web_contenido, updated_at
+                   email_contacto, sitio_web, mensaje_bienvenida, footer_texto, web_contenido,
+                   smtp_host, smtp_puerto, smtp_usuario,
+                   (smtp_clave IS NOT NULL AND smtp_clave <> '') AS smtp_clave_guardada,
+                   smtp_de_nombre, smtp_de_email, COALESCE(smtp_ssl, true) AS smtp_ssl,
+                   updated_at
             FROM configuracion LIMIT 1";
 
         await using var r = await cmd.ExecuteReaderAsync(ct);
@@ -43,7 +46,15 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
             r.IsDBNull(16) ? null : r.GetString(16),
             r.IsDBNull(17) ? null : r.GetString(17),
             r.IsDBNull(18) ? null : r.GetString(18),
-            r.IsDBNull(19) ? null : r.GetDateTime(19));
+            // SMTP
+            r.IsDBNull(19) ? null : r.GetString(19),
+            r.IsDBNull(20) ? null  : r.GetInt32(20),
+            r.IsDBNull(21) ? null : r.GetString(21),
+            !r.IsDBNull(22) && r.GetBoolean(22),
+            r.IsDBNull(23) ? null : r.GetString(23),
+            r.IsDBNull(24) ? null : r.GetString(24),
+            !r.IsDBNull(25) && r.GetBoolean(25),
+            r.IsDBNull(26) ? null : r.GetDateTime(26));
     }
 
     public async Task<ConfiguracionPublicaDto?> ObtenerPublicaAsync(CancellationToken ct = default)
@@ -69,6 +80,33 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
             r.IsDBNull(6) ? null : r.GetString(6));
     }
 
+    public async Task<SmtpConfig?> ObtenerSmtpAsync(CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT smtp_host, smtp_puerto, smtp_usuario, smtp_clave,
+                   smtp_de_nombre, smtp_de_email, COALESCE(smtp_ssl, true)
+            FROM configuracion LIMIT 1";
+
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return null;
+        if (r.IsDBNull(0) || r.IsDBNull(2) || r.IsDBNull(3)) return null;
+        if (string.IsNullOrWhiteSpace(r.GetString(0)) ||
+            string.IsNullOrWhiteSpace(r.GetString(2)) ||
+            string.IsNullOrWhiteSpace(r.GetString(3))) return null;
+
+        return new SmtpConfig(
+            r.GetString(0),
+            r.IsDBNull(1) ? 587 : r.GetInt32(1),
+            r.GetString(2),
+            r.GetString(3),
+            r.IsDBNull(4) ? "" : r.GetString(4),
+            r.IsDBNull(5) ? "" : r.GetString(5),
+            !r.IsDBNull(6) && r.GetBoolean(6));
+    }
+
     public async Task<ConfiguracionDto> GuardarAsync(GuardarConfiguracionDto dto, CancellationToken ct = default)
     {
         await using var conn = factory.Create();
@@ -80,9 +118,13 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
                  nombre_rep_legal, tipo_doc_rep, documento_rep, cargo_rep, firma_rep,
                  color_primario, color_sidebar,
                  tagline, mision, vision,
-                 email_contacto, sitio_web, mensaje_bienvenida, footer_texto, web_contenido)
+                 email_contacto, sitio_web, mensaje_bienvenida, footer_texto, web_contenido,
+                 smtp_host, smtp_puerto, smtp_usuario, smtp_clave,
+                 smtp_de_nombre, smtp_de_email, smtp_ssl)
             SELECT @nf, @nit, @dir, @tel, @nrl, @tdr, @docr, @cargo, @firma,
-                   @cp, @cs, @tag, @mis, @vis, @email, @web, @bienvenida, @footer, @webcon
+                   @cp, @cs, @tag, @mis, @vis, @email, @web, @bienvenida, @footer, @webcon,
+                   @smtpHost, @smtpPuerto, @smtpUsu, @smtpClave,
+                   @smtpDeNombre, @smtpDeEmail, @smtpSsl
             WHERE NOT EXISTS (SELECT 1 FROM configuracion);
 
             UPDATE configuracion SET
@@ -105,6 +147,15 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
                 mensaje_bienvenida = @bienvenida,
                 footer_texto       = @footer,
                 web_contenido      = @webcon,
+                smtp_host          = @smtpHost,
+                smtp_puerto        = @smtpPuerto,
+                smtp_usuario       = @smtpUsu,
+                smtp_clave         = CASE WHEN @smtpClave IS NULL OR @smtpClave = ''
+                                          THEN smtp_clave
+                                          ELSE @smtpClave END,
+                smtp_de_nombre     = @smtpDeNombre,
+                smtp_de_email      = @smtpDeEmail,
+                smtp_ssl           = @smtpSsl,
                 updated_at         = NOW()";
 
         cmd.Parameters.AddWithValue("nf",         (object?)dto.NombreFundacion?.Trim()   ?? DBNull.Value);
@@ -126,6 +177,13 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
         cmd.Parameters.AddWithValue("bienvenida", (object?)dto.MensajeBienvenida?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("footer",     (object?)dto.FooterTexto?.Trim()       ?? DBNull.Value);
         cmd.Parameters.AddWithValue("webcon",     (object?)dto.WebContenido              ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("smtpHost",    (object?)dto.SmtpHost?.Trim()         ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("smtpPuerto", NpgsqlTypes.NpgsqlDbType.Integer) { Value = (object?)dto.SmtpPuerto ?? DBNull.Value });
+        cmd.Parameters.AddWithValue("smtpUsu",     (object?)dto.SmtpUsuario?.Trim()      ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("smtpClave",   (object?)dto.SmtpClave?.Trim()        ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("smtpDeNombre",(object?)dto.SmtpDeNombre?.Trim()     ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("smtpDeEmail", (object?)dto.SmtpDeEmail?.Trim()      ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("smtpSsl",     dto.SmtpSsl);
 
         await cmd.ExecuteNonQueryAsync(ct);
         return (await ObtenerAsync(ct))!;

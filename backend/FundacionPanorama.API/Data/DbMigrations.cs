@@ -987,6 +987,30 @@ public static class DbMigrations
         await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS tarifa_retencion     NUMERIC(5,2)",  "movimientos_contables.tarifa_retencion");
         await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS concepto_retencion   VARCHAR(100)",  "movimientos_contables.concepto_retencion");
 
+        // ── Email / SMTP ──────────────────────────────────────────────────────
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS smtp_host      VARCHAR(200)",                       "configuracion.smtp_host");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS smtp_puerto    INTEGER      DEFAULT 587",            "configuracion.smtp_puerto");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS smtp_usuario   VARCHAR(200)",                       "configuracion.smtp_usuario");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS smtp_clave     TEXT",                               "configuracion.smtp_clave");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS smtp_de_nombre VARCHAR(200)",                       "configuracion.smtp_de_nombre");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS smtp_de_email  VARCHAR(200)",                       "configuracion.smtp_de_email");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS smtp_ssl       BOOLEAN      NOT NULL DEFAULT true",  "configuracion.smtp_ssl");
+
+        // ── Estado del recibo y log de emisiones ──────────────────────────────
+        await Migrar("ALTER TABLE donaciones ADD COLUMN IF NOT EXISTS recibo_estado VARCHAR(20) NOT NULL DEFAULT 'emitido'", "donaciones.recibo_estado");
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS recibos_log (
+                id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+                donacion_id         UUID        NOT NULL,
+                accion              VARCHAR(20) NOT NULL,
+                usuario_email       VARCHAR(200),
+                destinatario_email  VARCHAR(200),
+                fecha               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                detalle             TEXT
+            )
+            """, "recibos_log.create");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_recibos_log_donacion ON recibos_log(donacion_id)", "recibos_log.idx_donacion");
+
         // ── Historial de cambios (audit log) ──────────────────────────────────
         await Migrar("""
             CREATE TABLE IF NOT EXISTS audit_log (

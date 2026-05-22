@@ -18,6 +18,7 @@ import PrintIcon                from '@mui/icons-material/Print';
 import SyncAltIcon              from '@mui/icons-material/SyncAlt';
 import FactCheckIcon            from '@mui/icons-material/FactCheck';
 import SavingsIcon              from '@mui/icons-material/Savings';
+import MenuBookIcon             from '@mui/icons-material/MenuBook';
 import SearchIcon               from '@mui/icons-material/Search';
 import DownloadIcon             from '@mui/icons-material/Download';
 import VisibilityIcon           from '@mui/icons-material/Visibility';
@@ -35,6 +36,7 @@ import { DialogCuenta }      from './components/DialogCuenta';
 import { DialogPresupuesto } from './components/DialogPresupuesto';
 import { DialogArqueo }      from './components/DialogArqueo';
 import { DialogReposicion }  from './components/DialogReposicion';
+import { LibroMayorTab }     from './components/LibroMayorTab';
 
 // â”€â”€ PÃ¡gina principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ContabilidadPage() {
@@ -373,6 +375,7 @@ export default function ContabilidadPage() {
         <Tab label="Presupuesto" />
         <Tab label="Reporte Contador" />
         <Tab label="Caja Menor" icon={<SavingsIcon fontSize="small" />} iconPosition="start" />
+        <Tab label="Libro Mayor" icon={<MenuBookIcon fontSize="small" />} iconPosition="start" />
       </Tabs>
 
       {/* â”€â”€ Tab 0: Resumen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
@@ -1353,6 +1356,8 @@ export default function ContabilidadPage() {
         onClose={() => setDlgCuenta(d => ({ ...d, open: false }))}
         onGuardar={guardarCuenta}
       />
+      {tab === 6 && <LibroMayorTab />}
+
       <DialogPresupuesto
         open={dlgPres.open}
         modo={dlgPres.modo}

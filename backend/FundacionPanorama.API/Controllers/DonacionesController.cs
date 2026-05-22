@@ -26,7 +26,9 @@ public record DonacionDto(
     DateTime  FechaDonacion,
     string?   ReciboNumero,
     bool      Activo,
-    DateTime  FechaCreacion
+    DateTime  FechaCreacion,
+    string?   TipoDocDonante,
+    string?   DocumentoDonante
 );
 
 public record CrearDonacionDto(
@@ -93,7 +95,8 @@ public class DonacionesController : ControllerBase
                    dn.programa_id, COALESCE(p.nombre,'') AS nombre_programa,
                    dn.sede_id,    COALESCE(s.nombre,'') AS nombre_sede,
                    dn.descripcion, dn.fecha_donacion, dn.recibo_numero,
-                   dn.activo, dn.fecha_creacion
+                   dn.activo, dn.fecha_creacion,
+                   d.tipo_documento, d.documento
             FROM donaciones dn
             JOIN  donantes d          ON d.id  = dn.donante_id
             LEFT JOIN inventario_items i ON i.id  = dn.item_id
@@ -123,7 +126,8 @@ public class DonacionesController : ControllerBase
                    dn.programa_id, COALESCE(p.nombre,''),
                    dn.sede_id,    COALESCE(s.nombre,''),
                    dn.descripcion, dn.fecha_donacion, dn.recibo_numero,
-                   dn.activo, dn.fecha_creacion
+                   dn.activo, dn.fecha_creacion,
+                   d.tipo_documento, d.documento
             FROM donaciones dn
             JOIN  donantes d          ON d.id  = dn.donante_id
             LEFT JOIN inventario_items i ON i.id  = dn.item_id
@@ -352,6 +356,8 @@ public class DonacionesController : ControllerBase
         r.GetDateTime(15),
         r.IsDBNull(16) ? null  : r.GetString(16),
         r.GetBoolean(17),
-        r.GetDateTime(18)
+        r.GetDateTime(18),
+        r.IsDBNull(19) ? null  : r.GetString(19),
+        r.IsDBNull(20) ? null  : r.GetString(20)
     );
 }

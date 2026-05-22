@@ -4,6 +4,8 @@ using FundacionPanorama.Application.Features.Configuracion;
 using FundacionPanorama.Application.Features.Configuracion.Interfaces;
 using FundacionPanorama.Application.Features.Contabilidad;
 using FundacionPanorama.Application.Features.Contabilidad.Interfaces;
+using FundacionPanorama.Application.Features.Nomina;
+using FundacionPanorama.Application.Features.Nomina.Interfaces;
 using FundacionPanorama.Application.Features.Organigrama;
 using FundacionPanorama.Application.Features.Permisos;
 using FundacionPanorama.Application.Features.Permisos.Interfaces;
@@ -36,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<ITalentoHumanoRepository, TalentoHumanoRepository>();
         services.AddScoped<IContabilidadRepository, ContabilidadRepository>();
         services.AddScoped<IOrganigramaRepository, OrganigramaRepository>();
+        services.AddScoped<INominaRepository, NominaRepository>();
 
         // Services
         services.AddScoped<ConfiguracionService>();
@@ -46,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<TalentoHumanoService>();
         services.AddScoped<ContabilidadService>();
         services.AddScoped<OrganigramaService>();
+        services.AddScoped<NominaService>();
 
         return services;
     }

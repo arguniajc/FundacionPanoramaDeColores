@@ -504,6 +504,54 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         return new ResumenAnualDto(anio, meses, totalIng, totalEgr, totalIng - totalEgr);
     }
 
+    // ── Libro Mayor ───────────────────────────────────────────────────────────
+
+    public async Task<IReadOnlyList<LibroAuxiliarItemDto>> LibroMayorAsync(
+        int anio, int? mes, string? codigoPuc, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+
+        var where = new List<string> { "EXTRACT(YEAR FROM m.fecha) = @anio" };
+        if (mes.HasValue) where.Add("EXTRACT(MONTH FROM m.fecha) = @mes");
+        if (!string.IsNullOrWhiteSpace(codigoPuc)) where.Add("cat.codigo_puc ILIKE @puc");
+
+        cmd.CommandText = $"""
+            SELECT
+                m.id, m.tipo, m.fecha, m.concepto,
+                cat.codigo_puc, cat.nombre AS cat_nombre,
+                p.nombre AS prog_nombre,
+                m.tercero_nombre, m.numero_soporte,
+                CASE WHEN m.tipo = 'ingreso' THEN m.monto ELSE 0    END AS ingreso,
+                CASE WHEN m.tipo = 'egreso'  THEN m.monto ELSE 0    END AS egreso,
+                SUM(CASE WHEN m.tipo = 'ingreso' THEN m.monto ELSE -m.monto END)
+                    OVER (PARTITION BY cat.codigo_puc
+                          ORDER BY m.fecha, m.id
+                          ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS saldo_acumulado
+            FROM movimientos_contables m
+            JOIN  cat_contable cat ON cat.id = m.categoria_id
+            LEFT JOIN programas p  ON p.id  = m.programa_id
+            WHERE {string.Join(" AND ", where)}
+            ORDER BY cat.codigo_puc, m.fecha, m.id
+            """;
+        cmd.Parameters.AddWithValue("anio", anio);
+        if (mes.HasValue)                          cmd.Parameters.AddWithValue("mes", mes.Value);
+        if (!string.IsNullOrWhiteSpace(codigoPuc)) cmd.Parameters.AddWithValue("puc", codigoPuc + "%");
+
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        var list = new List<LibroAuxiliarItemDto>();
+        while (await r.ReadAsync(ct))
+            list.Add(new LibroAuxiliarItemDto(
+                r.GetGuid(0), r.GetString(1), r.GetFieldValue<DateOnly>(2), r.GetString(3),
+                r.GetString(4), r.GetString(5),
+                r.IsDBNull(6) ? null : r.GetString(6),
+                r.IsDBNull(7) ? null : r.GetString(7),
+                r.IsDBNull(8) ? null : r.GetString(8),
+                (decimal)r[9], (decimal)r[10], (decimal)r[11]));
+        return list;
+    }
+
     // ── Caja Menor ────────────────────────────────────────────────────────────
 
     public async Task<IReadOnlyList<LibroAuxiliarItemDto>> LibroAuxiliarAsync(

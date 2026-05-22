@@ -172,4 +172,15 @@ public class ContabilidadController(ContabilidadService svc) : ControllerBase
         [FromQuery] int? anio = null,
         CancellationToken ct = default)
         => Ok(await svc.ResumenAnualAsync(anio ?? DateTime.UtcNow.Year, ct));
+
+    // ── Libro Mayor ────────────────────────────────────────────────────────────
+
+    [HttpGet("libro-mayor")]
+    [RequierePermiso("contabilidad", "ver")]
+    public async Task<IActionResult> LibroMayor(
+        [FromQuery] int?    anio       = null,
+        [FromQuery] int?    mes        = null,
+        [FromQuery] string? codigoPuc  = null,
+        CancellationToken ct = default)
+        => Ok(await svc.LibroMayorAsync(anio ?? DateTime.UtcNow.Year, mes, codigoPuc, ct));
 }

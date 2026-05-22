@@ -9,6 +9,7 @@ import AttachMoneyIcon       from '@mui/icons-material/AttachMoney';
 import CloseIcon             from '@mui/icons-material/Close';
 import DeleteIcon            from '@mui/icons-material/Delete';
 import Inventory2Icon        from '@mui/icons-material/Inventory2';
+import ReceiptIcon           from '@mui/icons-material/Receipt';
 import TrendingUpIcon        from '@mui/icons-material/TrendingUp';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import SkeletonTabla         from '../../../../../shared/components/SkeletonTabla';
@@ -18,7 +19,8 @@ import { useAuth }              from '../../../../../application/auth/AuthContex
 import { useConfirm }           from '../../../../../shared/components/ConfirmDialog';
 import { COLOR_DONACIONES, COLOR_ESPECIE, fmtMoney, fmtFecha } from './helpers';
 import { StatCard } from './StatCard';
-import { NuevaDonacionDialog } from './NuevaDonacionDialog';
+import { NuevaDonacionDialog }  from './NuevaDonacionDialog';
+import { ReciboDonacionDialog } from './ReciboDonacionDialog';
 
 export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
   const { puedo } = useAuth();
@@ -29,6 +31,8 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
   const [sedes,         setSedes]         = useState([]);
   const [snack,         setSnack]         = useState({ open: false, msg: '', sev: 'success' });
   const [dialOpen,      setDialOpen]      = useState(false);
+  const [reciboOpen,    setReciboOpen]    = useState(false);
+  const [reciboItem,    setReciboItem]    = useState(null);
 
   const [filtTipo,   setFiltTipo]   = useState('');
   const [filtSedeId, setFiltSedeId] = useState('');
@@ -225,7 +229,13 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
                       </Typography>
                     )}
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <Tooltip title="Ver recibo">
+                      <IconButton size="small" color="primary"
+                        onClick={() => { setReciboItem(d); setReciboOpen(true); }}>
+                        <ReceiptIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                     {puedo('donaciones', 'eliminar') && (
                       <Tooltip title="Eliminar donación">
                         <IconButton size="small" color="error" onClick={() => handleEliminar(d)}>
@@ -240,6 +250,12 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
           </Table>
         </TableContainer>
       )}
+
+      <ReciboDonacionDialog
+        open={reciboOpen}
+        donacion={reciboItem}
+        onClose={() => { setReciboOpen(false); setReciboItem(null); }}
+      />
 
       <NuevaDonacionDialog
         open={dialOpen}

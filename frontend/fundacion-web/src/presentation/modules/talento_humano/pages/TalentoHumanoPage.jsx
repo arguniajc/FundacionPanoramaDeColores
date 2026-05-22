@@ -15,12 +15,14 @@ import WarningAmberIcon  from '@mui/icons-material/WarningAmber';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import EventNoteIcon     from '@mui/icons-material/EventNote';
 import AccountTreeIcon   from '@mui/icons-material/AccountTree';
+import PaymentsIcon      from '@mui/icons-material/Payments';
 import apiClient         from '../../../../infrastructure/http/apiClient';
 import { useAuth }       from '../../../../application/auth/AuthContext';
 import { DialogEmpleado } from './components/DialogEmpleado';
 import { PanelEmpleado }  from './components/PanelEmpleado';
 import { PanelNovedades } from './components/PanelNovedades';
 import { OrgChartTab }    from './components/OrgChartTab';
+import { PanelNomina }    from './components/PanelNomina';
 
 const CONTRATO_COLORS = {
   indefinido:           'success',
@@ -141,11 +143,22 @@ export default function TalentoHumanoPage() {
           iconPosition="start"
           sx={{ minHeight: 42, py: 0, fontWeight: 600 }}
         />
+        <Tab
+          label="Nómina"
+          icon={<PaymentsIcon fontSize="small" />}
+          iconPosition="start"
+          sx={{ minHeight: 42, py: 0, fontWeight: 600 }}
+        />
       </Tabs>
 
       {/* ── Tab Organigrama ───────────────────────────────────────── */}
       {mainTab === 1 && (
         <OrgChartTab puedoEditar={puedo('talento_humano', 'editar')} empleados={empleados} />
+      )}
+
+      {/* ── Tab Nómina ────────────────────────────────────────────── */}
+      {mainTab === 2 && (
+        <PanelNomina puedo={puedo} />
       )}
 
       {/* ── Tab Empleados ─────────────────────────────────────────── */}

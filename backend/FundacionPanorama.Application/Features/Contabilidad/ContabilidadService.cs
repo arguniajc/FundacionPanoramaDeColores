@@ -57,6 +57,9 @@ public class ContabilidadService(IContabilidadRepository repo)
     public Task<ResumenAnualDto> ResumenAnualAsync(int anio, CancellationToken ct = default)
         => repo.ResumenAnualAsync(anio, ct);
 
+    public Task<IReadOnlyList<LibroAuxiliarItemDto>> LibroMayorAsync(int anio, int? mes, string? codigoPuc, CancellationToken ct = default)
+        => repo.LibroMayorAsync(anio, mes, codigoPuc, ct);
+
     public Task<IReadOnlyList<LibroAuxiliarItemDto>> LibroAuxiliarAsync(Guid cuentaId, int? mes, int? anio, CancellationToken ct = default)
         => repo.LibroAuxiliarAsync(cuentaId, mes, anio, ct);
 

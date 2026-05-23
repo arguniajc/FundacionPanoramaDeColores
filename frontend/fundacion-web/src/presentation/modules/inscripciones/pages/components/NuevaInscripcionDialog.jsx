@@ -118,13 +118,28 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
           try { const ge = JSON.parse(v); return !!ge.grado; } catch { return false; }
         }
         if (c.tipo === 'datos_padre' || c.tipo === 'datos_madre') {
-          try { const d = JSON.parse(v); return !!(d.numDoc && d.celular); } catch { return false; }
+          try { const d = JSON.parse(v); return !!(d.nombres?.trim() && d.apellidos?.trim() && d.numDoc?.trim() && d.celular?.trim()); } catch { return false; }
         }
         if (c.tipo === 'datos_tutor') {
-          try { const d = JSON.parse(v); return !!(d.relacion && d.numDoc && d.celular); } catch { return false; }
+          try { const d = JSON.parse(v); return !!(d.relacion && d.nombres?.trim() && d.apellidos?.trim() && d.numDoc?.trim() && d.celular?.trim()); } catch { return false; }
         }
         return true;
       });
+      // Al menos uno de los paneles tutor debe estar completo
+      const panelesTutor = campos.filter(c =>
+        c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor'
+      );
+      if (panelesTutor.length > 0) {
+        const algunoCompleto = panelesTutor.some(c => {
+          if (panelActivo[c.id] === false) return false;
+          try {
+            const d = JSON.parse(datos[c.id] ?? '{}');
+            const base = !!(d.nombres?.trim() && d.apellidos?.trim() && d.numDoc?.trim() && d.celular?.trim());
+            return c.tipo === 'datos_tutor' ? base && !!d.relacion : base;
+          } catch { return false; }
+        });
+        if (!algunoCompleto) return false;
+      }
     }
     return true;
   };

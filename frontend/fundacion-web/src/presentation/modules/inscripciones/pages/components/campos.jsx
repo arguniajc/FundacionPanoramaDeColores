@@ -226,7 +226,8 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
               <TextField fullWidth size="small" label="Número de documento *"
                 value={documentoMostrar}
                 disabled={documentoDisabled}
-                onChange={e => setMeta({ documento: e.target.value })} />
+                onChange={e => setMeta({ documento: e.target.value.replace(/\D/g, '') })}
+                slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
             </Grid>
           </Grid>
           <FirmaPad
@@ -604,8 +605,10 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
                 </FormControl>
               </Grid>
               <Grid size={{ xs: 12, sm: 8 }}>
-                <TextField fullWidth size="small" label="Número de documento"
-                  value={d.numDoc ?? ''} onChange={e => setD('numDoc', e.target.value)} />
+                <TextField fullWidth size="small" label="Número de documento *" required
+                  value={d.numDoc ?? ''}
+                  onChange={e => setD('numDoc', e.target.value.replace(/\D/g, ''))}
+                  slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
               </Grid>
               <Grid size={{ xs: 12, sm: 8 }}>
                 <TextField fullWidth size="small" label="Dirección"
@@ -620,8 +623,10 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
                   value={d.eps ?? ''} onChange={e => setD('eps', e.target.value)} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth size="small" label="Número de celular" type="tel"
-                  value={d.celular ?? ''} onChange={e => setD('celular', e.target.value)} />
+                <TextField fullWidth size="small" label="Número de celular *" required
+                  value={d.celular ?? ''}
+                  onChange={e => setD('celular', e.target.value.replace(/\D/g, ''))}
+                  slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControl fullWidth size="small">

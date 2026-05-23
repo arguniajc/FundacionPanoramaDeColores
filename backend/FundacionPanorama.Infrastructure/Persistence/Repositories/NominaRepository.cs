@@ -1,5 +1,6 @@
 using FundacionPanorama.Application.Features.Nomina.DTOs;
 using FundacionPanorama.Application.Features.Nomina.Interfaces;
+using Npgsql;
 using static FundacionPanorama.Application.Features.Nomina.DTOs.NominaConstants;
 
 namespace FundacionPanorama.Infrastructure.Persistence.Repositories;

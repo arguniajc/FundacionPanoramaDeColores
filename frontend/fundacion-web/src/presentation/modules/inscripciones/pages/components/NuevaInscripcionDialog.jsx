@@ -89,8 +89,10 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     }).catch(() => {}).finally(() => setCargandoCampos(false));
   }, [selPrograma, selBenef]);
 
-  // Tutor visible solo cuando todos los padres/madres activos son menores de edad,
-  // o cuando todos están desactivados. Se oculta si hay al menos uno mayor de 18.
+  // Tutor visible SOLO en estos casos:
+  // 1. Padre y madre ambos desactivados.
+  // 2. Todos los padres/madres activos tienen fecha de nacimiento Y son menores de 18.
+  // En cualquier otro caso (sin fecha, o al menos uno mayor) → tutor oculto.
   useEffect(() => {
     if (campos.length === 0) return;
     const padreMadre = campos.filter(c => c.tipo === 'datos_padre' || c.tipo === 'datos_madre');
@@ -98,15 +100,16 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     if (tutores.length === 0 || padreMadre.length === 0) return;
 
     const activosPM = padreMadre.filter(c => panelActivo[c.id] !== false);
+
     let mostrarTutor;
     if (activosPM.length === 0) {
-      mostrarTutor = true;
+      mostrarTutor = true; // caso 1: todos desactivados
     } else {
-      const hayAdultoActivo = activosPM.some(c => {
-        try { const pd = JSON.parse(datos[c.id] ?? '{}'); const e = calcEdad(pd.fechaNac); return e !== null && e >= 18; }
+      // casos 2-4: solo si TODOS los activos tienen fecha confirmada y son < 18
+      mostrarTutor = activosPM.every(c => {
+        try { const pd = JSON.parse(datos[c.id] ?? '{}'); const e = calcEdad(pd.fechaNac); return e !== null && e < 18; }
         catch { return false; }
       });
-      mostrarTutor = !hayAdultoActivo;
     }
 
     setPanelActivo(prev => {

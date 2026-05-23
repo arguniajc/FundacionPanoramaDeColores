@@ -326,7 +326,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
             RETURNING id
             """;
         cmd.Parameters.AddWithValue("anio",   dto.Anio);
-        cmd.Parameters.AddWithValue("progId", (object?)dto.ProgramaId ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("progId", NpgsqlTypes.NpgsqlDbType.Uuid)     { Value = (object?)dto.ProgramaId ?? DBNull.Value });
         cmd.Parameters.AddWithValue("catId",  dto.CategoriaId);
         cmd.Parameters.AddWithValue("monto",  dto.MontoPresupuestado);
         var newId = (Guid)(await cmd.ExecuteScalarAsync(ct))!;
@@ -344,7 +344,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
             WHERE id = @id
             """;
         cmd.Parameters.AddWithValue("anio",   dto.Anio);
-        cmd.Parameters.AddWithValue("progId", (object?)dto.ProgramaId ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("progId", NpgsqlTypes.NpgsqlDbType.Uuid)     { Value = (object?)dto.ProgramaId ?? DBNull.Value });
         cmd.Parameters.AddWithValue("catId",  dto.CategoriaId);
         cmd.Parameters.AddWithValue("monto",  dto.MontoPresupuestado);
         cmd.Parameters.AddWithValue("id",     id);
@@ -864,14 +864,14 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         cmd.Parameters.AddWithValue("monto",        monto);
         cmd.Parameters.AddWithValue("cuentaId",     cuentaId);
         cmd.Parameters.AddWithValue("catId",        catId);
-        cmd.Parameters.AddWithValue("progId",       (object?)programaId   ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("progId",       NpgsqlTypes.NpgsqlDbType.Uuid)    { Value = (object?)programaId    ?? DBNull.Value });
         cmd.Parameters.AddWithValue("tercNombre",   (object?)tercNombre   ?? DBNull.Value);
         cmd.Parameters.AddWithValue("tercDoc",      (object?)tercDoc      ?? DBNull.Value);
         cmd.Parameters.AddWithValue("numSoporte",   (object?)numSoporte   ?? DBNull.Value);
         cmd.Parameters.AddWithValue("desc",         (object?)desc         ?? DBNull.Value);
         cmd.Parameters.AddWithValue("tipoSoporte",  (object?)tipoSoporte  ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("retPracticada",(object?)retPracticada ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("tarifaRet",    (object?)tarifaRet    ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("retPracticada", NpgsqlTypes.NpgsqlDbType.Numeric) { Value = (object?)retPracticada ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("tarifaRet",     NpgsqlTypes.NpgsqlDbType.Numeric) { Value = (object?)tarifaRet    ?? DBNull.Value });
         cmd.Parameters.AddWithValue("conceptoRet",  (object?)conceptoRet  ?? DBNull.Value);
     }
 

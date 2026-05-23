@@ -69,9 +69,9 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
             """;
         cmd.Parameters.AddWithValue("titulo", dto.Titulo.Trim());
         cmd.Parameters.AddWithValue("desc",   (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("pid",    (object?)dto.ProgramaId ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("pid", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = (object?)dto.ProgramaId ?? DBNull.Value });
         cmd.Parameters.AddWithValue("fi",     dto.FechaInicio);
-        cmd.Parameters.AddWithValue("ff",     (object?)dto.FechaFin ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("ff",  NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaFin   ?? DBNull.Value });
         cmd.Parameters.AddWithValue("lugar",  (object?)dto.Lugar?.Trim() ?? DBNull.Value);
 
         var newId = (Guid)(await cmd.ExecuteScalarAsync(ct))!;
@@ -96,9 +96,9 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
             """;
         cmd.Parameters.AddWithValue("titulo", dto.Titulo.Trim());
         cmd.Parameters.AddWithValue("desc",   (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("pid",    (object?)dto.ProgramaId ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("pid", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = (object?)dto.ProgramaId ?? DBNull.Value });
         cmd.Parameters.AddWithValue("fi",     dto.FechaInicio);
-        cmd.Parameters.AddWithValue("ff",     (object?)dto.FechaFin ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("ff",  NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaFin   ?? DBNull.Value });
         cmd.Parameters.AddWithValue("lugar",  (object?)dto.Lugar?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("estado", dto.Estado);
         cmd.Parameters.AddWithValue("id",     id);
@@ -209,8 +209,8 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         cmd.Parameters.AddWithValue("hi",    dto.HoraInicio);
         cmd.Parameters.AddWithValue("hf",    dto.HoraFin);
         cmd.Parameters.AddWithValue("lugar", (object?)dto.Lugar?.Trim() ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("fiv",   (object?)dto.FechaInicioVigencia ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("ffv",   (object?)dto.FechaFinVigencia    ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("fiv", NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaInicioVigencia ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("ffv", NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaFinVigencia    ?? DBNull.Value });
         var newId = (Guid)(await cmd.ExecuteScalarAsync(ct))!;
         return (await ListarHorariosAsync(null, ct)).First(h => h.Id == newId);
     }
@@ -238,8 +238,8 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         cmd.Parameters.AddWithValue("hf",    dto.HoraFin);
         cmd.Parameters.AddWithValue("lugar", (object?)dto.Lugar?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("activo", dto.Activo);
-        cmd.Parameters.AddWithValue("fiv",   (object?)dto.FechaInicioVigencia ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("ffv",   (object?)dto.FechaFinVigencia    ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("fiv", NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaInicioVigencia ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("ffv", NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaFinVigencia    ?? DBNull.Value });
         cmd.Parameters.AddWithValue("id",    id);
         var rows = await cmd.ExecuteNonQueryAsync(ct);
         if (rows == 0) return null;

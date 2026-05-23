@@ -181,8 +181,8 @@ public class TalentoHumanoRepository(DbConnectionFactory factory) : ITalentoHuma
         cmd.Parameters.AddWithValue("eid",  empleadoId);
         cmd.Parameters.AddWithValue("tipo", dto.Tipo);
         cmd.Parameters.AddWithValue("fi",   dto.FechaInicio);
-        cmd.Parameters.AddWithValue("ff",   (object?)dto.FechaFin ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("dias", (object?)dto.Dias    ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("ff",   NpgsqlTypes.NpgsqlDbType.Date)    { Value = (object?)dto.FechaFin    ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("dias", NpgsqlTypes.NpgsqlDbType.Integer) { Value = (object?)dto.Dias        ?? DBNull.Value });
         cmd.Parameters.AddWithValue("desc", (object?)dto.Descripcion ?? DBNull.Value);
         var newId = (Guid)(await cmd.ExecuteScalarAsync(ct))!;
         return (await ObtenerNovedadAsync(conn, newId, ct))!;
@@ -201,8 +201,8 @@ public class TalentoHumanoRepository(DbConnectionFactory factory) : ITalentoHuma
             """;
         cmd.Parameters.AddWithValue("tipo",   dto.Tipo);
         cmd.Parameters.AddWithValue("fi",     dto.FechaInicio);
-        cmd.Parameters.AddWithValue("ff",     (object?)dto.FechaFin ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("dias",   (object?)dto.Dias    ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("ff",   NpgsqlTypes.NpgsqlDbType.Date)    { Value = (object?)dto.FechaFin ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("dias", NpgsqlTypes.NpgsqlDbType.Integer) { Value = (object?)dto.Dias    ?? DBNull.Value });
         cmd.Parameters.AddWithValue("desc",   (object?)dto.Descripcion ?? DBNull.Value);
         cmd.Parameters.AddWithValue("estado", dto.Estado);
         cmd.Parameters.AddWithValue("id",     id);
@@ -281,11 +281,11 @@ public class TalentoHumanoRepository(DbConnectionFactory factory) : ITalentoHuma
         cmd.Parameters.AddWithValue("celular",       (object?)celular  ?? DBNull.Value);
         cmd.Parameters.AddWithValue("cargo",         (object?)cargo    ?? DBNull.Value);
         cmd.Parameters.AddWithValue("area",          (object?)area     ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("sedeId",        (object?)sedeId   ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("sedeId",       NpgsqlTypes.NpgsqlDbType.Uuid)    { Value = (object?)sedeId       ?? DBNull.Value });
         cmd.Parameters.AddWithValue("tipoContrato",  (object?)tipoContrato ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("fechaIngreso",  (object?)fechaIngreso ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("fechaFin",      (object?)fechaFin ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("salario",       (object?)salario  ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("fechaIngreso", NpgsqlTypes.NpgsqlDbType.Date)    { Value = (object?)fechaIngreso  ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("fechaFin",     NpgsqlTypes.NpgsqlDbType.Date)    { Value = (object?)fechaFin      ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("salario",      NpgsqlTypes.NpgsqlDbType.Numeric) { Value = (object?)salario       ?? DBNull.Value });
         cmd.Parameters.AddWithValue("eps",           (object?)eps      ?? DBNull.Value);
         cmd.Parameters.AddWithValue("pension",       (object?)pension  ?? DBNull.Value);
         cmd.Parameters.AddWithValue("notas",         (object?)notas    ?? DBNull.Value);

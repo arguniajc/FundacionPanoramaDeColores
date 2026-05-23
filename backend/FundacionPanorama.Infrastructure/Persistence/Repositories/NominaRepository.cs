@@ -65,7 +65,7 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
             """;
         cmd.Parameters.AddWithValue("mes",      dto.Mes);
         cmd.Parameters.AddWithValue("anio",     dto.Anio);
-        cmd.Parameters.AddWithValue("fechaPago", dto.FechaPago.HasValue ? (object)dto.FechaPago.Value : DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("fechaPago", NpgsqlTypes.NpgsqlDbType.Date) { Value = dto.FechaPago.HasValue ? (object)dto.FechaPago.Value : DBNull.Value });
         cmd.Parameters.AddWithValue("obs",      dto.Observacion ?? (object)DBNull.Value);
         await using var r = await cmd.ExecuteReaderAsync(ct);
         await r.ReadAsync(ct);

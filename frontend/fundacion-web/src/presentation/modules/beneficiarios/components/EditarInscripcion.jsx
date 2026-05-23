@@ -2,7 +2,7 @@
 import {
   Box, Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, TextField, MenuItem, FormControl,
-  InputLabel, Select, Typography, Divider, Alert, CircularProgress,
+  InputLabel, Select, Typography, Alert, CircularProgress,
   InputAdornment, Autocomplete, Checkbox, FormControlLabel,
 } from '@mui/material';
 import apiClient       from '../../../../infrastructure/http/apiClient';
@@ -17,14 +17,21 @@ const GRADOS = ['Prejardín','Jardín','Transición','1°','2°','3°','4°','5�
 
 function SeccionTitulo({ children }) {
   return (
-    <>
-      <Grid size={12}>
-        <Typography variant="subtitle2" color="var(--color-primario)" fontWeight={700} mt={1.5}>
+    <Grid size={12}>
+      <Box sx={{
+        bgcolor: 'secondary.main',
+        borderRadius: 1.5,
+        px: 2, py: 1,
+        mt: 1,
+        display: 'flex', alignItems: 'center',
+        borderLeft: '5px solid rgba(0,0,0,0.15)',
+      }}>
+        <Typography fontWeight={800} color="white"
+          sx={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
           {children}
         </Typography>
-        <Divider sx={{ mb: 1, mt: 0.75 }} />
-      </Grid>
-    </>
+      </Box>
+    </Grid>
   );
 }
 

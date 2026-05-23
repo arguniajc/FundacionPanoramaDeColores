@@ -185,3 +185,18 @@ public record CrearReposicionDto(
     decimal  Monto,
     [StringLength(50)]  string? NumeroSoporte,
     [StringLength(500)] string? Observacion);
+
+// ── OCR Factura (Gemini Vision) ───────────────────────────────────────────────
+public record ExtraerFacturaRequestDto(
+    [Required] string ImagenBase64,
+    string MimeType = "image/jpeg");
+
+public record FacturaExtraidaDto(
+    string?  Fecha,
+    decimal? Monto,
+    string?  Concepto,
+    string?  NitProveedor,
+    string?  NombreProveedor,
+    string?  NumeroFactura,
+    string?  TipoSoporte,
+    string?  Advertencia);

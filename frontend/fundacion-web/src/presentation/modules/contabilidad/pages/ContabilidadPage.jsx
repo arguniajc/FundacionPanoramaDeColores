@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Typography, Grid, Card, CardContent, Tabs, Tab, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
@@ -18,6 +18,7 @@ import PrintIcon                from '@mui/icons-material/Print';
 import BlockIcon                from '@mui/icons-material/Block';
 import PictureAsPdfIcon         from '@mui/icons-material/PictureAsPdf';
 import ContentCopyIcon          from '@mui/icons-material/ContentCopy';
+import DocumentScannerIcon      from '@mui/icons-material/DocumentScanner';
 import SyncAltIcon              from '@mui/icons-material/SyncAlt';
 import FactCheckIcon            from '@mui/icons-material/FactCheck';
 import SavingsIcon              from '@mui/icons-material/Savings';
@@ -49,6 +50,9 @@ export default function ContabilidadPage() {
   const { puedo } = useAuth();
   const confirm    = useConfirm();
   const config     = useConfiguracion();
+  const inputOcrRef = useRef(null);
+  const [ocrCargando,    setOcrCargando]    = useState(false);
+  const [ocrAdvertencia, setOcrAdvertencia] = useState('');
   const puedeCrear  = puedo('contabilidad', 'crear');
   const puedeEditar = puedo('contabilidad', 'editar');
 
@@ -219,6 +223,63 @@ export default function ContabilidadPage() {
     if (tab === 5) await cargarCajaMenor();
   };
 
+  // ── OCR: escanear factura ─────────────────────────────────────────────────────
+  const comprimirImagen = (file) => new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 1400;
+      const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result.split(',')[1]);
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = url;
+  });
+
+  const handleEscanearFactura = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setOcrCargando(true);
+    setOcrAdvertencia('');
+    try {
+      const base64 = await comprimirImagen(file);
+      const { data } = await apiClient.post('/api/contabilidad/extraer-factura', {
+        imagenBase64: base64,
+        mimeType: 'image/jpeg',
+      });
+      if (data.advertencia) setOcrAdvertencia(data.advertencia);
+      setDlgMov({
+        open: true,
+        modo: 'crear',
+        tipoPreset: 'egreso',
+        data: {
+          tipo:             'egreso',
+          fecha:            data.fecha            ?? null,
+          concepto:         data.concepto         ?? '',
+          monto:            data.monto            ?? '',
+          terceroNombre:    data.nombreProveedor  ?? '',
+          terceroDocumento: data.nitProveedor     ?? '',
+          numeroSoporte:    data.numeroFactura    ?? '',
+          tipoSoporte:      data.tipoSoporte      ?? 'factura',
+        },
+      });
+    } catch (err) {
+      const msg = err?.response?.data?.error ?? 'No se pudo procesar la imagen.';
+      setOcrAdvertencia(msg);
+    } finally {
+      setOcrCargando(false);
+    }
+  };
+
   // â”€â”€ Caja Menor CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const guardarArqueo = async (form) => {
     setGuardando(true);
@@ -380,7 +441,27 @@ export default function ContabilidadPage() {
             onClick={() => setDlgMov({ open: true, modo: 'crear', data: null, tipoPreset: 'egreso' })}>
             Registrar Egreso
           </Button>
+          <Button
+            variant="outlined" color="secondary"
+            startIcon={ocrCargando ? <CircularProgress size={16} /> : <DocumentScannerIcon />}
+            disabled={ocrCargando}
+            onClick={() => inputOcrRef.current?.click()}>
+            {ocrCargando ? 'Analizando...' : 'Escanear Factura'}
+          </Button>
+          <input
+            ref={inputOcrRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={handleEscanearFactura}
+          />
         </Paper>
+      )}
+      {ocrAdvertencia && (
+        <Alert severity="warning" onClose={() => setOcrAdvertencia('')} sx={{ mb: 2 }}>
+          <strong>OCR:</strong> {ocrAdvertencia}
+        </Alert>
       )}
 
       {/* Tabs */}

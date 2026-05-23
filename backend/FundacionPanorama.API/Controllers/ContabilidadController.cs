@@ -1,3 +1,6 @@
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using FundacionPanorama.API.Filters;
 using FundacionPanorama.Application.Features.Contabilidad;
 using FundacionPanorama.Application.Features.Contabilidad.DTOs;
@@ -9,7 +12,10 @@ namespace FundacionPanorama.API.Controllers;
 [ApiController]
 [Route("api/contabilidad")]
 [Authorize]
-public class ContabilidadController(ContabilidadService svc) : ControllerBase
+public class ContabilidadController(
+    ContabilidadService svc,
+    IHttpClientFactory httpFactory,
+    IConfiguration configuration) : ControllerBase
 {
     // ── Categorías ─────────────────────────────────────────────────────────────
 
@@ -188,4 +194,98 @@ public class ContabilidadController(ContabilidadService svc) : ControllerBase
         [FromQuery] string? codigoPuc  = null,
         CancellationToken ct = default)
         => Ok(await svc.LibroMayorAsync(anio ?? DateTime.UtcNow.Year, mes, codigoPuc, ct));
+
+    // ── OCR: Extraer datos de factura con Gemini Vision ────────────────────────
+
+    [HttpPost("extraer-factura")]
+    [RequierePermiso("contabilidad", "crear")]
+    public async Task<IActionResult> ExtraerFactura(
+        [FromBody] ExtraerFacturaRequestDto dto,
+        CancellationToken ct)
+    {
+        var apiKey = configuration["Gemini:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return BadRequest(new { error = "OCR no configurado. Agrega la clave Gemini:ApiKey en la configuración del servidor." });
+
+        const string prompt = """
+            Analiza esta imagen de una factura o recibo colombiano y extrae los datos en formato JSON.
+            Devuelve ÚNICAMENTE el JSON con esta estructura exacta, sin texto adicional:
+            {
+              "fecha": "YYYY-MM-DD o null si no se ve claramente",
+              "monto": número sin puntos ni comas (ej: 150000) o null,
+              "concepto": "descripción del producto o servicio comprado",
+              "nit_proveedor": "solo los dígitos del NIT sin guiones ni dígito de verificación, o null",
+              "nombre_proveedor": "nombre o razón social del emisor de la factura",
+              "numero_factura": "número de la factura tal como aparece",
+              "tipo_soporte": "factura" o "recibo" o "tiquete" según corresponda,
+              "advertencia": "nota si la imagen es borrosa o falta información importante, sino null"
+            }
+            Si no puedes leer un campo, usa null. El monto debe ser el TOTAL a pagar.
+            """;
+
+        var requestBody = new
+        {
+            contents = new[]
+            {
+                new
+                {
+                    parts = new object[]
+                    {
+                        new { inline_data = new { mime_type = dto.MimeType, data = dto.ImagenBase64 } },
+                        new { text = prompt }
+                    }
+                }
+            },
+            generationConfig = new { responseMimeType = "application/json" }
+        };
+
+        try
+        {
+            var client = httpFactory.CreateClient();
+            var url    = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
+            var body   = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync(url, body, ct);
+            var rawJson  = await response.Content.ReadAsStringAsync(ct);
+
+            if (!response.IsSuccessStatusCode)
+                return BadRequest(new { error = $"Error Gemini API: {response.StatusCode}", detalle = rawJson });
+
+            using var doc  = JsonDocument.Parse(rawJson);
+            var textPart   = doc.RootElement
+                .GetProperty("candidates")[0]
+                .GetProperty("content")
+                .GetProperty("parts")[0]
+                .GetProperty("text")
+                .GetString() ?? "{}";
+
+            using var extracted = JsonDocument.Parse(textPart);
+            var root = extracted.RootElement;
+
+            decimal? monto = null;
+            if (root.TryGetProperty("monto", out var montoEl) && montoEl.ValueKind == JsonValueKind.Number)
+                monto = montoEl.GetDecimal();
+
+            string? fecha = null;
+            if (root.TryGetProperty("fecha", out var fechaEl) && fechaEl.ValueKind == JsonValueKind.String)
+                fecha = fechaEl.GetString();
+
+            var result = new FacturaExtraidaDto(
+                Fecha:          fecha,
+                Monto:          monto,
+                Concepto:       root.TryGetProperty("concepto",         out var c)  && c.ValueKind  == JsonValueKind.String ? c.GetString()  : null,
+                NitProveedor:   root.TryGetProperty("nit_proveedor",    out var n)  && n.ValueKind  == JsonValueKind.String ? n.GetString()  : null,
+                NombreProveedor:root.TryGetProperty("nombre_proveedor", out var np) && np.ValueKind == JsonValueKind.String ? np.GetString() : null,
+                NumeroFactura:  root.TryGetProperty("numero_factura",   out var nf) && nf.ValueKind == JsonValueKind.String ? nf.GetString() : null,
+                TipoSoporte:    root.TryGetProperty("tipo_soporte",     out var ts) && ts.ValueKind == JsonValueKind.String ? ts.GetString() : null,
+                Advertencia:    root.TryGetProperty("advertencia",      out var a)  && a.ValueKind  == JsonValueKind.String ? a.GetString()  : null
+            );
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = "Error procesando la imagen.", detalle = ex.Message });
+        }
+    }
 }

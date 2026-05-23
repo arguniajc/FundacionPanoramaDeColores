@@ -63,6 +63,23 @@ export function DialogMovimiento({
         retencionPracticada: data.retencionPracticada != null ? String(data.retencionPracticada) : '',
         conceptoRetencion: data.conceptoRetencion ?? '',
       });
+    } else if (modo === 'crear' && data) {
+      // Pre-llenado desde OCR o duplicado
+      setForm({
+        ...EMPTY,
+        tipo:             data.tipo             ?? tipoPreset ?? 'egreso',
+        fecha:            data.fecha            ?? hoy(),
+        concepto:         data.concepto         ?? '',
+        monto:            data.monto            != null ? String(data.monto) : '',
+        cuentaId:         data.cuentaId         ?? cuentaPreset ?? cuentas[0]?.id ?? '',
+        categoriaId:      data.categoriaId      ? String(data.categoriaId) : '',
+        programaId:       data.programaId       ?? '',
+        terceroNombre:    data.terceroNombre    ?? '',
+        terceroDocumento: data.terceroDocumento ?? '',
+        numeroSoporte:    data.numeroSoporte    ?? '',
+        descripcion:      data.descripcion      ?? '',
+        tipoSoporte:      data.tipoSoporte      ?? '',
+      });
     } else {
       setForm({ ...EMPTY, tipo: tipoPreset ?? 'ingreso', cuentaId: cuentaPreset ?? cuentas[0]?.id ?? '' });
     }

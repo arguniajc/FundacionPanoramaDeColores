@@ -578,15 +578,15 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
                 <Autocomplete freeSolo options={PAISES} value={d.pais ?? ''}
-                  onInputChange={(_, v) => { setD('pais', v); setD('departamento', ''); setD('ciudad', ''); }}
-                  onChange={(_, v) => { setD('pais', v ?? ''); setD('departamento', ''); setD('ciudad', ''); }}
+                  onInputChange={(_, v) => onChange(JSON.stringify({ ...d, pais: v, departamento: '', ciudad: '' }))}
+                  onChange={(_, v) => onChange(JSON.stringify({ ...d, pais: v ?? '', departamento: '', ciudad: '' }))}
                   renderInput={p => <TextField {...p} size="small" label="País *" fullWidth required />} />
               </Grid>
               {estadosPanel.length > 0 && (
                 <Grid size={{ xs: 12, sm: 4 }}>
                   <Autocomplete freeSolo options={estadosPanel} value={d.departamento ?? ''}
-                    onInputChange={(_, v) => { setD('departamento', v); setD('ciudad', ''); }}
-                    onChange={(_, v) => { setD('departamento', v ?? ''); setD('ciudad', ''); }}
+                    onInputChange={(_, v) => onChange(JSON.stringify({ ...d, departamento: v, ciudad: '' }))}
+                    onChange={(_, v) => onChange(JSON.stringify({ ...d, departamento: v ?? '', ciudad: '' }))}
                     renderInput={p => <TextField {...p} size="small" label="Departamento / Estado *" fullWidth required />} />
                 </Grid>
               )}

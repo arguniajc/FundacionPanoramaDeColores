@@ -18,6 +18,7 @@ import {
 function panelTutorCompleto(d, tipo) {
   const t = s => !!(s?.trim());
   const base = t(d.nombres) && t(d.apellidos) && t(d.fechaNac) && t(d.pais) &&
+               (d.pais?.trim() !== 'Colombia' || t(d.departamento)) &&
                t(d.ciudad) && t(d.tipoDoc) && t(d.numDoc) && t(d.celular) &&
                t(d.direccion) && t(d.barrio) && t(d.eps) &&
                t(d.escolaridad) && t(d.ocupacion) && t(d.empresa) && t(d.autoidentificacion);

@@ -11,7 +11,7 @@ import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS,
 const GENEROS = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];
 import UploadFoto      from '../../../../shared/components/UploadFoto';
 import UploadDocumento from '../../../../shared/components/UploadDocumento';
-import { useGeografiaColombia } from '../../../../shared/hooks/useGeografiaColombia';
+import { useGeografia } from '../../../../shared/hooks/useGeografia';
 
 const GRADOS = ['Prejardín','Jardín','Transición','1°','2°','3°','4°','5°','6°','7°','8°','9°','10°','11°'];
 
@@ -99,7 +99,9 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
   const [guardando, setGuardando] = useState(false);
   const [error, setError]         = useState('');
 
-  const esColombia = form.paisNacimiento === 'Colombia';
+  const { esColombia, departamentos, ciudades, deptoHabilitado, ciudadHabilitada } =
+    useGeografia(form.paisNacimiento, form.departamentoNacimiento);
+
   const nr = campo => !form[campo] ? (
     <Box component="span"
       onMouseDown={e => { e.preventDefault(); setV(campo, 'No registra'); }}
@@ -114,9 +116,6 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
     </Box>
   ) : null;
 
-  const { departamentos, ciudades, cargandoCiudades } = useGeografiaColombia(
-    form.paisNacimiento?.toLowerCase() === 'colombia' ? form.departamentoNacimiento : ''
-  );
 
   const set  = campo => e => setForm(prev => ({ ...prev, [campo]: e.target.value }));
   const setV = (campo, valor) => setForm(prev => ({ ...prev, [campo]: valor }));
@@ -249,12 +248,14 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
               <Autocomplete
                 options={departamentos}
                 value={form.departamentoNacimiento || null}
+                disabled={!deptoHabilitado}
                 onChange={(_, v) => setForm(p => ({ ...p, departamentoNacimiento: v || '', ciudadNacimiento: '' }))}
                 renderInput={params => <TextField {...params} label="Departamento" size="small" />}
               />
             ) : (
               <TextField fullWidth label="Departamento / Estado" size="small"
                 value={form.departamentoNacimiento}
+                disabled={!deptoHabilitado}
                 onChange={capitalizar('departamentoNacimiento')} />
             )}
           </Grid>
@@ -263,14 +264,14 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
               <Autocomplete
                 options={ciudades}
                 value={form.ciudadNacimiento || null}
+                disabled={!ciudadHabilitada}
                 onChange={(_, v) => setV('ciudadNacimiento', v || '')}
-                disabled={!form.departamentoNacimiento}
-                loading={cargandoCiudades}
                 renderInput={params => <TextField {...params} label="Ciudad / Municipio" size="small" />}
               />
             ) : (
               <TextField fullWidth label="Ciudad" size="small"
                 value={form.ciudadNacimiento}
+                disabled={!ciudadHabilitada}
                 onChange={capitalizar('ciudadNacimiento')} />
             )}
           </Grid>

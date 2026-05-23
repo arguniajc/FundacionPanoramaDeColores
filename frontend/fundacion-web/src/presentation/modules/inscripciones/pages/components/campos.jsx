@@ -513,7 +513,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const estadosPanel  = useMemo(() => getEstadosDePais(d.pais || 'Colombia'), [d.pais]);
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const ciudadesPanel = useMemo(() => getCiudadesDeUbicacion(d.pais), [d.pais]);
+    const ciudadesPanel = useMemo(() => getCiudadesDeUbicacion(d.pais, d.departamento), [d.pais, d.departamento]);
     const subcampos = esTutor ? '17 sub-campos' : '16 sub-campos';
     const tieneToggle = !esTutor && !!onToggle;
     const tiposDocPanel = getDocsPorPanelYPais(esTutor, d.pais);

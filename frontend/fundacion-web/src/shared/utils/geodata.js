@@ -1,6 +1,7 @@
-import { countries } from 'countries-list';
-import colombiaCities from './colombia_cities.json';
-import worldStates    from './world_states.json';
+import { countries }        from 'countries-list';
+import colombiaCities       from './colombia_cities.json';
+import worldStates          from './world_states.json';
+import citiesByDept         from './colombia_cities_by_dept.json';
 
 export const PAISES = Object.values(countries)
   .map(c => c.name)
@@ -18,11 +19,17 @@ export function getEstadosDePais(paisNombre) {
   return estados.slice().sort((a, b) => a.localeCompare(b, 'es'));
 }
 
-// Colombia → autocomplete with all municipalities.
-// Other countries → [] so the city field stays freeSolo (user escribe libremente).
-export function getCiudadesDeUbicacion(paisNombre) {
+// Retorna ciudades de un departamento colombiano específico.
+export function getCiudadesDeDepartamento(departamento) {
+  if (!departamento) return [];
+  return citiesByDept[departamento] ?? [];
+}
+
+// Colombia + departamento → ciudades del depto. Otro país → [].
+export function getCiudadesDeUbicacion(paisNombre, departamento) {
   const esColombia = !paisNombre || paisNombre === 'Colombia';
-  return esColombia ? CIUDADES_COLOMBIA : [];
+  if (!esColombia) return [];
+  return departamento ? getCiudadesDeDepartamento(departamento) : [];
 }
 
 export const TIPOS_DOCUMENTO    = ['RC', 'TI', 'CC', 'CE', 'PA', 'PEP', 'PPT', 'NIT', 'Otro'];

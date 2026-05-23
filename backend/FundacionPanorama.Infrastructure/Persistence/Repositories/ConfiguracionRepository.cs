@@ -166,7 +166,7 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
         cmd.Parameters.AddWithValue("tdr",        (object?)dto.TipoDocRep?.Trim()        ?? DBNull.Value);
         cmd.Parameters.AddWithValue("docr",       (object?)dto.DocumentoRep?.Trim()      ?? DBNull.Value);
         cmd.Parameters.AddWithValue("cargo",      (object?)dto.CargoRep?.Trim()          ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("firma",      (object?)dto.FirmaRep                  ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("firma", NpgsqlTypes.NpgsqlDbType.Text)      { Value = (object?)dto.FirmaRep        ?? DBNull.Value });
         cmd.Parameters.AddWithValue("cp",         (object?)dto.ColorPrimario?.Trim()     ?? DBNull.Value);
         cmd.Parameters.AddWithValue("cs",         (object?)dto.ColorSidebar?.Trim()      ?? DBNull.Value);
         cmd.Parameters.AddWithValue("tag",        (object?)dto.Tagline?.Trim()           ?? DBNull.Value);
@@ -180,10 +180,10 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
         cmd.Parameters.AddWithValue("smtpHost",    (object?)dto.SmtpHost?.Trim()         ?? DBNull.Value);
         cmd.Parameters.Add(new NpgsqlParameter("smtpPuerto", NpgsqlTypes.NpgsqlDbType.Integer) { Value = (object?)dto.SmtpPuerto ?? DBNull.Value });
         cmd.Parameters.AddWithValue("smtpUsu",     (object?)dto.SmtpUsuario?.Trim()      ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("smtpClave",   (object?)dto.SmtpClave?.Trim()        ?? DBNull.Value);
+        cmd.Parameters.Add(new NpgsqlParameter("smtpClave", NpgsqlTypes.NpgsqlDbType.Text) { Value = (object?)dto.SmtpClave?.Trim() ?? DBNull.Value });
         cmd.Parameters.AddWithValue("smtpDeNombre",(object?)dto.SmtpDeNombre?.Trim()     ?? DBNull.Value);
         cmd.Parameters.AddWithValue("smtpDeEmail", (object?)dto.SmtpDeEmail?.Trim()      ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("smtpSsl",     dto.SmtpSsl);
+        cmd.Parameters.Add(new NpgsqlParameter("smtpSsl", NpgsqlTypes.NpgsqlDbType.Boolean) { Value = dto.SmtpSsl });
 
         await cmd.ExecuteNonQueryAsync(ct);
         return (await ObtenerAsync(ct))!;

@@ -66,6 +66,12 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
 
   const set  = campo => e => setForm(prev => ({ ...prev, [campo]: e.target.value }));
   const setV = (campo, valor) => setForm(prev => ({ ...prev, [campo]: valor }));
+  // Primera letra de cada palabra en mayúscula al escribir
+  const capitalizar = campo => e =>
+    setForm(prev => ({ ...prev, [campo]: e.target.value.replace(/(^|\s)\S/g, l => l.toUpperCase()) }));
+  // Solo dígitos
+  const soloDigitos = campo => e =>
+    setForm(prev => ({ ...prev, [campo]: e.target.value.replace(/\D/g, '') }));
 
   const verificarDocumento = async () => {
     const num = form.numeroDocumento.trim();
@@ -164,7 +170,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
 
           <Grid size={{ xs: 12, sm: 8 }}>
             <TextField fullWidth label="Nombre completo *" size="small"
-              value={form.nombreMenor} onChange={set('nombreMenor')} />
+              value={form.nombreMenor} onChange={capitalizar('nombreMenor')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Fecha de nacimiento *" size="small" type="date"
@@ -183,7 +189,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
             <TextField
               fullWidth label="Número de documento" size="small"
               value={form.numeroDocumento}
-              onChange={e => { set('numeroDocumento')(e); setDocExiste(false); }}
+              onChange={e => { soloDigitos('numeroDocumento')(e); setDocExiste(false); }}
               onBlur={verificarDocumento}
               error={docExiste}
               helperText={docExiste ? 'Este documento ya está registrado' : ''}
@@ -357,7 +363,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Nombre del acudiente *" size="small"
-              value={form.nombreAcudiente} onChange={set('nombreAcudiente')} />
+              value={form.nombreAcudiente} onChange={capitalizar('nombreAcudiente')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
@@ -369,8 +375,9 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="WhatsApp" size="small"
-              value={form.whatsapp} onChange={set('whatsapp')}
-              placeholder="Ej: 3001234567" />
+              value={form.whatsapp} onChange={soloDigitos('whatsapp')}
+              placeholder="Ej: 3001234567"
+              slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">

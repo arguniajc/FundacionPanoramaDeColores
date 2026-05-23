@@ -89,6 +89,28 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     }).catch(() => {}).finally(() => setCargandoCampos(false));
   }, [selPrograma, selBenef]);
 
+  // Auto-habilita tutor cuando todos los padres/madres activos son menores de edad.
+  useEffect(() => {
+    if (campos.length === 0) return;
+    const padreMadre = campos.filter(c => c.tipo === 'datos_padre' || c.tipo === 'datos_madre');
+    const tutores    = campos.filter(c => c.tipo === 'datos_tutor');
+    if (tutores.length === 0 || padreMadre.length === 0) return;
+    const activosPM = padreMadre.filter(c => panelActivo[c.id] !== false);
+    if (activosPM.length === 0) return;
+    const hayAdultoActivo = activosPM.some(c => {
+      try { const pd = JSON.parse(datos[c.id] ?? '{}'); const e = calcEdad(pd.fechaNac); return e !== null && e >= 18; }
+      catch { return false; }
+    });
+    if (!hayAdultoActivo) {
+      setPanelActivo(prev => {
+        const next = { ...prev };
+        let changed = false;
+        tutores.forEach(t => { if (!next[t.id]) { next[t.id] = true; changed = true; } });
+        return changed ? next : prev;
+      });
+    }
+  }, [datos, campos, panelActivo]);
+
   const handleTogglePanel = (campo) => {
     const nuevoActivo = !panelActivo[campo.id];
     const next = { ...panelActivo, [campo.id]: nuevoActivo };
@@ -97,11 +119,6 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
       const padresMadre = campos.filter(c => c.tipo === 'datos_padre' || c.tipo === 'datos_madre');
       const todosApagados = padresMadre.every(c => (c.id === campo.id ? true : !next[c.id]));
       if (todosApagados) campos.filter(c => c.tipo === 'datos_tutor').forEach(c => { next[c.id] = true; });
-    } else {
-      campos.filter(c => c.tipo === 'datos_tutor').forEach(c => {
-        next[c.id] = false;
-        setDatos(prev => { const n = { ...prev }; delete n[c.id]; return n; });
-      });
     }
     setPanelActivo(next);
   };
@@ -133,16 +150,20 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         return true;
       });
       if (!camposOk) return false;
-      // Al menos uno de los paneles tutor debe estar completo
+      // Al menos un responsable activo, completo y mayor de edad
       const panelesTutor = campos.filter(c =>
         c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor'
       );
       if (panelesTutor.length > 0) {
-        const algunoCompleto = panelesTutor.some(c => {
+        const algunoAdultoCompleto = panelesTutor.some(c => {
           if (panelActivo[c.id] === false) return false;
-          try { return panelTutorCompleto(JSON.parse(datos[c.id] ?? '{}'), c.tipo); } catch { return false; }
+          try {
+            const pd = JSON.parse(datos[c.id] ?? '{}');
+            const edad = calcEdad(pd.fechaNac);
+            return panelTutorCompleto(pd, c.tipo) && edad !== null && edad >= 18;
+          } catch { return false; }
         });
-        if (!algunoCompleto) return false;
+        if (!algunoAdultoCompleto) return false;
       }
     }
     return true;

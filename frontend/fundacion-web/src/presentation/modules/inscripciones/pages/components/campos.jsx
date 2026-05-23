@@ -1,7 +1,7 @@
 // Helpers, constantes y componentes de campo compartidos del módulo de inscripciones.
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Autocomplete, Box, Button, Chip, FormControl, FormControlLabel, Grid,
+  Alert, Autocomplete, Box, Button, Chip, FormControl, FormControlLabel, Grid,
   InputAdornment, InputLabel, MenuItem, Select, Switch, TextField, Tooltip, Typography,
 } from '@mui/material';
 import { archivosRepository }   from '../../../../../infrastructure/repositories/archivosRepository';
@@ -76,6 +76,15 @@ export function parseMeta(raw) {
 
 function parsePanelData(raw) {
   try { return JSON.parse(raw || '{}'); } catch { return {}; }
+}
+
+// Tipos de documento válidos según tipo de panel y país.
+// padre/madre Colombia: TI (menor), CC (adulto), PPT (permiso temporal) — nunca RC.
+// tutor Colombia: CC, CE, PPT, Otro — debe ser adulto, nunca RC ni TI.
+function getDocsPorPanelYPais(esTutor, pais) {
+  const esColombia = !pais || pais === 'Colombia';
+  if (esTutor) return esColombia ? ['CC', 'CE', 'PPT', 'Otro'] : ['PA', 'CE', 'Otro'];
+  return esColombia ? ['TI', 'CC', 'PPT'] : ['PA', 'CE', 'Otro'];
 }
 
 const QUIEN_FIRMA_LABEL = { padre: 'Padre', madre: 'Madre', tutor: 'Tutor legal' };
@@ -506,6 +515,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
     const ciudadesPanel = useMemo(() => getCiudadesDeUbicacion(d.pais), [d.pais]);
     const subcampos = esTutor ? '17 sub-campos' : '16 sub-campos';
     const tieneToggle = !esTutor && !!onToggle;
+    const tiposDocPanel = getDocsPorPanelYPais(esTutor, d.pais);
     return (
       <Box sx={{
         border: `1.5px solid ${activo ? SC + '40' : '#d0d0d0'}`,
@@ -576,10 +586,17 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
                   value={d.fechaNac ?? ''} onChange={e => setD('fechaNac', e.target.value)}
                   slotProps={{ inputLabel: { shrink: true } }} />
               </Grid>
+              {!esTutor && d.fechaNac && (() => { const e = calcEdad(d.fechaNac); return e !== null && e < 18; })() && (
+                <Grid size={12}>
+                  <Alert severity="warning" sx={{ py: 0.5, fontSize: '0.78rem' }}>
+                    Menor de edad — el tutor legal será requerido para la firma de autorización.
+                  </Alert>
+                </Grid>
+              )}
               <Grid size={{ xs: 12, sm: 4 }}>
                 <Autocomplete freeSolo options={PAISES} value={d.pais ?? ''}
-                  onInputChange={(_, v) => onChange(JSON.stringify({ ...d, pais: v, departamento: '', ciudad: '' }))}
-                  onChange={(_, v) => onChange(JSON.stringify({ ...d, pais: v ?? '', departamento: '', ciudad: '' }))}
+                  onInputChange={(_, v) => { const td = getDocsPorPanelYPais(esTutor, v); onChange(JSON.stringify({ ...d, pais: v, departamento: '', ciudad: '', tipoDoc: td.includes(d.tipoDoc) ? d.tipoDoc : '' })); }}
+                  onChange={(_, v) => { const td = getDocsPorPanelYPais(esTutor, v ?? ''); onChange(JSON.stringify({ ...d, pais: v ?? '', departamento: '', ciudad: '', tipoDoc: td.includes(d.tipoDoc) ? d.tipoDoc : '' })); }}
                   renderInput={p => <TextField {...p} size="small" label="País *" fullWidth required />} />
               </Grid>
               {estadosPanel.length > 0 && (
@@ -600,7 +617,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
                 <FormControl fullWidth size="small" required>
                   <InputLabel>Tipo de doc. *</InputLabel>
                   <Select label="Tipo de doc. *" value={d.tipoDoc ?? ''} onChange={e => setD('tipoDoc', e.target.value)}>
-                    {TIPOS_DOCUMENTO.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+                    {tiposDocPanel.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                   </Select>
                 </FormControl>
               </Grid>

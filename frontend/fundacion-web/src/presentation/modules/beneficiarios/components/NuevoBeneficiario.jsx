@@ -10,7 +10,7 @@ import PersonAddIcon   from '@mui/icons-material/PersonAdd';
 import CloseIcon       from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import apiClient       from '../../../../infrastructure/http/apiClient';
-import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA } from '../../../../shared/constants/beneficiarios';
+import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, PAISES } from '../../../../shared/constants/beneficiarios';
 import UploadFoto      from '../../../../shared/components/UploadFoto';
 import UploadDocumento from '../../../../shared/components/UploadDocumento';
 import { useGeografiaColombia } from '../../../../shared/hooks/useGeografiaColombia';
@@ -67,12 +67,26 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
 
   const set  = campo => e => setForm(prev => ({ ...prev, [campo]: e.target.value }));
   const setV = (campo, valor) => setForm(prev => ({ ...prev, [campo]: valor }));
-  // Primera letra de cada palabra en mayúscula al escribir
-  const capitalizar = campo => e =>
-    setForm(prev => ({ ...prev, [campo]: e.target.value.replace(/(^|\s)\S/g, l => l.toUpperCase()) }));
-  // Solo dígitos
+  const capitalizar = campo => e => {
+    const v = e.target.value.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    setForm(prev => ({ ...prev, [campo]: v }));
+  };
   const soloDigitos = campo => e =>
     setForm(prev => ({ ...prev, [campo]: e.target.value.replace(/\D/g, '') }));
+  const esColombia = form.paisNacimiento === 'Colombia';
+  const nr = campo => !form[campo] ? (
+    <Box component="span"
+      onMouseDown={e => { e.preventDefault(); setV(campo, 'No registra'); }}
+      sx={{ cursor: 'pointer', color: 'text.disabled', fontSize: '0.68rem', userSelect: 'none', '&:hover': { color: 'primary.main' } }}>
+      → No registra
+    </Box>
+  ) : form[campo] === 'No registra' ? (
+    <Box component="span"
+      onMouseDown={e => { e.preventDefault(); setV(campo, ''); }}
+      sx={{ cursor: 'pointer', color: 'warning.dark', fontSize: '0.68rem', userSelect: 'none', '&:hover': { color: 'error.main' } }}>
+      ✕ &quot;No registra&quot; — clic para limpiar
+    </Box>
+  ) : null;
 
   const verificarDocumento = async () => {
     const num = form.numeroDocumento.trim();
@@ -234,41 +248,54 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <Autocomplete
-              freeSolo
-              options={['Colombia']}
+              options={PAISES}
               value={form.paisNacimiento}
-              onInputChange={(_, v) => setForm(p => ({ ...p, paisNacimiento: v, departamentoNacimiento: '', ciudadNacimiento: '' }))}
+              onChange={(_, v) => setForm(p => ({ ...p, paisNacimiento: v || '', departamentoNacimiento: '', ciudadNacimiento: '' }))}
+              disableClearable
               renderInput={params => <TextField {...params} label="País de nacimiento" size="small" />}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <Autocomplete
-              options={departamentos}
-              value={form.departamentoNacimiento || null}
-              onChange={(_, v) => setForm(p => ({ ...p, departamentoNacimiento: v || '', ciudadNacimiento: '' }))}
-              disabled={form.paisNacimiento?.toLowerCase() !== 'colombia'}
-              renderInput={params => <TextField {...params} label="Departamento" size="small" />}
-            />
+            {esColombia ? (
+              <Autocomplete
+                options={departamentos}
+                value={form.departamentoNacimiento || null}
+                onChange={(_, v) => setForm(p => ({ ...p, departamentoNacimiento: v || '', ciudadNacimiento: '' }))}
+                renderInput={params => <TextField {...params} label="Departamento" size="small" />}
+              />
+            ) : (
+              <TextField fullWidth label="Departamento / Estado" size="small"
+                value={form.departamentoNacimiento}
+                onChange={capitalizar('departamentoNacimiento')} />
+            )}
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <Autocomplete
-              options={ciudades}
-              value={form.ciudadNacimiento || null}
-              onChange={(_, v) => setV('ciudadNacimiento', v || '')}
-              disabled={!form.departamentoNacimiento}
-              loading={cargandoCiudades}
-              renderInput={params => (
-                <TextField {...params} label="Ciudad" size="small" />
-              )}
-            />
+            {esColombia ? (
+              <Autocomplete
+                options={ciudades}
+                value={form.ciudadNacimiento || null}
+                onChange={(_, v) => setV('ciudadNacimiento', v || '')}
+                disabled={!form.departamentoNacimiento}
+                loading={cargandoCiudades}
+                renderInput={params => <TextField {...params} label="Ciudad / Municipio" size="small" />}
+              />
+            ) : (
+              <TextField fullWidth label="Ciudad" size="small"
+                value={form.ciudadNacimiento}
+                onChange={capitalizar('ciudadNacimiento')} />
+            )}
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Barrio" size="small"
-              value={form.barrio} onChange={set('barrio')} />
+              value={form.barrio} onChange={capitalizar('barrio')}
+              slotProps={{ htmlInput: form.barrio === 'No registra' ? { readOnly: true } : undefined }}
+              helperText={nr('barrio')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 8 }}>
             <TextField fullWidth label="Dirección" size="small"
-              value={form.direccion} onChange={set('direccion')} />
+              value={form.direccion} onChange={capitalizar('direccion')}
+              slotProps={{ htmlInput: form.direccion === 'No registra' ? { readOnly: true } : undefined }}
+              helperText={nr('direccion')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="N.º personas con quienes vive" size="small" type="number"
@@ -318,7 +345,10 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           <SeccionTitulo>Salud</SeccionTitulo>
 
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="EPS" size="small" value={form.eps} onChange={set('eps')} />
+            <TextField fullWidth label="EPS" size="small"
+              value={form.eps} onChange={capitalizar('eps')}
+              slotProps={{ htmlInput: form.eps === 'No registra' ? { readOnly: true } : undefined }}
+              helperText={nr('eps')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
@@ -332,12 +362,12 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           {form.tieneAlergia === 'si' && (
             <Grid size={12}>
               <TextField fullWidth label="Descripción de la alergia *" size="small"
-                value={form.descripcionAlergia} onChange={set('descripcionAlergia')} />
+                value={form.descripcionAlergia} onChange={capitalizar('descripcionAlergia')} />
             </Grid>
           )}
           <Grid size={12}>
             <TextField fullWidth label="Observaciones de salud" size="small" multiline rows={2}
-              value={form.observacionesSalud} onChange={set('observacionesSalud')} />
+              value={form.observacionesSalud} onChange={capitalizar('observacionesSalud')} />
           </Grid>
           <Grid size={12}>
             <FormControlLabel
@@ -354,7 +384,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           {form.tieneDiscapacidad && (
             <Grid size={12}>
               <TextField fullWidth label="Descripción de la discapacidad / condición *" size="small"
-                value={form.descripcionDiscapacidad} onChange={set('descripcionDiscapacidad')} />
+                value={form.descripcionDiscapacidad} onChange={capitalizar('descripcionDiscapacidad')} />
             </Grid>
           )}
 
@@ -363,7 +393,9 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
 
           <Grid size={{ xs: 12, sm: 8 }}>
             <TextField fullWidth label="Nombre del colegio" size="small"
-              value={form.nombreColegio} onChange={set('nombreColegio')} />
+              value={form.nombreColegio} onChange={capitalizar('nombreColegio')}
+              slotProps={{ htmlInput: form.nombreColegio === 'No registra' ? { readOnly: true } : undefined }}
+              helperText={nr('nombreColegio')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <Autocomplete

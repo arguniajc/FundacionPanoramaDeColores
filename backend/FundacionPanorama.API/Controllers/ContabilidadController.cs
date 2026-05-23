@@ -245,8 +245,8 @@ public class ContabilidadController(
         {
             var client = httpFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(85);
-            // Usar gemini-2.0-flash: más rápido y gratuito
-            var url    = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
+            var modelName = configuration["Gemini:Model"] ?? "gemini-1.5-flash";
+            var url    = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={apiKey}";
             var body   = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
             // CancellationToken propio de 80 s para no depender del timeout de la petición HTTP

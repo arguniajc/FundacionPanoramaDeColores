@@ -21,7 +21,8 @@ const GENEROS = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];
 
 const FORM_VACIO = {
   // Datos del menor
-  nombreMenor: '', fechaNacimiento: '', tipoDocumento: 'RC', numeroDocumento: '',
+  primerNombre: '', segundoNombre: '', primerApellido: '', segundoApellido: '',
+  fechaNacimiento: '', tipoDocumento: 'RC', numeroDocumento: '',
   genero: '',
   paisNacimiento: 'Colombia', departamentoNacimiento: '', ciudadNacimiento: '',
   barrio: '', direccion: '', numPersonasVive: '', numHermanos: '',
@@ -90,7 +91,10 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
     setGuardando(true); setError('');
     try {
       await apiClient.post('/api/beneficiarios', {
-        nombreMenor:             form.nombreMenor.trim(),
+        primerNombre:            form.primerNombre.trim(),
+        segundoNombre:           form.segundoNombre.trim()   || null,
+        primerApellido:          form.primerApellido.trim(),
+        segundoApellido:         form.segundoApellido.trim() || null,
         fechaNacimiento:         form.fechaNacimiento,
         tipoDocumento:           form.tipoDocumento,
         numeroDocumento:         form.numeroDocumento.trim() || null,
@@ -136,7 +140,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
   };
 
   const puedeGuardar =
-    form.nombreMenor.trim() &&
+    form.primerNombre.trim() &&
+    form.primerApellido.trim() &&
     form.fechaNacimiento &&
     form.nombreAcudiente.trim() &&
     form.autorizacion &&
@@ -168,9 +173,21 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           {/* ── Datos del menor ── */}
           <SeccionTitulo>Datos del menor</SeccionTitulo>
 
-          <Grid size={{ xs: 12, sm: 8 }}>
-            <TextField fullWidth label="Nombre completo *" size="small"
-              value={form.nombreMenor} onChange={capitalizar('nombreMenor')} />
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Primer nombre *" size="small" required
+              value={form.primerNombre} onChange={capitalizar('primerNombre')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Segundo nombre" size="small"
+              value={form.segundoNombre} onChange={capitalizar('segundoNombre')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Primer apellido *" size="small" required
+              value={form.primerApellido} onChange={capitalizar('primerApellido')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Segundo apellido" size="small"
+              value={form.segundoApellido} onChange={capitalizar('segundoApellido')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Fecha de nacimiento *" size="small" type="date"

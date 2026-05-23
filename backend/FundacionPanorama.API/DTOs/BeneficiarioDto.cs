@@ -7,7 +7,11 @@ namespace FundacionPanorama.API.DTOs;
 public class BeneficiarioDto
 {
     public Guid      Id                 { get; set; }
-    public string    NombreMenor        { get; set; } = string.Empty;
+    public string    PrimerNombre       { get; set; } = string.Empty;
+    public string?   SegundoNombre      { get; set; }
+    public string    PrimerApellido     { get; set; } = string.Empty;
+    public string?   SegundoApellido    { get; set; }
+    public string    NombreMenor        { get; set; } = string.Empty; // concat calculado en SQL
     public DateOnly  FechaNacimiento    { get; set; }
     public string    TipoDocumento      { get; set; } = string.Empty;
     public string?   NumeroDocumento    { get; set; }
@@ -56,8 +60,16 @@ public class BeneficiarioDto
 
 public class CrearBeneficiarioDto
 {
-    [Required][StringLength(200)]
-    public string    NombreMenor        { get; set; } = string.Empty;
+    [Required][StringLength(80)]
+    public string    PrimerNombre       { get; set; } = string.Empty;
+    [StringLength(80)]
+    public string?   SegundoNombre      { get; set; }
+    [Required][StringLength(80)]
+    public string    PrimerApellido     { get; set; } = string.Empty;
+    [StringLength(80)]
+    public string?   SegundoApellido    { get; set; }
+    public string NombreCompleto =>
+        $"{PrimerNombre.Trim()}{(string.IsNullOrWhiteSpace(SegundoNombre) ? "" : " " + SegundoNombre.Trim())} {PrimerApellido.Trim()}{(string.IsNullOrWhiteSpace(SegundoApellido) ? "" : " " + SegundoApellido.Trim())}".Trim();
     public DateOnly  FechaNacimiento    { get; set; }
     [StringLength(20)]
     public string    TipoDocumento      { get; set; } = string.Empty;

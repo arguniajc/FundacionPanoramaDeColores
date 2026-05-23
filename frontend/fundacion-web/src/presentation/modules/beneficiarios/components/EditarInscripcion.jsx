@@ -31,8 +31,14 @@ function SeccionTitulo({ children }) {
 export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado }) {
   const boolToStr = v => v === true ? 'si' : v === false ? 'no' : '';
 
+  const capitalizar = campo => e =>
+    setForm(prev => ({ ...prev, [campo]: e.target.value.replace(/(^|\s)\S/g, l => l.toUpperCase()) }));
+
   const [form, setForm] = useState({
-    nombreMenor:             inscripcion.nombreMenor             || '',
+    primerNombre:            inscripcion.primerNombre            || '',
+    segundoNombre:           inscripcion.segundoNombre           || '',
+    primerApellido:          inscripcion.primerApellido          || '',
+    segundoApellido:         inscripcion.segundoApellido         || '',
     fechaNacimiento:         inscripcion.fechaNacimiento         || '',
     tipoDocumento:           inscripcion.tipoDocumento           || '',
     numeroDocumento:         inscripcion.numeroDocumento         || '',
@@ -81,7 +87,10 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
     setGuardando(true); setError('');
     try {
       await apiClient.put(`/api/beneficiarios/${inscripcion.id}`, {
-        nombreMenor:             form.nombreMenor,
+        primerNombre:            form.primerNombre.trim(),
+        segundoNombre:           form.segundoNombre.trim()   || null,
+        primerApellido:          form.primerApellido.trim(),
+        segundoApellido:         form.segundoApellido.trim() || null,
         fechaNacimiento:         form.fechaNacimiento,
         tipoDocumento:           form.tipoDocumento,
         numeroDocumento:         form.numeroDocumento         || null,
@@ -140,9 +149,21 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           {/* ── Datos del menor ── */}
           <SeccionTitulo>Datos del menor</SeccionTitulo>
 
-          <Grid size={{ xs: 12, sm: 8 }}>
-            <TextField fullWidth label="Nombre completo" size="small"
-              value={form.nombreMenor} onChange={set('nombreMenor')} required />
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Primer nombre *" size="small" required
+              value={form.primerNombre} onChange={capitalizar('primerNombre')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Segundo nombre" size="small"
+              value={form.segundoNombre} onChange={capitalizar('segundoNombre')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Primer apellido *" size="small" required
+              value={form.primerApellido} onChange={capitalizar('primerApellido')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Segundo apellido" size="small"
+              value={form.segundoApellido} onChange={capitalizar('segundoApellido')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Fecha de nacimiento" size="small" type="date"
@@ -385,7 +406,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
         <Button
           variant="contained"
           onClick={handleGuardar}
-          disabled={guardando || !form.nombreMenor || !form.nombreAcudiente}
+          disabled={guardando || !form.primerNombre || !form.primerApellido || !form.nombreAcudiente}
           sx={{ bgcolor: 'var(--color-primario)' }}
         >
           {guardando ? 'Guardando...' : 'Guardar cambios'}

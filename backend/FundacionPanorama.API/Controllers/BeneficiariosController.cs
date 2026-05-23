@@ -59,7 +59,7 @@ public class BeneficiariosController : ControllerBase
         }
         if (!string.IsNullOrWhiteSpace(buscar))
             filters.Add("""
-                (b.nombre ILIKE @buscar
+                (concat_ws(' ', b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido) ILIKE @buscar
                  OR b.numero_documento ILIKE @buscar
                  OR EXISTS (
                      SELECT 1 FROM beneficiario_acudiente bac2
@@ -530,20 +530,25 @@ public class BeneficiariosController : ControllerBase
         ins.Transaction = tx;
         ins.CommandText = """
             INSERT INTO beneficiarios (
-              nombre, fecha_nacimiento, tipo_documento_id, numero_documento,
+              primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
+              fecha_nacimiento, tipo_documento_id, numero_documento,
               pais_nacimiento, departamento_nacimiento, ciudad_nacimiento, barrio,
               num_personas_vive, num_hermanos, nombre_colegio, grado_escolar,
               tiene_discapacidad, descripcion_discapacidad, vive_con_nino,
               genero, autorizacion, activo
             ) VALUES (
-              @nombre, @fn, @tdoc, @ndoc,
+              @pn, @sn, @pa, @sa,
+              @fn, @tdoc, @ndoc,
               @pais, @depto, @ciudad, @barrio,
               @npv, @nh, @col, @grado,
               @disc, @disc_desc, @vive,
               @genero, @auth, true
             ) RETURNING id
             """;
-        ins.Parameters.AddWithValue("nombre", dto.NombreMenor.Trim());
+        ins.Parameters.AddWithValue("pn", dto.PrimerNombre.Trim());
+        ins.Parameters.AddWithValue("sn", string.IsNullOrWhiteSpace(dto.SegundoNombre)   ? DBNull.Value : (object)dto.SegundoNombre.Trim());
+        ins.Parameters.AddWithValue("pa", dto.PrimerApellido.Trim());
+        ins.Parameters.AddWithValue("sa", string.IsNullOrWhiteSpace(dto.SegundoApellido) ? DBNull.Value : (object)dto.SegundoApellido.Trim());
         ins.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object?)dto.FechaNacimiento ?? DBNull.Value });
         ins.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = (object?)tipoDocId ?? DBNull.Value });
         ins.Parameters.AddWithValue("ndoc",  string.IsNullOrWhiteSpace(dto.NumeroDocumento)         ? DBNull.Value : (object)dto.NumeroDocumento.Trim());
@@ -564,7 +569,7 @@ public class BeneficiariosController : ControllerBase
         var newId = (Guid)(await ins.ExecuteScalarAsync())!;
 
         await GuardarDependientesAsync(conn, tx, newId, dto, epsId, isNew: true);
-        await RegistrarAuditAsync(conn, tx, newId, dto.NombreMenor.Trim(), "creado");
+        await RegistrarAuditAsync(conn, tx, newId, dto.NombreCompleto, "creado");
 
         await tx.CommitAsync();
 
@@ -615,7 +620,10 @@ public class BeneficiariosController : ControllerBase
         upd.Transaction = tx;
         upd.CommandText = """
             UPDATE beneficiarios SET
-              nombre                  = @nombre,
+              primer_nombre           = @pn,
+              segundo_nombre          = @sn,
+              primer_apellido         = @pa,
+              segundo_apellido        = @sa,
               fecha_nacimiento        = @fn,
               tipo_documento_id       = @tdoc,
               numero_documento        = @ndoc,
@@ -634,7 +642,10 @@ public class BeneficiariosController : ControllerBase
               autorizacion            = @auth
             WHERE id = @id
             """;
-        upd.Parameters.AddWithValue("nombre", dto.NombreMenor.Trim());
+        upd.Parameters.AddWithValue("pn", dto.PrimerNombre.Trim());
+        upd.Parameters.AddWithValue("sn", string.IsNullOrWhiteSpace(dto.SegundoNombre)   ? DBNull.Value : (object)dto.SegundoNombre.Trim());
+        upd.Parameters.AddWithValue("pa", dto.PrimerApellido.Trim());
+        upd.Parameters.AddWithValue("sa", string.IsNullOrWhiteSpace(dto.SegundoApellido) ? DBNull.Value : (object)dto.SegundoApellido.Trim());
         upd.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object?)dto.FechaNacimiento ?? DBNull.Value });
         upd.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = (object?)tipoDocId ?? DBNull.Value });
         upd.Parameters.AddWithValue("ndoc",  string.IsNullOrWhiteSpace(dto.NumeroDocumento)         ? DBNull.Value : (object)dto.NumeroDocumento.Trim());
@@ -655,7 +666,7 @@ public class BeneficiariosController : ControllerBase
         await upd.ExecuteNonQueryAsync();
 
         await GuardarDependientesAsync(conn, tx, id, dto, epsId, isNew: false);
-        await RegistrarAuditAsync(conn, tx, id, dto.NombreMenor.Trim(), "editado");
+        await RegistrarAuditAsync(conn, tx, id, dto.NombreCompleto, "editado");
 
         await tx.CommitAsync();
 
@@ -722,7 +733,7 @@ public class BeneficiariosController : ControllerBase
 
         // Existencia y nombre (para audit log)
         await using var exCmd = conn.CreateCommand();
-        exCmd.CommandText = "SELECT nombre FROM beneficiarios WHERE id = @id";
+        exCmd.CommandText = "SELECT concat_ws(' ', primer_nombre, segundo_nombre, primer_apellido, segundo_apellido) FROM beneficiarios WHERE id = @id";
         exCmd.Parameters.AddWithValue("id", id);
         var nombreBen = await exCmd.ExecuteScalarAsync() as string;
         if (nombreBen == null) return NotFound();
@@ -1347,7 +1358,9 @@ public class BeneficiariosController : ControllerBase
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             SELECT
-              b.id, b.nombre, b.fecha_nacimiento, b.numero_documento, b.activo, b.motivo_baja,
+              b.id,
+              concat_ws(' ', b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido) AS nombre_completo,
+              b.fecha_nacimiento, b.numero_documento, b.activo, b.motivo_baja,
               b.fecha_creacion, b.pais_nacimiento, b.departamento_nacimiento, b.ciudad_nacimiento,
               b.barrio, b.num_personas_vive, b.num_hermanos, b.nombre_colegio, b.grado_escolar,
               b.tiene_discapacidad, b.descripcion_discapacidad, b.vive_con_nino, b.genero, b.autorizacion,
@@ -1362,7 +1375,8 @@ public class BeneficiariosController : ControllerBase
               al.al_cnt,
               af1.url                              AS foto_menor,
               af2.url                              AS foto_doc,
-              af3.url                              AS foto_doc_rev
+              af3.url                              AS foto_doc_rev,
+              b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido
             FROM beneficiarios b
             LEFT JOIN cat_tipos_documento ctd ON ctd.id = b.tipo_documento_id
             LEFT JOIN beneficiario_salud bs ON bs.beneficiario_id = b.id
@@ -1453,6 +1467,10 @@ public class BeneficiariosController : ControllerBase
                 FotoMenorUrl            = r.IsDBNull(34) ? null : r.GetString(34),
                 FotoDocumentoUrl        = r.IsDBNull(35) ? null : r.GetString(35),
                 FotoDocumentoReversoUrl = r.IsDBNull(36) ? null : r.GetString(36),
+                PrimerNombre            = r.GetString(37),
+                SegundoNombre           = r.IsDBNull(38) ? null : r.GetString(38),
+                PrimerApellido          = r.GetString(39),
+                SegundoApellido         = r.IsDBNull(40) ? null : r.GetString(40),
             });
         }
         return result;

@@ -175,7 +175,10 @@ CREATE TRIGGER trg_usuarios_mod
 
 CREATE TABLE beneficiarios (
   id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  nombre               VARCHAR(150)        NOT NULL,
+  primer_nombre        VARCHAR(80)         NOT NULL,
+  segundo_nombre       VARCHAR(80),
+  primer_apellido      VARCHAR(80)         NOT NULL,
+  segundo_apellido     VARCHAR(80),
   fecha_nacimiento     DATE,
   tipo_documento_id    SMALLINT    REFERENCES cat_tipo_documento (id),
   numero_documento     VARCHAR(30) UNIQUE,
@@ -187,7 +190,7 @@ CREATE TABLE beneficiarios (
 );
 
 CREATE INDEX idx_ben_documento ON beneficiarios (numero_documento);
-CREATE INDEX idx_ben_nombre    ON beneficiarios (nombre);
+CREATE INDEX idx_ben_nombres   ON beneficiarios (primer_nombre, primer_apellido);
 CREATE INDEX idx_ben_activo    ON beneficiarios (activo);
 
 CREATE TRIGGER trg_ben_mod

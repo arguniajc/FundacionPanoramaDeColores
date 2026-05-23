@@ -129,11 +129,11 @@ public class CrearBeneficiarioDto
     // ── Autorización ──────────────────────────────────────────────────────────
     public bool      Autorizacion       { get; set; }
     // ── Archivos ──────────────────────────────────────────────────────────────
-    [Url][StringLength(500)]
+    [StringLength(500)]
     public string?   FotoMenorUrl            { get; set; }
-    [Url][StringLength(500)]
+    [StringLength(500)]
     public string?   FotoDocumentoUrl        { get; set; }
-    [Url][StringLength(500)]
+    [StringLength(500)]
     public string?   FotoDocumentoReversoUrl { get; set; }
 }
 

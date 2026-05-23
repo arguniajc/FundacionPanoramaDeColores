@@ -112,7 +112,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
       if (!datos.__firma_padre__) return false;
       const _m = parseMeta(datos.__firma_meta__);
       if (!_m.quien || !_m.nombre?.trim() || !_m.documento?.trim()) return false;
-      return campos.every(c => {
+      const camposOk = campos.every(c => {
         if (!c.obligatorio) return true;
         if ((c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor') && panelActivo[c.id] === false) return true;
         const v = datos[c.id];
@@ -131,6 +131,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         }
         return true;
       });
+      if (!camposOk) return false;
       // Al menos uno de los paneles tutor debe estar completo
       const panelesTutor = campos.filter(c =>
         c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor'

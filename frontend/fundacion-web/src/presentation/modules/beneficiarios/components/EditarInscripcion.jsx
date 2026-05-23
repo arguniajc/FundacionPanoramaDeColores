@@ -6,7 +6,7 @@ import {
   InputAdornment, Autocomplete, Checkbox, FormControlLabel,
 } from '@mui/material';
 import apiClient       from '../../../../infrastructure/http/apiClient';
-import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, PAISES } from '../../../../shared/constants/beneficiarios';
+import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, PAISES } from '../../../../shared/constants/beneficiarios';
 
 const GENEROS = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];
 import UploadFoto      from '../../../../shared/components/UploadFoto';
@@ -310,12 +310,22 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Talla pantalón" size="small"
-              value={form.tallaPantalon} onChange={set('tallaPantalon')} />
+            <Autocomplete freeSolo options={TALLAS_PANTALON}
+              value={form.tallaPantalon}
+              onChange={(_, v) => setV('tallaPantalon', v ?? '')}
+              onInputChange={(_, v) => setV('tallaPantalon', v)}
+              renderInput={params => (
+                <TextField {...params} fullWidth label="Talla pantalón" size="small" />
+              )} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Talla zapatos" size="small"
-              value={form.tallaZapatos} onChange={set('tallaZapatos')} />
+            <Autocomplete freeSolo options={TALLAS_ZAPATOS}
+              value={form.tallaZapatos}
+              onChange={(_, v) => setV('tallaZapatos', v ?? '')}
+              onInputChange={(_, v) => setV('tallaZapatos', v)}
+              renderInput={params => (
+                <TextField {...params} fullWidth label="Talla zapatos" size="small" />
+              )} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Peso" size="small" type="number"
@@ -334,10 +344,21 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           <SeccionTitulo>Salud</SeccionTitulo>
 
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="EPS" size="small"
-              value={form.eps} onChange={capitalizar('eps')}
-              slotProps={{ htmlInput: form.eps === 'No registra' ? { readOnly: true } : undefined }}
-              helperText={nr('eps')} />
+            <Autocomplete freeSolo options={EPS_LIST}
+              value={form.eps}
+              onChange={(_, v) => setV('eps', v ?? '')}
+              onInputChange={(_, v, reason) => {
+                if (form.eps === 'No registra') return;
+                if (reason === 'input') {
+                  const cap = (v || '').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                  setV('eps', cap);
+                }
+              }}
+              renderInput={params => (
+                <TextField {...params} fullWidth label="EPS" size="small"
+                  helperText={nr('eps')}
+                  inputProps={{ ...params.inputProps, ...(form.eps === 'No registra' ? { readOnly: true } : {}) }} />
+              )} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">

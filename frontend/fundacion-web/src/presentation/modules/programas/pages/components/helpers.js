@@ -32,8 +32,9 @@ export const TIPOS_CAMPO = [
   { value: 'peso',         label: 'Peso (kg)' },
   { value: 'talla',        label: 'Talla / Estatura (cm)' },
   { value: 'altura',       label: 'Altura (cm)' },
-  { value: 'talla_ropa',   label: 'Talla de ropa' },
-  { value: 'talla_zapatos',label: 'Talla de zapatos' },
+  { value: 'talla_ropa',    label: 'Talla de ropa' },
+  { value: 'talla_pantalon',label: 'Talla de pantalón' },
+  { value: 'talla_zapatos', label: 'Talla de zapatos' },
 
   { _h: true, label: 'Escolaridad' },
   { value: 'grado_escolar', label: 'Grado escolar y jornada' },

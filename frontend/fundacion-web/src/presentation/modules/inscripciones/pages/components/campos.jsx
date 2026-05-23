@@ -8,7 +8,7 @@ import { archivosRepository }   from '../../../../../infrastructure/repositories
 import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
-  TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
+  TALLAS_ROPA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, VALORACIONES,
   GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION, RELACIONES_TUTOR,
   getCiudadesDeUbicacion, getEstadosDePais,
 } from '../../../../../shared/utils/geodata';
@@ -459,15 +459,16 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
     );
   }
 
-  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero'        ||
-      campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato'       ||
-      campo.tipo === 'nivel_educativo'|| campo.tipo === 'talla_ropa'    ||
-      campo.tipo === 'talla_zapatos'  || campo.tipo === 'valoracion'    ||
-      campo.tipo === 'autoidentificacion') {
+  if (campo.tipo === 'tipo_documento'  || campo.tipo === 'genero'        ||
+      campo.tipo === 'tipo_sangre'     || campo.tipo === 'estrato'       ||
+      campo.tipo === 'nivel_educativo' || campo.tipo === 'talla_ropa'    ||
+      campo.tipo === 'talla_pantalon'  || campo.tipo === 'talla_zapatos' ||
+      campo.tipo === 'valoracion'      || campo.tipo === 'autoidentificacion') {
     const listas = {
       tipo_documento: TIPOS_DOCUMENTO, genero: GENEROS,
       tipo_sangre: TIPOS_SANGRE, estrato: ESTRATOS, nivel_educativo: NIVELES_EDUCATIVOS,
-      talla_ropa: TALLAS_ROPA, talla_zapatos: TALLAS_ZAPATOS, valoracion: VALORACIONES,
+      talla_ropa: TALLAS_ROPA, talla_pantalon: TALLAS_PANTALON,
+      talla_zapatos: TALLAS_ZAPATOS, valoracion: VALORACIONES,
       autoidentificacion: AUTOIDENTIFICACION,
     };
     return (
@@ -636,8 +637,13 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
                   value={d.barrio ?? ''} onChange={e => setD('barrio', e.target.value)} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth size="small" label="EPS / Aseguradora *" required
-                  value={d.eps ?? ''} onChange={e => setD('eps', e.target.value)} />
+                <Autocomplete freeSolo options={EPS_LIST}
+                  value={d.eps ?? ''}
+                  onChange={(_, v) => setD('eps', v ?? '')}
+                  onInputChange={(_, v) => setD('eps', v)}
+                  renderInput={p => (
+                    <TextField {...p} fullWidth size="small" label="EPS / Aseguradora *" required />
+                  )} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth size="small" label="Número de celular *" required

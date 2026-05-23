@@ -5,7 +5,7 @@ import {
 import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
-  TALLAS_ROPA, TALLAS_ZAPATOS, VALORACIONES,
+  TALLAS_ROPA, TALLAS_PANTALON, TALLAS_ZAPATOS, VALORACIONES,
   GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION,
 } from '../../../../../shared/utils/geodata';
 import { TIPOS_CAMPO } from './helpers';
@@ -176,15 +176,16 @@ export function CampoPreview({ campo }) {
       slotProps={{ input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> } }} />
   );
 
-  if (campo.tipo === 'tipo_documento' || campo.tipo === 'genero'       ||
-      campo.tipo === 'tipo_sangre'    || campo.tipo === 'estrato'      ||
-      campo.tipo === 'nivel_educativo'|| campo.tipo === 'talla_ropa'   ||
-      campo.tipo === 'talla_zapatos'  || campo.tipo === 'valoracion'   ||
-      campo.tipo === 'autoidentificacion') {
+  if (campo.tipo === 'tipo_documento'  || campo.tipo === 'genero'        ||
+      campo.tipo === 'tipo_sangre'     || campo.tipo === 'estrato'       ||
+      campo.tipo === 'nivel_educativo' || campo.tipo === 'talla_ropa'    ||
+      campo.tipo === 'talla_pantalon'  || campo.tipo === 'talla_zapatos' ||
+      campo.tipo === 'valoracion'      || campo.tipo === 'autoidentificacion') {
     const listas = {
       tipo_documento: TIPOS_DOCUMENTO, genero: GENEROS,
       tipo_sangre: TIPOS_SANGRE, estrato: ESTRATOS, nivel_educativo: NIVELES_EDUCATIVOS,
-      talla_ropa: TALLAS_ROPA, talla_zapatos: TALLAS_ZAPATOS, valoracion: VALORACIONES,
+      talla_ropa: TALLAS_ROPA, talla_pantalon: TALLAS_PANTALON,
+      talla_zapatos: TALLAS_ZAPATOS, valoracion: VALORACIONES,
       autoidentificacion: AUTOIDENTIFICACION,
     };
     const ops = listas[campo.tipo];

@@ -1030,5 +1030,33 @@ public static class DbMigrations
         // ── Anulación de movimientos contables ────────────────────────────────
         await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS anulado BOOLEAN NOT NULL DEFAULT false", "movimientos_contables.anulado");
         await Migrar("CREATE INDEX IF NOT EXISTS idx_mov_cont_anulado ON movimientos_contables(anulado) WHERE anulado = true", "movimientos_contables.idx_anulado");
+
+        // ── Beneficiarios: split nombre → 4 campos separados ─────────────────
+        await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS primer_nombre    VARCHAR(80)", "beneficiarios.primer_nombre");
+        await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS segundo_nombre   VARCHAR(80)", "beneficiarios.segundo_nombre");
+        await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS primer_apellido  VARCHAR(80)", "beneficiarios.primer_apellido");
+        await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS segundo_apellido VARCHAR(80)", "beneficiarios.segundo_apellido");
+        await MigrarUnaVez("""
+            WITH parts AS (
+              SELECT id,
+                string_to_array(regexp_replace(trim(nombre), '\s+', ' ', 'g'), ' ') AS ws
+              FROM beneficiarios
+              WHERE nombre IS NOT NULL AND nombre != ''
+            )
+            UPDATE beneficiarios b SET
+              primer_nombre    = COALESCE(ws[1], ''),
+              segundo_nombre   = CASE WHEN array_length(ws,1) >= 4 THEN ws[2] ELSE NULL END,
+              primer_apellido  = CASE
+                WHEN array_length(ws,1) <= 1 THEN ''
+                WHEN array_length(ws,1) <= 3 THEN ws[2]
+                ELSE ws[3]
+              END,
+              segundo_apellido = CASE
+                WHEN array_length(ws,1) = 3  THEN ws[3]
+                WHEN array_length(ws,1) >= 4 THEN array_to_string(ws[4:array_length(ws,1)], ' ')
+                ELSE NULL
+              END
+            FROM parts p WHERE b.id = p.id
+            """, "beneficiarios.split_nombre_unico");
     }
 }

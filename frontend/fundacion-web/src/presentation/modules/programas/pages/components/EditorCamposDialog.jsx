@@ -89,6 +89,28 @@ export function EditorCamposDialog({ programa, onCerrar }) {
     setEditando(null);
     setFormAbierto(true);
   };
+
+  const PANELES_RESPONSABLES = [
+    { tipo: 'datos_padre', etiqueta: 'Información del padre o acudiente' },
+    { tipo: 'datos_madre', etiqueta: 'Información de la madre' },
+    { tipo: 'datos_tutor', etiqueta: 'Información del tutor legal (abuelo, tío, hermano…)' },
+  ];
+  const todosResponsablesExisten = PANELES_RESPONSABLES
+    .every(p => camposLocal.some(c => c.tipo === p.tipo));
+
+  const agregarBloqueResponsables = () => {
+    setCamposLocal(prev => {
+      const existentes  = new Set(prev.map(c => c.tipo));
+      const porAgregar  = PANELES_RESPONSABLES.filter(p => !existentes.has(p.tipo));
+      if (porAgregar.length === 0) return prev;
+      const maxOrden = prev.length > 0 ? Math.max(...prev.map(c => c.orden)) : -1;
+      const nuevos = porAgregar.map((p, i) => ({
+        ...p, seccion: 'Responsables', obligatorio: true, columnas: 12,
+        opciones: null, id: `_temp_${++tempRef.current}`, _isNew: true, orden: maxOrden + 1 + i,
+      }));
+      return [...prev, ...nuevos].sort((a, b) => a.orden - b.orden);
+    });
+  };
   const abrirEditar = (c) => {
     setForm({
       seccion:     c.seccion ?? '',
@@ -310,6 +332,18 @@ export function EditorCamposDialog({ programa, onCerrar }) {
             onClick={abrirNuevo} sx={{ mt: 1, color: COLOR, borderColor: COLOR }}>
             Agregar campo
           </Button>
+          <Tooltip title={todosResponsablesExisten ? 'Ya están los tres paneles de responsables en el formulario' : 'Agrega padre, madre y tutor legal de una vez'}>
+            <span style={{ display: 'block', marginTop: 8 }}>
+              <Button fullWidth variant="outlined" startIcon={<AddIcon />}
+                onClick={agregarBloqueResponsables}
+                disabled={todosResponsablesExisten}
+                sx={{ borderStyle: 'dashed', color: '#7B3FC4', borderColor: '#7B3FC4',
+                      bgcolor: '#faf6ff', '&:hover': { bgcolor: '#f3ecff' },
+                      '&.Mui-disabled': { borderStyle: 'dashed' } }}>
+                Agregar bloque de responsables (padre · madre · tutor)
+              </Button>
+            </span>
+          </Tooltip>
         </DialogContent>
 
         <DialogActions sx={{ px: 2, py: 1.5, gap: 1 }}>

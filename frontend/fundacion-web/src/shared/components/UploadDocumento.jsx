@@ -51,7 +51,7 @@ function LadoBox({ lado, label, inputRef, estado, menuEl, setMenuEl, onEliminar,
         <Box sx={{ position: 'relative', display: 'inline-block' }}>
           <Box
             component="img" src={estado.preview} alt={label}
-            onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
+            onClick={(e) => { const el = e.currentTarget; setMenuEl(prev => ({ ...prev, [lado]: el })); }}
             sx={{ width: 110, height: 82, objectFit: 'cover', borderRadius: 2, border: '2px solid #e0e0e0', display: 'block', cursor: 'pointer' }}
           />
           <Tooltip title="Eliminar">
@@ -61,14 +61,14 @@ function LadoBox({ lado, label, inputRef, estado, menuEl, setMenuEl, onEliminar,
             </IconButton>
           </Tooltip>
           <Box component="button" type="button"
-            onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
+            onClick={(e) => { const el = e.currentTarget; setMenuEl(prev => ({ ...prev, [lado]: el })); }}
             sx={{ mt: 0.5, display: 'block', width: '100%', fontSize: 11, color: 'var(--color-primario)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0 }}>
             Cambiar
           </Box>
         </Box>
       ) : (
         <Box component="button" type="button"
-          onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
+          onClick={(e) => { const el = e.currentTarget; setMenuEl(prev => ({ ...prev, [lado]: el })); }}
           sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 110, height: 82, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' }, gap: 0.5, p: 0 }}>
           <CameraAltIcon sx={{ color: '#bdbdbd', fontSize: 26 }} />
           <Typography variant="caption" color="text.disabled" fontSize={10}>{label}</Typography>

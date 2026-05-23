@@ -1,6 +1,5 @@
-using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using FundacionPanorama.API.Filters;
 using FundacionPanorama.Application.Features.Contabilidad;
 using FundacionPanorama.Application.Features.Contabilidad.DTOs;
@@ -271,32 +270,32 @@ public class ContabilidadController(
             @"\$\s*([\d.,]{4,})",
         })
         {
-            var m = System.Text.RegularExpressions.Regex.Match(upper, pattern);
+            var m = Regex.Match(upper, pattern);
             if (!m.Success) continue;
-            var numStr = System.Text.RegularExpressions.Regex.Replace(m.Groups[1].Value, @"[^\d]", "");
+            var numStr = Regex.Replace(m.Groups[1].Value, @"[^\d]", "");
             if (decimal.TryParse(numStr, out var val) && val > 0) { monto = val; break; }
         }
 
         // ── Fecha ─────────────────────────────────────────────────────────────
         string? fecha = null;
-        var mFecha = System.Text.RegularExpressions.Regex.Match(texto, @"\b(\d{4})[/\-](\d{1,2})[/\-](\d{1,2})\b");
+        var mFecha = Regex.Match(texto, @"\b(\d{4})[/\-](\d{1,2})[/\-](\d{1,2})\b");
         if (mFecha.Success)
             fecha = $"{mFecha.Groups[1].Value}-{int.Parse(mFecha.Groups[2].Value):D2}-{int.Parse(mFecha.Groups[3].Value):D2}";
         else
         {
-            var mFecha2 = System.Text.RegularExpressions.Regex.Match(texto, @"\b(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})\b");
+            var mFecha2 = Regex.Match(texto, @"\b(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})\b");
             if (mFecha2.Success && int.Parse(mFecha2.Groups[2].Value) <= 12)
                 fecha = $"{mFecha2.Groups[3].Value}-{int.Parse(mFecha2.Groups[2].Value):D2}-{int.Parse(mFecha2.Groups[1].Value):D2}";
         }
 
         // ── NIT ───────────────────────────────────────────────────────────────
         string? nit = null;
-        var mNit = System.Text.RegularExpressions.Regex.Match(upper, @"N\.?I\.?T\.?\s*[:#.\s]*?([\d]{6,12})");
+        var mNit = Regex.Match(upper, @"N\.?I\.?T\.?\s*[:#.\s]*?([\d]{6,12})");
         if (mNit.Success) nit = mNit.Groups[1].Value;
 
         // ── Número factura ────────────────────────────────────────────────────
         string? numeroFactura = null;
-        var mFact = System.Text.RegularExpressions.Regex.Match(upper,
+        var mFact = Regex.Match(upper,
             @"(?:FACTURA(?:\s*ELECTR[ÓO]NICA)?|TIQUETE|RECIBO(?:\s*DE\s*CAJA)?|FACT\.?)\s*(?:N[°o]?\.?|#)?\s*([A-Z0-9\-]{2,20})");
         if (mFact.Success) numeroFactura = mFact.Groups[1].Value.Trim();
 
@@ -309,7 +308,7 @@ public class ContabilidadController(
         var nombreProveedor = lines
             .Take(6)
             .FirstOrDefault(l => l.Length > 4
-                && !System.Text.RegularExpressions.Regex.IsMatch(l, @"^\d[\d\s\-\.]*$")
+                && !Regex.IsMatch(l, @"^\d[\d\s\-\.]*$")
                 && !l.ToUpper().Contains("NIT") && !l.ToUpper().Contains("TEL"));
 
         // ── Concepto ──────────────────────────────────────────────────────────
@@ -318,8 +317,8 @@ public class ContabilidadController(
         {
             if (line.Length < 5) continue;
             var lu = line.ToUpper();
-            if (System.Text.RegularExpressions.Regex.IsMatch(lu, @"^(TOTAL|SUBTOTAL|NIT|TEL|FAX|FECHA|DIR|WEB|GRACIAS|COPIA|RUT|IVA)")) continue;
-            if (System.Text.RegularExpressions.Regex.IsMatch(line, @"^\d{4}")) continue;
+            if (Regex.IsMatch(lu, @"^(TOTAL|SUBTOTAL|NIT|TEL|FAX|FECHA|DIR|WEB|GRACIAS|COPIA|RUT|IVA)")) continue;
+            if (Regex.IsMatch(line, @"^\d{4}")) continue;
             concepto = line; break;
         }
 

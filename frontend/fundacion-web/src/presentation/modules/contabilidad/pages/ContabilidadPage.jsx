@@ -17,6 +17,7 @@ import BalanceIcon              from '@mui/icons-material/Balance';
 import PrintIcon                from '@mui/icons-material/Print';
 import BlockIcon                from '@mui/icons-material/Block';
 import PictureAsPdfIcon         from '@mui/icons-material/PictureAsPdf';
+import ContentCopyIcon          from '@mui/icons-material/ContentCopy';
 import SyncAltIcon              from '@mui/icons-material/SyncAlt';
 import FactCheckIcon            from '@mui/icons-material/FactCheck';
 import SavingsIcon              from '@mui/icons-material/Savings';
@@ -39,8 +40,9 @@ import { DialogPresupuesto } from './components/DialogPresupuesto';
 import { DialogArqueo }      from './components/DialogArqueo';
 import { DialogReposicion }  from './components/DialogReposicion';
 import { LibroMayorTab }     from './components/LibroMayorTab';
-import { generarReportePDF } from './components/generarReportePDF';
-import { useConfiguracion }  from '../../../../shared/context/ConfiguracionContext';
+import { generarReportePDF }    from './components/generarReportePDF';
+import { generarComprobantePDF } from './components/generarComprobantePDF';
+import { useConfiguracion }      from '../../../../shared/context/ConfiguracionContext';
 
 // â”€â”€ PÃ¡gina principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ContabilidadPage() {
@@ -63,9 +65,10 @@ export default function ContabilidadPage() {
   const [reporte,    setReporte]    = useState(null);
 
   // Filtros movimientos
-  const [filtroTipo, setFiltroTipo] = useState('');
-  const [filtroMes,  setFiltroMes]  = useState(now.getMonth() + 1);
-  const [filtroAnio, setFiltroAnio] = useState(now.getFullYear());
+  const [filtroTipo,   setFiltroTipo]   = useState('');
+  const [filtroMes,    setFiltroMes]    = useState(now.getMonth() + 1);
+  const [filtroAnio,   setFiltroAnio]   = useState(now.getFullYear());
+  const [filtroCuenta, setFiltroCuenta] = useState('');
 
   // Filtro presupuesto
   const [presAnio, setPresAnio] = useState(now.getFullYear());
@@ -128,12 +131,13 @@ export default function ContabilidadPage() {
   // â”€â”€ Recargas por tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const cargarMovimientos = useCallback(async () => {
     const params = {};
-    if (filtroTipo) params.tipo = filtroTipo;
-    if (filtroMes)  params.mes  = filtroMes;
-    if (filtroAnio) params.anio = filtroAnio;
+    if (filtroTipo)   params.tipo     = filtroTipo;
+    if (filtroMes)    params.mes      = filtroMes;
+    if (filtroAnio)   params.anio     = filtroAnio;
+    if (filtroCuenta) params.cuentaId = filtroCuenta;
     const { data } = await apiClient.get('/api/contabilidad/movimientos', { params });
     setMovimientos(data);
-  }, [filtroTipo, filtroMes, filtroAnio]);
+  }, [filtroTipo, filtroMes, filtroAnio, filtroCuenta]);
 
   const cargarPresupuesto = useCallback(async () => {
     const { data } = await apiClient.get('/api/contabilidad/presupuesto', { params: { anio: presAnio } });
@@ -524,6 +528,13 @@ export default function ContabilidadPage() {
                 {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
               </Select>
             </FormControl>
+            <FormControl size="small" sx={{ minWidth: 160 }}>
+              <InputLabel>Cuenta</InputLabel>
+              <Select value={filtroCuenta} label="Cuenta" onChange={e => setFiltroCuenta(e.target.value)}>
+                <MenuItem value="">Todas</MenuItem>
+                {cuentas.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
+              </Select>
+            </FormControl>
             <Button variant="outlined" size="small" onClick={cargarMovimientos}>Filtrar</Button>
             <TextField
               size="small" placeholder="Buscar concepto / tercero..." value={busquedaMov}
@@ -600,15 +611,33 @@ export default function ContabilidadPage() {
                       }
                     </TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      <IconButton size="small" onClick={() => setDlgComprobante(m)}>
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
+                      <Tooltip title="Ver comprobante">
+                        <IconButton size="small" onClick={() => setDlgComprobante(m)}>
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Descargar comprobante PDF">
+                        <IconButton size="small" color="error" onClick={() => generarComprobantePDF(m, config)}>
+                          <PictureAsPdfIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      {puedeCrear && (
+                        <Tooltip title="Duplicar movimiento">
+                          <IconButton size="small" color="primary"
+                            onClick={() => setDlgMov({ open: true, modo: 'crear', tipoPreset: m.tipo,
+                              data: { ...m, id: null, consecutivo: null, fecha: null } })}>
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       {puedeEditar && <>
                         {!m.anulado && (
-                          <IconButton size="small"
-                            onClick={() => setDlgMov({ open: true, modo: 'editar', data: m, tipoPreset: m.tipo })}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                          <Tooltip title="Editar">
+                            <IconButton size="small"
+                              onClick={() => setDlgMov({ open: true, modo: 'editar', data: m, tipoPreset: m.tipo })}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         )}
                         {!m.anulado && (
                           <Tooltip title="Anular movimiento">
@@ -617,9 +646,11 @@ export default function ContabilidadPage() {
                             </IconButton>
                           </Tooltip>
                         )}
-                        <IconButton size="small" color="error" onClick={() => eliminarMovimiento(m.id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                        <Tooltip title="Eliminar">
+                          <IconButton size="small" color="error" onClick={() => eliminarMovimiento(m.id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </>}
                     </TableCell>
                   </TableRow>
@@ -747,6 +778,28 @@ export default function ContabilidadPage() {
             </Box>
           </Paper>
 
+          {(() => {
+            const sobre = presupuesto.filter(p => p.montoPresupuestado > 0 && p.ejecutado > p.montoPresupuestado);
+            const alerta = presupuesto.filter(p => p.montoPresupuestado > 0 && p.ejecutado / p.montoPresupuestado >= 0.9 && p.ejecutado <= p.montoPresupuestado);
+            if (sobre.length === 0 && alerta.length === 0) return null;
+            return (
+              <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                {sobre.length > 0 && (
+                  <Alert severity="error" sx={{ flex: 1, minWidth: 240 }}>
+                    <strong>{sobre.length} línea{sobre.length > 1 ? 's' : ''} sobre-ejecutada{sobre.length > 1 ? 's'  : ''}:</strong>{' '}
+                    {sobre.map(p => p.categoriaNombre).join(', ')}
+                  </Alert>
+                )}
+                {alerta.length > 0 && (
+                  <Alert severity="warning" sx={{ flex: 1, minWidth: 240 }}>
+                    <strong>{alerta.length} línea{alerta.length > 1 ? 's' : ''} al 90% o más:</strong>{' '}
+                    {alerta.map(p => p.categoriaNombre).join(', ')}
+                  </Alert>
+                )}
+              </Box>
+            );
+          })()}
+
           <TableContainer component={Paper}>
             <Table size="small">
               <TableHead>
@@ -765,27 +818,50 @@ export default function ContabilidadPage() {
                 {presupuesto.map(p => {
                   const pct = p.montoPresupuestado > 0
                     ? Math.round((p.ejecutado / p.montoPresupuestado) * 100) : 0;
+                  const sobreEjecutado = pct > 100;
+                  const alertaAlta    = pct >= 90 && pct <= 100;
                   return (
-                    <TableRow key={p.id} hover>
+                    <TableRow key={p.id} hover
+                      sx={{ bgcolor: sobreEjecutado ? 'rgba(220,38,38,0.06)' : alertaAlta ? 'rgba(245,158,11,0.06)' : undefined }}>
                       <TableCell><Typography variant="caption">{p.codigoPuc}</Typography></TableCell>
-                      <TableCell>{p.categoriaNombre}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {p.categoriaNombre}
+                          {sobreEjecutado && (
+                            <Chip label="SOBRE-EJECUTADO" size="small" color="error"
+                              sx={{ height: 18, fontSize: '0.6rem', fontWeight: 700 }} />
+                          )}
+                          {alertaAlta && !sobreEjecutado && (
+                            <Chip label="ALERTA" size="small" color="warning"
+                              sx={{ height: 18, fontSize: '0.6rem', fontWeight: 700 }} />
+                          )}
+                        </Box>
+                      </TableCell>
                       <TableCell>{p.programaNombre ?? '(General)'}</TableCell>
                       <TableCell align="right">{fmt(p.montoPresupuestado)}</TableCell>
-                      <TableCell align="right">{fmt(p.ejecutado)}</TableCell>
+                      <TableCell align="right"
+                        sx={{ fontWeight: sobreEjecutado ? 700 : 'normal', color: sobreEjecutado ? 'error.main' : 'inherit' }}>
+                        {fmt(p.ejecutado)}
+                      </TableCell>
                       <TableCell align="right">
-                        <Typography color={p.disponible < 0 ? 'error.main' : 'inherit'}>
+                        <Typography color={p.disponible < 0 ? 'error.main' : 'inherit'}
+                          fontWeight={p.disponible < 0 ? 700 : 'normal'}>
                           {fmt(p.disponible)}
                         </Typography>
                       </TableCell>
-                      <TableCell sx={{ minWidth: 130 }}>
+                      <TableCell sx={{ minWidth: 150 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <LinearProgress
                             variant="determinate"
                             value={Math.min(pct, 100)}
-                            color={pct > 90 ? 'error' : pct > 70 ? 'warning' : 'success'}
-                            sx={{ flex: 1, height: 6, borderRadius: 3 }}
+                            color={pct > 100 ? 'error' : pct > 90 ? 'error' : pct > 70 ? 'warning' : 'success'}
+                            sx={{ flex: 1, height: 7, borderRadius: 3 }}
                           />
-                          <Typography variant="caption">{pct}%</Typography>
+                          <Typography variant="caption"
+                            fontWeight={sobreEjecutado ? 700 : 'normal'}
+                            color={sobreEjecutado ? 'error.main' : alertaAlta ? 'warning.main' : 'text.secondary'}>
+                            {pct}%
+                          </Typography>
                         </Box>
                       </TableCell>
                       {puedeEditar && (
@@ -1314,8 +1390,8 @@ export default function ContabilidadPage() {
                 color={dlgComprobante.tipo === 'ingreso' ? 'success' : 'error'}
                 size="small" sx={{ mt: 0.5 }} />
             </Box>
-            <Button size="small" onClick={() => window.print()}
-              startIcon={<PrintIcon />} variant="outlined">Imprimir</Button>
+            <Button size="small" onClick={() => generarComprobantePDF(dlgComprobante, config)}
+              startIcon={<PictureAsPdfIcon />} variant="outlined" color="error">PDF</Button>
           </DialogTitle>
           <DialogContent dividers>
             <Grid container spacing={1.5}>

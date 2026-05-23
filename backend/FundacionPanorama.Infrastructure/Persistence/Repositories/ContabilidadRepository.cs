@@ -117,7 +117,8 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                    m.tercero_nombre, m.tercero_documento,
                    m.numero_soporte, m.descripcion, m.fecha_creacion,
                    m.consecutivo, m.tipo_soporte, m.retencion_practicada,
-                   m.tarifa_retencion, m.concepto_retencion
+                   m.tarifa_retencion, m.concepto_retencion,
+                   COALESCE(m.anulado, false) AS anulado
             FROM movimientos_contables m
             JOIN  cuentas_caja c    ON c.id   = m.cuenta_id
             JOIN  cat_contable cat  ON cat.id = m.categoria_id
@@ -248,6 +249,30 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         return true;
     }
 
+    public async Task<bool> AnularMovimientoAsync(Guid id, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+
+        var mov = await ObtenerMovimientoInternoAsync(conn, id, ct);
+        if (mov is null || mov.Anulado) return false;
+
+        await using var tx = await conn.BeginTransactionAsync(ct);
+
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "UPDATE movimientos_contables SET anulado = true WHERE id = @id";
+        cmd.Parameters.AddWithValue("id", id);
+        await cmd.ExecuteNonQueryAsync(ct);
+
+        // Revertir el efecto en el saldo de la cuenta
+        var tipoInverso = mov.Tipo == "ingreso" ? "egreso" : "ingreso";
+        await ActualizarSaldoAsync(conn, tx, mov.CuentaId, tipoInverso, mov.Monto, ct);
+
+        await tx.CommitAsync(ct);
+        return true;
+    }
+
     // ── Presupuesto ───────────────────────────────────────────────────────────
 
     public async Task<IReadOnlyList<PresupuestoDto>> ListarPresupuestosAsync(int anio, CancellationToken ct)
@@ -267,6 +292,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                 ON  m.categoria_id = pb.categoria_id
                 AND (pb.programa_id IS NULL OR m.programa_id = pb.programa_id)
                 AND EXTRACT(YEAR FROM m.fecha) = pb.anio
+                AND NOT COALESCE(m.anulado, false)
             WHERE pb.anio = @anio
             GROUP BY pb.id, pb.anio, pb.programa_id, p.nombre,
                      pb.categoria_id, cat.nombre, cat.codigo_puc, pb.monto_presupuestado
@@ -356,6 +382,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
             FROM movimientos_contables
             WHERE EXTRACT(YEAR  FROM fecha) = EXTRACT(YEAR  FROM CURRENT_DATE)
               AND EXTRACT(MONTH FROM fecha) = EXTRACT(MONTH FROM CURRENT_DATE)
+              AND NOT COALESCE(anulado, false)
             """;
         await using var r2 = await cmd2.ExecuteReaderAsync(ct);
         await r2.ReadAsync(ct);
@@ -370,6 +397,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                 COALESCE(SUM(CASE WHEN tipo = 'egreso'  THEN monto ELSE 0 END), 0)
             FROM movimientos_contables
             WHERE EXTRACT(YEAR FROM fecha) = EXTRACT(YEAR FROM CURRENT_DATE)
+              AND NOT COALESCE(anulado, false)
             """;
         await using var r3 = await cmd3.ExecuteReaderAsync(ct);
         await r3.ReadAsync(ct);
@@ -384,6 +412,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                    COALESCE(SUM(CASE WHEN tipo = 'egreso'  THEN monto ELSE 0 END), 0)
             FROM movimientos_contables
             WHERE fecha >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'
+              AND NOT COALESCE(anulado, false)
             GROUP BY TO_CHAR(fecha, 'Mon YYYY'), DATE_TRUNC('month', fecha)
             ORDER BY DATE_TRUNC('month', fecha)
             """;
@@ -412,6 +441,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
             FROM movimientos_contables
             WHERE EXTRACT(MONTH FROM fecha) = @mes
               AND EXTRACT(YEAR  FROM fecha) = @anio
+              AND NOT COALESCE(anulado, false)
             """;
         cmd1.Parameters.AddWithValue("mes",  mes);
         cmd1.Parameters.AddWithValue("anio", anio);
@@ -429,6 +459,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
             JOIN cat_contable cat ON cat.id = m.categoria_id
             WHERE EXTRACT(MONTH FROM m.fecha) = @mes
               AND EXTRACT(YEAR  FROM m.fecha) = @anio
+              AND NOT COALESCE(m.anulado, false)
             GROUP BY cat.codigo_puc, cat.nombre, cat.tipo
             ORDER BY cat.tipo, cat.codigo_puc
             """;
@@ -449,6 +480,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
             LEFT JOIN programas p ON p.id = m.programa_id
             WHERE EXTRACT(MONTH FROM m.fecha) = @mes
               AND EXTRACT(YEAR  FROM m.fecha) = @anio
+              AND NOT COALESCE(m.anulado, false)
             GROUP BY COALESCE(p.nombre, 'Sin programa')
             ORDER BY 1
             """;
@@ -464,7 +496,8 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         }
         await r3.CloseAsync();
 
-        var movimientos = await ListarMovimientosAsync(null, null, null, mes, anio, ct);
+        var todos = await ListarMovimientosAsync(null, null, null, mes, anio, ct);
+        var movimientos = todos.Where(m => !m.Anulado).ToList();
         var periodo = $"{new DateTime(anio, mes, 1):MMMM yyyy}";
         return new ReporteContadorDto(periodo, totalIngresos, totalEgresos, totalIngresos - totalEgresos,
             porCuenta, porPrograma, movimientos);
@@ -484,6 +517,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                    COALESCE(SUM(CASE WHEN tipo = 'egreso'  THEN monto ELSE 0 END), 0)
             FROM movimientos_contables
             WHERE EXTRACT(YEAR FROM fecha) = @anio
+              AND NOT COALESCE(anulado, false)
             GROUP BY mes ORDER BY mes
             """;
         cmd.Parameters.AddWithValue("anio", anio);
@@ -513,7 +547,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         await conn.OpenAsync(ct);
         await using var cmd = conn.CreateCommand();
 
-        var where = new List<string> { "EXTRACT(YEAR FROM m.fecha) = @anio" };
+        var where = new List<string> { "EXTRACT(YEAR FROM m.fecha) = @anio", "NOT COALESCE(m.anulado, false)" };
         if (mes.HasValue) where.Add("EXTRACT(MONTH FROM m.fecha) = @mes");
         if (!string.IsNullOrWhiteSpace(codigoPuc)) where.Add("cat.codigo_puc ILIKE @puc");
 
@@ -583,6 +617,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                 LEFT JOIN programas p ON p.id  = m.programa_id
                 JOIN  cuentas_caja cc ON cc.id = m.cuenta_id
                 WHERE m.cuenta_id = @cuentaId
+                  AND NOT COALESCE(m.anulado, false)
             )
             SELECT * FROM libro {filterClause}
             ORDER BY fecha, id
@@ -804,7 +839,8 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                    m.tercero_nombre, m.tercero_documento,
                    m.numero_soporte, m.descripcion, m.fecha_creacion,
                    m.consecutivo, m.tipo_soporte, m.retencion_practicada,
-                   m.tarifa_retencion, m.concepto_retencion
+                   m.tarifa_retencion, m.concepto_retencion,
+                   COALESCE(m.anulado, false) AS anulado
             FROM movimientos_contables m
             JOIN  cuentas_caja c    ON c.id   = m.cuenta_id
             JOIN  cat_contable cat  ON cat.id = m.categoria_id
@@ -860,5 +896,6 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         r.IsDBNull(18) ? null : r.GetString(18),
         r.IsDBNull(19) ? null : (decimal?)r[19],
         r.IsDBNull(20) ? null : (decimal?)r[20],
-        r.IsDBNull(21) ? null : r.GetString(21));
+        r.IsDBNull(21) ? null : r.GetString(21),
+        r.GetBoolean(22));
 }

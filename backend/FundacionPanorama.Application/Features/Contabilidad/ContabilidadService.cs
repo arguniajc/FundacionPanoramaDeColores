@@ -36,6 +36,9 @@ public class ContabilidadService(IContabilidadRepository repo)
     public Task<bool> EliminarMovimientoAsync(Guid id, CancellationToken ct = default)
         => repo.EliminarMovimientoAsync(id, ct);
 
+    public Task<bool> AnularMovimientoAsync(Guid id, CancellationToken ct = default)
+        => repo.AnularMovimientoAsync(id, ct);
+
     public Task<IReadOnlyList<PresupuestoDto>> ListarPresupuestosAsync(int anio, CancellationToken ct = default)
         => repo.ListarPresupuestosAsync(anio, ct);
 

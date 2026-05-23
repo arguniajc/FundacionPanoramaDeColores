@@ -82,6 +82,11 @@ public class ContabilidadController(ContabilidadService svc) : ControllerBase
     public async Task<IActionResult> EliminarMovimiento(Guid id, CancellationToken ct)
         => await svc.EliminarMovimientoAsync(id, ct) ? NoContent() : NotFound();
 
+    [HttpPatch("movimientos/{id:guid}/anular")]
+    [RequierePermiso("contabilidad", "editar")]
+    public async Task<IActionResult> AnularMovimiento(Guid id, CancellationToken ct)
+        => await svc.AnularMovimientoAsync(id, ct) ? NoContent() : NotFound();
+
     // ── Presupuesto ────────────────────────────────────────────────────────────
 
     [HttpGet("presupuesto")]

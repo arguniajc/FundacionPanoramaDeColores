@@ -273,11 +273,116 @@ public class DonacionesController : ControllerBase
 
             await tx.CommitAsync();
 
+            // Registrar automáticamente el movimiento contable (no-fatal)
+            if (dto.Tipo == "dinero" && dto.Monto > 0)
+            {
+                var fechaDon = DateOnly.FromDateTime((dto.FechaDonacion ?? DateTime.UtcNow).Date);
+                _ = AutoRegistrarMovimientoContableAsync(
+                    dto.DonanteId, dto.Monto!.Value, fechaDon,
+                    dto.ProgramaId, reciboNumero, conn.ConnectionString);
+            }
+
             // Devolver el registro completo
             var result = (await ObtenerPorId(newId) as OkObjectResult)!.Value;
             return Ok(result);
         }
         catch { await tx.RollbackAsync(); throw; }
+    }
+
+    private async Task AutoRegistrarMovimientoContableAsync(
+        Guid donanteId, decimal monto, DateOnly fecha,
+        Guid? programaId, string reciboNumero, string connStr)
+    {
+        try
+        {
+            await using var conn = new NpgsqlConnection(connStr);
+            await conn.OpenAsync();
+
+            // Buscar categoría de ingreso para donaciones (busca "donacion" primero, si no la primera de ingreso)
+            int? catId = null;
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT id FROM cat_contable
+                    WHERE tipo = 'ingreso'
+                    ORDER BY (nombre ILIKE '%donacion%' OR nombre ILIKE '%donación%') DESC, codigo_puc
+                    LIMIT 1
+                    """;
+                var val = await cmd.ExecuteScalarAsync();
+                if (val is not null) catId = Convert.ToInt32(val);
+            }
+            if (catId is null) return;
+
+            // Buscar primera cuenta activa
+            Guid? cuentaId = null;
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT id FROM cuentas_caja WHERE activo = true ORDER BY nombre LIMIT 1";
+                var val = await cmd.ExecuteScalarAsync();
+                if (val is not null) cuentaId = (Guid)val;
+            }
+            if (cuentaId is null) return;
+
+            // Obtener nombre del donante
+            string nombreDonante = "";
+            string? docDonante = null;
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT nombre, documento FROM donantes WHERE id = @id";
+                cmd.Parameters.AddWithValue("id", donanteId);
+                await using var r = await cmd.ExecuteReaderAsync();
+                if (await r.ReadAsync())
+                {
+                    nombreDonante = r.GetString(0);
+                    docDonante    = r.IsDBNull(1) ? null : r.GetString(1);
+                }
+            }
+
+            // Número de consecutivo
+            int consecutivo;
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    SELECT COALESCE(MAX(consecutivo), 0) + 1
+                    FROM movimientos_contables
+                    WHERE EXTRACT(YEAR FROM fecha) = @anio
+                    """;
+                cmd.Parameters.AddWithValue("anio", fecha.Year);
+                consecutivo = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+            }
+
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = """
+                    INSERT INTO movimientos_contables
+                        (tipo, fecha, concepto, monto, cuenta_id, categoria_id,
+                         programa_id, tercero_nombre, tercero_documento,
+                         numero_soporte, consecutivo)
+                    VALUES
+                        ('ingreso', @fecha, @concepto, @monto, @cuentaId, @catId,
+                         @progId, @tercero, @doc, @soporte, @consecutivo)
+                    """;
+                cmd.Parameters.AddWithValue("fecha",       fecha);
+                cmd.Parameters.AddWithValue("concepto",    $"Donación {nombreDonante} — {reciboNumero}");
+                cmd.Parameters.AddWithValue("monto",       monto);
+                cmd.Parameters.AddWithValue("cuentaId",    cuentaId.Value);
+                cmd.Parameters.AddWithValue("catId",       catId.Value);
+                cmd.Parameters.AddWithValue("progId",      (object?)programaId ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("tercero",     nombreDonante);
+                cmd.Parameters.AddWithValue("doc",         (object?)docDonante ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("soporte",     reciboNumero);
+                cmd.Parameters.AddWithValue("consecutivo", consecutivo);
+                await cmd.ExecuteNonQueryAsync();
+
+                // Actualizar saldo de la cuenta
+                await using var cmdSaldo = conn.CreateCommand();
+                cmdSaldo.CommandText = "UPDATE cuentas_caja SET saldo_actual = saldo_actual + @monto WHERE id = @id";
+                cmdSaldo.Parameters.AddWithValue("monto", monto);
+                cmdSaldo.Parameters.AddWithValue("id",    cuentaId.Value);
+                await cmdSaldo.ExecuteNonQueryAsync();
+            }
+        }
+        catch { /* no-fatal: contabilidad es auxiliar, no bloquea la donación */ }
     }
 
     [HttpPut("{id:guid}")]

@@ -15,6 +15,8 @@ import TrendingDownIcon         from '@mui/icons-material/TrendingDown';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import BalanceIcon              from '@mui/icons-material/Balance';
 import PrintIcon                from '@mui/icons-material/Print';
+import BlockIcon                from '@mui/icons-material/Block';
+import PictureAsPdfIcon         from '@mui/icons-material/PictureAsPdf';
 import SyncAltIcon              from '@mui/icons-material/SyncAlt';
 import FactCheckIcon            from '@mui/icons-material/FactCheck';
 import SavingsIcon              from '@mui/icons-material/Savings';
@@ -37,11 +39,14 @@ import { DialogPresupuesto } from './components/DialogPresupuesto';
 import { DialogArqueo }      from './components/DialogArqueo';
 import { DialogReposicion }  from './components/DialogReposicion';
 import { LibroMayorTab }     from './components/LibroMayorTab';
+import { generarReportePDF } from './components/generarReportePDF';
+import { useConfiguracion }  from '../../../../shared/context/ConfiguracionContext';
 
 // â”€â”€ PÃ¡gina principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ContabilidadPage() {
   const { puedo } = useAuth();
   const confirm    = useConfirm();
+  const config     = useConfiguracion();
   const puedeCrear  = puedo('contabilidad', 'crear');
   const puedeEditar = puedo('contabilidad', 'editar');
 
@@ -199,6 +204,13 @@ export default function ContabilidadPage() {
   const eliminarMovimiento = async (id) => {
     if (!await confirm('Â¿Eliminar este movimiento? El saldo de la cuenta se ajustarÃ¡ automÃ¡ticamente.')) return;
     await apiClient.delete(`/api/contabilidad/movimientos/${id}`);
+    await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
+    if (tab === 5) await cargarCajaMenor();
+  };
+
+  const anularMovimiento = async (id) => {
+    if (!await confirm('Â¿Anular este movimiento? El saldo de la cuenta se revertirÃ¡ y el movimiento quedarÃ¡ en el historial como Anulado.')) return;
+    await apiClient.patch(`/api/contabilidad/movimientos/${id}/anular`);
     await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
     if (tab === 5) await cargarCajaMenor();
   };
@@ -536,6 +548,7 @@ export default function ContabilidadPage() {
                   <TableCell>Soporte / Tipo</TableCell>
                   <TableCell align="right">Monto</TableCell>
                   <TableCell>N° Comp.</TableCell>
+                  <TableCell>Estado</TableCell>
                   <TableCell />
                 </TableRow>
               </TableHead>
@@ -543,7 +556,7 @@ export default function ContabilidadPage() {
                 {movimientos
                   .filter(m => !busquedaMov || (m.concepto + ' ' + (m.terceroNombre ?? '')).toLowerCase().includes(busquedaMov.toLowerCase()))
                   .map(m => (
-                  <TableRow key={m.id} hover>
+                  <TableRow key={m.id} hover sx={{ opacity: m.anulado ? 0.6 : 1 }}>
                     <TableCell>{fmtFecha(m.fecha)}</TableCell>
                     <TableCell>
                       <Chip label={m.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'}
@@ -580,15 +593,30 @@ export default function ContabilidadPage() {
                     <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'text.secondary' }}>
                       {m.consecutivo ? '#' + m.consecutivo + '-' + new Date(m.fecha).getFullYear() : '-'}
                     </TableCell>
+                    <TableCell>
+                      {m.anulado
+                        ? <Chip label="Anulado" color="error" size="small" variant="outlined" />
+                        : <Chip label="Vigente" color="success" size="small" variant="outlined" />
+                      }
+                    </TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
                       <IconButton size="small" onClick={() => setDlgComprobante(m)}>
                         <VisibilityIcon fontSize="small" />
                       </IconButton>
                       {puedeEditar && <>
-                        <IconButton size="small"
-                          onClick={() => setDlgMov({ open: true, modo: 'editar', data: m, tipoPreset: m.tipo })}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
+                        {!m.anulado && (
+                          <IconButton size="small"
+                            onClick={() => setDlgMov({ open: true, modo: 'editar', data: m, tipoPreset: m.tipo })}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        {!m.anulado && (
+                          <Tooltip title="Anular movimiento">
+                            <IconButton size="small" color="warning" onClick={() => anularMovimiento(m.id)}>
+                              <BlockIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         <IconButton size="small" color="error" onClick={() => eliminarMovimiento(m.id)}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
@@ -598,7 +626,7 @@ export default function ContabilidadPage() {
                 ))}
                 {movimientos.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                       <Typography color="text.secondary">No hay movimientos con los filtros actuales</Typography>
                     </TableCell>
                   </TableRow>
@@ -810,6 +838,12 @@ export default function ContabilidadPage() {
             {reporte && (
               <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => window.print()}>
                 Imprimir
+              </Button>
+            )}
+            {reporte && (
+              <Button variant="contained" color="error" startIcon={<PictureAsPdfIcon />}
+                onClick={() => generarReportePDF(reporte, config)}>
+                Descargar PDF
               </Button>
             )}
           </Box>

@@ -1026,5 +1026,9 @@ public static class DbMigrations
             """, "audit_log.create");
         await Migrar("CREATE INDEX IF NOT EXISTS idx_audit_log_entidad ON audit_log(entidad_tipo, entidad_id)", "audit_log.idx_entidad");
         await Migrar("CREATE INDEX IF NOT EXISTS idx_audit_log_fecha   ON audit_log(fecha DESC)",               "audit_log.idx_fecha");
+
+        // ── Anulación de movimientos contables ────────────────────────────────
+        await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS anulado BOOLEAN NOT NULL DEFAULT false", "movimientos_contables.anulado");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_mov_cont_anulado ON movimientos_contables(anulado) WHERE anulado = true", "movimientos_contables.idx_anulado");
     }
 }

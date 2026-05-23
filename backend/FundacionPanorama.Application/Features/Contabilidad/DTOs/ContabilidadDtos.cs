@@ -51,7 +51,8 @@ public record MovimientoDto(
     string?  TipoSoporte,
     decimal? RetencionPracticada,
     decimal? TarifaRetencion,
-    string?  ConceptoRetencion);
+    string?  ConceptoRetencion,
+    bool     Anulado);
 
 public record CrearMovimientoDto(
     [Required][StringLength(10)]  string   Tipo,

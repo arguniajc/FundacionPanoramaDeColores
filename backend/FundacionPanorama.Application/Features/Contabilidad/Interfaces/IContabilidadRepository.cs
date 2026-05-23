@@ -19,6 +19,7 @@ public interface IContabilidadRepository
     Task<MovimientoDto>                CrearMovimientoAsync(CrearMovimientoDto dto, CancellationToken ct);
     Task<MovimientoDto?>               ActualizarMovimientoAsync(Guid id, ActualizarMovimientoDto dto, CancellationToken ct);
     Task<bool>                         EliminarMovimientoAsync(Guid id, CancellationToken ct);
+    Task<bool>                         AnularMovimientoAsync(Guid id, CancellationToken ct);
 
     // Presupuesto
     Task<IReadOnlyList<PresupuestoDto>> ListarPresupuestosAsync(int anio, CancellationToken ct);

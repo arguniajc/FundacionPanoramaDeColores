@@ -5,6 +5,7 @@ using FundacionPanorama.API.Filters;
 using FundacionPanorama.Application.Features.Contabilidad;
 using FundacionPanorama.Application.Features.Contabilidad.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FundacionPanorama.API.Controllers;
@@ -199,6 +200,7 @@ public class ContabilidadController(
 
     [HttpPost("extraer-factura")]
     [RequierePermiso("contabilidad", "crear")]
+    [RequestTimeout(90_000)]   // 90 s — Gemini puede tardar en imágenes grandes
     public async Task<IActionResult> ExtraerFactura(
         [FromBody] ExtraerFacturaRequestDto dto,
         CancellationToken ct)
@@ -242,11 +244,17 @@ public class ContabilidadController(
         try
         {
             var client = httpFactory.CreateClient();
-            var url    = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
+            client.Timeout = TimeSpan.FromSeconds(85);
+            // Usar gemini-2.0-flash: más rápido y gratuito
+            var url    = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
             var body   = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-            var response = await client.PostAsync(url, body, ct);
-            var rawJson  = await response.Content.ReadAsStringAsync(ct);
+            // CancellationToken propio de 80 s para no depender del timeout de la petición HTTP
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(80));
+
+            var response = await client.PostAsync(url, body, cts.Token);
+            var rawJson  = await response.Content.ReadAsStringAsync(cts.Token);
 
             if (!response.IsSuccessStatusCode)
                 return BadRequest(new { error = $"Error Gemini API: {response.StatusCode}", detalle = rawJson });

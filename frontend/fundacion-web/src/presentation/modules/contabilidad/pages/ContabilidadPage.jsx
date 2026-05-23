@@ -273,7 +273,10 @@ export default function ContabilidadPage() {
         },
       });
     } catch (err) {
-      const msg = err?.response?.data?.error ?? 'No se pudo procesar la imagen.';
+      const d = err?.response?.data;
+      const msg = d?.detalle
+        ? `${d.error ?? 'Error'}: ${d.detalle}`
+        : d?.error ?? `Error ${err?.response?.status ?? 'de red'}: ${err?.message ?? 'No se pudo procesar la imagen.'}`;
       setOcrAdvertencia(msg);
     } finally {
       setOcrCargando(false);

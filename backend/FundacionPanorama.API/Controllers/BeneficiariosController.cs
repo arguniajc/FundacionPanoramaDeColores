@@ -1467,9 +1467,9 @@ public class BeneficiariosController : ControllerBase
                 FotoMenorUrl            = r.IsDBNull(34) ? null : r.GetString(34),
                 FotoDocumentoUrl        = r.IsDBNull(35) ? null : r.GetString(35),
                 FotoDocumentoReversoUrl = r.IsDBNull(36) ? null : r.GetString(36),
-                PrimerNombre            = r.GetString(37),
+                PrimerNombre            = r.IsDBNull(37) ? "" : r.GetString(37),
                 SegundoNombre           = r.IsDBNull(38) ? null : r.GetString(38),
-                PrimerApellido          = r.GetString(39),
+                PrimerApellido          = r.IsDBNull(39) ? "" : r.GetString(39),
                 SegundoApellido         = r.IsDBNull(40) ? null : r.GetString(40),
             });
         }

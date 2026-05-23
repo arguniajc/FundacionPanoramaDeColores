@@ -1044,19 +1044,29 @@ public static class DbMigrations
               WHERE nombre IS NOT NULL AND nombre != ''
             )
             UPDATE beneficiarios b SET
-              primer_nombre    = COALESCE(ws[1], ''),
-              segundo_nombre   = CASE WHEN array_length(ws,1) >= 4 THEN ws[2] ELSE NULL END,
+              primer_nombre    = initcap(COALESCE(ws[1], '')),
+              segundo_nombre   = CASE WHEN array_length(ws,1) >= 4 THEN initcap(ws[2]) ELSE NULL END,
               primer_apellido  = CASE
                 WHEN array_length(ws,1) <= 1 THEN ''
-                WHEN array_length(ws,1) <= 3 THEN ws[2]
-                ELSE ws[3]
+                WHEN array_length(ws,1) <= 3 THEN initcap(ws[2])
+                ELSE initcap(ws[3])
               END,
               segundo_apellido = CASE
-                WHEN array_length(ws,1) = 3  THEN ws[3]
-                WHEN array_length(ws,1) >= 4 THEN array_to_string(ws[4:array_length(ws,1)], ' ')
+                WHEN array_length(ws,1) = 3  THEN initcap(ws[3])
+                WHEN array_length(ws,1) >= 4 THEN initcap(array_to_string(ws[4:array_length(ws,1)], ' '))
                 ELSE NULL
               END
             FROM parts p WHERE b.id = p.id
             """, "beneficiarios.split_nombre_unico");
+        await MigrarUnaVez("""
+            UPDATE beneficiarios SET
+              primer_nombre    = initcap(primer_nombre),
+              segundo_nombre   = initcap(segundo_nombre),
+              primer_apellido  = initcap(primer_apellido),
+              segundo_apellido = initcap(segundo_apellido)
+            WHERE primer_nombre IS NOT NULL
+              AND (primer_nombre  ~ '[A-ZÁÉÍÓÚÑ]{2,}'
+                OR primer_apellido ~ '[A-ZÁÉÍÓÚÑ]{2,}')
+            """, "beneficiarios.capitalizar_nombres");
     }
 }

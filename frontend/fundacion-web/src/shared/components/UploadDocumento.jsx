@@ -1,4 +1,4 @@
-﻿// Sube el documento de identidad del beneficiario.
+// Sube el documento de identidad del beneficiario.
 // Tres modos: ver PDF guardado, subir PDF directo, o fotografiar frente+reverso (genera PDF con jsPDF).
 // Props: value (URL guardada), onChange(url), beneficiarioId (para log de descarga).
 import { useRef, useState, useEffect, useCallback } from 'react';
@@ -38,6 +38,61 @@ async function crearPdf(frenteDataUrl, reversoDataUrl) {
   doc.text('Reverso del documento', m, H / 2 + m * 0.5);
   doc.addImage(reversoDataUrl, 'JPEG', m, H / 2 + m * 0.5 + 4, imgW, imgH);
   return doc.output('blob');
+}
+
+// Definido FUERA de UploadDocumento para que React no lo desmonte/remonte en cada render del padre.
+function LadoBox({ lado, label, inputRef, estado, menuEl, setMenuEl, onEliminar, onFoto, onCaptura, camara, setCamara }) {
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
+        {label}
+      </Typography>
+      {estado.preview ? (
+        <Box sx={{ position: 'relative', display: 'inline-block' }}>
+          <Box
+            component="img" src={estado.preview} alt={label}
+            onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
+            sx={{ width: 110, height: 82, objectFit: 'cover', borderRadius: 2, border: '2px solid #e0e0e0', display: 'block', cursor: 'pointer' }}
+          />
+          <Tooltip title="Eliminar">
+            <IconButton size="small" onClick={onEliminar}
+              sx={{ position: 'absolute', top: -8, right: -8, bgcolor: '#d32f2f', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: '#b71c1c' } }}>
+              <DeleteIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          </Tooltip>
+          <Box component="button" type="button"
+            onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
+            sx={{ mt: 0.5, display: 'block', width: '100%', fontSize: 11, color: 'var(--color-primario)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0 }}>
+            Cambiar
+          </Box>
+        </Box>
+      ) : (
+        <Box component="button" type="button"
+          onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
+          sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 110, height: 82, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' }, gap: 0.5, p: 0 }}>
+          <CameraAltIcon sx={{ color: '#bdbdbd', fontSize: 26 }} />
+          <Typography variant="caption" color="text.disabled" fontSize={10}>{label}</Typography>
+        </Box>
+      )}
+      <Menu anchorEl={menuEl[lado]} open={Boolean(menuEl[lado])} onClose={() => setMenuEl(prev => ({ ...prev, [lado]: null }))}
+        slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 160 } } }}>
+        <MenuItem onClick={() => { setMenuEl(prev => ({ ...prev, [lado]: null })); inputRef.current?.click(); }}>
+          <ListItemIcon><PhotoLibraryIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Galería</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { setMenuEl(prev => ({ ...prev, [lado]: null })); setCamara(prev => ({ ...prev, [lado]: true })); }}>
+          <ListItemIcon><CameraAltIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Cámara</ListItemText>
+        </MenuItem>
+      </Menu>
+      <input ref={inputRef} type="file" accept={ACCEPT_IMG} style={{ display: 'none' }} onChange={onFoto} />
+      <CamaraFoto
+        open={camara[lado]}
+        onCerrar={() => setCamara(prev => ({ ...prev, [lado]: false }))}
+        onCaptura={onCaptura}
+      />
+    </Box>
+  );
 }
 
 export default function UploadDocumento({ value, onChange, beneficiarioId }) {
@@ -170,57 +225,6 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
     setErrorMsg(''); setPdfListo(false);
   }, []);
 
-  const LadoBox = ({ lado, label, inputRef }) => {
-    const estado = lado === 'frente' ? frente : reverso;
-    return (
-      <Box>
-        <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
-          {label}
-        </Typography>
-        {estado.preview ? (
-          <Box sx={{ position: 'relative', display: 'inline-block' }}>
-            <Box
-              component="img" src={estado.preview} alt={label}
-              onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
-              sx={{ width: 110, height: 82, objectFit: 'cover', borderRadius: 2, border: '2px solid #e0e0e0', display: 'block', cursor: 'pointer' }}
-            />
-            <Tooltip title="Eliminar">
-              <IconButton size="small" onClick={eliminarLado(lado)}
-                sx={{ position: 'absolute', top: -8, right: -8, bgcolor: '#d32f2f', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: '#b71c1c' } }}>
-                <DeleteIcon sx={{ fontSize: 14 }} />
-              </IconButton>
-            </Tooltip>
-            <Box component="button" type="button"
-              onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
-              sx={{ mt: 0.5, display: 'block', width: '100%', fontSize: 11, color: 'var(--color-primario)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0 }}>
-              Cambiar
-            </Box>
-          </Box>
-        ) : (
-          <Box component="button" type="button"
-            onClick={(e) => setMenuEl(prev => ({ ...prev, [lado]: e.currentTarget }))}
-            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 110, height: 82, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' }, gap: 0.5, p: 0 }}>
-            <CameraAltIcon sx={{ color: '#bdbdbd', fontSize: 26 }} />
-            <Typography variant="caption" color="text.disabled" fontSize={10}>{label}</Typography>
-          </Box>
-        )}
-        <Menu anchorEl={menuEl[lado]} open={Boolean(menuEl[lado])} onClose={() => setMenuEl(prev => ({ ...prev, [lado]: null }))}
-          slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 160 } } }}>
-          <MenuItem onClick={() => { setMenuEl(prev => ({ ...prev, [lado]: null })); inputRef.current?.click(); }}>
-            <ListItemIcon><PhotoLibraryIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>Galería</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => { setMenuEl(prev => ({ ...prev, [lado]: null })); setCamara(prev => ({ ...prev, [lado]: true })); }}>
-            <ListItemIcon><CameraAltIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>Cámara</ListItemText>
-          </MenuItem>
-        </Menu>
-        <input ref={inputRef} type="file" accept={ACCEPT_IMG} style={{ display: 'none' }} onChange={handleInputFoto(lado)} />
-        <CamaraFoto open={camara[lado]} onCerrar={() => setCamara(prev => ({ ...prev, [lado]: false }))} onCaptura={handleCamara(lado)} />
-      </Box>
-    );
-  };
-
   return (
     <Box>
       <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={1}>
@@ -306,8 +310,22 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
       {modo === 'fotografiar' && (
         <Box>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 1 }}>
-            <LadoBox lado="frente"  label="Frente"  inputRef={inputFrenteRef} />
-            <LadoBox lado="reverso" label="Reverso" inputRef={inputReversoRef} />
+            <LadoBox
+              lado="frente" label="Frente" inputRef={inputFrenteRef}
+              estado={frente} menuEl={menuEl} setMenuEl={setMenuEl}
+              onEliminar={eliminarLado('frente')}
+              onFoto={handleInputFoto('frente')}
+              onCaptura={handleCamara('frente')}
+              camara={camara} setCamara={setCamara}
+            />
+            <LadoBox
+              lado="reverso" label="Reverso" inputRef={inputReversoRef}
+              estado={reverso} menuEl={menuEl} setMenuEl={setMenuEl}
+              onEliminar={eliminarLado('reverso')}
+              onFoto={handleInputFoto('reverso')}
+              onCaptura={handleCamara('reverso')}
+              camara={camara} setCamara={setCamara}
+            />
           </Box>
           {generando && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>

@@ -15,6 +15,15 @@ import {
   agruparPorSeccion, calcEdad, parseMeta,
 } from './campos';
 
+function panelTutorCompleto(d, tipo) {
+  const t = s => !!(s?.trim());
+  const base = t(d.nombres) && t(d.apellidos) && t(d.fechaNac) && t(d.pais) &&
+               t(d.ciudad) && t(d.tipoDoc) && t(d.numDoc) && t(d.celular) &&
+               t(d.direccion) && t(d.barrio) && t(d.eps) &&
+               t(d.escolaridad) && t(d.ocupacion) && t(d.empresa) && t(d.autoidentificacion);
+  return tipo === 'datos_tutor' ? base && t(d.relacion) : base;
+}
+
 export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [paso,           setPaso]           = useState(0);
   const [beneficiarios,  setBeneficiarios]  = useState([]);
@@ -117,11 +126,8 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         if (c.tipo === 'grado_escolar') {
           try { const ge = JSON.parse(v); return !!ge.grado; } catch { return false; }
         }
-        if (c.tipo === 'datos_padre' || c.tipo === 'datos_madre') {
-          try { const d = JSON.parse(v); return !!(d.nombres?.trim() && d.apellidos?.trim() && d.numDoc?.trim() && d.celular?.trim()); } catch { return false; }
-        }
-        if (c.tipo === 'datos_tutor') {
-          try { const d = JSON.parse(v); return !!(d.relacion && d.nombres?.trim() && d.apellidos?.trim() && d.numDoc?.trim() && d.celular?.trim()); } catch { return false; }
+        if (c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor') {
+          try { const d = JSON.parse(v); return panelTutorCompleto(d, c.tipo); } catch { return false; }
         }
         return true;
       });
@@ -132,11 +138,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
       if (panelesTutor.length > 0) {
         const algunoCompleto = panelesTutor.some(c => {
           if (panelActivo[c.id] === false) return false;
-          try {
-            const d = JSON.parse(datos[c.id] ?? '{}');
-            const base = !!(d.nombres?.trim() && d.apellidos?.trim() && d.numDoc?.trim() && d.celular?.trim());
-            return c.tipo === 'datos_tutor' ? base && !!d.relacion : base;
-          } catch { return false; }
+          try { return panelTutorCompleto(JSON.parse(datos[c.id] ?? '{}'), c.tipo); } catch { return false; }
         });
         if (!algunoCompleto) return false;
       }

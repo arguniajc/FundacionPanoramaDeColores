@@ -554,7 +554,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
             <Grid container spacing={2}>
               {esTutor && (
                 <Grid size={12}>
-                  <FormControl fullWidth size="small" required={campo.obligatorio}>
+                  <FormControl fullWidth size="small" required>
                     <InputLabel>Relación / Parentesco *</InputLabel>
                     <Select label="Relación / Parentesco *" value={d.relacion ?? ''}
                       onChange={e => setD('relacion', e.target.value)}>
@@ -564,15 +564,15 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
                 </Grid>
               )}
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth size="small" label="Nombres"
+                <TextField fullWidth size="small" label="Nombres *" required
                   value={d.nombres ?? ''} onChange={e => setD('nombres', e.target.value)} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth size="small" label="Apellidos"
+                <TextField fullWidth size="small" label="Apellidos *" required
                   value={d.apellidos ?? ''} onChange={e => setD('apellidos', e.target.value)} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth size="small" label="Fecha de nacimiento" type="date"
+                <TextField fullWidth size="small" label="Fecha de nacimiento *" required type="date"
                   value={d.fechaNac ?? ''} onChange={e => setD('fechaNac', e.target.value)}
                   slotProps={{ inputLabel: { shrink: true } }} />
               </Grid>
@@ -580,26 +580,26 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
                 <Autocomplete freeSolo options={PAISES} value={d.pais ?? ''}
                   onInputChange={(_, v) => { setD('pais', v); setD('departamento', ''); setD('ciudad', ''); }}
                   onChange={(_, v) => { setD('pais', v ?? ''); setD('departamento', ''); setD('ciudad', ''); }}
-                  renderInput={p => <TextField {...p} size="small" label="País" fullWidth />} />
+                  renderInput={p => <TextField {...p} size="small" label="País *" fullWidth required />} />
               </Grid>
               {estadosPanel.length > 0 && (
                 <Grid size={{ xs: 12, sm: 4 }}>
                   <Autocomplete freeSolo options={estadosPanel} value={d.departamento ?? ''}
                     onInputChange={(_, v) => { setD('departamento', v); setD('ciudad', ''); }}
                     onChange={(_, v) => { setD('departamento', v ?? ''); setD('ciudad', ''); }}
-                    renderInput={p => <TextField {...p} size="small" label="Departamento / Estado" fullWidth />} />
+                    renderInput={p => <TextField {...p} size="small" label="Departamento / Estado *" fullWidth required />} />
                 </Grid>
               )}
               <Grid size={{ xs: 12, sm: estadosPanel.length > 0 ? 4 : 8 }}>
                 <Autocomplete freeSolo options={ciudadesPanel} value={d.ciudad ?? ''}
                   onInputChange={(_, v) => setD('ciudad', v)}
                   onChange={(_, v) => setD('ciudad', v ?? '')}
-                  renderInput={p => <TextField {...p} size="small" label="Ciudad" fullWidth />} />
+                  renderInput={p => <TextField {...p} size="small" label="Ciudad *" fullWidth required />} />
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Tipo de doc.</InputLabel>
-                  <Select label="Tipo de doc." value={d.tipoDoc ?? ''} onChange={e => setD('tipoDoc', e.target.value)}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>Tipo de doc. *</InputLabel>
+                  <Select label="Tipo de doc. *" value={d.tipoDoc ?? ''} onChange={e => setD('tipoDoc', e.target.value)}>
                     {TIPOS_DOCUMENTO.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                   </Select>
                 </FormControl>
@@ -611,15 +611,15 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
                   slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
               </Grid>
               <Grid size={{ xs: 12, sm: 8 }}>
-                <TextField fullWidth size="small" label="Dirección"
+                <TextField fullWidth size="small" label="Dirección *" required
                   value={d.direccion ?? ''} onChange={e => setD('direccion', e.target.value)} />
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
-                <TextField fullWidth size="small" label="Barrio"
+                <TextField fullWidth size="small" label="Barrio *" required
                   value={d.barrio ?? ''} onChange={e => setD('barrio', e.target.value)} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth size="small" label="EPS / Aseguradora"
+                <TextField fullWidth size="small" label="EPS / Aseguradora *" required
                   value={d.eps ?? ''} onChange={e => setD('eps', e.target.value)} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -629,25 +629,25 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
                   slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Nivel de escolaridad</InputLabel>
-                  <Select label="Nivel de escolaridad" value={d.escolaridad ?? ''} onChange={e => setD('escolaridad', e.target.value)}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>Nivel de escolaridad *</InputLabel>
+                  <Select label="Nivel de escolaridad *" value={d.escolaridad ?? ''} onChange={e => setD('escolaridad', e.target.value)}>
                     {NIVELES_EDUCATIVOS.map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
                   </Select>
                 </FormControl>
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth size="small" label="Ocupación"
+                <TextField fullWidth size="small" label="Ocupación *" required
                   value={d.ocupacion ?? ''} onChange={e => setD('ocupacion', e.target.value)} />
               </Grid>
               <Grid size={12}>
-                <TextField fullWidth size="small" label="Empresa / Lugar de trabajo"
+                <TextField fullWidth size="small" label="Empresa / Lugar de trabajo *" required
                   value={d.empresa ?? ''} onChange={e => setD('empresa', e.target.value)} />
               </Grid>
               <Grid size={12}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Autoidentificación étnica</InputLabel>
-                  <Select label="Autoidentificación étnica" value={d.autoidentificacion ?? ''}
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>Autoidentificación étnica *</InputLabel>
+                  <Select label="Autoidentificación étnica *" value={d.autoidentificacion ?? ''}
                     onChange={e => setD('autoidentificacion', e.target.value)}>
                     {AUTOIDENTIFICACION.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
                   </Select>

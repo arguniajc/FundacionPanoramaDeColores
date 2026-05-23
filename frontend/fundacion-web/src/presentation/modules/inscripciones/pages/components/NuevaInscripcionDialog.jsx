@@ -89,26 +89,35 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     }).catch(() => {}).finally(() => setCargandoCampos(false));
   }, [selPrograma, selBenef]);
 
-  // Auto-habilita tutor cuando todos los padres/madres activos son menores de edad.
+  // Tutor visible solo cuando todos los padres/madres activos son menores de edad,
+  // o cuando todos están desactivados. Se oculta si hay al menos uno mayor de 18.
   useEffect(() => {
     if (campos.length === 0) return;
     const padreMadre = campos.filter(c => c.tipo === 'datos_padre' || c.tipo === 'datos_madre');
     const tutores    = campos.filter(c => c.tipo === 'datos_tutor');
     if (tutores.length === 0 || padreMadre.length === 0) return;
+
     const activosPM = padreMadre.filter(c => panelActivo[c.id] !== false);
-    if (activosPM.length === 0) return;
-    const hayAdultoActivo = activosPM.some(c => {
-      try { const pd = JSON.parse(datos[c.id] ?? '{}'); const e = calcEdad(pd.fechaNac); return e !== null && e >= 18; }
-      catch { return false; }
-    });
-    if (!hayAdultoActivo) {
-      setPanelActivo(prev => {
-        const next = { ...prev };
-        let changed = false;
-        tutores.forEach(t => { if (!next[t.id]) { next[t.id] = true; changed = true; } });
-        return changed ? next : prev;
+    let mostrarTutor;
+    if (activosPM.length === 0) {
+      mostrarTutor = true;
+    } else {
+      const hayAdultoActivo = activosPM.some(c => {
+        try { const pd = JSON.parse(datos[c.id] ?? '{}'); const e = calcEdad(pd.fechaNac); return e !== null && e >= 18; }
+        catch { return false; }
       });
+      mostrarTutor = !hayAdultoActivo;
     }
+
+    setPanelActivo(prev => {
+      let changed = false;
+      const next = { ...prev };
+      tutores.forEach(t => {
+        const estaActivo = next[t.id] !== false;
+        if (estaActivo !== mostrarTutor) { next[t.id] = mostrarTutor; changed = true; }
+      });
+      return changed ? next : prev;
+    });
   }, [datos, campos, panelActivo]);
 
   const handleTogglePanel = (campo) => {

@@ -372,6 +372,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
                   setV('eps', cap);
                 }
               }}
+              slotProps={{ popper: { placement: 'bottom-start', modifiers: [{ name: 'flip', enabled: false }] } }}
               renderInput={params => (
                 <TextField {...params} fullWidth label="EPS" size="small"
                   helperText={nr('eps')}

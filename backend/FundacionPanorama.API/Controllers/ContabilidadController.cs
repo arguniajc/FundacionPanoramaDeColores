@@ -196,104 +196,142 @@ public class ContabilidadController(
         CancellationToken ct = default)
         => Ok(await svc.LibroMayorAsync(anio ?? DateTime.UtcNow.Year, mes, codigoPuc, ct));
 
-    // ── OCR: Extraer datos de factura con Gemini Vision ────────────────────────
+    // ── OCR: Extraer datos de factura con OCR.space (gratis, sin restricción regional) ──
 
     [HttpPost("extraer-factura")]
     [RequierePermiso("contabilidad", "crear")]
-    [RequestTimeout(90_000)]   // 90 s — Gemini puede tardar en imágenes grandes
+    [RequestTimeout(60_000)]
     public async Task<IActionResult> ExtraerFactura(
         [FromBody] ExtraerFacturaRequestDto dto,
         CancellationToken ct)
     {
-        var apiKey = configuration["Gemini:ApiKey"];
-        if (string.IsNullOrWhiteSpace(apiKey))
-            return BadRequest(new { error = "OCR no configurado. Agrega la clave Gemini:ApiKey en la configuración del servidor." });
-
-        const string prompt = """
-            Analiza esta imagen de una factura o recibo colombiano y extrae los datos en formato JSON.
-            Devuelve ÚNICAMENTE el JSON con esta estructura exacta, sin texto adicional:
-            {
-              "fecha": "YYYY-MM-DD o null si no se ve claramente",
-              "monto": número sin puntos ni comas (ej: 150000) o null,
-              "concepto": "descripción del producto o servicio comprado",
-              "nit_proveedor": "solo los dígitos del NIT sin guiones ni dígito de verificación, o null",
-              "nombre_proveedor": "nombre o razón social del emisor de la factura",
-              "numero_factura": "número de la factura tal como aparece",
-              "tipo_soporte": "factura" o "recibo" o "tiquete" según corresponda,
-              "advertencia": "nota si la imagen es borrosa o falta información importante, sino null"
-            }
-            Si no puedes leer un campo, usa null. El monto debe ser el TOTAL a pagar.
-            """;
-
-        var requestBody = new
-        {
-            contents = new[]
-            {
-                new
-                {
-                    parts = new object[]
-                    {
-                        new { inline_data = new { mime_type = dto.MimeType, data = dto.ImagenBase64 } },
-                        new { text = prompt }
-                    }
-                }
-            },
-            generationConfig = new { responseMimeType = "application/json" }
-        };
-
         try
         {
-            var client = httpFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(85);
-            var modelName = configuration["Gemini:Model"] ?? "gemini-1.5-flash";
-            var url    = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={apiKey}";
-            var body   = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+            var ocrApiKey = configuration["OcrSpace:ApiKey"] ?? "helloworld";
+            var client    = httpFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(55);
+            client.DefaultRequestHeaders.Add("apikey", ocrApiKey);
 
-            // CancellationToken propio de 80 s para no depender del timeout de la petición HTTP
+            using var form = new MultipartFormDataContent();
+            form.Add(new StringContent($"data:{dto.MimeType};base64,{dto.ImagenBase64}"), "base64Image");
+            form.Add(new StringContent("spa"),   "language");
+            form.Add(new StringContent("false"), "isOverlayRequired");
+            form.Add(new StringContent("true"),  "scale");
+            form.Add(new StringContent("2"),     "OCREngine");
+
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(80));
+            cts.CancelAfter(TimeSpan.FromSeconds(50));
 
-            var response = await client.PostAsync(url, body, cts.Token);
-            var rawJson  = await response.Content.ReadAsStringAsync(cts.Token);
+            var ocrResp = await client.PostAsync("https://api.ocr.space/parse/image", form, cts.Token);
+            var ocrJson = await ocrResp.Content.ReadAsStringAsync(cts.Token);
 
-            if (!response.IsSuccessStatusCode)
-                return BadRequest(new { error = $"Error Gemini API: {response.StatusCode}", detalle = rawJson });
+            if (!ocrResp.IsSuccessStatusCode)
+                return BadRequest(new { error = "Error en servicio OCR", detalle = ocrJson });
 
-            using var doc  = JsonDocument.Parse(rawJson);
-            var textPart   = doc.RootElement
-                .GetProperty("candidates")[0]
-                .GetProperty("content")
-                .GetProperty("parts")[0]
-                .GetProperty("text")
-                .GetString() ?? "{}";
+            using var doc = JsonDocument.Parse(ocrJson);
+            var root      = doc.RootElement;
 
-            using var extracted = JsonDocument.Parse(textPart);
-            var root = extracted.RootElement;
+            if (root.TryGetProperty("IsErroredOnProcessing", out var errored) && errored.GetBoolean())
+            {
+                var msg = root.TryGetProperty("ErrorMessage", out var em) ? em.GetString() : "Error OCR";
+                return BadRequest(new { error = "No se pudo procesar la imagen", detalle = msg });
+            }
 
-            decimal? monto = null;
-            if (root.TryGetProperty("monto", out var montoEl) && montoEl.ValueKind == JsonValueKind.Number)
-                monto = montoEl.GetDecimal();
+            var parsedText = root
+                .GetProperty("ParsedResults")[0]
+                .GetProperty("ParsedText")
+                .GetString() ?? "";
 
-            string? fecha = null;
-            if (root.TryGetProperty("fecha", out var fechaEl) && fechaEl.ValueKind == JsonValueKind.String)
-                fecha = fechaEl.GetString();
+            if (string.IsNullOrWhiteSpace(parsedText))
+                return Ok(new FacturaExtraidaDto(
+                    Fecha: null, Monto: null, Concepto: null,
+                    NitProveedor: null, NombreProveedor: null,
+                    NumeroFactura: null, TipoSoporte: null,
+                    Advertencia: "No se extrajo texto. Toma la foto con mejor luz y enfoque."));
 
-            var result = new FacturaExtraidaDto(
-                Fecha:          fecha,
-                Monto:          monto,
-                Concepto:       root.TryGetProperty("concepto",         out var c)  && c.ValueKind  == JsonValueKind.String ? c.GetString()  : null,
-                NitProveedor:   root.TryGetProperty("nit_proveedor",    out var n)  && n.ValueKind  == JsonValueKind.String ? n.GetString()  : null,
-                NombreProveedor:root.TryGetProperty("nombre_proveedor", out var np) && np.ValueKind == JsonValueKind.String ? np.GetString() : null,
-                NumeroFactura:  root.TryGetProperty("numero_factura",   out var nf) && nf.ValueKind == JsonValueKind.String ? nf.GetString() : null,
-                TipoSoporte:    root.TryGetProperty("tipo_soporte",     out var ts) && ts.ValueKind == JsonValueKind.String ? ts.GetString() : null,
-                Advertencia:    root.TryGetProperty("advertencia",      out var a)  && a.ValueKind  == JsonValueKind.String ? a.GetString()  : null
-            );
-
-            return Ok(result);
+            return Ok(ParseTextoFactura(parsedText));
         }
         catch (Exception ex)
         {
             return StatusCode(500, new { error = "Error procesando la imagen.", detalle = ex.Message });
         }
+    }
+
+    private static FacturaExtraidaDto ParseTextoFactura(string texto)
+    {
+        var upper = texto.ToUpperInvariant();
+        var lines = texto.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        // ── Monto ─────────────────────────────────────────────────────────────
+        decimal? monto = null;
+        foreach (var pattern in new[]
+        {
+            @"(?:TOTAL\s*A\s*PAGAR|GRAN\s*TOTAL|NETO\s*A\s*PAGAR|TOTAL)[^\d$]*\$?\s*([\d.,]+)",
+            @"(?:VALOR\s*TOTAL|VALOR)[^\d$]*\$?\s*([\d.,]+)",
+            @"\$\s*([\d.,]{4,})",
+        })
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(upper, pattern);
+            if (!m.Success) continue;
+            var numStr = System.Text.RegularExpressions.Regex.Replace(m.Groups[1].Value, @"[^\d]", "");
+            if (decimal.TryParse(numStr, out var val) && val > 0) { monto = val; break; }
+        }
+
+        // ── Fecha ─────────────────────────────────────────────────────────────
+        string? fecha = null;
+        var mFecha = System.Text.RegularExpressions.Regex.Match(texto, @"\b(\d{4})[/\-](\d{1,2})[/\-](\d{1,2})\b");
+        if (mFecha.Success)
+            fecha = $"{mFecha.Groups[1].Value}-{int.Parse(mFecha.Groups[2].Value):D2}-{int.Parse(mFecha.Groups[3].Value):D2}";
+        else
+        {
+            var mFecha2 = System.Text.RegularExpressions.Regex.Match(texto, @"\b(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})\b");
+            if (mFecha2.Success && int.Parse(mFecha2.Groups[2].Value) <= 12)
+                fecha = $"{mFecha2.Groups[3].Value}-{int.Parse(mFecha2.Groups[2].Value):D2}-{int.Parse(mFecha2.Groups[1].Value):D2}";
+        }
+
+        // ── NIT ───────────────────────────────────────────────────────────────
+        string? nit = null;
+        var mNit = System.Text.RegularExpressions.Regex.Match(upper, @"N\.?I\.?T\.?\s*[:#.\s]*?([\d]{6,12})");
+        if (mNit.Success) nit = mNit.Groups[1].Value;
+
+        // ── Número factura ────────────────────────────────────────────────────
+        string? numeroFactura = null;
+        var mFact = System.Text.RegularExpressions.Regex.Match(upper,
+            @"(?:FACTURA(?:\s*ELECTR[ÓO]NICA)?|TIQUETE|RECIBO(?:\s*DE\s*CAJA)?|FACT\.?)\s*(?:N[°o]?\.?|#)?\s*([A-Z0-9\-]{2,20})");
+        if (mFact.Success) numeroFactura = mFact.Groups[1].Value.Trim();
+
+        // ── Tipo soporte ──────────────────────────────────────────────────────
+        var tipoSoporte = upper.Contains("FACTURA") ? "Factura electrónica"
+                        : upper.Contains("TIQUETE") ? "Recibo de caja"
+                        : "Recibo de caja";
+
+        // ── Nombre proveedor (primeras líneas) ────────────────────────────────
+        var nombreProveedor = lines
+            .Take(6)
+            .FirstOrDefault(l => l.Length > 4
+                && !System.Text.RegularExpressions.Regex.IsMatch(l, @"^\d[\d\s\-\.]*$")
+                && !l.ToUpper().Contains("NIT") && !l.ToUpper().Contains("TEL"));
+
+        // ── Concepto ──────────────────────────────────────────────────────────
+        string? concepto = null;
+        foreach (var line in lines.Skip(3).Take(15))
+        {
+            if (line.Length < 5) continue;
+            var lu = line.ToUpper();
+            if (System.Text.RegularExpressions.Regex.IsMatch(lu, @"^(TOTAL|SUBTOTAL|NIT|TEL|FAX|FECHA|DIR|WEB|GRACIAS|COPIA|RUT|IVA)")) continue;
+            if (System.Text.RegularExpressions.Regex.IsMatch(line, @"^\d{4}")) continue;
+            concepto = line; break;
+        }
+
+        return new FacturaExtraidaDto(
+            Fecha:           fecha,
+            Monto:           monto,
+            Concepto:        concepto,
+            NitProveedor:    nit,
+            NombreProveedor: nombreProveedor,
+            NumeroFactura:   numeroFactura,
+            TipoSoporte:     tipoSoporte,
+            Advertencia:     monto == null && fecha == null
+                ? "Datos incompletos. Revisa y corrige manualmente." : null);
     }
 }

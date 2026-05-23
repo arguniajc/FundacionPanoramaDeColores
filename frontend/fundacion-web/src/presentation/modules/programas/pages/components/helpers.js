@@ -47,7 +47,7 @@ export const TIPOS_CAMPO = [
   { value: 'valoracion', label: 'Valoración del 1 al 5' },
 
   { _h: true, label: 'Paneles de información (sub-sección)' },
-  { value: 'datos_padre', label: 'Información del padre o acudiente' },
+  { value: 'datos_padre', label: 'Información del padre' },
   { value: 'datos_madre', label: 'Información de la madre' },
   { value: 'datos_tutor', label: 'Información del tutor legal (abuelo, tío, hermano…)' },
 ];

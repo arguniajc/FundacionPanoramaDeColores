@@ -91,7 +91,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
   };
 
   const PANELES_RESPONSABLES = [
-    { tipo: 'datos_padre', etiqueta: 'Información del padre o acudiente' },
+    { tipo: 'datos_padre', etiqueta: 'Información del padre' },
     { tipo: 'datos_madre', etiqueta: 'Información de la madre' },
     { tipo: 'datos_tutor', etiqueta: 'Información del tutor legal (abuelo, tío, hermano…)' },
   ];

@@ -391,7 +391,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
               slotProps={{ htmlInput: { min: 1, max: 20 } }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="N.º de hermanos" size="small" type="number"
+            <TextField fullWidth label={esNino ? 'N.º de hermanos' : 'N.º de hijos'} size="small" type="number"
               value={form.numHermanos} onChange={set('numHermanos')}
               slotProps={{ htmlInput: { min: 0, max: 20 } }} />
           </Grid>

@@ -1031,6 +1031,9 @@ public static class DbMigrations
         await Migrar("ALTER TABLE movimientos_contables ADD COLUMN IF NOT EXISTS anulado BOOLEAN NOT NULL DEFAULT false", "movimientos_contables.anulado");
         await Migrar("CREATE INDEX IF NOT EXISTS idx_mov_cont_anulado ON movimientos_contables(anulado) WHERE anulado = true", "movimientos_contables.idx_anulado");
 
+        // ── Beneficiarios: campo tipo (niño/adulto) ───────────────────────────
+        await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) NOT NULL DEFAULT 'niño'", "beneficiarios.tipo");
+
         // ── Beneficiarios: split nombre → 4 campos separados ─────────────────
         await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS primer_nombre    VARCHAR(80)", "beneficiarios.primer_nombre");
         await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS segundo_nombre   VARCHAR(80)", "beneficiarios.segundo_nombre");

@@ -56,6 +56,8 @@ public class BeneficiarioDto
     public DateTime  CreatedAt               { get; set; }
     public bool      Activo             { get; set; }
     public string?   MotivoBaja         { get; set; }
+    // ── Tipo ──────────────────────────────────────────────────────────────────
+    public string    Tipo               { get; set; } = "niño"; // "niño" | "adulto"
 }
 
 public class CrearBeneficiarioDto
@@ -96,9 +98,12 @@ public class CrearBeneficiarioDto
     public bool      TieneDiscapacidad  { get; set; }
     [StringLength(500)]
     public string?   DescripcionDiscapacidad { get; set; }
+    // ── Tipo ──────────────────────────────────────────────────────────────────
+    [StringLength(20)]
+    public string    Tipo               { get; set; } = "niño"; // "niño" | "adulto"
     // ── Acudiente ─────────────────────────────────────────────────────────────
-    [Required][StringLength(200)]
-    public string    NombreAcudiente    { get; set; } = string.Empty;
+    [StringLength(200)]
+    public string?   NombreAcudiente    { get; set; }
     [StringLength(50)]
     public string?   Parentesco         { get; set; }
     [Phone][StringLength(30)]

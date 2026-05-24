@@ -535,14 +535,14 @@ public class BeneficiariosController : ControllerBase
               pais_nacimiento, departamento_nacimiento, ciudad_nacimiento, barrio,
               num_personas_vive, num_hermanos, nombre_colegio, grado_escolar,
               tiene_discapacidad, descripcion_discapacidad, vive_con_nino,
-              genero, autorizacion, activo
+              genero, autorizacion, tipo, activo
             ) VALUES (
               @pn, @sn, @pa, @sa,
               @fn, @tdoc, @ndoc,
               @pais, @depto, @ciudad, @barrio,
               @npv, @nh, @col, @grado,
               @disc, @disc_desc, @vive,
-              @genero, @auth, true
+              @genero, @auth, @tipo, true
             ) RETURNING id
             """;
         ins.Parameters.AddWithValue("pn", dto.PrimerNombre.Trim());
@@ -565,6 +565,7 @@ public class BeneficiariosController : ControllerBase
         ins.Parameters.Add(new NpgsqlParameter("vive", NpgsqlDbType.Boolean) { Value = (object?)dto.ViveConNino ?? DBNull.Value });
         ins.Parameters.AddWithValue("genero",string.IsNullOrWhiteSpace(dto.Genero) ? DBNull.Value : (object)dto.Genero.Trim());
         ins.Parameters.AddWithValue("auth",  dto.Autorizacion);
+        ins.Parameters.AddWithValue("tipo",  string.IsNullOrWhiteSpace(dto.Tipo) ? "niño" : dto.Tipo.Trim());
 
         var newId = (Guid)(await ins.ExecuteScalarAsync())!;
 
@@ -639,7 +640,8 @@ public class BeneficiariosController : ControllerBase
               descripcion_discapacidad= @disc_desc,
               vive_con_nino           = @vive,
               genero                  = @genero,
-              autorizacion            = @auth
+              autorizacion            = @auth,
+              tipo                    = @tipo
             WHERE id = @id
             """;
         upd.Parameters.AddWithValue("pn", dto.PrimerNombre.Trim());
@@ -662,6 +664,7 @@ public class BeneficiariosController : ControllerBase
         upd.Parameters.Add(new NpgsqlParameter("vive", NpgsqlDbType.Boolean) { Value = (object?)dto.ViveConNino ?? DBNull.Value });
         upd.Parameters.AddWithValue("genero",string.IsNullOrWhiteSpace(dto.Genero) ? DBNull.Value : (object)dto.Genero.Trim());
         upd.Parameters.AddWithValue("auth",  dto.Autorizacion);
+        upd.Parameters.AddWithValue("tipo",  string.IsNullOrWhiteSpace(dto.Tipo) ? "niño" : dto.Tipo.Trim());
         upd.Parameters.AddWithValue("id",    id);
         await upd.ExecuteNonQueryAsync();
 
@@ -1376,7 +1379,8 @@ public class BeneficiariosController : ControllerBase
               af1.url                              AS foto_menor,
               af2.url                              AS foto_doc,
               af3.url                              AS foto_doc_rev,
-              b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido
+              b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido,
+              b.tipo
             FROM beneficiarios b
             LEFT JOIN cat_tipos_documento ctd ON ctd.id = b.tipo_documento_id
             LEFT JOIN beneficiario_salud bs ON bs.beneficiario_id = b.id
@@ -1471,6 +1475,7 @@ public class BeneficiariosController : ControllerBase
                 SegundoNombre           = r.IsDBNull(38) ? null : r.GetString(38),
                 PrimerApellido          = r.IsDBNull(39) ? "" : r.GetString(39),
                 SegundoApellido         = r.IsDBNull(40) ? null : r.GetString(40),
+                Tipo                    = r.IsDBNull(41) ? "niño" : r.GetString(41),
             });
         }
         return result;

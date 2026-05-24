@@ -65,6 +65,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
   const nombres = splitearNombre(inscripcion);
 
   const [form, setForm] = useState({
+    tipo:                    inscripcion.tipo || 'niño',
     primerNombre:            nombres.primerNombre,
     segundoNombre:           nombres.segundoNombre,
     primerApellido:          nombres.primerApellido,
@@ -103,6 +104,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
     fotoDocumentoReversoUrl: inscripcion.fotoDocumentoReversoUrl || null,
   });
 
+  const esNino = form.tipo === 'niño';
+
   const [guardando, setGuardando] = useState(false);
   const [error, setError]         = useState('');
 
@@ -131,6 +134,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
     setGuardando(true); setError('');
     try {
       await apiClient.put(`/api/beneficiarios/${inscripcion.id}`, {
+        tipo:                    form.tipo,
         primerNombre:            form.primerNombre.trim(),
         segundoNombre:           form.segundoNombre.trim()   || null,
         primerApellido:          form.primerApellido.trim(),
@@ -159,10 +163,10 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
         descripcionDiscapacidad: form.tieneDiscapacidad ? (form.descripcionDiscapacidad || null) : null,
         nombreColegio:           form.nombreColegio           || null,
         gradoEscolar:            form.gradoEscolar            || null,
-        nombreAcudiente:         form.nombreAcudiente,
-        parentesco:              form.parentesco              || null,
-        whatsapp:                form.whatsapp               || null,
-        viveConNino:             form.viveConNino === 'si' ? true : form.viveConNino === 'no' ? false : null,
+        nombreAcudiente:         esNino ? form.nombreAcudiente : null,
+        parentesco:              esNino ? (form.parentesco || null)  : null,
+        whatsapp:                esNino ? (form.whatsapp   || null)  : null,
+        viveConNino:             esNino ? (form.viveConNino === 'si' ? true : form.viveConNino === 'no' ? false : null) : null,
         autorizacion:            form.autorizacion,
         fotoMenorUrl:            form.fotoMenorUrl            || null,
         fotoDocumentoUrl:        form.fotoDocumentoUrl        || null,
@@ -196,8 +200,32 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
 
         <Grid container spacing={2.5} mt={0}>
 
-          {/* ── Datos del menor ── */}
-          <SeccionTitulo>Datos del menor</SeccionTitulo>
+          {/* ── Tipo de beneficiario ── */}
+          <Grid size={12}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Typography variant="body2" color="text.secondary" fontWeight={600}>Tipo:</Typography>
+              {[
+                { value: 'niño',   label: '👦 Niño / Adolescente  (menor de 18)' },
+                { value: 'adulto', label: '🧑 Adulto  (18 años en adelante)' },
+              ].map(op => (
+                <Box key={op.value} component="button" type="button"
+                  onClick={() => setV('tipo', op.value)}
+                  sx={{
+                    px: 2, py: 0.75, borderRadius: 5, border: '2px solid',
+                    borderColor: form.tipo === op.value ? 'primary.main' : '#ccc',
+                    bgcolor: form.tipo === op.value ? 'primary.main' : 'transparent',
+                    color: form.tipo === op.value ? '#fff' : 'text.secondary',
+                    cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+                    transition: 'all 0.15s',
+                  }}>
+                  {op.label}
+                </Box>
+              ))}
+            </Box>
+          </Grid>
+
+          {/* ── Datos del beneficiario ── */}
+          <SeccionTitulo>{esNino ? 'Datos del menor' : 'Datos del beneficiario'}</SeccionTitulo>
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Primer nombre *" size="small" required
@@ -426,7 +454,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
             />
           </Grid>
 
-          {/* ── Acudiente ── */}
+          {/* ── Acudiente (solo niños) ── */}
+          {esNino && (<>
           <SeccionTitulo>Acudiente</SeccionTitulo>
 
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -455,6 +484,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
               </Select>
             </FormControl>
           </Grid>
+          </>)}
 
           {/* ── Autorización ── */}
           <SeccionTitulo>Autorización</SeccionTitulo>
@@ -468,7 +498,9 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
                   color="primary"
                 />
               }
-              label="Autorizo la inscripción del menor a los programas de la Fundación Panorama de Colores y el uso de sus datos con fines institucionales."
+              label={esNino
+                ? "Autorizo la inscripción del menor a los programas de la Fundación Panorama de Colores y el uso de sus datos con fines institucionales."
+                : "Autorizo mi inscripción a los programas de la Fundación Panorama de Colores y el uso de mis datos con fines institucionales."}
             />
           </Grid>
 
@@ -477,7 +509,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
 
           <Grid size={{ xs: 12, sm: 4 }}>
             <UploadFoto
-              label="Foto del menor"
+              label={esNino ? 'Foto del menor' : 'Foto del beneficiario'}
               carpeta="fotos"
               value={form.fotoMenorUrl}
               onChange={url => setForm(prev => ({ ...prev, fotoMenorUrl: url }))}
@@ -498,7 +530,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
         <Button
           variant="contained"
           onClick={handleGuardar}
-          disabled={guardando || !form.primerNombre || !form.primerApellido || !form.nombreAcudiente}
+          disabled={guardando || !form.primerNombre || !form.primerApellido || (esNino && !form.nombreAcudiente)}
           sx={{ bgcolor: 'var(--color-primario)' }}
         >
           {guardando ? 'Guardando...' : 'Guardar cambios'}

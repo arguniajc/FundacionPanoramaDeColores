@@ -20,7 +20,8 @@ const GRADOS = ['Prejardín','Jardín','Transición','1°','2°','3°','4°','5�
 const GENEROS = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];
 
 const FORM_VACIO = {
-  // Datos del menor
+  tipo: 'niño', // 'niño' | 'adulto'
+  // Datos
   primerNombre: '', segundoNombre: '', primerApellido: '', segundoApellido: '',
   fechaNacimiento: '', tipoDocumento: 'RC', numeroDocumento: '',
   genero: '',
@@ -33,7 +34,7 @@ const FORM_VACIO = {
   tieneDiscapacidad: false, descripcionDiscapacidad: '',
   // Educación
   nombreColegio: '', gradoEscolar: '',
-  // Acudiente
+  // Acudiente (solo niños)
   nombreAcudiente: '', parentesco: 'Madre', whatsapp: '', viveConNino: '',
   // Autorización
   autorizacion: false,
@@ -110,6 +111,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
     setGuardando(true); setError('');
     try {
       await apiClient.post('/api/beneficiarios', {
+        tipo:                    form.tipo,
         primerNombre:            form.primerNombre.trim(),
         segundoNombre:           form.segundoNombre.trim()   || null,
         primerApellido:          form.primerApellido.trim(),
@@ -138,10 +140,10 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
         descripcionDiscapacidad: form.tieneDiscapacidad ? (form.descripcionDiscapacidad.trim() || null) : null,
         nombreColegio:           form.nombreColegio.trim() || null,
         gradoEscolar:            form.gradoEscolar         || null,
-        nombreAcudiente:         form.nombreAcudiente.trim(),
-        parentesco:              form.parentesco            || null,
-        whatsapp:                form.whatsapp.trim()       || null,
-        viveConNino:             form.viveConNino === 'si' ? true : form.viveConNino === 'no' ? false : null,
+        nombreAcudiente:         esNino ? form.nombreAcudiente.trim() : null,
+        parentesco:              esNino ? (form.parentesco || null)   : null,
+        whatsapp:                esNino ? (form.whatsapp.trim() || null) : null,
+        viveConNino:             esNino ? (form.viveConNino === 'si' ? true : form.viveConNino === 'no' ? false : null) : null,
         autorizacion:            form.autorizacion,
         fotoMenorUrl:            form.fotoMenorUrl            || null,
         fotoDocumentoUrl:        form.fotoDocumentoUrl        || null,
@@ -158,11 +160,13 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
     }
   };
 
+  const esNino = form.tipo === 'niño';
+
   const puedeGuardar =
     form.primerNombre.trim() &&
     form.primerApellido.trim() &&
     form.fechaNacimiento &&
-    form.nombreAcudiente.trim() &&
+    (!esNino || form.nombreAcudiente.trim()) &&
     form.autorizacion &&
     !docExiste &&
     !guardando;
@@ -189,8 +193,32 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
 
         <Grid container spacing={2.5}>
 
-          {/* ── Datos del menor ── */}
-          <SeccionTitulo>Datos del menor</SeccionTitulo>
+          {/* ── Tipo de beneficiario ── */}
+          <Grid size={12}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Typography variant="body2" color="text.secondary" fontWeight={600}>Tipo:</Typography>
+              {[
+                { value: 'niño',   label: '👦 Niño / Adolescente  (menor de 18)' },
+                { value: 'adulto', label: '🧑 Adulto  (18 años en adelante)' },
+              ].map(op => (
+                <Box key={op.value} component="button" type="button"
+                  onClick={() => setForm(p => ({ ...p, tipo: op.value }))}
+                  sx={{
+                    px: 2, py: 0.75, borderRadius: 5, border: '2px solid',
+                    borderColor: form.tipo === op.value ? 'primary.main' : '#ccc',
+                    bgcolor: form.tipo === op.value ? 'primary.main' : 'transparent',
+                    color: form.tipo === op.value ? '#fff' : 'text.secondary',
+                    cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+                    transition: 'all 0.15s',
+                  }}>
+                  {op.label}
+                </Box>
+              ))}
+            </Box>
+          </Grid>
+
+          {/* ── Datos del beneficiario ── */}
+          <SeccionTitulo>{esNino ? 'Datos del menor' : 'Datos del beneficiario'}</SeccionTitulo>
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Primer nombre *" size="small" required
@@ -436,7 +464,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
             />
           </Grid>
 
-          {/* ── Acudiente ── */}
+          {/* ── Acudiente (solo niños) ── */}
+          {esNino && (<>
           <SeccionTitulo>Acudiente</SeccionTitulo>
 
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -467,6 +496,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
               </Select>
             </FormControl>
           </Grid>
+          </>)}
 
           {/* ── Autorización ── */}
           <SeccionTitulo>Autorización</SeccionTitulo>
@@ -480,7 +510,9 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
                   color="primary"
                 />
               }
-              label="Autorizo la inscripción del menor a los programas de la Fundación Panorama de Colores y el uso de sus datos con fines institucionales."
+              label={esNino
+                ? "Autorizo la inscripción del menor a los programas de la Fundación Panorama de Colores y el uso de sus datos con fines institucionales."
+                : "Autorizo mi inscripción a los programas de la Fundación Panorama de Colores y el uso de mis datos con fines institucionales."}
             />
           </Grid>
 
@@ -489,7 +521,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
 
           <Grid size={{ xs: 12, sm: 4 }}>
             <UploadFoto
-              label="Foto del menor"
+              label={esNino ? 'Foto del menor' : 'Foto del beneficiario'}
               carpeta="fotos"
               value={form.fotoMenorUrl}
               onChange={url => setForm(prev => ({ ...prev, fotoMenorUrl: url }))}

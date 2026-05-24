@@ -106,7 +106,7 @@ export default function CamaraFoto({ open, onCerrar, onCaptura }) {
             variant="contained"
             onClick={handleCapturar}
             startIcon={<PhotoCameraIcon />}
-            sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, borderRadius: 3, px: 4, fontWeight: 700, fontSize: 15 }}
+            sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, borderRadius: 3, px: 4, fontWeight: 700, fontSize: 15 }}
           >
             Capturar
           </Button>

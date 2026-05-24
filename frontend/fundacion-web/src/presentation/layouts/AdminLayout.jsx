@@ -252,12 +252,14 @@ function SidebarContent({
 export default function AdminLayout({ children }) {
   const { user, logout }         = useAuth();
   const { mode, toggleMode }     = useThemeMode();
-  const { colorSidebar }         = useConfiguracion();
+  const { colorSidebar, colorOscuroSidebar } = useConfiguracion();
   const navigate                 = useNavigate();
   const location                 = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed,  setCollapsed]  = useState({});
-  const BG = colorSidebar || '#150830';
+  const BG = mode === 'dark'
+    ? (colorOscuroSidebar || '#0d1117')
+    : (colorSidebar       || '#150830');
 
   const handleCerrarSesion = useCallback(() => {
     logout();

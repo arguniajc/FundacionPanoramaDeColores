@@ -47,7 +47,7 @@ export function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial 
   return (
     <Dialog open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
       PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2 } }}>
-      <DialogTitle sx={{ bgcolor: '#2D984F', color: 'white', fontWeight: 700 }}>
+      <DialogTitle sx={{ bgcolor: 'var(--color-secundario)', color: 'white', fontWeight: 700 }}>
         {inicial?.id ? 'Editar programa' : 'Nuevo programa'}
       </DialogTitle>
       <DialogContent dividers>
@@ -70,7 +70,7 @@ export function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial 
         <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={handleGuardar}
           disabled={guardando || !form.nombre.trim()}
-          sx={{ bgcolor: '#2D984F' }}>
+          sx={{ bgcolor: 'var(--color-secundario)' }}>
           {guardando ? 'Guardando…' : 'Guardar'}
         </Button>
       </DialogActions>

@@ -245,7 +245,7 @@ export function CertificadoDonacionDialog({ open, donacion, onClose }) {
         <Button variant="contained"
           startIcon={generando ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
           onClick={handleDescargar} disabled={generando}
-          sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3a1470' } }}>
+          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' } }}>
           Descargar certificado
         </Button>
       </DialogActions>

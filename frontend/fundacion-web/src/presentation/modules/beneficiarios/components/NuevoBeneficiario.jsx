@@ -214,7 +214,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
     <Dialog open onClose={onCerrar} maxWidth="md" fullWidth
       PaperProps={{ sx: { borderRadius: 3 } }}>
       <DialogTitle sx={{
-        background: 'linear-gradient(135deg, var(--color-primario) 0%, #2D984F 100%)',
+        background: 'linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%)',
         color: '#fff', fontWeight: 700, py: 2, px: 3,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
@@ -625,7 +625,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           onClick={handleGuardar}
           disabled={!puedeGuardar}
           startIcon={guardando ? <CircularProgress size={16} color="inherit" /> : <PersonAddIcon />}
-          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, minWidth: 160 }}
+          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, fontWeight: 700, minWidth: 160 }}
         >
           {guardando ? 'Registrando…' : 'Inscribir beneficiario'}
         </Button>

@@ -20,7 +20,7 @@ import LocationOnIcon      from '@mui/icons-material/LocationOn';
 import { donantesRepository } from '../../../../infrastructure/repositories/donantesRepository';
 import { CampoDocumento, SelectorUbicacion } from '../../../../shared/components/form/FormControles';
 
-const COLOR = '#2D984F';
+const COLOR = 'var(--color-secundario)';
 
 function fmtMoney(n) {
   return Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });

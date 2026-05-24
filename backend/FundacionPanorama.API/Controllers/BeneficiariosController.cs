@@ -303,12 +303,12 @@ public class BeneficiariosController : ControllerBase
         {
             while (await r.ReadAsync(ct))
             {
-                var tf = new TallaFreq(r.GetString(1), r.GetInt32(2));
+                var tfreq = new TallaFreq(r.GetString(1), r.GetInt32(2));
                 switch (r.GetString(0))
                 {
-                    case "camisa":   topCamisa.Add(tf);   break;
-                    case "pantalon": topPantalon.Add(tf); break;
-                    case "zapatos":  topZapatos.Add(tf);  break;
+                    case "camisa":   topCamisa.Add(tfreq);   break;
+                    case "pantalon": topPantalon.Add(tfreq); break;
+                    case "zapatos":  topZapatos.Add(tfreq);  break;
                 }
             }
         }

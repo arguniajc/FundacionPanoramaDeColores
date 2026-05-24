@@ -53,7 +53,7 @@ export default function LogDescargasPage() {
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <Box
         sx={{
-          background: 'linear-gradient(135deg, var(--color-primario), #2D984F)',
+          background: 'linear-gradient(135deg, var(--color-primario), var(--color-secundario))',
           borderRadius: 3, p: { xs: 2, sm: 3 }, mb: 3, color: 'white',
         }}
       >

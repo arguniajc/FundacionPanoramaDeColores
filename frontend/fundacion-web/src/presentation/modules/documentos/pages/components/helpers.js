@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 
 export const CATEGORIAS = ['Actas', 'Políticas', 'Formularios', 'Informes', 'Certificados', 'Otros'];
-export const HEADER_GRADIENT = 'linear-gradient(135deg, var(--color-primario), #2D984F)';
+export const HEADER_GRADIENT = 'linear-gradient(135deg, var(--color-primario), var(--color-secundario))';
 
 export function fmt(fecha) {
   return new Date(fecha).toLocaleString('es-CO', {

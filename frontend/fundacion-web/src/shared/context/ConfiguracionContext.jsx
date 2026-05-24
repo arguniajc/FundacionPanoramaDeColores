@@ -2,8 +2,13 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { configuracionRepository } from '../../infrastructure/repositories/configuracionRepository';
 
 const DEFAULTS = {
-  colorPrimario:     '#4E1B95',
-  colorSidebar:      '#150830',
+  colorPrimario:      '#4E1B95',
+  colorSidebar:       '#150830',
+  colorSecundario:    '#2D984F',
+  colorGradiente:     '#3a1470',
+  colorOscuroFondo:   '#0f0f0f',
+  colorOscuroPaper:   '#1c1c1c',
+  colorOscuroSidebar: '#0d1117',
   nombreFundacion:   'Fundación Panorama de Colores',
   nit:               '',
   direccion:         '',
@@ -20,10 +25,15 @@ const DEFAULTS = {
 const CACHE_KEY = 'fundacion_config_cache';
 const CACHE_TTL = 5 * 60 * 1000;
 
-function aplicarCssVars(colorPrimario, colorSidebar) {
+function aplicarCssVars(cfg) {
   const root = document.documentElement;
-  root.style.setProperty('--color-primario', colorPrimario || DEFAULTS.colorPrimario);
-  root.style.setProperty('--color-sidebar',  colorSidebar  || DEFAULTS.colorSidebar);
+  root.style.setProperty('--color-primario',       cfg.colorPrimario      || DEFAULTS.colorPrimario);
+  root.style.setProperty('--color-sidebar',        cfg.colorSidebar       || DEFAULTS.colorSidebar);
+  root.style.setProperty('--color-secundario',     cfg.colorSecundario    || DEFAULTS.colorSecundario);
+  root.style.setProperty('--color-gradiente',      cfg.colorGradiente     || DEFAULTS.colorGradiente);
+  root.style.setProperty('--color-oscuro-fondo',   cfg.colorOscuroFondo   || DEFAULTS.colorOscuroFondo);
+  root.style.setProperty('--color-oscuro-paper',   cfg.colorOscuroPaper   || DEFAULTS.colorOscuroPaper);
+  root.style.setProperty('--color-oscuro-sidebar', cfg.colorOscuroSidebar || DEFAULTS.colorOscuroSidebar);
 }
 
 function cargarCache() {
@@ -31,7 +41,6 @@ function cargarCache() {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // soporte para cache antiguo sin timestamp
     if (!parsed.ts) return parsed;
     return Date.now() - parsed.ts < CACHE_TTL ? parsed.data : null;
   } catch {
@@ -50,14 +59,19 @@ export function ConfiguracionProvider({ children }) {
   const [config, setConfig] = useState(() => {
     const cached = cargarCache();
     const merged = { ...DEFAULTS, ...cached };
-    aplicarCssVars(merged.colorPrimario, merged.colorSidebar);
+    aplicarCssVars(merged);
     return merged;
   });
 
   const actualizar = useCallback((data) => {
     const merged = {
-      colorPrimario:     data.colorPrimario     || DEFAULTS.colorPrimario,
-      colorSidebar:      data.colorSidebar      || DEFAULTS.colorSidebar,
+      colorPrimario:      data.colorPrimario      || DEFAULTS.colorPrimario,
+      colorSidebar:       data.colorSidebar       || DEFAULTS.colorSidebar,
+      colorSecundario:    data.colorSecundario    || DEFAULTS.colorSecundario,
+      colorGradiente:     data.colorGradiente     || DEFAULTS.colorGradiente,
+      colorOscuroFondo:   data.colorOscuroFondo   || DEFAULTS.colorOscuroFondo,
+      colorOscuroPaper:   data.colorOscuroPaper   || DEFAULTS.colorOscuroPaper,
+      colorOscuroSidebar: data.colorOscuroSidebar || DEFAULTS.colorOscuroSidebar,
       nombreFundacion:   data.nombreFundacion   ?? DEFAULTS.nombreFundacion,
       nit:               data.nit               ?? '',
       direccion:         data.direccion         ?? '',
@@ -70,13 +84,12 @@ export function ConfiguracionProvider({ children }) {
       mensajeBienvenida: data.mensajeBienvenida ?? '',
       footerTexto:       data.footerTexto       ?? '',
     };
-    aplicarCssVars(merged.colorPrimario, merged.colorSidebar);
+    aplicarCssVars(merged);
     guardarCache(merged);
     setConfig(merged);
   }, []);
 
   useEffect(() => {
-    // Si el cache está vigente (< 5 min) no se necesita llamar al backend
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw) {
       try {

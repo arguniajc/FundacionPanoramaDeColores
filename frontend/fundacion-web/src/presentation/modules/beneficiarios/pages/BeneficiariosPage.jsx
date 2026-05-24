@@ -236,7 +236,7 @@ export default function BeneficiariosPage() {
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
 
       <Box sx={{
-        background: 'linear-gradient(135deg, var(--color-primario) 0%, #3a1470 60%, #2D984F 100%)',
+        background: 'linear-gradient(135deg, var(--color-primario) 0%, var(--color-gradiente) 60%, var(--color-secundario) 100%)',
         px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 },
       }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
@@ -277,12 +277,12 @@ export default function BeneficiariosPage() {
               startIcon={<PersonAddIcon />}
               onClick={() => setCreando(true)}
               sx={{
-                bgcolor: '#2D984F',
+                bgcolor: 'var(--color-secundario)',
                 border: '2px solid rgba(255,255,255,0.45)',
                 color: '#fff', fontWeight: 800,
                 borderRadius: 2, whiteSpace: 'nowrap',
                 boxShadow: '0 2px 10px rgba(0,0,0,0.28)',
-                '&:hover': { bgcolor: '#1e6e38', boxShadow: '0 4px 16px rgba(0,0,0,0.35)' },
+                '&:hover': { filter: 'brightness(0.85)', boxShadow: '0 4px 16px rgba(0,0,0,0.35)' },
               }}
             >
               + Nuevo beneficiario
@@ -333,7 +333,7 @@ export default function BeneficiariosPage() {
                   startIcon={cargandoStats ? <CircularProgress size={14} color="inherit" /> : <BarChartIcon />}
                   onClick={() => setModalStats(true)}
                   disabled={cargandoStats}
-                  sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2 }}
+                  sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2 }}
                 >
                   Estadísticas
                 </Button>
@@ -343,7 +343,7 @@ export default function BeneficiariosPage() {
                   variant="contained" size="small"
                   startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
                   onClick={exportarExcel} disabled={exportando}
-                  sx={{ bgcolor: '#2D984F', '&:hover': { bgcolor: '#1e6e38' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
+                  sx={{ bgcolor: 'var(--color-secundario)', '&:hover': { filter: 'brightness(0.85)' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
                 >
                   {exportando ? 'Exportando…' : 'Exportar Excel'}
                 </Button>
@@ -417,7 +417,7 @@ export default function BeneficiariosPage() {
             <Table size="small" sx={{ minWidth: 650 }}>
               <TableHead>
                 <TableRow sx={{
-                  background: 'linear-gradient(90deg, var(--color-primario), #3a1470)',
+                  background: 'linear-gradient(90deg, var(--color-primario), var(--color-gradiente))',
                   '& .MuiTableCell-root': { color: '#fff', fontWeight: 700, fontSize: '0.8rem', py: 1.5, borderBottom: 'none', whiteSpace: 'nowrap' },
                 }}>
                   <TableCell>Nombre del menor</TableCell>

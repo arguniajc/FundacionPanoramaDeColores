@@ -61,7 +61,7 @@ export function TabPorBeneficiario({ onToast }) {
           )} />
         {beneficiario && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalAbierto(true)}
-            sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, height: 40 }}>
+            sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, fontWeight: 700, height: 40 }}>
             Subir documento
           </Button>
         )}
@@ -111,7 +111,7 @@ export function TabPorBeneficiario({ onToast }) {
                         <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                           <Tooltip title="Ver / Imprimir">
                             <IconButton size="small" onClick={() => window.open(a.url, '_blank', 'noopener,noreferrer')}>
-                              <VisibilityIcon fontSize="small" sx={{ color: '#2D984F' }} />
+                              <VisibilityIcon fontSize="small" sx={{ color: 'var(--color-secundario)' }} />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Descargar">

@@ -24,13 +24,18 @@ public class ConfiguracionController(ConfiguracionService svc, IMemoryCache cach
         object result = data is null
             ? new { webContenido = (string?)null }
             : new {
-                nombreFundacion = data.NombreFundacion,
-                emailContacto   = data.EmailContacto,
-                sitioWeb        = data.SitioWeb,
-                footerTexto     = data.FooterTexto,
-                webContenido    = data.WebContenido,
-                colorPrimario   = data.ColorPrimario,
-                colorSidebar    = data.ColorSidebar,
+                nombreFundacion    = data.NombreFundacion,
+                emailContacto      = data.EmailContacto,
+                sitioWeb           = data.SitioWeb,
+                footerTexto        = data.FooterTexto,
+                webContenido       = data.WebContenido,
+                colorPrimario      = data.ColorPrimario,
+                colorSidebar       = data.ColorSidebar,
+                colorSecundario    = data.ColorSecundario,
+                colorGradiente     = data.ColorGradiente,
+                colorOscuroFondo   = data.ColorOscuroFondo,
+                colorOscuroPaper   = data.ColorOscuroPaper,
+                colorOscuroSidebar = data.ColorOscuroSidebar,
             };
 
         cache.Set(CACHE_KEY, result, TimeSpan.FromMinutes(5));
@@ -43,7 +48,8 @@ public class ConfiguracionController(ConfiguracionService svc, IMemoryCache cach
         var data = await svc.ObtenerAsync(ct);
         return Ok(data ?? new ConfiguracionDto(
             null,null,null,null,null,null,null,null,null,
-            null,null,null,null,null,null,null,null,null,null,
+            null,null,null,null,null,null,null,
+            null,null,null,null,null,null,null,null,
             null,null,null,false,null,null,true,null));
     }
 

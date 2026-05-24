@@ -12,6 +12,11 @@ public record ConfiguracionDto(
     string?   FirmaRep,
     string?   ColorPrimario,
     string?   ColorSidebar,
+    string?   ColorSecundario,
+    string?   ColorGradiente,
+    string?   ColorOscuroFondo,
+    string?   ColorOscuroPaper,
+    string?   ColorOscuroSidebar,
     string?   Tagline,
     string?   Mision,
     string?   Vision,
@@ -42,6 +47,11 @@ public record GuardarConfiguracionDto(
     string?   FirmaRep,
     string?   ColorPrimario,
     string?   ColorSidebar,
+    string?   ColorSecundario,
+    string?   ColorGradiente,
+    string?   ColorOscuroFondo,
+    string?   ColorOscuroPaper,
+    string?   ColorOscuroSidebar,
     string?   Tagline,
     string?   Mision,
     string?   Vision,
@@ -66,7 +76,12 @@ public record ConfiguracionPublicaDto(
     string? FooterTexto,
     string? WebContenido,
     string? ColorPrimario,
-    string? ColorSidebar);
+    string? ColorSidebar,
+    string? ColorSecundario,
+    string? ColorGradiente,
+    string? ColorOscuroFondo,
+    string? ColorOscuroPaper,
+    string? ColorOscuroSidebar);
 
 // Configuración SMTP completa (incluye contraseña) — solo uso interno del EmailService
 public record SmtpConfig(

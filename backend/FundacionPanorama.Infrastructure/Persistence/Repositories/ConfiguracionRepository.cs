@@ -15,6 +15,8 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
             SELECT nombre_fundacion, nit, direccion, telefono,
                    nombre_rep_legal, tipo_doc_rep, documento_rep, cargo_rep, firma_rep,
                    color_primario, color_sidebar,
+                   color_secundario, color_gradiente,
+                   color_oscuro_fondo, color_oscuro_paper, color_oscuro_sidebar,
                    tagline, mision, vision,
                    email_contacto, sitio_web, mensaje_bienvenida, footer_texto, web_contenido,
                    smtp_host, smtp_puerto, smtp_usuario,
@@ -27,6 +29,57 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
         if (!await r.ReadAsync(ct)) return null;
 
         return new ConfiguracionDto(
+            r.IsDBNull(0)  ? null : r.GetString(0),   // NombreFundacion
+            r.IsDBNull(1)  ? null : r.GetString(1),   // Nit
+            r.IsDBNull(2)  ? null : r.GetString(2),   // Direccion
+            r.IsDBNull(3)  ? null : r.GetString(3),   // Telefono
+            r.IsDBNull(4)  ? null : r.GetString(4),   // NombreRepLegal
+            r.IsDBNull(5)  ? null : r.GetString(5),   // TipoDocRep
+            r.IsDBNull(6)  ? null : r.GetString(6),   // DocumentoRep
+            r.IsDBNull(7)  ? null : r.GetString(7),   // CargoRep
+            r.IsDBNull(8)  ? null : r.GetString(8),   // FirmaRep
+            r.IsDBNull(9)  ? null : r.GetString(9),   // ColorPrimario
+            r.IsDBNull(10) ? null : r.GetString(10),  // ColorSidebar
+            r.IsDBNull(11) ? null : r.GetString(11),  // ColorSecundario
+            r.IsDBNull(12) ? null : r.GetString(12),  // ColorGradiente
+            r.IsDBNull(13) ? null : r.GetString(13),  // ColorOscuroFondo
+            r.IsDBNull(14) ? null : r.GetString(14),  // ColorOscuroPaper
+            r.IsDBNull(15) ? null : r.GetString(15),  // ColorOscuroSidebar
+            r.IsDBNull(16) ? null : r.GetString(16),  // Tagline
+            r.IsDBNull(17) ? null : r.GetString(17),  // Mision
+            r.IsDBNull(18) ? null : r.GetString(18),  // Vision
+            r.IsDBNull(19) ? null : r.GetString(19),  // EmailContacto
+            r.IsDBNull(20) ? null : r.GetString(20),  // SitioWeb
+            r.IsDBNull(21) ? null : r.GetString(21),  // MensajeBienvenida
+            r.IsDBNull(22) ? null : r.GetString(22),  // FooterTexto
+            r.IsDBNull(23) ? null : r.GetString(23),  // WebContenido
+            // SMTP
+            r.IsDBNull(24) ? null : r.GetString(24),  // SmtpHost
+            r.IsDBNull(25) ? null  : r.GetInt32(25),  // SmtpPuerto
+            r.IsDBNull(26) ? null : r.GetString(26),  // SmtpUsuario
+            !r.IsDBNull(27) && r.GetBoolean(27),       // SmtpClaveGuardada
+            r.IsDBNull(28) ? null : r.GetString(28),  // SmtpDeNombre
+            r.IsDBNull(29) ? null : r.GetString(29),  // SmtpDeEmail
+            !r.IsDBNull(30) && r.GetBoolean(30),       // SmtpSsl
+            r.IsDBNull(31) ? null : r.GetDateTime(31));// UpdatedAt
+    }
+
+    public async Task<ConfiguracionPublicaDto?> ObtenerPublicaAsync(CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT nombre_fundacion, email_contacto, sitio_web, footer_texto, web_contenido,
+                   color_primario, color_sidebar,
+                   color_secundario, color_gradiente,
+                   color_oscuro_fondo, color_oscuro_paper, color_oscuro_sidebar
+            FROM configuracion LIMIT 1";
+
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return null;
+
+        return new ConfiguracionPublicaDto(
             r.IsDBNull(0)  ? null : r.GetString(0),
             r.IsDBNull(1)  ? null : r.GetString(1),
             r.IsDBNull(2)  ? null : r.GetString(2),
@@ -38,46 +91,7 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
             r.IsDBNull(8)  ? null : r.GetString(8),
             r.IsDBNull(9)  ? null : r.GetString(9),
             r.IsDBNull(10) ? null : r.GetString(10),
-            r.IsDBNull(11) ? null : r.GetString(11),
-            r.IsDBNull(12) ? null : r.GetString(12),
-            r.IsDBNull(13) ? null : r.GetString(13),
-            r.IsDBNull(14) ? null : r.GetString(14),
-            r.IsDBNull(15) ? null : r.GetString(15),
-            r.IsDBNull(16) ? null : r.GetString(16),
-            r.IsDBNull(17) ? null : r.GetString(17),
-            r.IsDBNull(18) ? null : r.GetString(18),
-            // SMTP
-            r.IsDBNull(19) ? null : r.GetString(19),
-            r.IsDBNull(20) ? null  : r.GetInt32(20),
-            r.IsDBNull(21) ? null : r.GetString(21),
-            !r.IsDBNull(22) && r.GetBoolean(22),
-            r.IsDBNull(23) ? null : r.GetString(23),
-            r.IsDBNull(24) ? null : r.GetString(24),
-            !r.IsDBNull(25) && r.GetBoolean(25),
-            r.IsDBNull(26) ? null : r.GetDateTime(26));
-    }
-
-    public async Task<ConfiguracionPublicaDto?> ObtenerPublicaAsync(CancellationToken ct = default)
-    {
-        await using var conn = factory.Create();
-        await conn.OpenAsync(ct);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            SELECT nombre_fundacion, email_contacto, sitio_web, footer_texto, web_contenido,
-                   color_primario, color_sidebar
-            FROM configuracion LIMIT 1";
-
-        await using var r = await cmd.ExecuteReaderAsync(ct);
-        if (!await r.ReadAsync(ct)) return null;
-
-        return new ConfiguracionPublicaDto(
-            r.IsDBNull(0) ? null : r.GetString(0),
-            r.IsDBNull(1) ? null : r.GetString(1),
-            r.IsDBNull(2) ? null : r.GetString(2),
-            r.IsDBNull(3) ? null : r.GetString(3),
-            r.IsDBNull(4) ? null : r.GetString(4),
-            r.IsDBNull(5) ? null : r.GetString(5),
-            r.IsDBNull(6) ? null : r.GetString(6));
+            r.IsDBNull(11) ? null : r.GetString(11));
     }
 
     public async Task<SmtpConfig?> ObtenerSmtpAsync(CancellationToken ct = default)
@@ -117,46 +131,54 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
                 (nombre_fundacion, nit, direccion, telefono,
                  nombre_rep_legal, tipo_doc_rep, documento_rep, cargo_rep, firma_rep,
                  color_primario, color_sidebar,
+                 color_secundario, color_gradiente,
+                 color_oscuro_fondo, color_oscuro_paper, color_oscuro_sidebar,
                  tagline, mision, vision,
                  email_contacto, sitio_web, mensaje_bienvenida, footer_texto, web_contenido,
                  smtp_host, smtp_puerto, smtp_usuario, smtp_clave,
                  smtp_de_nombre, smtp_de_email, smtp_ssl)
             SELECT @nf, @nit, @dir, @tel, @nrl, @tdr, @docr, @cargo, @firma,
-                   @cp, @cs, @tag, @mis, @vis, @email, @web, @bienvenida, @footer, @webcon,
+                   @cp, @cs, @csec, @cgr, @cof, @cop, @cos,
+                   @tag, @mis, @vis, @email, @web, @bienvenida, @footer, @webcon,
                    @smtpHost, @smtpPuerto, @smtpUsu, @smtpClave,
                    @smtpDeNombre, @smtpDeEmail, @smtpSsl
             WHERE NOT EXISTS (SELECT 1 FROM configuracion);
 
             UPDATE configuracion SET
-                nombre_fundacion   = @nf,
-                nit                = @nit,
-                direccion          = @dir,
-                telefono           = @tel,
-                nombre_rep_legal   = @nrl,
-                tipo_doc_rep       = @tdr,
-                documento_rep      = @docr,
-                cargo_rep          = @cargo,
-                firma_rep          = @firma,
-                color_primario     = @cp,
-                color_sidebar      = @cs,
-                tagline            = @tag,
-                mision             = @mis,
-                vision             = @vis,
-                email_contacto     = @email,
-                sitio_web          = @web,
-                mensaje_bienvenida = @bienvenida,
-                footer_texto       = @footer,
-                web_contenido      = @webcon,
-                smtp_host          = @smtpHost,
-                smtp_puerto        = @smtpPuerto,
-                smtp_usuario       = @smtpUsu,
-                smtp_clave         = CASE WHEN @smtpClave IS NULL OR @smtpClave = ''
-                                          THEN smtp_clave
-                                          ELSE @smtpClave END,
-                smtp_de_nombre     = @smtpDeNombre,
-                smtp_de_email      = @smtpDeEmail,
-                smtp_ssl           = @smtpSsl,
-                updated_at         = NOW()";
+                nombre_fundacion    = @nf,
+                nit                 = @nit,
+                direccion           = @dir,
+                telefono            = @tel,
+                nombre_rep_legal    = @nrl,
+                tipo_doc_rep        = @tdr,
+                documento_rep       = @docr,
+                cargo_rep           = @cargo,
+                firma_rep           = @firma,
+                color_primario      = @cp,
+                color_sidebar       = @cs,
+                color_secundario    = @csec,
+                color_gradiente     = @cgr,
+                color_oscuro_fondo  = @cof,
+                color_oscuro_paper  = @cop,
+                color_oscuro_sidebar = @cos,
+                tagline             = @tag,
+                mision              = @mis,
+                vision              = @vis,
+                email_contacto      = @email,
+                sitio_web           = @web,
+                mensaje_bienvenida  = @bienvenida,
+                footer_texto        = @footer,
+                web_contenido       = @webcon,
+                smtp_host           = @smtpHost,
+                smtp_puerto         = @smtpPuerto,
+                smtp_usuario        = @smtpUsu,
+                smtp_clave          = CASE WHEN @smtpClave IS NULL OR @smtpClave = ''
+                                           THEN smtp_clave
+                                           ELSE @smtpClave END,
+                smtp_de_nombre      = @smtpDeNombre,
+                smtp_de_email       = @smtpDeEmail,
+                smtp_ssl            = @smtpSsl,
+                updated_at          = NOW()";
 
         cmd.Parameters.AddWithValue("nf",         (object?)dto.NombreFundacion?.Trim()   ?? DBNull.Value);
         cmd.Parameters.AddWithValue("nit",        (object?)dto.Nit?.Trim()               ?? DBNull.Value);
@@ -169,6 +191,11 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
         cmd.Parameters.Add(new NpgsqlParameter("firma", NpgsqlTypes.NpgsqlDbType.Text)      { Value = (object?)dto.FirmaRep        ?? DBNull.Value });
         cmd.Parameters.AddWithValue("cp",         (object?)dto.ColorPrimario?.Trim()     ?? DBNull.Value);
         cmd.Parameters.AddWithValue("cs",         (object?)dto.ColorSidebar?.Trim()      ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("csec",       (object?)dto.ColorSecundario?.Trim()   ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("cgr",        (object?)dto.ColorGradiente?.Trim()    ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("cof",        (object?)dto.ColorOscuroFondo?.Trim()  ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("cop",        (object?)dto.ColorOscuroPaper?.Trim()  ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("cos",        (object?)dto.ColorOscuroSidebar?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("tag",        (object?)dto.Tagline?.Trim()           ?? DBNull.Value);
         cmd.Parameters.AddWithValue("mis",        (object?)dto.Mision?.Trim()            ?? DBNull.Value);
         cmd.Parameters.AddWithValue("vis",        (object?)dto.Vision?.Trim()            ?? DBNull.Value);

@@ -39,7 +39,7 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
         <Box display="flex" gap={1} flexShrink={0}>
           <Tooltip title={sede.activo ? 'Desactivar' : 'Activar'}>
             <IconButton size="small" onClick={() => onToggle(sede)}>
-              {sede.activo ? <ToggleOnIcon sx={{ color: '#2D984F' }} /> : <ToggleOffIcon sx={{ color: '#aaa' }} />}
+              {sede.activo ? <ToggleOnIcon sx={{ color: 'var(--color-secundario)' }} /> : <ToggleOffIcon sx={{ color: '#aaa' }} />}
             </IconButton>
           </Tooltip>
           <Tooltip title="Editar sede">
@@ -67,7 +67,7 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
               <SchoolIcon fontSize="small" /> Programas ({sede.programas?.length ?? 0})
             </Typography>
             <Button size="small" startIcon={<AddIcon />} onClick={() => onNuevoPrograma(sede)}
-              sx={{ color: '#2D984F', textTransform: 'none' }}>
+              sx={{ color: 'var(--color-secundario)', textTransform: 'none' }}>
               Agregar
             </Button>
           </Box>
@@ -102,7 +102,7 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
                       <TableCell align="right">
                         <Tooltip title={prog.activo ? 'Desactivar' : 'Activar'}>
                           <IconButton size="small" onClick={() => onTogglePrograma(prog)}>
-                            {prog.activo ? <ToggleOnIcon fontSize="small" sx={{ color: '#2D984F' }} /> : <ToggleOffIcon fontSize="small" sx={{ color: '#aaa' }} />}
+                            {prog.activo ? <ToggleOnIcon fontSize="small" sx={{ color: 'var(--color-secundario)' }} /> : <ToggleOffIcon fontSize="small" sx={{ color: '#aaa' }} />}
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Editar">

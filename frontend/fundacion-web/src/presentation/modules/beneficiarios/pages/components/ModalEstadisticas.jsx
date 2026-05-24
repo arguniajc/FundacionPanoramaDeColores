@@ -212,7 +212,7 @@ export function ModalEstadisticas({ open, onClose }) {
 
         <StatSection title="👕 Talla camisa más frecuente">
           {topCamisaItems.length
-            ? renderBarras(topCamisaItems, maxCamisa, '#2D984F')
+            ? renderBarras(topCamisaItems, maxCamisa, 'var(--color-secundario)')
             : <Typography variant="caption" color="text.secondary">Sin datos</Typography>}
         </StatSection>
 
@@ -242,7 +242,7 @@ export function ModalEstadisticas({ open, onClose }) {
     >
       <DialogTitle sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: 'linear-gradient(135deg, var(--color-primario) 0%, #3a1470 100%)',
+        background: 'linear-gradient(135deg, var(--color-primario) 0%, var(--color-gradiente) 100%)',
         color: '#fff', py: 2, px: 3,
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>

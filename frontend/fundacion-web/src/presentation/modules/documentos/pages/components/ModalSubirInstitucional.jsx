@@ -127,7 +127,7 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
         <Button variant="contained" onClick={handleSubir}
           disabled={subiendo || archivos.length === 0}
           startIcon={subiendo ? <CircularProgress size={16} color="inherit" /> : <UploadFileIcon />}
-          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, minWidth: 140 }}>
+          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, fontWeight: 700, minWidth: 140 }}>
           {subiendo ? `Subiendo ${progreso}%` : `Subir ${archivos.length > 1 ? `${archivos.length} archivos` : 'archivo'}`}
         </Button>
       </DialogActions>

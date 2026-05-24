@@ -1,4 +1,4 @@
-export const COLOR_DONANTES   = '#2D984F';
+export const COLOR_DONANTES   = 'var(--color-secundario)';
 export const COLOR_DONACIONES = '#d97706';
 export const COLOR_ESPECIE    = '#0ea5e9';
 

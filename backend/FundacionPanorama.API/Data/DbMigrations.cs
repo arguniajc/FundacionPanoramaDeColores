@@ -357,6 +357,11 @@ public static class DbMigrations
 
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_primario      VARCHAR(7)   NOT NULL DEFAULT '#4E1B95'", "configuracion.color_primario");
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_sidebar       VARCHAR(7)   NOT NULL DEFAULT '#150830'", "configuracion.color_sidebar");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_secundario    VARCHAR(7)   NOT NULL DEFAULT '#2D984F'", "configuracion.color_secundario");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_gradiente     VARCHAR(7)   NOT NULL DEFAULT '#3a1470'", "configuracion.color_gradiente");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_oscuro_fondo  VARCHAR(7)   NOT NULL DEFAULT '#0f0f0f'", "configuracion.color_oscuro_fondo");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_oscuro_paper  VARCHAR(7)   NOT NULL DEFAULT '#1c1c1c'", "configuracion.color_oscuro_paper");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_oscuro_sidebar VARCHAR(7)  NOT NULL DEFAULT '#0d1117'", "configuracion.color_oscuro_sidebar");
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS tagline             VARCHAR(500)",                            "configuracion.tagline");
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS mision              TEXT",                                    "configuracion.mision");
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS vision              TEXT",                                    "configuracion.vision");

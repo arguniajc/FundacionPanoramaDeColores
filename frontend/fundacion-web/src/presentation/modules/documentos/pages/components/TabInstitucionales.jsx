@@ -54,7 +54,7 @@ export function TabInstitucionales({ onToast }) {
           ))}
         </Stack>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalAbierto(true)}
-          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700 }}>
+          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, fontWeight: 700 }}>
           Subir documentos
         </Button>
       </Box>
@@ -117,7 +117,7 @@ export function TabInstitucionales({ onToast }) {
                     <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                       <Tooltip title="Ver / Imprimir">
                         <IconButton size="small" onClick={() => window.open(doc.url, '_blank', 'noopener,noreferrer')}>
-                          <VisibilityIcon fontSize="small" sx={{ color: '#2D984F' }} />
+                          <VisibilityIcon fontSize="small" sx={{ color: 'var(--color-secundario)' }} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Descargar">

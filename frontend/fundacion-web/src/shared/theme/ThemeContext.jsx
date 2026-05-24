@@ -9,7 +9,12 @@ export function AppThemeProvider({ children }) {
   const [mode, setMode] = useState(
     () => localStorage.getItem('themeMode') || 'light'
   );
-  const { colorPrimario } = useConfiguracion();
+  const {
+    colorPrimario,
+    colorSecundario,
+    colorOscuroFondo,
+    colorOscuroPaper,
+  } = useConfiguracion();
 
   const toggleMode = () =>
     setMode(prev => {
@@ -21,11 +26,11 @@ export function AppThemeProvider({ children }) {
   const theme = useMemo(() => createTheme({
     palette: {
       mode,
-      primary:   { main: colorPrimario || '#4E1B95' },
-      secondary: { main: '#2D984F' },
+      primary:   { main: colorPrimario   || '#4E1B95' },
+      secondary: { main: colorSecundario || '#2D984F' },
       background: {
-        default: mode === 'light' ? '#f5f5f5' : '#0f0f0f',
-        paper:   mode === 'light' ? '#ffffff'  : '#1c1c1c',
+        default: mode === 'light' ? '#f5f5f5' : (colorOscuroFondo  || '#0f0f0f'),
+        paper:   mode === 'light' ? '#ffffff'  : (colorOscuroPaper || '#1c1c1c'),
       },
     },
     typography: { fontFamily: 'Inter, Roboto, sans-serif' },
@@ -82,7 +87,7 @@ export function AppThemeProvider({ children }) {
         },
       },
     },
-  }), [mode, colorPrimario]);
+  }), [mode, colorPrimario, colorSecundario, colorOscuroFondo, colorOscuroPaper]);
 
   return (
     <ThemeCtx.Provider value={{ mode, toggleMode }}>

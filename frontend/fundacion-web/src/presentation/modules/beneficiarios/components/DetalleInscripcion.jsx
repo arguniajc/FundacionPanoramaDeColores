@@ -43,7 +43,7 @@ import { abrirHojaDeVida }      from '../../../../shared/utils/pdf';
 import HistorialBeneficiario    from './HistorialBeneficiario';
 
 const COLOR_PRIMARIO = 'var(--color-primario)';
-const COLOR_HOVER    = '#3a1470';
+const COLOR_HOVER    = 'var(--color-gradiente)';
 
 function Seccion({ titulo, icono, mt = 1 }) {
   return (

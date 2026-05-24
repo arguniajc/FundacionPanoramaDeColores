@@ -72,7 +72,7 @@ export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido
         <Button variant="contained" onClick={handleSubir}
           disabled={subiendo || !titulo.trim() || !archivo}
           startIcon={subiendo ? <CircularProgress size={16} color="inherit" /> : <UploadFileIcon />}
-          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: '#3a1470' }, fontWeight: 700, minWidth: 140 }}>
+          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, fontWeight: 700, minWidth: 140 }}>
           {subiendo ? 'Subiendo…' : 'Subir documento'}
         </Button>
       </DialogActions>

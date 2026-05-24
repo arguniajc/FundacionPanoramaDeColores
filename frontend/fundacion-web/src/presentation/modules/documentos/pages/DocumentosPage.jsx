@@ -6,7 +6,7 @@ import { ToastGlobal }        from './components/ToastGlobal';
 import { TabInstitucionales } from './components/TabInstitucionales';
 import { TabPorBeneficiario } from './components/TabPorBeneficiario';
 
-const HEADER_GRADIENT = 'linear-gradient(135deg, var(--color-primario), #2D984F)';
+const HEADER_GRADIENT = 'linear-gradient(135deg, var(--color-primario), var(--color-secundario))';
 
 export default function DocumentosPage() {
   const [tabValue, setTabValue] = useState(0);

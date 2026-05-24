@@ -58,7 +58,7 @@ export default function HistorialBeneficiario({ beneficiarioId }) {
         sx={{
           borderColor: COLOR, color: open ? '#fff' : COLOR,
           bgcolor: open ? COLOR : 'transparent',
-          '&:hover': { bgcolor: open ? '#3a1470' : 'rgba(78,27,149,0.06)', borderColor: COLOR },
+          '&:hover': { bgcolor: open ? 'var(--color-gradiente)' : 'rgba(78,27,149,0.06)', borderColor: COLOR },
           fontWeight: 700, textTransform: 'none', mb: 1,
         }}
       >

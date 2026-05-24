@@ -36,6 +36,8 @@ public class ConfiguracionController(ConfiguracionService svc, IMemoryCache cach
                 colorOscuroFondo   = data.ColorOscuroFondo,
                 colorOscuroPaper   = data.ColorOscuroPaper,
                 colorOscuroSidebar = data.ColorOscuroSidebar,
+                colorAccento       = data.ColorAccento,
+                fontFamily         = data.FontFamily,
             };
 
         cache.Set(CACHE_KEY, result, TimeSpan.FromMinutes(5));
@@ -48,7 +50,7 @@ public class ConfiguracionController(ConfiguracionService svc, IMemoryCache cach
         var data = await svc.ObtenerAsync(ct);
         return Ok(data ?? new ConfiguracionDto(
             null,null,null,null,null,null,null,null,null,
-            null,null,null,null,null,null,null,
+            null,null,null,null,null,null,null,null,null,
             null,null,null,null,null,null,null,null,
             null,null,null,false,null,null,true,null));
     }

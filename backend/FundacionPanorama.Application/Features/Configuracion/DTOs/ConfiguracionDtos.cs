@@ -17,6 +17,8 @@ public record ConfiguracionDto(
     string?   ColorOscuroFondo,
     string?   ColorOscuroPaper,
     string?   ColorOscuroSidebar,
+    string?   ColorAccento,
+    string?   FontFamily,
     string?   Tagline,
     string?   Mision,
     string?   Vision,
@@ -25,7 +27,6 @@ public record ConfiguracionDto(
     string?   MensajeBienvenida,
     string?   FooterTexto,
     string?   WebContenido,
-    // SMTP (contraseña NO se devuelve, solo indicador de si está configurada)
     string?   SmtpHost,
     int?      SmtpPuerto,
     string?   SmtpUsuario,
@@ -52,6 +53,8 @@ public record GuardarConfiguracionDto(
     string?   ColorOscuroFondo,
     string?   ColorOscuroPaper,
     string?   ColorOscuroSidebar,
+    string?   ColorAccento,
+    string?   FontFamily,
     string?   Tagline,
     string?   Mision,
     string?   Vision,
@@ -60,11 +63,10 @@ public record GuardarConfiguracionDto(
     string?   MensajeBienvenida,
     string?   FooterTexto,
     string?   WebContenido,
-    // SMTP
     string?   SmtpHost,
     int?      SmtpPuerto,
     string?   SmtpUsuario,
-    string?   SmtpClave,       // contraseña real; si es null/vacío no se modifica la existente
+    string?   SmtpClave,
     string?   SmtpDeNombre,
     string?   SmtpDeEmail,
     bool      SmtpSsl);
@@ -81,9 +83,10 @@ public record ConfiguracionPublicaDto(
     string? ColorGradiente,
     string? ColorOscuroFondo,
     string? ColorOscuroPaper,
-    string? ColorOscuroSidebar);
+    string? ColorOscuroSidebar,
+    string? ColorAccento,
+    string? FontFamily);
 
-// Configuración SMTP completa (incluye contraseña) — solo uso interno del EmailService
 public record SmtpConfig(
     string Host,
     int    Puerto,

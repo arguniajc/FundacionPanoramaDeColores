@@ -362,6 +362,8 @@ public static class DbMigrations
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_oscuro_fondo  VARCHAR(7)   NOT NULL DEFAULT '#0f0f0f'", "configuracion.color_oscuro_fondo");
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_oscuro_paper  VARCHAR(7)   NOT NULL DEFAULT '#1c1c1c'", "configuracion.color_oscuro_paper");
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_oscuro_sidebar VARCHAR(7)  NOT NULL DEFAULT '#0d1117'", "configuracion.color_oscuro_sidebar");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS color_acento        VARCHAR(7)   NOT NULL DEFAULT '#FAA112'", "configuracion.color_acento");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS font_family         VARCHAR(100) NOT NULL DEFAULT 'Inter'",   "configuracion.font_family");
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS tagline             VARCHAR(500)",                            "configuracion.tagline");
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS mision              TEXT",                                    "configuracion.mision");
         await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS vision              TEXT",                                    "configuracion.vision");

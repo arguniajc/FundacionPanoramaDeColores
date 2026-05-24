@@ -1078,5 +1078,8 @@ public static class DbMigrations
               AND (primer_nombre  ~ '[A-ZÁÉÍÓÚÑ]{2,}'
                 OR primer_apellido ~ '[A-ZÁÉÍÓÚÑ]{2,}')
             """, "beneficiarios.capitalizar_nombres");
+
+        // Eliminar columna legacy 'nombre' — reemplazada por primer_nombre/apellido
+        await Migrar("ALTER TABLE beneficiarios DROP COLUMN IF EXISTS nombre", "beneficiarios.drop_nombre");
     }
 }

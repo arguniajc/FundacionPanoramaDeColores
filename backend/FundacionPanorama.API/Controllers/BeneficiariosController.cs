@@ -137,47 +137,54 @@ public class BeneficiariosController : ControllerBase
     // =========================================================================
     [HttpGet("stats")]
     [Authorize]
-    public async Task<IActionResult> Stats(CancellationToken ct)
+    public async Task<IActionResult> Stats([FromQuery] string? tipo = null, CancellationToken ct = default)
     {
-        if (_cache.TryGetValue("stats", out object? cached)) return Ok(cached);
+        bool   filtrarTipo   = !string.IsNullOrWhiteSpace(tipo) && tipo != "todos";
+        string cacheKeyStr   = filtrarTipo ? $"stats_{tipo!.Trim()}" : "stats";
+        if (_cache.TryGetValue(cacheKeyStr, out object? cached)) return Ok(cached);
 
         await using var conn = AbrirConexion();
         await conn.OpenAsync(ct);
 
+        string tf   = filtrarTipo ? "WHERE b.tipo  = @tipo" : "";
+        string tfb2 = filtrarTipo ? "AND b2.tipo   = @tipo" : "";
+        string tfba = filtrarTipo ? $"JOIN beneficiarios bx ON bx.id = ba.beneficiario_id WHERE ba.activo = true AND bx.tipo = @tipo" : "WHERE ba.activo = true";
+
         // ── 1. Contadores principales ─────────────────────────────────────────
         await using var cmd1 = conn.CreateCommand();
-        cmd1.CommandText = """
+        cmd1.CommandText = $"""
             SELECT
               COUNT(*)::int                                                            AS total,
               COUNT(*) FILTER (WHERE activo = true)::int                              AS activos,
               COUNT(*) FILTER (WHERE activo = false)::int                             AS baja,
               COUNT(*) FILTER (WHERE numero_documento IS NULL
                                 OR   numero_documento = '')::int                      AS sin_documento,
-              (SELECT COUNT(DISTINCT beneficiario_id)::int
-               FROM   beneficiario_alergia WHERE activo = true)                       AS con_alergia,
+              (SELECT COUNT(DISTINCT ba.beneficiario_id)::int
+               FROM   beneficiario_alergia ba
+               {tfba})                                                                AS con_alergia,
               (SELECT COUNT(*)::int FROM beneficiarios b2
                LEFT   JOIN beneficiario_salud bs ON bs.beneficiario_id = b2.id
-               WHERE  bs.eps_id IS NULL)                                              AS sin_eps,
+               WHERE  bs.eps_id IS NULL {tfb2})                                       AS sin_eps,
               (SELECT COUNT(*)::int FROM beneficiarios b2
-               WHERE  NOT EXISTS (
+               WHERE  {(filtrarTipo ? "b2.tipo = @tipo AND " : "")}NOT EXISTS (
                    SELECT 1 FROM beneficiario_acudiente bac
                    JOIN   acudientes ac ON ac.id = bac.acudiente_id
                    WHERE  bac.beneficiario_id = b2.id
                    AND    bac.es_principal = true AND bac.activo = true
                    AND    ac.whatsapp IS NOT NULL AND ac.whatsapp <> ''))             AS sin_whatsapp,
               (SELECT COUNT(*)::int FROM beneficiarios b2
-               WHERE  NOT EXISTS (
+               WHERE  {(filtrarTipo ? "b2.tipo = @tipo AND " : "")}NOT EXISTS (
                    SELECT 1 FROM beneficiario_acudiente bac
                    JOIN   acudientes ac ON ac.id = bac.acudiente_id
                    WHERE  bac.beneficiario_id = b2.id
                    AND    bac.es_principal = true AND bac.activo = true
                    AND    ac.direccion IS NOT NULL AND ac.direccion <> ''))           AS sin_direccion,
               (SELECT COUNT(*)::int FROM beneficiarios b2
-               WHERE  NOT EXISTS (
+               WHERE  {(filtrarTipo ? "b2.tipo = @tipo AND " : "")}NOT EXISTS (
                    SELECT 1 FROM beneficiario_talla bt
                    WHERE  bt.beneficiario_id = b2.id AND bt.activo = true))          AS sin_tallas,
               (SELECT COUNT(*)::int FROM beneficiarios b2
-               WHERE  NOT EXISTS (
+               WHERE  {(filtrarTipo ? "b2.tipo = @tipo AND " : "")}NOT EXISTS (
                    SELECT 1 FROM archivos ar
                    JOIN   cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
                    WHERE  ar.entidad_tipo = 'beneficiario'
@@ -185,7 +192,9 @@ public class BeneficiariosController : ControllerBase
                    AND    ar.activo       = true
                    AND    cta.nombre      = 'Foto del menor'))                        AS sin_foto
             FROM beneficiarios b
+            {tf}
             """;
+        if (filtrarTipo) cmd1.Parameters.AddWithValue("tipo", tipo!.Trim());
 
         int total, activos, baja, sinDoc, conAlergia, sinEps, sinWhatsapp, sinDireccion, sinTallas, sinFoto;
         await using (var r = await cmd1.ExecuteReaderAsync(ct))
@@ -205,7 +214,7 @@ public class BeneficiariosController : ControllerBase
 
         // ── 2. Distribución por rango de edad ─────────────────────────────────
         await using var cmd2 = conn.CreateCommand();
-        cmd2.CommandText = """
+        cmd2.CommandText = $"""
             SELECT
               COUNT(*) FILTER (WHERE edad BETWEEN  0 AND  3)::int,
               COUNT(*) FILTER (WHERE edad BETWEEN  4 AND  6)::int,
@@ -217,8 +226,10 @@ public class BeneficiariosController : ControllerBase
               SELECT DATE_PART('year', AGE(fecha_nacimiento::date))::int AS edad
               FROM   beneficiarios
               WHERE  fecha_nacimiento IS NOT NULL
+              {(filtrarTipo ? "AND tipo = @tipo" : "")}
             ) sub
             """;
+        if (filtrarTipo) cmd2.Parameters.AddWithValue("tipo", tipo!.Trim());
         var porEdad = new Dictionary<string, int>();
         await using (var r = await cmd2.ExecuteReaderAsync(ct))
         {
@@ -233,7 +244,7 @@ public class BeneficiariosController : ControllerBase
 
         // ── 3. Inscripciones por mes — últimos 4 meses ────────────────────────
         await using var cmd3 = conn.CreateCommand();
-        cmd3.CommandText = """
+        cmd3.CommandText = $"""
             WITH meses AS (
               SELECT generate_series(
                 date_trunc('month', NOW() - INTERVAL '3 months'),
@@ -248,9 +259,11 @@ public class BeneficiariosController : ControllerBase
             FROM  meses m
             LEFT  JOIN beneficiarios b
                   ON date_trunc('month', b.fecha_creacion) = m.mes
+                  {(filtrarTipo ? "AND b.tipo = @tipo" : "")}
             GROUP BY m.mes
             ORDER BY m.mes
             """;
+        if (filtrarTipo) cmd3.Parameters.AddWithValue("tipo", tipo!.Trim());
         var porMes = new Dictionary<string, int>();
         var esCO   = new System.Globalization.CultureInfo("es-CO");
         await using (var r = await cmd3.ExecuteReaderAsync(ct))
@@ -264,13 +277,14 @@ public class BeneficiariosController : ControllerBase
 
         // ── 4. Top 5 tallas ───────────────────────────────────────────────────
         await using var cmd4 = conn.CreateCommand();
-        cmd4.CommandText = """
+        cmd4.CommandText = $"""
             WITH ultima AS (
-              SELECT DISTINCT ON (beneficiario_id)
-                talla_camisa, talla_pantalon, talla_zapatos
-              FROM  beneficiario_talla
-              WHERE activo = true
-              ORDER BY beneficiario_id, fecha_medicion DESC
+              SELECT DISTINCT ON (bt.beneficiario_id)
+                bt.talla_camisa, bt.talla_pantalon, bt.talla_zapatos
+              FROM  beneficiario_talla bt
+              {(filtrarTipo ? "JOIN beneficiarios bx ON bx.id = bt.beneficiario_id AND bx.tipo = @tipo" : "")}
+              WHERE bt.activo = true
+              ORDER BY bt.beneficiario_id, bt.fecha_medicion DESC
             )
             (SELECT 'camisa'   AS tipo, talla_camisa   AS val, COUNT(*)::int AS cnt
              FROM ultima WHERE talla_camisa IS NOT NULL GROUP BY talla_camisa   ORDER BY cnt DESC LIMIT 5)
@@ -281,6 +295,7 @@ public class BeneficiariosController : ControllerBase
             (SELECT 'zapatos'  AS tipo, talla_zapatos  AS val, COUNT(*)::int AS cnt
              FROM ultima WHERE talla_zapatos IS NOT NULL GROUP BY talla_zapatos  ORDER BY cnt DESC LIMIT 5)
             """;
+        if (filtrarTipo) cmd4.Parameters.AddWithValue("tipo", tipo!.Trim());
         var topCamisa   = new List<TallaFreq>();
         var topPantalon = new List<TallaFreq>();
         var topZapatos  = new List<TallaFreq>();
@@ -316,7 +331,7 @@ public class BeneficiariosController : ControllerBase
             TopZapatos   = topZapatos,
             TopPantalon  = topPantalon,
         };
-        _cache.Set("stats", (object)statsDto, TimeSpan.FromMinutes(10));
+        _cache.Set(cacheKeyStr, (object)statsDto, TimeSpan.FromMinutes(10));
         return Ok(statsDto);
     }
 

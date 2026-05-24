@@ -603,8 +603,6 @@ export default function BeneficiariosPage() {
       <ModalEstadisticas
         open={modalStats}
         onClose={() => setModalStats(false)}
-        stats={statsDetalle}
-        cargando={cargandoStats}
       />
 
       {creando && (

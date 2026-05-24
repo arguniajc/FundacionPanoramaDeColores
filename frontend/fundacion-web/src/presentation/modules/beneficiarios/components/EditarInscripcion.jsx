@@ -3,7 +3,7 @@ import {
   Box, Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, TextField, MenuItem, FormControl,
   InputLabel, Select, Typography, Alert, CircularProgress,
-  InputAdornment, Autocomplete, Checkbox, FormControlLabel,
+  InputAdornment, Autocomplete, Checkbox, FormControlLabel, Chip,
 } from '@mui/material';
 import apiClient       from '../../../../infrastructure/http/apiClient';
 import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, PAISES } from '../../../../shared/constants/beneficiarios';
@@ -14,6 +14,28 @@ import UploadDocumento from '../../../../shared/components/UploadDocumento';
 import { useGeografia } from '../../../../shared/hooks/useGeografia';
 
 const GRADOS = ['Prejardín','Jardín','Transición','1°','2°','3°','4°','5°','6°','7°','8°','9°','10°','11°'];
+
+const NIVELES_EDUCATIVOS = [
+  'Sin estudios formales', 'Primaria incompleta', 'Primaria completa',
+  'Bachillerato incompleto', 'Bachillerato completo',
+  'Técnico/a', 'Tecnólogo/a', 'Profesional', 'Especialización', 'Maestría', 'Doctorado',
+];
+
+function calcularCategoria(fecha) {
+  if (!fecha) return null;
+  const hoy = new Date();
+  const fn  = new Date(fecha + 'T00:00:00');
+  let edad  = hoy.getFullYear() - fn.getFullYear();
+  const m   = hoy.getMonth() - fn.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < fn.getDate())) edad--;
+  if (edad < 0 || edad > 120) return null;
+  if (edad <=  5) return { label: 'Primera infancia', color: '#e3f2fd', tc: '#0d47a1', rango: '0 a 5 años'   };
+  if (edad <= 11) return { label: 'Infancia',          color: '#e8f5e9', tc: '#1b5e20', rango: '6 a 11 años'  };
+  if (edad <= 17) return { label: 'Adolescencia',      color: '#fff8e1', tc: '#e65100', rango: '12 a 17 años' };
+  if (edad <= 28) return { label: 'Joven',             color: '#fce4ec', tc: '#880e4f', rango: '18 a 28 años' };
+  if (edad <= 59) return { label: 'Adulto',            color: '#f3e5f5', tc: '#4a148c', rango: '29 a 59 años' };
+  return           { label: 'Adulto mayor',            color: '#efebe9', tc: '#3e2723', rango: '60+ años'     };
+}
 
 function SeccionTitulo({ children }) {
   return (
@@ -104,7 +126,24 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
     fotoDocumentoReversoUrl: inscripcion.fotoDocumentoReversoUrl || null,
   });
 
-  const esNino = form.tipo === 'niño';
+  const esNino    = form.tipo === 'niño';
+  const categoria = calcularCategoria(form.fechaNacimiento);
+
+  const handleFechaNacimiento = (e) => {
+    const fecha = e.target.value;
+    setForm(prev => {
+      const cat      = calcularCategoria(fecha);
+      const esAdulto = cat && (cat.label === 'Joven' || cat.label === 'Adulto' || cat.label === 'Adulto mayor');
+      const nuevoTipo = esAdulto ? 'adulto' : 'niño';
+      const cambiaTipo = nuevoTipo !== prev.tipo;
+      return {
+        ...prev,
+        fechaNacimiento: fecha,
+        tipo:            nuevoTipo,
+        tipoDocumento:   cambiaTipo ? (esAdulto ? 'CC' : 'RC') : prev.tipoDocumento,
+      };
+    });
+  };
 
   const [guardando, setGuardando] = useState(false);
   const [error, setError]         = useState('');
@@ -209,7 +248,13 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
                 { value: 'adulto', label: '🧑 Adulto  (18 años en adelante)' },
               ].map(op => (
                 <Box key={op.value} component="button" type="button"
-                  onClick={() => setV('tipo', op.value)}
+                  onClick={() => setForm(p => ({
+                    ...p,
+                    tipo:          op.value,
+                    tipoDocumento: op.value === 'adulto' ? 'CC' : 'RC',
+                    gradoEscolar:  '',
+                    ...(op.value === 'adulto' ? { nombreColegio: '' } : {}),
+                  }))}
                   sx={{
                     px: 2, py: 0.75, borderRadius: 5, border: '2px solid',
                     borderColor: form.tipo === op.value ? 'primary.main' : '#ccc',
@@ -245,7 +290,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Fecha de nacimiento" size="small" type="date"
-              value={form.fechaNacimiento} onChange={set('fechaNacimiento')}
+              value={form.fechaNacimiento} onChange={handleFechaNacimiento}
               slotProps={{ inputLabel: { shrink: true } }} required />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -260,6 +305,24 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
             <TextField fullWidth label="Número de documento" size="small"
               value={form.numeroDocumento} onChange={set('numeroDocumento')} />
           </Grid>
+          {categoria && (
+            <Grid size={12}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Chip
+                  label={`${categoria.label} · ${categoria.rango}`}
+                  size="small"
+                  sx={{
+                    bgcolor: categoria.color, color: categoria.tc,
+                    fontWeight: 700, fontSize: '0.78rem',
+                    border: '1px solid', borderColor: `${categoria.tc}55`,
+                  }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  Categoría detectada automáticamente
+                </Typography>
+              </Box>
+            </Grid>
+          )}
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Género</InputLabel>
@@ -438,21 +501,38 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           {/* ── Educación ── */}
           <SeccionTitulo>Educación</SeccionTitulo>
 
-          <Grid size={{ xs: 12, sm: 8 }}>
-            <TextField fullWidth label="Nombre del colegio" size="small"
-              value={form.nombreColegio} onChange={capitalizar('nombreColegio')}
-              slotProps={{ htmlInput: form.nombreColegio === 'No registra' ? { readOnly: true } : undefined }}
-              helperText={nr('nombreColegio')} />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Autocomplete
-              freeSolo
-              options={GRADOS}
-              value={form.gradoEscolar}
-              onInputChange={(_, v) => setV('gradoEscolar', v)}
-              renderInput={params => <TextField {...params} label="Grado escolar" size="small" />}
-            />
-          </Grid>
+          {esNino ? (
+            <>
+              <Grid size={{ xs: 12, sm: 8 }}>
+                <TextField fullWidth label="Nombre del colegio" size="small"
+                  value={form.nombreColegio} onChange={capitalizar('nombreColegio')}
+                  slotProps={{ htmlInput: form.nombreColegio === 'No registra' ? { readOnly: true } : undefined }}
+                  helperText={nr('nombreColegio')} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <Autocomplete
+                  freeSolo
+                  options={GRADOS}
+                  value={form.gradoEscolar}
+                  onInputChange={(_, v) => setV('gradoEscolar', v)}
+                  renderInput={params => <TextField {...params} label="Grado escolar" size="small" />}
+                />
+              </Grid>
+            </>
+          ) : (
+            <Grid size={12}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Nivel educativo alcanzado</InputLabel>
+                <Select
+                  label="Nivel educativo alcanzado"
+                  value={form.gradoEscolar}
+                  onChange={set('gradoEscolar')}>
+                  <MenuItem value=""><em>No especificado</em></MenuItem>
+                  {NIVELES_EDUCATIVOS.map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
 
           {/* ── Acudiente (solo niños) ── */}
           {esNino && (<>

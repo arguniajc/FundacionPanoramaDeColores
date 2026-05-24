@@ -1,12 +1,14 @@
+import { useState, useEffect } from 'react';
 import {
   Box, CircularProgress, Dialog, DialogContent, DialogTitle,
   Divider, IconButton, LinearProgress, Paper, Typography,
   useMediaQuery, useTheme,
 } from '@mui/material';
-import BarChartIcon  from '@mui/icons-material/BarChart';
-import CloseIcon     from '@mui/icons-material/Close';
-import WhatsAppIcon  from '@mui/icons-material/WhatsApp';
+import BarChartIcon       from '@mui/icons-material/BarChart';
+import CloseIcon          from '@mui/icons-material/Close';
+import WhatsAppIcon       from '@mui/icons-material/WhatsApp';
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate';
+import apiClient          from '../../../../../infrastructure/http/apiClient';
 
 function StatCard({ icon, label, value, color }) {
   return (
@@ -76,9 +78,34 @@ function StatSection({ title, children }) {
   );
 }
 
-export function ModalEstadisticas({ open, onClose, stats, cargando }) {
+const TIPOS_FILTRO = [
+  { v: 'todos',  label: 'Todos'     },
+  { v: 'niño',   label: '👦 Niños'  },
+  { v: 'adulto', label: '🧑 Adultos' },
+];
+
+export function ModalEstadisticas({ open, onClose }) {
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const [tipoFiltro, setTipoFiltro] = useState('todos');
+  const [stats,      setStats]      = useState(null);
+  const [cargando,   setCargando]   = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setStats(null);
+    setCargando(true);
+    const params = tipoFiltro !== 'todos' ? `?tipo=${tipoFiltro}` : '';
+    apiClient.get(`/api/beneficiarios/stats${params}`)
+      .then(({ data }) => setStats(data))
+      .catch(() => {})
+      .finally(() => setCargando(false));
+  }, [open, tipoFiltro]);
+
+  useEffect(() => {
+    if (!open) setTipoFiltro('todos');
+  }, [open]);
 
   const renderBarras = (items, maxVal, color) =>
     items.map(({ key, val }) => (
@@ -161,7 +188,7 @@ export function ModalEstadisticas({ open, onClose, stats, cargando }) {
           <BaraStat label="Sin WhatsApp"       count={sinWhatsapp}  total={total} color="#f57c00" icon={<WhatsAppIcon fontSize="inherit" />} />
           <BaraStat label="Sin dirección"      count={sinDireccion} total={total} color="#795548" />
           <BaraStat label="Tallas incompletas" count={sinTallas}    total={total} color="#5c6bc0" />
-          <BaraStat label="Sin foto del menor" count={sinFoto}      total={total} color="#9e9e9e" />
+          <BaraStat label="Sin foto"           count={sinFoto}      total={total} color="#9e9e9e" />
         </StatSection>
 
         <StatSection title="📅 Inscripciones por mes (últimos 4)">
@@ -228,6 +255,28 @@ export function ModalEstadisticas({ open, onClose, stats, cargando }) {
           <CloseIcon />
         </IconButton>
       </DialogTitle>
+
+      {/* ── Filtro tipo ── */}
+      <Box sx={{ display: 'flex', gap: 1, px: 3, py: 1.5, bgcolor: '#faf5ff', borderBottom: '1px solid', borderColor: 'divider', flexWrap: 'wrap' }}>
+        <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ alignSelf: 'center', mr: 0.5 }}>
+          Ver estadísticas de:
+        </Typography>
+        {TIPOS_FILTRO.map(op => (
+          <Box key={op.v} component="button" type="button"
+            onClick={() => setTipoFiltro(op.v)}
+            sx={{
+              px: 2, py: 0.5, borderRadius: 5, border: '2px solid',
+              borderColor: tipoFiltro === op.v ? 'var(--color-primario)' : '#ddd',
+              bgcolor: tipoFiltro === op.v ? 'var(--color-primario)' : 'transparent',
+              color: tipoFiltro === op.v ? '#fff' : 'text.secondary',
+              cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+              transition: 'all 0.15s', lineHeight: 1.8,
+            }}>
+            {op.label}
+          </Box>
+        ))}
+      </Box>
+
       <DialogContent sx={{ p: 0, overflowY: 'auto' }}>
         {content()}
       </DialogContent>

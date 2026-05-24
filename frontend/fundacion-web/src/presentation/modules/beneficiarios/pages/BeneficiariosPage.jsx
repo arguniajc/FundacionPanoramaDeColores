@@ -277,15 +277,15 @@ export default function BeneficiariosPage() {
               startIcon={<PersonAddIcon />}
               onClick={() => setCreando(true)}
               sx={{
-                bgcolor: 'rgba(255,255,255,0.18)',
-                border: '1.5px solid rgba(255,255,255,0.35)',
-                color: '#fff', fontWeight: 700,
+                bgcolor: '#2D984F',
+                border: '2px solid rgba(255,255,255,0.45)',
+                color: '#fff', fontWeight: 800,
                 borderRadius: 2, whiteSpace: 'nowrap',
-                backdropFilter: 'blur(6px)',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.28)' },
+                boxShadow: '0 2px 10px rgba(0,0,0,0.28)',
+                '&:hover': { bgcolor: '#1e6e38', boxShadow: '0 4px 16px rgba(0,0,0,0.35)' },
               }}
             >
-              Nuevo beneficiario
+              + Nuevo beneficiario
             </Button>
           </Box>
         </Box>

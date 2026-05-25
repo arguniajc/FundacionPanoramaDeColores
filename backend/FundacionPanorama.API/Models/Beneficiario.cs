@@ -9,8 +9,20 @@ public class Beneficiario
     [Key, Column("id")]
     public Guid Id { get; set; }
 
-    [Column("nombre"), Required, MaxLength(150)]
-    public string Nombre { get; set; } = "";
+    [Column("primer_nombre"), Required, MaxLength(80)]
+    public string PrimerNombre { get; set; } = "";
+
+    [Column("segundo_nombre"), MaxLength(80)]
+    public string? SegundoNombre { get; set; }
+
+    [Column("primer_apellido"), Required, MaxLength(80)]
+    public string PrimerApellido { get; set; } = "";
+
+    [Column("segundo_apellido"), MaxLength(80)]
+    public string? SegundoApellido { get; set; }
+
+    [Column("tipo"), MaxLength(20)]
+    public string Tipo { get; set; } = "niño";
 
     [Column("fecha_nacimiento")]
     public DateOnly? FechaNacimiento { get; set; }

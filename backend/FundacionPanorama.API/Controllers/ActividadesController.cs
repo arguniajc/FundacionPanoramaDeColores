@@ -1,19 +1,16 @@
-using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Filters;
 using FundacionPanorama.API.Services;
 using FundacionPanorama.Application.Features.Actividades;
 using FundacionPanorama.Application.Features.Actividades.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
 
 [ApiController]
 [Route("api/actividades")]
 [Authorize]
-public class ActividadesController(ActividadesService svc, EmailService email, AppDbContext db) : ControllerBase
+public class ActividadesController(ActividadesService svc, EmailService email) : ControllerBase
 {
     [HttpGet]
     [RequierePermiso("actividades", "ver")]
@@ -47,26 +44,21 @@ public class ActividadesController(ActividadesService svc, EmailService email, A
         if (result is null) return NotFound();
 
         // Notificar admins si hubo cambio de estado o de fechas
-        var estadoCambio  = anterior?.Estado != result.Estado;
-        var fechaCambio   = anterior?.FechaInicio != result.FechaInicio || anterior?.FechaFin != result.FechaFin;
+        var estadoCambio = anterior?.Estado != result.Estado;
+        var fechaCambio  = anterior?.FechaInicio != result.FechaInicio || anterior?.FechaFin != result.FechaFin;
         if (estadoCambio || fechaCambio)
         {
-            var admins = await ObtenerEmailsAdminsAsync(ct);
-            if (admins.Count > 0)
+            _ = Task.Run(async () =>
             {
-                _ = Task.Run(async () =>
-                {
-                    var fi = result.FechaInicio.ToString("yyyy-MM-dd HH:mm");
-                    var ff = result.FechaFin?.ToString("yyyy-MM-dd HH:mm");
-                    await email.NotificarCambioActividadAsync(
-                        admins,
-                        result.Titulo,
-                        estadoCambio ? anterior!.Estado : null,
-                        result.Estado,
-                        fi, ff,
-                        CancellationToken.None);
-                }, CancellationToken.None);
-            }
+                var fi = result.FechaInicio.ToString("yyyy-MM-dd HH:mm");
+                var ff = result.FechaFin?.ToString("yyyy-MM-dd HH:mm");
+                await email.NotificarCambioActividadAsync(
+                    result.Titulo,
+                    estadoCambio ? anterior!.Estado : null,
+                    result.Estado,
+                    fi, ff,
+                    CancellationToken.None);
+            }, CancellationToken.None);
         }
 
         return Ok(result);
@@ -121,26 +113,4 @@ public class ActividadesController(ActividadesService svc, EmailService email, A
         return ok ? NoContent() : NotFound();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private async Task<List<string>> ObtenerEmailsAdminsAsync(CancellationToken ct)
-    {
-        var emails = new List<string>();
-        try
-        {
-            await using var conn = new NpgsqlConnection(db.Database.GetConnectionString());
-            await conn.OpenAsync(ct);
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = """
-                SELECT email FROM usuarios
-                WHERE activo = true
-                  AND rol IN ('representante_legal','sistemas')
-                  AND email IS NOT NULL AND email <> ''
-                """;
-            await using var r = await cmd.ExecuteReaderAsync(ct);
-            while (await r.ReadAsync(ct)) emails.Add(r.GetString(0));
-        }
-        catch { /* silencioso */ }
-        return emails;
-    }
 }

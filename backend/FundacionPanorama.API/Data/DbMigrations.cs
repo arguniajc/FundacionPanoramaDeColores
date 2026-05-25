@@ -1081,5 +1081,10 @@ public static class DbMigrations
 
         // Eliminar columna legacy 'nombre' — reemplazada por primer_nombre/apellido
         await Migrar("ALTER TABLE beneficiarios DROP COLUMN IF EXISTS nombre", "beneficiarios.drop_nombre");
+
+        // Un beneficiario solo puede tener una inscripción activa por programa
+        await Migrar(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_inscripciones_unique_activa ON inscripciones(beneficiario_id, programa_id) WHERE activo = true",
+            "inscripciones.unique_activa");
     }
 }

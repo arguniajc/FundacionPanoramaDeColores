@@ -103,6 +103,14 @@ public class InscripcionesController : ControllerBase
             if (Convert.ToInt64(await chk.ExecuteScalarAsync()) == 0)
                 return BadRequest(new { mensaje = "Programa no encontrado." });
         }
+        await using (var chk = conn.CreateCommand())
+        {
+            chk.CommandText = "SELECT COUNT(1) FROM inscripciones WHERE beneficiario_id = @bid AND programa_id = @pid AND activo = true";
+            chk.Parameters.AddWithValue("bid", dto.BeneficiarioId);
+            chk.Parameters.AddWithValue("pid", dto.ProgramaId);
+            if (Convert.ToInt64(await chk.ExecuteScalarAsync()) > 0)
+                return Conflict(new { mensaje = "El beneficiario ya está inscrito activamente en este programa." });
+        }
 
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"INSERT INTO inscripciones (beneficiario_id, programa_id, estado, datos, observaciones, activo)

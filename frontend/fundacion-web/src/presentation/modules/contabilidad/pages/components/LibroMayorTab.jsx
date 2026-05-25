@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useAsyncData } from '../../../../../shared/hooks/useAsyncData';
 import {
   Box, Button, Chip, FormControl, InputLabel, MenuItem, Select,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -16,30 +17,21 @@ export function LibroMayorTab() {
   const [anio,       setAnio]       = useState(anioActual);
   const [mes,        setMes]        = useState('');
   const [codigoPuc,  setCodigoPuc]  = useState('');
-  const [rows,       setRows]       = useState([]);
-  const [cargando,   setCargando]   = useState(false);
-  const [error,      setError]      = useState('');
-  const [buscado,    setBuscado]    = useState(false);
-
-  const cargar = useCallback(async () => {
-    setCargando(true); setError(''); setBuscado(true);
-    try {
+  const { data: rows, cargando, error, ejecutar: cargar } = useAsyncData(
+    async () => {
       const params = { anio };
       if (mes)       params.mes       = mes;
       if (codigoPuc) params.codigoPuc = codigoPuc;
       const { data } = await apiClient.get('/api/contabilidad/libro-mayor', { params });
-      setRows(data);
-    } catch {
-      setError('No se pudo cargar el Libro Mayor.');
-    } finally {
-      setCargando(false);
-    }
-  }, [anio, mes, codigoPuc]);
+      return data;
+    },
+    { inicial: null, errorMsg: 'No se pudo cargar el Libro Mayor.' }
+  );
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => { cargar(); }, [cargar]);
 
   // Group rows by codigoPuc / categoriaNombre
-  const grupos = rows.reduce((acc, r) => {
+  const grupos = (rows ?? []).reduce((acc, r) => {
     const key = r.codigoPuc;
     if (!acc[key]) acc[key] = { nombre: r.categoriaNombre, codigo: r.codigoPuc, items: [] };
     acc[key].items.push(r);
@@ -84,7 +76,7 @@ export function LibroMayorTab() {
         </Box>
       )}
 
-      {!cargando && buscado && rows.length === 0 && (
+      {!cargando && rows !== null && rows.length === 0 && (
         <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed', borderColor: 'divider', borderRadius: 2 }}>
           <MenuBookIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
           <Typography color="text.secondary">No hay movimientos para los filtros seleccionados</Typography>

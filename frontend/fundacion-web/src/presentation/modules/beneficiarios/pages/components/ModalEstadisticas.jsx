@@ -9,6 +9,7 @@ import CloseIcon          from '@mui/icons-material/Close';
 import WhatsAppIcon       from '@mui/icons-material/WhatsApp';
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate';
 import apiClient          from '../../../../../infrastructure/http/apiClient';
+import { useAsyncData }   from '../../../../../shared/hooks/useAsyncData';
 
 function StatCard({ icon, label, value, color }) {
   return (
@@ -89,19 +90,18 @@ export function ModalEstadisticas({ open, onClose }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [tipoFiltro, setTipoFiltro] = useState('todos');
-  const [stats,      setStats]      = useState(null);
-  const [cargando,   setCargando]   = useState(false);
+
+  const { data: stats, cargando, ejecutar: cargar } = useAsyncData(
+    async (filtro) => {
+      const params = filtro !== 'todos' ? `?tipo=${filtro}` : '';
+      return (await apiClient.get(`/api/beneficiarios/stats${params}`)).data;
+    },
+    { errorMsg: 'Error al cargar estadísticas.' }
+  );
 
   useEffect(() => {
-    if (!open) return;
-    setStats(null);
-    setCargando(true);
-    const params = tipoFiltro !== 'todos' ? `?tipo=${tipoFiltro}` : '';
-    apiClient.get(`/api/beneficiarios/stats${params}`)
-      .then(({ data }) => setStats(data))
-      .catch(() => {})
-      .finally(() => setCargando(false));
-  }, [open, tipoFiltro]);
+    if (open) cargar(tipoFiltro);
+  }, [open, tipoFiltro, cargar]);
 
   useEffect(() => {
     if (!open) setTipoFiltro('todos');

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useAsyncData } from '../../../../../shared/hooks/useAsyncData';
 import {
   Box, CircularProgress, Dialog, DialogContent, DialogTitle,
   IconButton, Table, TableBody, TableCell, TableContainer, TableHead,
@@ -9,18 +10,14 @@ import { inventarioRepository } from '../../../../../infrastructure/repositories
 import { COLOR, fmtNum, fmtFecha } from './helpers';
 
 export function HistorialDialog({ open, item, onClose }) {
-  const [movs,     setMovs]     = useState([]);
-  const [cargando, setCargando] = useState(false);
+  const { data: movs, cargando, ejecutar: cargar } = useAsyncData(
+    async (itemId) => (await inventarioRepository.listarMovimientos({ itemId })).data,
+    { inicial: [], errorMsg: 'No se pudieron cargar los movimientos.' }
+  );
 
   useEffect(() => {
-    if (open && item) {
-      setCargando(true);
-      inventarioRepository.listarMovimientos({ itemId: item.id })
-        .then(r => setMovs(r.data))
-        .catch(() => {})
-        .finally(() => setCargando(false));
-    }
-  }, [open, item]);
+    if (open && item) cargar(item.id);
+  }, [open, item, cargar]);
 
   if (!item) return null;
 

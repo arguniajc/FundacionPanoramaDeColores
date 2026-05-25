@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Alert, Box, Chip, CircularProgress, Divider,
   IconButton, Tooltip, Typography,
@@ -14,6 +14,7 @@ import { actividadesRepository } from '../../../../../infrastructure/repositorie
 import { useConfirm }            from '../../../../../shared/components/ConfirmDialog';
 import { DialogHorario }         from './DialogHorario';
 import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { useAsyncData } from '../../../../../shared/hooks/useAsyncData';
 
 const COLOR = BRAND_COLOR;
 
@@ -25,26 +26,19 @@ const DIAS_COLOR = {
 
 export function TabHorarios({ programas, puedo, onCambio }) {
   const confirm = useConfirm();
-  const [horarios,  setHorarios]  = useState([]);
-  const [cargando,  setCargando]  = useState(true);
-  const [error,     setError]     = useState('');
+  const {
+    data: horarios, cargando, error, setError, ejecutar: cargar,
+  } = useAsyncData(
+    async () => {
+      const { data } = await actividadesRepository.listarHorarios();
+      onCambio?.();
+      return data;
+    },
+    { inicial: [], errorMsg: 'No se pudieron cargar los horarios.' }
+  );
   // Solo edición desde la lista; la creación se hace desde el botón principal
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando,   setEditando]   = useState(null);
-
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError('');
-    try {
-      const { data } = await actividadesRepository.listarHorarios();
-      setHorarios(data);
-      onCambio?.();
-    } catch {
-      setError('No se pudieron cargar los horarios.');
-    } finally {
-      setCargando(false);
-    }
-  }, [onCambio]);
 
   useEffect(() => { cargar(); }, [cargar]);
 

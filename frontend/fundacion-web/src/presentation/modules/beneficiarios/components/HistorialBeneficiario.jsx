@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useAsyncData } from '../../../../shared/hooks/useAsyncData';
 import {
   Box, Button, Chip, CircularProgress, Collapse,
   Tooltip, Typography,
@@ -27,21 +28,19 @@ function fmtFecha(iso) {
 }
 
 export default function HistorialBeneficiario({ beneficiarioId }) {
-  const [open,     setOpen]     = useState(false);
-  const [cargando, setCargando] = useState(false);
-  const [items,    setItems]    = useState(null);
+  const [open, setOpen] = useState(false);
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    try {
-      const { data } = await beneficiariosRepository.historial(beneficiarioId);
-      setItems(data);
-    } catch {
-      setItems([]);
-    } finally {
-      setCargando(false);
-    }
-  }, [beneficiarioId]);
+  const { data: items, cargando, ejecutar: cargar } = useAsyncData(
+    async () => {
+      try {
+        const { data } = await beneficiariosRepository.historial(beneficiarioId);
+        return data;
+      } catch {
+        return [];
+      }
+    },
+    { inicial: null }
+  );
 
   useEffect(() => {
     if (open && items === null) cargar();

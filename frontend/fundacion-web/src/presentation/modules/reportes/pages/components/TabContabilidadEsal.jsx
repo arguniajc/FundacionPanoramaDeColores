@@ -8,6 +8,7 @@ import TrendingUpIcon   from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import BalanceIcon      from '@mui/icons-material/Balance';
 import { contabilidadRepository } from '../../../../../infrastructure/repositories/contabilidadRepository';
+import { useAsyncData } from '../../../../../shared/hooks/useAsyncData';
 
 const MESES = [
   'Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -20,18 +21,14 @@ export function TabContabilidadEsal() {
   const hoy   = new Date();
   const [mes,       setMes]       = useState(hoy.getMonth() + 1);
   const [anio,      setAnio]      = useState(hoy.getFullYear());
-  const [reporte,   setReporte]   = useState(null);
-  const [cargando,  setCargando]  = useState(false);
-
   const anios = Array.from({ length: 5 }, (_, i) => hoy.getFullYear() - i);
 
-  useEffect(() => {
-    setCargando(true);
-    contabilidadRepository.reporte(mes, anio)
-      .then(({ data }) => setReporte(data))
-      .catch(() => setReporte(null))
-      .finally(() => setCargando(false));
-  }, [mes, anio]);
+  const { data: reporte, cargando, ejecutar: cargar } = useAsyncData(
+    async (m, a) => (await contabilidadRepository.reporte(m, a)).data,
+    { errorMsg: 'No se pudo cargar el reporte.' }
+  );
+
+  useEffect(() => { cargar(mes, anio); }, [cargar, mes, anio]);
 
   const ingresos = reporte?.porCuenta?.filter(c => c.tipo === 'ingreso') ?? [];
   const egresos  = reporte?.porCuenta?.filter(c => c.tipo === 'egreso')  ?? [];

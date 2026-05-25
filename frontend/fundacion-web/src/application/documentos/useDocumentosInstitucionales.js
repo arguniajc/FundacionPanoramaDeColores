@@ -1,25 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { documentosRepository } from '../../infrastructure/repositories/documentosRepository';
+import { useAsyncData } from '../../shared/hooks/useAsyncData';
 
 // Siempre carga todos los documentos; el filtrado de categoría se hace en el componente
 // para poder contar documentos por categoría sin peticiones adicionales.
 export function useDocumentosInstitucionales() {
-  const [documentos, setDocumentos] = useState([]);
-  const [cargando,   setCargando]   = useState(false);
-  const [error,      setError]      = useState('');
-
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError('');
-    try {
-      const { data } = await documentosRepository.listarInstitucionales();
-      setDocumentos(data);
-    } catch {
-      setError('No se pudo cargar los documentos.');
-    } finally {
-      setCargando(false);
-    }
-  }, []);
+  const {
+    data: documentos,
+    cargando,
+    error,
+    ejecutar: cargar,
+    setData: setDocumentos,
+  } = useAsyncData(
+    async () => (await documentosRepository.listarInstitucionales()).data,
+    { inicial: [], errorMsg: 'No se pudo cargar los documentos.' }
+  );
 
   useEffect(() => { cargar(); }, [cargar]);
 

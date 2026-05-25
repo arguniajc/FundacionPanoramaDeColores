@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import apiClient from '../../../../infrastructure/http/apiClient';
+import { useAsyncData } from '../../../../shared/hooks/useAsyncData';
 
 // Módulos y las acciones posibles para cada uno
 const MODULOS = [
@@ -66,27 +67,25 @@ function matrixToDto(matrix) {
 }
 
 export default function SeguridadPage() {
-  const [rol,       setRol]     = useState(ROLES[0].value);
-  const [matrix,    setMatrix]  = useState(null);
-  const [cargando,  setCargando]= useState(false);
-  const [saving,    setSaving]  = useState(false);
-  const [error,     setError]   = useState('');
-  const [guardado,  setGuardado]= useState(false);
+  const [rol,     setRol]     = useState(ROLES[0].value);
+  const [saving,  setSaving]  = useState(false);
+  const [guardado,setGuardado]= useState(false);
 
-  const cargar = useCallback(async (rolSeleccionado) => {
-    setCargando(true);
-    setError('');
-    setGuardado(false);
-    try {
+  const {
+    data: matrix, cargando, error, ejecutar: _cargar, setData: setMatrix, setError,
+  } = useAsyncData(
+    async (rolSeleccionado) => {
       const { data } = await apiClient.get('/api/permisos/roles');
       const entry = data.find(r => r.rol === rolSeleccionado);
-      setMatrix(buildMatrix(entry?.permisos ?? {}));
-    } catch {
-      setError('No se pudieron cargar los permisos.');
-    } finally {
-      setCargando(false);
-    }
-  }, []);
+      return buildMatrix(entry?.permisos ?? {});
+    },
+    { errorMsg: 'No se pudieron cargar los permisos.' }
+  );
+
+  const cargar = useCallback(async (rolSeleccionado) => {
+    setGuardado(false);
+    await _cargar(rolSeleccionado);
+  }, [_cargar]);
 
   useEffect(() => { cargar(rol); }, [rol, cargar]);
 

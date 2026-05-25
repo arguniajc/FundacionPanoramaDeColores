@@ -1,5 +1,5 @@
 ﻿// Auditoría de descargas de documentos: muestra quién descargó qué y cuándo.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -9,33 +9,26 @@ import SearchIcon    from '@mui/icons-material/Search';
 import DownloadIcon  from '@mui/icons-material/Download';
 import apiClient     from '../../../../infrastructure/http/apiClient';
 import SkeletonTabla from '../../../../shared/components/SkeletonTabla';
+import { useAsyncData } from '../../../../shared/hooks/useAsyncData';
 
 const POR_PAGINA = 20;
 
 export default function LogDescargasPage() {
-  const [registros, setRegistros] = useState([]);
-  const [total,     setTotal]     = useState(0);
-  const [pagina,    setPagina]    = useState(1);
-  const [cargando,  setCargando]  = useState(false);
-  const [error,     setError]     = useState('');
-  const [buscar,    setBuscar]    = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [buscar, setBuscar] = useState('');
 
-  // Obtiene una página de registros de descarga desde la API
-  const cargar = useCallback(async (pag) => {
-    setCargando(true);
-    setError('');
-    try {
+  const { data: resultado, cargando, error, ejecutar: cargar } = useAsyncData(
+    async (pag) => {
       const { data } = await apiClient.get('/api/archivos/log-descargas', {
         params: { pagina: pag, porPagina: POR_PAGINA },
       });
-      setRegistros(data.data);
-      setTotal(data.total);
-    } catch {
-      setError('No se pudo cargar el registro de descargas.');
-    } finally {
-      setCargando(false);
-    }
-  }, []);
+      return data;
+    },
+    { errorMsg: 'No se pudo cargar el registro de descargas.' }
+  );
+
+  const registros = resultado?.data  ?? [];
+  const total     = resultado?.total ?? 0;
 
   // Recarga los registros cuando cambia el número de página activa
   useEffect(() => { cargar(pagina); }, [cargar, pagina]);

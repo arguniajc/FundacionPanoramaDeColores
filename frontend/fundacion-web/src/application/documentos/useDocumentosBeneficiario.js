@@ -1,24 +1,19 @@
-import { useState, useCallback } from 'react';
 import { documentosRepository } from '../../infrastructure/repositories/documentosRepository';
+import { useAsyncData } from '../../shared/hooks/useAsyncData';
 
 export function useDocumentosBeneficiario() {
-  const [archivos,  setArchivos]  = useState([]);
-  const [cargando,  setCargando]  = useState(false);
-  const [error,     setError]     = useState('');
-
-  const cargar = useCallback(async (beneficiarioId) => {
-    if (!beneficiarioId) { setArchivos([]); return; }
-    setCargando(true);
-    setError('');
-    try {
-      const { data } = await documentosRepository.listarPorBeneficiario(beneficiarioId);
-      setArchivos(data);
-    } catch {
-      setError('No se pudo cargar los archivos del beneficiario.');
-    } finally {
-      setCargando(false);
-    }
-  }, []);
+  const {
+    data: archivos,
+    cargando,
+    error,
+    ejecutar: cargar,
+  } = useAsyncData(
+    async (beneficiarioId) => {
+      if (!beneficiarioId) return [];
+      return (await documentosRepository.listarPorBeneficiario(beneficiarioId)).data;
+    },
+    { inicial: [], errorMsg: 'No se pudo cargar los archivos del beneficiario.' }
+  );
 
   const guardar = async (beneficiarioId, dto) => {
     await documentosRepository.guardarArchivoBeneficiario(beneficiarioId, dto);

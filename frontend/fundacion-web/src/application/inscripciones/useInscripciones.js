@@ -1,24 +1,17 @@
-import { useState, useCallback } from 'react';
 import { inscripcionesRepository } from '../../infrastructure/repositories/inscripcionesRepository';
+import { useAsyncData } from '../../shared/hooks/useAsyncData';
 
 export function useInscripciones(filtros = {}) {
-  const [inscripciones, setInscripciones] = useState([]);
-  const [cargando,      setCargando]      = useState(false);
-  const [error,         setError]         = useState('');
-
-  const cargar = useCallback(async (params = filtros) => {
-    setCargando(true);
-    setError('');
-    try {
-      const { data } = await inscripcionesRepository.listar(params);
-      setInscripciones(data);
-    } catch {
-      setError('No se pudieron cargar las inscripciones.');
-    } finally {
-      setCargando(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const {
+    data: inscripciones,
+    cargando,
+    error,
+    ejecutar: cargar,
+    setData: setInscripciones,
+  } = useAsyncData(
+    async (params = filtros) => (await inscripcionesRepository.listar(params)).data,
+    { inicial: [], errorMsg: 'No se pudieron cargar las inscripciones.' }
+  );
 
   const crear = async (dto) => {
     const { data } = await inscripcionesRepository.crear(dto);

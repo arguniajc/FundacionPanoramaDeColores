@@ -8,42 +8,69 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
 {
     public async Task<IReadOnlyList<ActividadResumenDto>> ListarAsync(int? mes, int? anio, Guid? programaId, CancellationToken ct)
     {
-        await using var conn = factory.Create();
-        await conn.OpenAsync(ct);
-        await using var cmd = conn.CreateCommand();
+        // Auto-transición de estados según fecha
+        await using (var connAuto = factory.Create())
+        {
+            await connAuto.OpenAsync(ct);
+            await using var cmdReal = connAuto.CreateCommand();
+            cmdReal.CommandText = """
+                UPDATE actividades
+                SET estado = 'realizada'
+                WHERE estado IN ('programada','en_curso')
+                  AND fecha_fin IS NOT NULL
+                  AND fecha_fin < NOW()
+                """;
+            await cmdReal.ExecuteNonQueryAsync(ct);
 
-        var where = new List<string>();
-        if (mes.HasValue)        where.Add("EXTRACT(MONTH FROM a.fecha_inicio) = @mes");
-        if (anio.HasValue)       where.Add("EXTRACT(YEAR  FROM a.fecha_inicio) = @anio");
-        if (programaId.HasValue) where.Add("a.programa_id = @pid");
+            await using var cmdCurso = connAuto.CreateCommand();
+            cmdCurso.CommandText = """
+                UPDATE actividades
+                SET estado = 'en_curso'
+                WHERE estado = 'programada'
+                  AND fecha_inicio <= NOW()
+                  AND (fecha_fin IS NULL OR fecha_fin > NOW())
+                """;
+            await cmdCurso.ExecuteNonQueryAsync(ct);
+        }
 
-        cmd.CommandText = $"""
-            SELECT a.id, a.titulo, a.descripcion, a.programa_id, p.nombre AS programa_nombre,
-                   a.fecha_inicio, a.fecha_fin, a.lugar, a.estado,
-                   (SELECT COUNT(*) FROM actividad_asistencia aa WHERE aa.actividad_id = a.id) AS total_inscritos
-            FROM actividades a
-            LEFT JOIN programas p ON p.id = a.programa_id
-            {(where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "")}
-            ORDER BY a.fecha_inicio
-            """;
-
-        if (mes.HasValue)        cmd.Parameters.AddWithValue("mes",  mes.Value);
-        if (anio.HasValue)       cmd.Parameters.AddWithValue("anio", anio.Value);
-        if (programaId.HasValue) cmd.Parameters.AddWithValue("pid",  programaId.Value);
-
-        await using var r = await cmd.ExecuteReaderAsync(ct);
         var filas = new List<(Guid Id, string Titulo, string? Desc, Guid? ProgId, string? ProgNombre, DateTime FI, DateTime? FF, string? Lugar, string Estado, int Total)>();
-        while (await r.ReadAsync(ct))
-            filas.Add((r.GetGuid(0), r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2),
-                r.IsDBNull(3) ? null : r.GetGuid(3), r.IsDBNull(4) ? null : r.GetString(4),
-                r.GetDateTime(5), r.IsDBNull(6) ? null : r.GetDateTime(6),
-                r.IsDBNull(7) ? null : r.GetString(7), r.GetString(8), (int)(long)r[9]));
-        await r.DisposeAsync();
+
+        await using (var conn = factory.Create())
+        {
+            await conn.OpenAsync(ct);
+            await using var cmd = conn.CreateCommand();
+
+            var where = new List<string>();
+            if (mes.HasValue)        where.Add("EXTRACT(MONTH FROM a.fecha_inicio) = @mes");
+            if (anio.HasValue)       where.Add("EXTRACT(YEAR  FROM a.fecha_inicio) = @anio");
+            if (programaId.HasValue) where.Add("a.programa_id = @pid");
+
+            cmd.CommandText = $"""
+                SELECT a.id, a.titulo, a.descripcion, a.programa_id, p.nombre AS programa_nombre,
+                       a.fecha_inicio, a.fecha_fin, a.lugar, a.estado,
+                       (SELECT COUNT(*) FROM actividad_asistencia aa WHERE aa.actividad_id = a.id) AS total_inscritos
+                FROM actividades a
+                LEFT JOIN programas p ON p.id = a.programa_id
+                {(where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "")}
+                ORDER BY a.fecha_inicio
+                """;
+
+            if (mes.HasValue)        cmd.Parameters.AddWithValue("mes",  mes.Value);
+            if (anio.HasValue)       cmd.Parameters.AddWithValue("anio", anio.Value);
+            if (programaId.HasValue) cmd.Parameters.AddWithValue("pid",  programaId.Value);
+
+            await using var r = await cmd.ExecuteReaderAsync(ct);
+            while (await r.ReadAsync(ct))
+                filas.Add((r.GetGuid(0), r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2),
+                    r.IsDBNull(3) ? null : r.GetGuid(3), r.IsDBNull(4) ? null : r.GetString(4),
+                    r.GetDateTime(5), r.IsDBNull(6) ? null : r.GetDateTime(6),
+                    r.IsDBNull(7) ? null : r.GetString(7), r.GetString(8), (int)(long)r[9]));
+        }
 
         if (filas.Count == 0) return [];
 
-        var ids    = filas.Select(f => f.Id).ToArray();
-        var diasMap = await CargarDiasAsync(conn, ids, ct);
+        var ids     = filas.Select(f => f.Id).ToArray();
+        var diasMap = await CargarDiasAsync(ids, ct);
 
         return filas.Select(f => new ActividadResumenDto(
             f.Id, f.Titulo, f.Desc, f.ProgId, f.ProgNombre,
@@ -53,108 +80,105 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
 
     public async Task<ActividadDto?> ObtenerAsync(Guid id, CancellationToken ct)
     {
-        await using var conn = factory.Create();
-        await conn.OpenAsync(ct);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            SELECT a.id, a.titulo, a.descripcion, a.programa_id, p.nombre AS programa_nombre,
-                   a.fecha_inicio, a.fecha_fin, a.lugar, a.estado,
-                   (SELECT COUNT(*)           FROM actividad_asistencia aa WHERE aa.actividad_id = a.id)                       AS total_inscritos,
-                   (SELECT COUNT(*)           FROM actividad_asistencia aa WHERE aa.actividad_id = a.id AND aa.asistio = true) AS total_asistieron,
-                   a.created_at
-            FROM actividades a
-            LEFT JOIN programas p ON p.id = a.programa_id
-            WHERE a.id = @id
-            """;
-        cmd.Parameters.AddWithValue("id", id);
-        await using var r = await cmd.ExecuteReaderAsync(ct);
-        if (!await r.ReadAsync(ct)) return null;
+        (Guid Id, string Titulo, string? Desc, Guid? ProgId, string? ProgNombre, DateTime FI, DateTime? FF, string? Lugar, string Estado, int TotalInscritos, int TotalAsistieron, DateTime CreatedAt)? row = null;
 
-        var row = (
-            Id:             r.GetGuid(0),
-            Titulo:         r.GetString(1),
-            Desc:           r.IsDBNull(2)  ? null : r.GetString(2),
-            ProgId:         r.IsDBNull(3)  ? (Guid?)null : r.GetGuid(3),
-            ProgNombre:     r.IsDBNull(4)  ? null : r.GetString(4),
-            FI:             r.GetDateTime(5),
-            FF:             r.IsDBNull(6)  ? (DateTime?)null : r.GetDateTime(6),
-            Lugar:          r.IsDBNull(7)  ? null : r.GetString(7),
-            Estado:         r.GetString(8),
-            TotalInscritos: (int)(long)r[9],
-            TotalAsistieron:(int)(long)r[10],
-            CreatedAt:      r.GetDateTime(11));
-        await r.DisposeAsync();
+        await using (var conn = factory.Create())
+        {
+            await conn.OpenAsync(ct);
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                SELECT a.id, a.titulo, a.descripcion, a.programa_id, p.nombre AS programa_nombre,
+                       a.fecha_inicio, a.fecha_fin, a.lugar, a.estado,
+                       (SELECT COUNT(*)           FROM actividad_asistencia aa WHERE aa.actividad_id = a.id)                       AS total_inscritos,
+                       (SELECT COUNT(*)           FROM actividad_asistencia aa WHERE aa.actividad_id = a.id AND aa.asistio = true) AS total_asistieron,
+                       a.created_at
+                FROM actividades a
+                LEFT JOIN programas p ON p.id = a.programa_id
+                WHERE a.id = @id
+                """;
+            cmd.Parameters.AddWithValue("id", id);
+            await using var r = await cmd.ExecuteReaderAsync(ct);
+            if (await r.ReadAsync(ct))
+                row = (r.GetGuid(0), r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2),
+                    r.IsDBNull(3) ? (Guid?)null : r.GetGuid(3), r.IsDBNull(4) ? null : r.GetString(4),
+                    r.GetDateTime(5), r.IsDBNull(6) ? (DateTime?)null : r.GetDateTime(6),
+                    r.IsDBNull(7) ? null : r.GetString(7), r.GetString(8),
+                    (int)(long)r[9], (int)(long)r[10], r.GetDateTime(11));
+        }
 
-        var diasMap = await CargarDiasAsync(conn, [row.Id], ct);
-        var dias = diasMap.TryGetValue(row.Id, out var d) ? d : (IReadOnlyList<ActividadDiaDto>)[];
+        if (row is null) return null;
+
+        var diasMap = await CargarDiasAsync([row.Value.Id], ct);
+        var dias    = diasMap.TryGetValue(row.Value.Id, out var d) ? d : (IReadOnlyList<ActividadDiaDto>)[];
 
         return new ActividadDto(
-            row.Id, row.Titulo, row.Desc, row.ProgId, row.ProgNombre,
-            row.FI, row.FF, row.Lugar, row.Estado,
-            row.TotalInscritos, row.TotalAsistieron, row.CreatedAt, dias);
+            row.Value.Id, row.Value.Titulo, row.Value.Desc, row.Value.ProgId, row.Value.ProgNombre,
+            row.Value.FI, row.Value.FF, row.Value.Lugar, row.Value.Estado,
+            row.Value.TotalInscritos, row.Value.TotalAsistieron, row.Value.CreatedAt, dias);
     }
 
     public async Task<ActividadDto> CrearAsync(CrearActividadDto dto, CancellationToken ct)
     {
-        await using var conn = factory.Create();
-        await conn.OpenAsync(ct);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO actividades (titulo, descripcion, programa_id, fecha_inicio, fecha_fin, lugar)
-            VALUES (@titulo, @desc, @pid, @fi, @ff, @lugar)
-            RETURNING id
-            """;
-        cmd.Parameters.AddWithValue("titulo", dto.Titulo.Trim());
-        cmd.Parameters.AddWithValue("desc",   (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
-        cmd.Parameters.Add(new NpgsqlParameter("pid", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = (object?)dto.ProgramaId ?? DBNull.Value });
-        cmd.Parameters.AddWithValue("fi",     dto.FechaInicio);
-        cmd.Parameters.AddWithValue("ff",     (object?)dto.FechaFin ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("lugar",  (object?)dto.Lugar?.Trim() ?? DBNull.Value);
+        Guid newId;
+        await using (var conn = factory.Create())
+        {
+            await conn.OpenAsync(ct);
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                INSERT INTO actividades (titulo, descripcion, programa_id, fecha_inicio, fecha_fin, lugar)
+                VALUES (@titulo, @desc, @pid, @fi, @ff, @lugar)
+                RETURNING id
+                """;
+            cmd.Parameters.AddWithValue("titulo", dto.Titulo.Trim());
+            cmd.Parameters.AddWithValue("desc",   (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
+            cmd.Parameters.Add(new NpgsqlParameter("pid", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = (object?)dto.ProgramaId ?? DBNull.Value });
+            cmd.Parameters.AddWithValue("fi",    dto.FechaInicio);
+            cmd.Parameters.AddWithValue("ff",    (object?)dto.FechaFin ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("lugar", (object?)dto.Lugar?.Trim() ?? DBNull.Value);
+            newId = (Guid)(await cmd.ExecuteScalarAsync(ct))!;
 
-        var newId = (Guid)(await cmd.ExecuteScalarAsync(ct))!;
-
-        if (dto.DiasAdicionales?.Count > 0)
-            await InsertarDiasAsync(conn, newId, dto.DiasAdicionales, ct);
-
+            if (dto.DiasAdicionales?.Count > 0)
+                await InsertarDiasAsync(conn, newId, dto.DiasAdicionales, ct);
+        }
         return (await ObtenerAsync(newId, ct))!;
     }
 
     public async Task<ActividadDto?> ActualizarAsync(Guid id, ActualizarActividadDto dto, CancellationToken ct)
     {
-        await using var conn = factory.Create();
-        await conn.OpenAsync(ct);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            UPDATE actividades SET
-                titulo      = @titulo,
-                descripcion = @desc,
-                programa_id = @pid,
-                fecha_inicio = @fi,
-                fecha_fin   = @ff,
-                lugar       = @lugar,
-                estado      = @estado
-            WHERE id = @id
-            """;
-        cmd.Parameters.AddWithValue("titulo", dto.Titulo.Trim());
-        cmd.Parameters.AddWithValue("desc",   (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
-        cmd.Parameters.Add(new NpgsqlParameter("pid", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = (object?)dto.ProgramaId ?? DBNull.Value });
-        cmd.Parameters.AddWithValue("fi",     dto.FechaInicio);
-        cmd.Parameters.AddWithValue("ff",     (object?)dto.FechaFin ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("lugar",  (object?)dto.Lugar?.Trim() ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("estado", dto.Estado);
-        cmd.Parameters.AddWithValue("id",     id);
-        var rows = await cmd.ExecuteNonQueryAsync(ct);
-        if (rows == 0) return null;
+        await using (var conn = factory.Create())
+        {
+            await conn.OpenAsync(ct);
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                UPDATE actividades SET
+                    titulo       = @titulo,
+                    descripcion  = @desc,
+                    programa_id  = @pid,
+                    fecha_inicio = @fi,
+                    fecha_fin    = @ff,
+                    lugar        = @lugar,
+                    estado       = @estado
+                WHERE id = @id
+                """;
+            cmd.Parameters.AddWithValue("titulo", dto.Titulo.Trim());
+            cmd.Parameters.AddWithValue("desc",   (object?)dto.Descripcion?.Trim() ?? DBNull.Value);
+            cmd.Parameters.Add(new NpgsqlParameter("pid", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = (object?)dto.ProgramaId ?? DBNull.Value });
+            cmd.Parameters.AddWithValue("fi",    dto.FechaInicio);
+            cmd.Parameters.AddWithValue("ff",    (object?)dto.FechaFin ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("lugar", (object?)dto.Lugar?.Trim() ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("estado", dto.Estado);
+            cmd.Parameters.AddWithValue("id",    id);
+            var rows = await cmd.ExecuteNonQueryAsync(ct);
+            if (rows == 0) return null;
 
-        // Reemplazar días adicionales
-        await using var del = conn.CreateCommand();
-        del.CommandText = "DELETE FROM actividad_dias WHERE actividad_id = @id";
-        del.Parameters.AddWithValue("id", id);
-        await del.ExecuteNonQueryAsync(ct);
+            await using var del = conn.CreateCommand();
+            del.CommandText = "DELETE FROM actividad_dias WHERE actividad_id = @id";
+            del.Parameters.AddWithValue("id", id);
+            await del.ExecuteNonQueryAsync(ct);
 
-        if (dto.DiasAdicionales?.Count > 0)
-            await InsertarDiasAsync(conn, id, dto.DiasAdicionales, ct);
-
+            if (dto.DiasAdicionales?.Count > 0)
+                await InsertarDiasAsync(conn, id, dto.DiasAdicionales, ct);
+        }
         return await ObtenerAsync(id, ct);
     }
 
@@ -195,8 +219,7 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         var list = new List<AsistenciaItemDto>();
         while (await r.ReadAsync(ct))
             list.Add(new AsistenciaItemDto(
-                r.GetGuid(0),
-                r.GetString(1),
+                r.GetGuid(0), r.GetString(1),
                 r.IsDBNull(2) ? null : r.GetString(2),
                 r.GetBoolean(3)));
         return list;
@@ -278,25 +301,25 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             UPDATE programa_horarios SET
-                programa_id            = @pid,
-                dia_semana             = @dia,
-                hora_inicio            = @hi::time,
-                hora_fin               = @hf::time,
-                lugar                  = @lugar,
-                activo                 = @activo,
-                fecha_inicio_vigencia  = @fiv::date,
-                fecha_fin_vigencia     = @ffv::date
+                programa_id           = @pid,
+                dia_semana            = @dia,
+                hora_inicio           = @hi::time,
+                hora_fin              = @hf::time,
+                lugar                 = @lugar,
+                activo                = @activo,
+                fecha_inicio_vigencia = @fiv::date,
+                fecha_fin_vigencia    = @ffv::date
             WHERE id = @id
             """;
-        cmd.Parameters.AddWithValue("pid",   dto.ProgramaId);
-        cmd.Parameters.AddWithValue("dia",   dto.DiaSemana);
-        cmd.Parameters.AddWithValue("hi",    dto.HoraInicio);
-        cmd.Parameters.AddWithValue("hf",    dto.HoraFin);
-        cmd.Parameters.AddWithValue("lugar", (object?)dto.Lugar?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("pid",    dto.ProgramaId);
+        cmd.Parameters.AddWithValue("dia",    dto.DiaSemana);
+        cmd.Parameters.AddWithValue("hi",     dto.HoraInicio);
+        cmd.Parameters.AddWithValue("hf",     dto.HoraFin);
+        cmd.Parameters.AddWithValue("lugar",  (object?)dto.Lugar?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("activo", dto.Activo);
         cmd.Parameters.Add(new NpgsqlParameter("fiv", NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaInicioVigencia ?? DBNull.Value });
         cmd.Parameters.Add(new NpgsqlParameter("ffv", NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaFinVigencia    ?? DBNull.Value });
-        cmd.Parameters.AddWithValue("id",    id);
+        cmd.Parameters.AddWithValue("id",     id);
         var rows = await cmd.ExecuteNonQueryAsync(ct);
         if (rows == 0) return null;
         return (await ListarHorariosAsync(null, ct)).FirstOrDefault(h => h.Id == id);
@@ -314,17 +337,18 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
 
     // ── Helpers ──────────────────────────────────────────────────────────────────
 
-    private static async Task<Dictionary<Guid, List<ActividadDiaDto>>> CargarDiasAsync(
-        NpgsqlConnection conn, Guid[] ids, CancellationToken ct)
+    private async Task<Dictionary<Guid, List<ActividadDiaDto>>> CargarDiasAsync(Guid[] ids, CancellationToken ct)
     {
         var map = new Dictionary<Guid, List<ActividadDiaDto>>();
         if (ids.Length == 0) return map;
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             SELECT id, actividad_id,
-                   TO_CHAR(fecha,'YYYY-MM-DD'),
-                   TO_CHAR(hora_inicio,'HH24:MI'),
-                   TO_CHAR(hora_fin,   'HH24:MI')
+                   TO_CHAR(fecha,       'YYYY-MM-DD'),
+                   TO_CHAR(hora_inicio, 'HH24:MI'),
+                   TO_CHAR(hora_fin,    'HH24:MI')
             FROM actividad_dias
             WHERE actividad_id = ANY(@ids)
             ORDER BY fecha, hora_inicio
@@ -340,16 +364,12 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         return map;
     }
 
-    private static async Task InsertarDiasAsync(
-        NpgsqlConnection conn, Guid actividadId, List<CrearActividadDiaDto> dias, CancellationToken ct)
+    private static async Task InsertarDiasAsync(NpgsqlConnection conn, Guid actividadId, List<CrearActividadDiaDto> dias, CancellationToken ct)
     {
         foreach (var dia in dias)
         {
             await using var cmd = conn.CreateCommand();
-            cmd.CommandText = """
-                INSERT INTO actividad_dias (actividad_id, fecha, hora_inicio, hora_fin)
-                VALUES (@aid, @fecha::date, @hi::time, @hf::time)
-                """;
+            cmd.CommandText = "INSERT INTO actividad_dias (actividad_id, fecha, hora_inicio, hora_fin) VALUES (@aid, @fecha::date, @hi::time, @hf::time)";
             cmd.Parameters.AddWithValue("aid",   actividadId);
             cmd.Parameters.AddWithValue("fecha", dia.Fecha);
             cmd.Parameters.AddWithValue("hi",    dia.HoraInicio);
@@ -359,13 +379,8 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
     }
 
     static HorarioDto MapHorario(NpgsqlDataReader r) => new(
-        r.GetGuid(0),
-        r.GetGuid(1),
-        r.GetString(2),
-        r.GetString(3),
-        r.GetInt16(4),
-        r.GetString(5),
-        r.GetString(6),
+        r.GetGuid(0), r.GetGuid(1), r.GetString(2), r.GetString(3),
+        r.GetInt16(4), r.GetString(5), r.GetString(6),
         r.IsDBNull(7)  ? null : r.GetString(7),
         r.GetBoolean(8),
         r.IsDBNull(9)  ? null : r.GetString(9),

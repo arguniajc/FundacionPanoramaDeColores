@@ -45,6 +45,61 @@ public class EmailService(IConfiguracionRepository repo)
         }
     }
 
+        // Notifica a los administradores sobre cambios en una actividad (fecha o estado).
+    public async Task NotificarCambioActividadAsync(
+        IEnumerable<string> adminEmails,
+        string tituloActividad,
+        string? estadoAnterior,
+        string estadoNuevo,
+        string? fechaInicio,
+        string? fechaFin,
+        CancellationToken ct = default)
+    {
+        var smtp = await repo.ObtenerSmtpAsync(ct);
+        if (smtp is null) return; // Sin configuración SMTP: silencioso
+
+        var cambioEstado = estadoAnterior != null && estadoAnterior != estadoNuevo
+            ? $"<tr><td style='padding:4px 8px;color:#555'>Estado</td><td style='padding:4px 8px'><strong>{estadoAnterior}</strong> → <strong>{estadoNuevo}</strong></td></tr>"
+            : "";
+        var filaFecha = fechaInicio is not null
+            ? $"<tr><td style='padding:4px 8px;color:#555'>Fecha / hora</td><td style='padding:4px 8px'>{fechaInicio}{(fechaFin != null ? " → " + fechaFin : "")}</td></tr>"
+            : "";
+
+        var html = $"""
+            <div style="font-family:Arial,sans-serif;font-size:14px;max-width:560px">
+              <h2 style="color:#4E1B95">Cambio en actividad</h2>
+              <p>Se modificó la actividad <strong>{tituloActividad}</strong>:</p>
+              <table style="border-collapse:collapse;width:100%">
+                {cambioEstado}
+                {filaFecha}
+              </table>
+              <p style="color:#888;font-size:12px;margin-top:24px">Sistema Fundación Panorama de Colores</p>
+            </div>
+            """;
+
+        foreach (var email in adminEmails)
+        {
+            try
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(
+                    string.IsNullOrWhiteSpace(smtp.DeNombre) ? "Fundación Panorama" : smtp.DeNombre,
+                    string.IsNullOrWhiteSpace(smtp.DeEmail)  ? smtp.Usuario : smtp.DeEmail));
+                message.To.Add(MailboxAddress.Parse(email));
+                message.Subject = $"[Actividad] Cambio en: {tituloActividad}";
+                message.Body    = new BodyBuilder { HtmlBody = html }.ToMessageBody();
+
+                using var client = new SmtpClient();
+                var secureSocket = smtp.Ssl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto;
+                await client.ConnectAsync(smtp.Host, smtp.Puerto, secureSocket, ct);
+                await client.AuthenticateAsync(smtp.Usuario, smtp.Clave, ct);
+                await client.SendAsync(message, ct);
+                await client.DisconnectAsync(true, ct);
+            }
+            catch { /* No interrumpir el flujo principal por fallo de email */ }
+        }
+    }
+
     // Envía un email de prueba al usuario autenticado para verificar la configuración SMTP.
     public async Task<(bool Ok, string Detalle)> EnviarPruebaAsync(
         string destinatarioEmail, CancellationToken ct = default)

@@ -23,17 +23,14 @@ const EMPTY_FORM = {
   diasAdicionales: [],
 };
 
+// El backend devuelve ISO sin timezone (DateTimeKind.Unspecified),
+// entonces extraemos fecha y hora directamente del string sin conversión TZ.
 function parseFecha(iso) {
-  if (!iso) return '';
-  // ISO puede venir como "2024-01-15T09:00:00Z" o "2024-01-15T09:00:00"
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return iso ? iso.slice(0, 10) : '';
 }
 
 function parseHora(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return iso ? iso.slice(11, 16) : '';
 }
 
 export function DialogActividad({ open, editando, programas, onClose, onGuardado }) {

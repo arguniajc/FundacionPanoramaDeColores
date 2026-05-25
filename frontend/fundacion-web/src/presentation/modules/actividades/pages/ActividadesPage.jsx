@@ -126,7 +126,8 @@ export default function ActividadesPage() {
 
   const cargar = useCallback(async (info) => {
     try {
-      const fecha = info?.start ?? new Date();
+      // currentStart es el primer día del mes/semana mostrado (sin días de relleno del mes anterior)
+      const fecha = info?.view?.currentStart ?? info?.start ?? new Date();
       const { data } = await actividadesRepository.listar({
         mes:  fecha.getMonth() + 1,
         anio: fecha.getFullYear(),
@@ -183,6 +184,25 @@ export default function ActividadesPage() {
     if (!await confirm('¿Eliminar esta actividad?')) return;
     try {
       await actividadesRepository.eliminar(id);
+      cargar();
+    } catch { /* silencioso */ }
+  };
+
+  const cancelar = async (a) => {
+    if (!await confirm(`¿Marcar "${a.titulo}" como cancelada?`)) return;
+    try {
+      await actividadesRepository.actualizar(a.id, {
+        titulo:      a.titulo,
+        descripcion: a.descripcion ?? null,
+        programaId:  a.programaId  ?? null,
+        lugar:       a.lugar       ?? null,
+        fechaInicio: a.fechaInicio,
+        fechaFin:    a.fechaFin    ?? null,
+        estado:      'cancelada',
+        diasAdicionales: (a.diasAdicionales ?? []).map(d => ({
+          fecha: d.fecha, horaInicio: d.horaInicio, horaFin: d.horaFin,
+        })),
+      });
       cargar();
     } catch { /* silencioso */ }
   };
@@ -414,6 +434,13 @@ export default function ActividadesPage() {
           <MenuItem onClick={() => { setActividadSel(ctxMenu.actividad); setAsistenciaOpen(true); cerrarCtxMenu(); }}>
             <ListItemIcon><PeopleIcon fontSize="small" color="primary" /></ListItemIcon>
             <ListItemText primary="Registrar asistencia" />
+          </MenuItem>
+        )}
+        {puedo('actividades', 'editar') && ctxMenu?.actividad?.estado !== 'cancelada' && (
+          <MenuItem onClick={() => { cancelar(ctxMenu.actividad); cerrarCtxMenu(); }}
+            sx={{ color: 'warning.dark' }}>
+            <ListItemIcon><DeleteIcon fontSize="small" color="warning" /></ListItemIcon>
+            <ListItemText primary="Cancelar actividad" />
           </MenuItem>
         )}
         {puedo('actividades', 'eliminar') && <Divider />}

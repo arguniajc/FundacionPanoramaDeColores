@@ -1,61 +1,149 @@
+# Fundación Panorama de Colores
 
-## Colores Utilizados
-- **Primario - Púrpura Profundo:** `#4E1B95` (CTA Principal)
-- **Primario - Verde Brillante:** `#2D984F` (Énfasis/Íconos)
-- **Secundario - Naranja Vibrante:** `#F59D1E` (Contraste/Alertas)
-- **Secundario - Cian Suave:** `#B4E8E8` (Fondos Ligeros)
-- **Neutro - Fondo Principal:** `#FFFFFF` (Blanco)
-- **Neutro - Texto Principal:** `#1E1E1E` (Negro Suave)
-- **Neutro - Texto Secundario:** `#6A6A6A` (Gris Medio)
+Plataforma digital de la Fundación Panorama de Colores — Arte, deporte y conciencia ambiental para niñas y niños del barrio Panorama, Yumbo (Valle del Cauca).
 
-## Secciones de la Página
-1. **Menú de navegación** - Con enlaces a todas las secciones
-2. **Slider principal** - Con 3 diapositivas destacando las áreas de trabajo
-3. **Quiénes Somos** - Misión, visión e historia de la fundación
-4. **Qué Hacemos** - Programas de arte, deporte y conciencia ambiental
-5. **Nuestro Impacto** - Estadísticas con contadores animados
-6. **Galería** - Fotos de eventos realizados
-7. **Alianzas** - Organizaciones con las que trabajamos
-8. **Cómo Ayudar** - Opciones de donación y voluntariado
-9. **Contacto** - Formulario de contacto y redes sociales
-10. **Footer** - Información adicional y enlaces
+---
 
-## Instrucciones para Personalización
+## Estructura del repositorio
 
-### 1. Imágenes
-- Colocar todas las imágenes en la carpeta `images/`
-- Nombrar las imágenes como `imagen1.jpg`, `imagen2.jpg`, etc.
-- Para el slider principal: `imagen8.jpg`, `imagen9.jpg`, `imagen10.jpg`
-- Para la galería: `imagen2.jpg` a `imagen7.jpg`
-- Para la sección "Quiénes Somos": `imagen1.jpg`
+```
+/
+├── backend/            API REST — .NET 10 + PostgreSQL
+├── frontend/           Panel administrativo — React 19 + Vite (código fuente)
+├── gestion/            Panel administrativo compilado (GitHub Pages → /gestion/)
+├── panel/              Redirect /panel/ → /gestion/ (compatibilidad bookmarks)
+├── database/           Migraciones SQL numeradas (PostgreSQL / Supabase)
+├── scripts/            Scripts de migración histórica (ejecución única)
+├── .github/workflows/  CI/CD — build, keep-alive, auto-bump service worker
+│
+│   ── Sitio web público (GitHub Pages sirve desde la raíz) ──
+├── index.html          Landing page principal
+├── 404.html            Página de error personalizada
+├── privacidad.html     Política de privacidad
+├── css/                Estilos del sitio público
+├── js/                 Scripts del sitio público
+├── images/             Imágenes del sitio público
+├── sw.js               Service worker (PWA)
+├── manifest.json       Configuración PWA
+│
+│   ── Configuración ──
+├── CNAME               Dominio: fundacionpanoramadecolores.org
+├── Dockerfile          Contenedor del backend (Render.com)
+├── sitemap.xml         SEO
+├── robots.txt          SEO
+└── google*.html        Verificación Google Search Console
+```
 
-### 2. Contenido
-- Editar el archivo `index.html` para cambiar textos
-- Actualizar números de contacto y redes sociales en la sección de contacto
-- Modificar estadísticas en la sección de impacto
+---
 
-### 3. Estilos
-- Colores principales están definidos como variables CSS en `:root`
-- Modificar `main.css` para cambios de diseño mayores
-- `responsive.css` contiene ajustes para diferentes tamaños de pantalla
+## URLs
 
-### 4. JavaScript
-- `script.js` contiene todas las funcionalidades interactivas
-- Slider automático con controles manuales
-- Galería con modal para ver imágenes en tamaño completo
-- Animación de contadores al hacer scroll
-- Validación de formulario de contacto
+| Recurso | URL |
+|---|---|
+| Sitio web público | https://fundacionpanoramadecolores.org |
+| Panel administrativo | https://fundacionpanoramadecolores.org/gestion/ |
+| API backend | https://fundacionpanoramadecolores-nez4.onrender.com |
 
-## Compatibilidad
-- Compatible con navegadores modernos (Chrome, Firefox, Safari, Edge)
-- Responsive para dispositivos móviles, tablets y desktop
-- Optimizado para velocidad de carga
+---
 
-## Despliegue
-1. Subir todos los archivos a un servidor web
-2. Asegurarse de que la estructura de carpetas se mantenga
-3. Para dominio personalizado, configurar el archivo `CNAME`
+## Levantar el proyecto localmente
 
-## Créditos
-Desarrollado para Fundación Panorama de Colores
-Transformamos vidas a través del arte, el deporte y la conciencia ambiental
+### Backend (.NET 10)
+
+```powershell
+cd backend
+
+# Crear archivo de configuración local (NO se commitea — está en .gitignore)
+# backend/FundacionPanorama.API/appsettings.Development.json
+# {
+#   "ConnectionStrings": { "DefaultConnection": "Host=localhost;Database=fundacion;Username=...;Password=..." },
+#   "Jwt": { "Key": "...", "Issuer": "...", "Audience": "..." }
+# }
+
+dotnet restore FundacionPanorama.slnx
+dotnet run --project FundacionPanorama.API
+# API disponible en http://localhost:5000
+```
+
+### Frontend (React + Vite)
+
+```powershell
+cd frontend/fundacion-web
+
+# Crear archivo de entorno local (NO se commitea — está en .gitignore)
+# frontend/fundacion-web/.env.local
+# VITE_API_URL=http://localhost:5000
+
+npm install
+npm run dev
+# Panel disponible en http://localhost:5173
+```
+
+---
+
+## Deploy del frontend
+
+```powershell
+cd frontend/fundacion-web
+npm run build
+
+# Copiar compilado a gestion/
+robocopy dist ..\..\gestion /MIR /NJH /NJS /NFL /NDL
+
+# Commit y push — GitHub Pages publica automáticamente
+cd ..\..
+git add gestion/ frontend/
+git commit -m "feat: descripción del cambio"
+git push
+```
+
+Guía completa de convenciones y patrones: [frontend/fundacion-web/CONTRIBUTING.md](frontend/fundacion-web/CONTRIBUTING.md)
+
+---
+
+## Base de datos
+
+Migraciones en `database/` — aplicar en orden numérico:
+
+| Archivo | Descripción |
+|---|---|
+| `01_schema.sql` | Schema base — todas las tablas |
+| `02_migracion.sql` | Distribución de datos al nuevo modelo normalizado |
+| `03_tercero_programa.sql` | Entidad ejecutora (tercero) en programas |
+| `04_nomina.sql` | Módulo de nómina |
+| `05_split_nombre_beneficiarios.sql` | División de nombre en 4 columnas |
+| `06_tipo_beneficiario.sql` | Campo tipo (niño / adulto) |
+
+---
+
+## CI/CD
+
+| Workflow | Disparo | Descripción |
+|---|---|---|
+| `ci-build.yml` | Push / PR a master | Compila backend (.NET) y frontend (Vite) |
+| `keep-alive.yml` | Cada 14 minutos | Ping al backend para evitar suspensión en Render.com |
+| `bump-sw-cache.yml` | Push en css/, js/, images/ | Auto-versiona el service worker de la landing |
+
+---
+
+## Stack tecnológico
+
+| Capa | Tecnología |
+|---|---|
+| Backend | .NET 10, ASP.NET Core, Entity Framework Core, PostgreSQL |
+| Frontend | React 19, Vite, Material UI v9, React Router v7 |
+| Base de datos | PostgreSQL (Supabase) |
+| Hosting web | GitHub Pages |
+| Hosting API | Render.com (Docker) |
+| CI/CD | GitHub Actions |
+
+---
+
+## Colores corporativos
+
+| Rol | Hex |
+|---|---|
+| Primario — Púrpura (CTA principal) | `#4E1B95` |
+| Primario — Verde (énfasis / íconos) | `#2D984F` |
+| Secundario — Naranja (contraste / alertas) | `#F59D1E` |
+| Secundario — Cian (fondos ligeros) | `#B4E8E8` |

@@ -8,8 +8,9 @@ import UploadFileIcon  from '@mui/icons-material/UploadFile';
 import DownloadIcon    from '@mui/icons-material/Download';
 import * as XLSX from 'xlsx';
 import apiClient from '../../../../../infrastructure/http/apiClient';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
-const COLOR = '#4E1B95';
+const COLOR = BRAND_COLOR;
 
 const TEMPLATE_HEADERS = [
   'nombre', 'fecha_nacimiento', 'tipo_documento', 'numero_documento',

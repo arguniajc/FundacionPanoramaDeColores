@@ -1,0 +1,1 @@
+var e=`#4E1B95`;export{e as t};

@@ -36,6 +36,7 @@ import { useThemeMode }      from '../../shared/theme/ThemeContext';
 import { useConfiguracion }  from '../../shared/context/ConfiguracionContext';
 import useInactividad        from '../../shared/hooks/useInactividad';
 import usePermisos           from '../../shared/hooks/usePermisos';
+import { LOGIN_URL }         from '../../shared/constants/routes';
 
 const SIDEBAR_WIDTH = 260;
 
@@ -308,7 +309,7 @@ export default function AdminLayout({ children }) {
 
   useInactividad(60, () => {
     logout();
-    window.location.href = 'https://fundacionpanoramadecolores.org/gestion/#/acceso';
+    window.location.href = LOGIN_URL;
   }, !!user);
 
   const sidebarProps = {

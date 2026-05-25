@@ -7,8 +7,9 @@ import AccessTimeIcon   from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlaceIcon        from '@mui/icons-material/Place';
 import { actividadesRepository } from '../../../../../infrastructure/repositories/actividadesRepository';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
-const COLOR = '#4E1B95';
+const COLOR = BRAND_COLOR;
 
 const DIAS = [
   { value: 1, label: 'Lunes'    },

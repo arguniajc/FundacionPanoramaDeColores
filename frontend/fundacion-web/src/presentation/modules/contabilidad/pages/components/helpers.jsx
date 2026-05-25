@@ -1,4 +1,5 @@
 import { Box, Card, CardContent, Typography } from '@mui/material';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
 export const fmt = (v) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v ?? 0);
@@ -43,7 +44,7 @@ export function KpiCard({ label, value, icon, color }) {
 export function SectionHeader({ title }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-      <Box sx={{ width: 4, height: 20, bgcolor: '#4E1B95', borderRadius: 1 }} />
+      <Box sx={{ width: 4, height: 20, bgcolor: BRAND_COLOR, borderRadius: 1 }} />
       <Typography variant="subtitle1" fontWeight="bold">{title}</Typography>
     </Box>
   );

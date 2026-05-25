@@ -44,6 +44,7 @@ import { LibroMayorTab }     from './components/LibroMayorTab';
 import { generarReportePDF }    from './components/generarReportePDF';
 import { generarComprobantePDF } from './components/generarComprobantePDF';
 import { useConfiguracion }      from '../../../../shared/context/ConfiguracionContext';
+import { BRAND_COLOR } from '../../../../shared/constants/brand';
 
 // â”€â”€ PÃ¡gina principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ContabilidadPage() {
@@ -393,7 +394,7 @@ export default function ContabilidadPage() {
       {/* Page header */}
       <Paper sx={{
         p: { xs: 2, sm: 3 }, mb: 3,
-        background: 'linear-gradient(135deg, #4E1B95 0%, #7C3AED 100%)',
+        background: `linear-gradient(135deg, ${BRAND_COLOR} 0%, #7C3AED 100%)`,
         borderRadius: 3, color: 'white',
       }} elevation={0}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -413,7 +414,7 @@ export default function ContabilidadPage() {
       <Grid container spacing={3} mb={3}>
         <Grid item xs={12} sm={6} md={3}>
           <KpiCard label="Saldo total" value={fmt(stats?.saldoTotal)}
-            icon={<AccountBalanceWalletIcon fontSize="inherit" />} color="#4E1B95" />
+            icon={<AccountBalanceWalletIcon fontSize="inherit" />} color={BRAND_COLOR} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <KpiCard label="Ingresos este mes" value={fmt(stats?.ingresosMes)}
@@ -1272,7 +1273,7 @@ export default function ContabilidadPage() {
                     <Grid container spacing={2} mb={3}>
                       <Grid item xs={12} sm={6} md={3}>
                         <KpiCard label="Saldo actual" value={fmt(cuenta?.saldoActual)}
-                          icon={<AccountBalanceWalletIcon fontSize="inherit" />} color="#4E1B95" />
+                          icon={<AccountBalanceWalletIcon fontSize="inherit" />} color={BRAND_COLOR} />
                       </Grid>
                       <Grid item xs={12} sm={6} md={3}>
                         <KpiCard label={`Ingresos${cajaMes ? ` ${MESES[cajaMes - 1]}` : ''}`}

@@ -13,8 +13,9 @@ import PlaceIcon         from '@mui/icons-material/Place';
 import { actividadesRepository } from '../../../../../infrastructure/repositories/actividadesRepository';
 import { useConfirm }            from '../../../../../shared/components/ConfirmDialog';
 import { DialogHorario }         from './DialogHorario';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
-const COLOR = '#4E1B95';
+const COLOR = BRAND_COLOR;
 
 const DIAS_LABEL = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DIAS_COLOR = {

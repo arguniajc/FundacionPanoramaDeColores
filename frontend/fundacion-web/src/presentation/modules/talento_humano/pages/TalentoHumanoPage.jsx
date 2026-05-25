@@ -23,6 +23,7 @@ import { PanelEmpleado }  from './components/PanelEmpleado';
 import { PanelNovedades } from './components/PanelNovedades';
 import { OrgChartTab }    from './components/OrgChartTab';
 import { PanelNomina }    from './components/PanelNomina';
+import { BRAND_COLOR } from '../../../../shared/constants/brand';
 
 const CONTRATO_COLORS = {
   indefinido:           'success',
@@ -168,7 +169,7 @@ export default function TalentoHumanoPage() {
       {stats && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid size={{ xs: 6, sm: 3 }}>
-            <KpiCard label="Total empleados" value={stats.total} icon={<PeopleIcon fontSize="inherit" />} color="#4E1B95" />
+            <KpiCard label="Total empleados" value={stats.total} icon={<PeopleIcon fontSize="inherit" />} color={BRAND_COLOR} />
           </Grid>
           <Grid size={{ xs: 6, sm: 3 }}>
             <KpiCard label="Activos" value={stats.activos} icon={<BadgeIcon fontSize="inherit" />} color="#10B981" />

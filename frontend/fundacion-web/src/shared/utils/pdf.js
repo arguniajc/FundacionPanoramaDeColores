@@ -1,3 +1,5 @@
+import { BRAND_COLOR } from '../constants/brand';
+
 // Genera la hoja de vida del beneficiario como HTML y la abre en una nueva
 // pestaña para impresión. Usa window.open para evitar depender de jsPDF.
 export function abrirHojaDeVida(ins, edad) {
@@ -58,7 +60,7 @@ export function abrirHojaDeVida(ins, edad) {
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Nunito',sans-serif;color:#1E1E1E;background:#fff}
-    .portada{background:linear-gradient(135deg,#4E1B95,#2D984F);color:white;padding:2rem 2.5rem;display:flex;align-items:center;gap:2rem}
+    .portada{background:linear-gradient(135deg,${BRAND_COLOR},#2D984F);color:white;padding:2rem 2.5rem;display:flex;align-items:center;gap:2rem}
     .avatar{width:100px;height:100px;border-radius:14px;object-fit:cover;border:4px solid rgba(255,255,255,0.4)}
     .avatar-placeholder{width:100px;height:100px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:4px solid rgba(255,255,255,0.4)}
     h1{font-size:1.7rem;margin-bottom:.3rem}
@@ -70,19 +72,19 @@ export function abrirHojaDeVida(ins, edad) {
     .contenido{padding:1.5rem 2.5rem}
     .seccion{margin-bottom:1.5rem}
     .sec-titulo{
-      color:#4E1B95;font-weight:800;font-size:.95rem;
-      border-left:5px solid #4E1B95;background:rgba(78,27,149,0.07);
+      color:${BRAND_COLOR};font-weight:800;font-size:.95rem;
+      border-left:5px solid ${BRAND_COLOR};background:rgba(78,27,149,0.07);
       padding:.45rem .9rem;border-radius:0 8px 8px 0;margin-bottom:.9rem;
     }
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
     .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem}
     .item{background:#fdfbff;border:1px solid #f0eaff;border-radius:8px;padding:.6rem .9rem}
     .full{grid-column:1/-1}
-    .label{font-size:.66rem;font-weight:800;color:#4E1B95;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.15rem}
+    .label{font-size:.66rem;font-weight:800;color:${BRAND_COLOR};text-transform:uppercase;letter-spacing:.05em;margin-bottom:.15rem}
     .valor{font-size:.88rem;font-weight:600}
     .tallas{display:flex;gap:.8rem;flex-wrap:wrap}
     .talla{flex:1;min-width:70px;text-align:center;background:#fdfbff;border:1px solid #f0eaff;border-radius:10px;padding:.8rem .5rem}
-    .talla-num{font-size:1.4rem;font-weight:800;color:#4E1B95}
+    .talla-num{font-size:1.4rem;font-weight:800;color:${BRAND_COLOR}}
     .talla-etiq{font-size:.65rem;color:#6A6A6A;font-weight:700;text-transform:uppercase;margin-top:.15rem}
     .imc-badge{display:inline-block;border-radius:50px;padding:.25rem .9rem;font-size:.8rem;font-weight:800;color:#fff}
     .alerta-roja{background:#fff5f5;border:1.5px solid #fed7d7;border-radius:8px;padding:.6rem .9rem;color:#c53030;font-weight:700;font-size:.85rem}
@@ -150,7 +152,7 @@ export function abrirHojaDeVida(ins, edad) {
     </div>
     ${imc ? `
     <div style="margin-top:.9rem;display:flex;align-items:center;gap:.7rem">
-      <span style="font-size:.72rem;font-weight:800;color:#4E1B95;text-transform:uppercase;letter-spacing:.05em">IMC:</span>
+      <span style="font-size:.72rem;font-weight:800;color:${BRAND_COLOR};text-transform:uppercase;letter-spacing:.05em">IMC:</span>
       <span class="imc-badge" style="background:${imc.color}">${imc.valor} kg/m²</span>
       <span style="font-size:.78rem;font-weight:800;color:${imc.color}">${imc.label}</span>
     </div>` : ''}

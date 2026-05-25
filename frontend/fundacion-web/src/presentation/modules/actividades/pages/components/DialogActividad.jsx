@@ -6,6 +6,7 @@ import {
 import AddIcon    from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { actividadesRepository } from '../../../../../infrastructure/repositories/actividadesRepository';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
 const ESTADOS = [
   { value: 'programada',  label: 'Programada'  },
@@ -14,7 +15,7 @@ const ESTADOS = [
   { value: 'cancelada',   label: 'Cancelada'    },
 ];
 
-const COLOR = '#4E1B95';
+const COLOR = BRAND_COLOR;
 
 const EMPTY_FORM = {
   titulo: '', descripcion: '', programaId: '', lugar: '',

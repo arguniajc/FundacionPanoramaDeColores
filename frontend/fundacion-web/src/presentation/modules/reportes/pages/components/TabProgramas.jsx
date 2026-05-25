@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import apiClient from '../../../../../infrastructure/http/apiClient';
 import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
 export function TabProgramas() {
   const [data,  setData]  = useState(null);
@@ -26,7 +27,7 @@ export function TabProgramas() {
   return (
     <Grid container spacing={2}>
       <Grid size={{ xs: 6, sm: 4, md: 4 }}>
-        <KpiCard label="Total programas" value={resumen.total} icon={<FolderIcon fontSize="inherit" />} color="#4E1B95" />
+        <KpiCard label="Total programas" value={resumen.total} icon={<FolderIcon fontSize="inherit" />} color={BRAND_COLOR} />
       </Grid>
       <Grid size={{ xs: 6, sm: 4, md: 4 }}>
         <KpiCard label="Programas activos" value={resumen.activos} icon={<FolderIcon fontSize="inherit" />} color="#10B981" />

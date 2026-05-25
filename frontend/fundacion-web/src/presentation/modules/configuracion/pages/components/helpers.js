@@ -1,3 +1,5 @@
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+
 export const COLOR     = 'var(--color-primario)';
 export const TIPOS_DOC = ['CC', 'CE', 'PP', 'NIT', 'Otro'];
 export const FA_ICONOS = [
@@ -67,7 +69,7 @@ export const DEFAULT_WEB = {
 export const VACIO_FORM = {
   nombreFundacion: '', nit: '', direccion: '', telefono: '',
   nombreRepLegal: '', tipoDocRep: 'CC', documentoRep: '', cargoRep: '', firmaRep: '',
-  colorPrimario: '#4E1B95', colorSidebar: '#150830',
+  colorPrimario: BRAND_COLOR, colorSidebar: '#150830',
   tagline: '', mision: '', vision: '',
   emailContacto: '', sitioWeb: '', mensajeBienvenida: '', footerTexto: '',
   webContenido: '',

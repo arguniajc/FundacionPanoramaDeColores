@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import apiClient from '../../../../../infrastructure/http/apiClient';
 import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
 export function TabActividades() {
   const hoy   = new Date();
@@ -43,7 +44,7 @@ export function TabActividades() {
 
       {!data ? <Grid size={{ xs: 12 }}><SkeletonSection /></Grid> : <>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-          <KpiCard label="Total actividades"  value={resumen.total}              icon={<EventIcon fontSize="inherit" />}  color="#4E1B95" />
+          <KpiCard label="Total actividades"  value={resumen.total}              icon={<EventIcon fontSize="inherit" />}  color={BRAND_COLOR} />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
           <KpiCard label="Completadas"        value={resumen.completadas}        icon={<EventIcon fontSize="inherit" />}  color="#10B981" />
@@ -68,7 +69,7 @@ export function TabActividades() {
               <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
               <Tooltip content={<TooltipCustom />} />
-              <Bar dataKey="cantidad" name="Actividades" fill="#4E1B95" radius={[4,4,0,0]}>
+              <Bar dataKey="cantidad" name="Actividades" fill={BRAND_COLOR} radius={[4,4,0,0]}>
                 {porMes.map((_, i) => <Cell key={i} fill={COLORES[i % COLORES.length]} />)}
               </Bar>
             </BarChart>

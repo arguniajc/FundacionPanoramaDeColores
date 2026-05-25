@@ -3,8 +3,9 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from '../../../../application/auth/AuthContext';
 import apiClient   from '../../../../infrastructure/http/apiClient';
 import { OrgChartTab } from '../../talento_humano/pages/components/OrgChartTab';
+import { BRAND_COLOR } from '../../../../shared/constants/brand';
 
-const COLOR = '#4E1B95';
+const COLOR = BRAND_COLOR;
 
 export default function OrganigramaPage() {
   const { puedo }  = useAuth();

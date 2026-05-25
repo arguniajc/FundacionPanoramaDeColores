@@ -12,6 +12,7 @@ import { configuracionRepository } from '../../../../../infrastructure/repositor
 import { donacionesRepository }    from '../../../../../infrastructure/repositories/donacionesRepository';
 import { fmtMoney, fmtFecha } from './helpers';
 import { CertificadoDonacionDialog } from './CertificadoDonacionDialog';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
 function generarPDF(don, config, firma) {
   import('jspdf').then(({ default: jsPDF }) => {
@@ -333,7 +334,7 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
           <Button size="small" variant="outlined"
             startIcon={enviando ? <CircularProgress size={14} color="inherit" /> : <EmailIcon />}
             onClick={handleEnviarEmail} disabled={enviando}
-            sx={{ borderColor: '#4E1B95', color: '#4E1B95' }}>
+            sx={{ borderColor: BRAND_COLOR, color: BRAND_COLOR }}>
             {enviando ? 'Enviando…' : 'Enviar por email'}
           </Button>
         )}
@@ -341,7 +342,7 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
           <Button size="small" variant="outlined"
             startIcon={<WorkspacePremiumIcon />}
             onClick={() => setCertOpen(true)}
-            sx={{ borderColor: '#4E1B95', color: '#4E1B95' }}>
+            sx={{ borderColor: BRAND_COLOR, color: BRAND_COLOR }}>
             Certificado
           </Button>
         )}

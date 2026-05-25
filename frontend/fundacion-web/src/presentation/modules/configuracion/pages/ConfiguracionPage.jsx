@@ -13,6 +13,7 @@ import { TabApariencia }  from './components/TabApariencia';
 import { TabTextos }      from './components/TabTextos';
 import { TabPaginaWeb }   from './components/TabPaginaWeb';
 import { TabSmtp }        from './components/TabSmtp';
+import { BRAND_COLOR } from '../../../../shared/constants/brand';
 
 export default function ConfiguracionPage() {
   const { actualizarConfig } = useConfiguracion();
@@ -39,7 +40,7 @@ export default function ConfiguracionPage() {
           documentoRep:      data.documentoRep       ?? '',
           cargoRep:          data.cargoRep           ?? '',
           firmaRep:          data.firmaRep           ?? '',
-          colorPrimario:      data.colorPrimario      || '#4E1B95',
+          colorPrimario:      data.colorPrimario      || BRAND_COLOR,
           colorSidebar:       data.colorSidebar       || '#150830',
           colorSecundario:    data.colorSecundario    || '#2D984F',
           colorGradiente:     data.colorGradiente     || '#3a1470',

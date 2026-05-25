@@ -12,9 +12,10 @@ import AccountTreeIcon  from '@mui/icons-material/AccountTree';
 import { useConfirm }   from '../../../../../shared/components/ConfirmDialog';
 import apiClient        from '../../../../../infrastructure/http/apiClient';
 import { CARGOS_COMUNES } from './DialogEmpleado';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
 const LCOLOR       = '#94A3B8';
-const DEPTH_COLORS = ['#1E1B4B','#4E1B95','#7C3AED','#2563EB','#0891B2','#059669','#D97706','#DC2626'];
+const DEPTH_COLORS = ['#1E1B4B',BRAND_COLOR,'#7C3AED','#2563EB','#0891B2','#059669','#D97706','#DC2626'];
 const depthColor   = (d) => DEPTH_COLORS[Math.min(d, DEPTH_COLORS.length - 1)];
 
 function VLine({ h = 28 }) {
@@ -453,7 +454,7 @@ export function OrgChartTab({ puedoEditar, empleados }) {
         </Box>
         {puedoEditar && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => openAdd(null)}
-            sx={{ bgcolor: '#4E1B95', '&:hover': { bgcolor: '#3b1470' } }}>
+            sx={{ bgcolor: BRAND_COLOR, '&:hover': { bgcolor: '#3b1470' } }}>
             Agregar persona
           </Button>
         )}

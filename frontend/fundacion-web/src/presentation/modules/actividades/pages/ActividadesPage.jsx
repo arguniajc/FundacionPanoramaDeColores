@@ -23,8 +23,9 @@ import { DialogActividad }       from './components/DialogActividad';
 import { DialogAsistencia }      from './components/DialogAsistencia';
 import { DialogNuevaActividad }  from './components/DialogNuevaActividad';
 import { TabHorarios }           from './components/TabHorarios';
+import { BRAND_COLOR } from '../../../../shared/constants/brand';
 
-const COLOR = '#4E1B95';
+const COLOR = BRAND_COLOR;
 
 const ESTADOS = [
   { value: 'programada',  label: 'Programada',  color: 'info'    },
@@ -34,7 +35,7 @@ const ESTADOS = [
 ];
 
 const COLORES_PROGRAMA = [
-  '#4E1B95','#1976d2','#388e3c','#f57c00','#c62828','#00838f','#6a1b9a',
+  BRAND_COLOR,'#1976d2','#388e3c','#f57c00','#c62828','#00838f','#6a1b9a',
 ];
 
 // Expande los horarios recurrentes en eventos del calendario para un rango dado,

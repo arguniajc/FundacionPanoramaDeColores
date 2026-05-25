@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import apiClient from '../../../../../infrastructure/http/apiClient';
 import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
 export function TabInventario() {
   const [data,  setData]  = useState(null);
@@ -29,7 +30,7 @@ export function TabInventario() {
   return (
     <Grid container spacing={2}>
       <Grid size={{ xs: 6, sm: 3 }}>
-        <KpiCard label="Total ítems" value={resumen.totalItems} icon={<InventoryIcon fontSize="inherit" />} color="#4E1B95" />
+        <KpiCard label="Total ítems" value={resumen.totalItems} icon={<InventoryIcon fontSize="inherit" />} color={BRAND_COLOR} />
       </Grid>
       <Grid size={{ xs: 6, sm: 3 }}>
         <KpiCard label="Bajo stock mínimo" value={resumen.itemsBajoStock} icon={<WarningAmberIcon fontSize="inherit" />} color="#EF4444" />

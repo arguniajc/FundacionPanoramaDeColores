@@ -19,6 +19,7 @@ import { sedesRepository }      from '../../../../../infrastructure/repositories
 import { useAuth }              from '../../../../../application/auth/AuthContext';
 import { useConfirm }           from '../../../../../shared/components/ConfirmDialog';
 import { COLOR_DONACIONES, COLOR_ESPECIE, fmtMoney, fmtFecha } from './helpers';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 import { StatCard } from './StatCard';
 import { NuevaDonacionDialog }      from './NuevaDonacionDialog';
 import { ReciboDonacionDialog }     from './ReciboDonacionDialog';
@@ -264,7 +265,7 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
                     {d.tipo === 'dinero' && (
                       <Tooltip title="Certificado tributario">
                         <IconButton size="small"
-                          sx={{ color: '#4E1B95' }}
+                          sx={{ color: BRAND_COLOR }}
                           onClick={() => { setCertItem(d); setCertOpen(true); }}>
                           <span style={{ fontSize: 16, lineHeight: 1 }}>🏅</span>
                         </IconButton>

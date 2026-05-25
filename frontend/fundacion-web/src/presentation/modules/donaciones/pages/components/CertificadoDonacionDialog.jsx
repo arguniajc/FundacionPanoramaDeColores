@@ -8,6 +8,7 @@ import VerifiedIcon        from '@mui/icons-material/Verified';
 import { useConfiguracion }        from '../../../../../shared/context/ConfiguracionContext';
 import { configuracionRepository } from '../../../../../infrastructure/repositories/configuracionRepository';
 import { fmtMoney, fmtFecha } from './helpers';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
 // Convierte un número entero a letras en español (hasta 999.999.999)
 function numeroALetras(num) {
@@ -205,14 +206,14 @@ export function CertificadoDonacionDialog({ open, donacion, onClose }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700 }}>
-        <VerifiedIcon sx={{ color: '#4E1B95' }} />
+        <VerifiedIcon sx={{ color: BRAND_COLOR }} />
         Certificado de Donación
       </DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box sx={{ bgcolor: '#f5f0ff', borderRadius: 2, p: 1.5, textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary">Año gravable</Typography>
-            <Typography fontWeight={800} fontSize="1.1rem" color="#4E1B95">
+            <Typography fontWeight={800} fontSize="1.1rem" color={BRAND_COLOR}>
               {new Date(donacion.fechaDonacion).getFullYear()}
             </Typography>
           </Box>

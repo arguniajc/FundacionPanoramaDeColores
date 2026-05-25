@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import apiClient from '../../../../../infrastructure/http/apiClient';
 import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
+import { BRAND_COLOR } from '../../../../../shared/constants/brand';
 
 export function TabDonaciones() {
   const hoy   = new Date();
@@ -43,7 +44,7 @@ export function TabDonaciones() {
 
       {!data ? <Grid size={{ xs: 12 }}><SkeletonSection /></Grid> : <>
         <Grid size={{ xs: 6, sm: 4 }}>
-          <KpiCard label="Total donaciones"      value={resumen.total}             icon={<VolunteerActivismIcon fontSize="inherit" />} color="#4E1B95" />
+          <KpiCard label="Total donaciones"      value={resumen.total}             icon={<VolunteerActivismIcon fontSize="inherit" />} color={BRAND_COLOR} />
         </Grid>
         <Grid size={{ xs: 6, sm: 4 }}>
           <KpiCard label="Monto recaudado"       value={fmtCop(resumen.totalMonto)}    icon={<VolunteerActivismIcon fontSize="inherit" />} color="#10B981" />

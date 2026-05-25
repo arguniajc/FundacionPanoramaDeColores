@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Chip, CircularProgress, Divider,
   IconButton, Tooltip, Typography,
@@ -10,11 +10,11 @@ import PlayArrowIcon  from '@mui/icons-material/PlayArrow';
 import AccessTimeIcon    from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlaceIcon         from '@mui/icons-material/Place';
-import { actividadesRepository } from '../../../../../infrastructure/repositories/actividadesRepository';
-import { useConfirm }            from '../../../../../shared/components/ConfirmDialog';
+import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
+import { useConfirm }            from '@/shared/components/ConfirmDialog';
 import { DialogHorario }         from './DialogHorario';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
-import { useAsyncData } from '../../../../../shared/hooks/useAsyncData';
+import { BRAND_COLOR } from '@/shared/constants/brand';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 
 const COLOR = BRAND_COLOR;
 

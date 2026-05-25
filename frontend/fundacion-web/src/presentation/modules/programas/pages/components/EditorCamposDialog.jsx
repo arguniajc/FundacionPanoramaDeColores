@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+﻿import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Alert, Autocomplete, Box, Button, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, FormControl, FormControlLabel, Grid, IconButton,
@@ -16,7 +16,7 @@ import {
 import {
   arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useProgramaCampos } from '../../../../../application/programas/useProgramaCampos';
+import { useProgramaCampos } from '@/application/programas/useProgramaCampos';
 import {
   COLOR, TIPOS_CAMPO, camposDeSeccion, seccionesOrdenadas, toDto,
 } from './helpers';

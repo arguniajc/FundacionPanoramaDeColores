@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { sedesRepository } from '../../infrastructure/repositories/sedesRepository';
+﻿import { useState, useCallback } from 'react';
+import { sedesRepository } from '@/infrastructure/repositories/sedesRepository';
 
 export function useProgramaCampos(programaId) {
   const [campos,   setCampos]   = useState([]);

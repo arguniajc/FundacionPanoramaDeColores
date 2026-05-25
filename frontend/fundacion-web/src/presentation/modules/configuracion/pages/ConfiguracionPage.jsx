@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Divider,
   Snackbar, Tab, Tabs, Typography,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
-import { configuracionRepository } from '../../../../infrastructure/repositories/configuracionRepository';
-import { useConfiguracion }        from '../../../../shared/context/ConfiguracionContext';
+import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
+import { useConfiguracion }        from '@/shared/context/ConfiguracionContext';
 import { COLOR, DEFAULT_WEB, VACIO_FORM, mergeDeep } from './components/helpers';
 import { TabFundacion }   from './components/TabFundacion';
 import { TabRepLegal }    from './components/TabRepLegal';
@@ -13,7 +13,7 @@ import { TabApariencia }  from './components/TabApariencia';
 import { TabTextos }      from './components/TabTextos';
 import { TabPaginaWeb }   from './components/TabPaginaWeb';
 import { TabSmtp }        from './components/TabSmtp';
-import { BRAND_COLOR } from '../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 export default function ConfiguracionPage() {
   const { actualizarConfig } = useConfiguracion();

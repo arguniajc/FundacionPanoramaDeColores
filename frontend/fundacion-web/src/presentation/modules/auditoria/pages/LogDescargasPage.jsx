@@ -7,9 +7,9 @@ import {
 } from '@mui/material';
 import SearchIcon    from '@mui/icons-material/Search';
 import DownloadIcon  from '@mui/icons-material/Download';
-import apiClient     from '../../../../infrastructure/http/apiClient';
-import SkeletonTabla from '../../../../shared/components/SkeletonTabla';
-import { useAsyncData } from '../../../../shared/hooks/useAsyncData';
+import apiClient     from '@/infrastructure/http/apiClient';
+import SkeletonTabla from '@/shared/components/SkeletonTabla';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 
 const POR_PAGINA = 20;
 

@@ -1,11 +1,11 @@
-/**
+﻿/**
  * useBeneficiarioActions
  * Caso de uso: mutaciones sobre beneficiarios (crear, editar, baja, reactivar).
  * Invalida caché y notifica a la página vía callback onExito.
  */
 import { useState } from 'react';
-import { beneficiariosRepository } from '../../infrastructure/repositories/beneficiariosRepository';
-import { limpiarCache } from '../../infrastructure/cache/sessionCache';
+import { beneficiariosRepository } from '@/infrastructure/repositories/beneficiariosRepository';
+import { limpiarCache } from '@/infrastructure/cache/sessionCache';
 
 export function useBeneficiarioActions({ onExito } = {}) {
   const [error, setError] = useState('');

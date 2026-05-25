@@ -1,4 +1,4 @@
-import { UNIDADES_MEDIDA, CATEGORIAS_INVENTARIO } from '../../../../../shared/utils/geodata';
+﻿import { UNIDADES_MEDIDA, CATEGORIAS_INVENTARIO } from '@/shared/utils/geodata';
 export { UNIDADES_MEDIDA as UNIDADES };
 export { CATEGORIAS_INVENTARIO as CATEGORIAS };
 

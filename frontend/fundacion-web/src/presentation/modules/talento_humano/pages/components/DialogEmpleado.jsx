@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, TextField, MenuItem, Grid,
   Dialog, DialogTitle, DialogContent, DialogActions, Alert, Autocomplete,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
-import apiClient from '../../../../../infrastructure/http/apiClient';
+import apiClient from '@/infrastructure/http/apiClient';
 
 const TIPOS_DOCUMENTO = ['CC','TI','CE','Pasaporte','NIT','Otro'];
 const TIPOS_CONTRATO  = ['indefinido','fijo','prestacion_servicios','aprendizaje','voluntario','otro'];

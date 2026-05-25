@@ -8,7 +8,7 @@ import DeleteIcon       from '@mui/icons-material/Delete';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import CameraAltIcon    from '@mui/icons-material/CameraAlt';
 import CamaraFoto       from './CamaraFoto';
-import apiClient        from '../../infrastructure/http/apiClient';
+import apiClient        from '@/infrastructure/http/apiClient';
 
 const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 

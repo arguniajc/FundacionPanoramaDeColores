@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent,
   DialogTitle, Divider, Grid, IconButton, MenuItem, Paper,
@@ -11,8 +11,8 @@ import DeleteIcon        from '@mui/icons-material/Delete';
 import EventIcon         from '@mui/icons-material/Event';
 import PlaceIcon         from '@mui/icons-material/Place';
 import RepeatIcon        from '@mui/icons-material/Repeat';
-import { actividadesRepository } from '../../../../../infrastructure/repositories/actividadesRepository';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 const COLOR = BRAND_COLOR;
 

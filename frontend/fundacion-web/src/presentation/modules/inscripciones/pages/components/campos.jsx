@@ -1,18 +1,18 @@
-// Helpers, constantes y componentes de campo compartidos del módulo de inscripciones.
+﻿// Helpers, constantes y componentes de campo compartidos del módulo de inscripciones.
 import { useState, useEffect, useMemo } from 'react';
 import {
   Alert, Autocomplete, Box, Button, Chip, FormControl, FormControlLabel, Grid,
   InputAdornment, InputLabel, MenuItem, Select, Switch, TextField, Tooltip, Typography,
 } from '@mui/material';
-import { archivosRepository }   from '../../../../../infrastructure/repositories/archivosRepository';
+import { archivosRepository }   from '@/infrastructure/repositories/archivosRepository';
 import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
   TALLAS_ROPA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, VALORACIONES,
   GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION, RELACIONES_TUTOR,
   getCiudadesDeUbicacion, getEstadosDePais,
-} from '../../../../../shared/utils/geodata';
-import FirmaPad from '../../../../../shared/components/FirmaPad';
+} from '@/shared/utils/geodata';
+import FirmaPad from '@/shared/components/FirmaPad';
 
 export const COLOR = 'var(--color-primario)';
 

@@ -1,6 +1,6 @@
-import { Box, Card, CardContent, Grid, Paper, Skeleton, Typography } from '@mui/material';
+﻿import { Box, Card, CardContent, Grid, Paper, Skeleton, Typography } from '@mui/material';
 import { ResponsiveContainer } from 'recharts';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 export const COLORES = [
   BRAND_COLOR,'#7C3AED','#A78BFA','#2563EB','#60A5FA',

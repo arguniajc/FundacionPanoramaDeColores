@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+﻿import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   getToken, getUser, getRol, getPermisos,
   saveSession, clearSession,
-} from '../../infrastructure/storage/authStorage';
+} from '@/infrastructure/storage/authStorage';
 
 const AuthContext = createContext(null);
 

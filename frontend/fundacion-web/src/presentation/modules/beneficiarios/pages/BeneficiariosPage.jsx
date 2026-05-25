@@ -1,4 +1,4 @@
-import {
+﻿import {
   Box, Typography, Container,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, IconButton, Chip, TextField, InputAdornment, Pagination,
@@ -24,7 +24,7 @@ import PersonAddIcon        from '@mui/icons-material/PersonAdd';
 import SyncIcon             from '@mui/icons-material/Sync';
 import UploadFileIcon       from '@mui/icons-material/UploadFile';
 import DeleteForeverIcon    from '@mui/icons-material/DeleteForever';
-import { calcularEdad }     from '../../../../shared/utils/fecha';
+import { calcularEdad }     from '@/shared/utils/fecha';
 import DetalleInscripcion   from '../components/DetalleInscripcion';
 import EditarInscripcion    from '../components/EditarInscripcion';
 import NuevoBeneficiario    from '../components/NuevoBeneficiario';

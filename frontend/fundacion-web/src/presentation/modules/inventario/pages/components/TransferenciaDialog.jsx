@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogTitle, FormControl, Grid, InputAdornment, InputLabel, MenuItem, Select,
   TextField, Typography,
 } from '@mui/material';
-import { inventarioRepository } from '../../../../../infrastructure/repositories/inventarioRepository';
+import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { fmtNum } from './helpers';
 
 export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida }) {

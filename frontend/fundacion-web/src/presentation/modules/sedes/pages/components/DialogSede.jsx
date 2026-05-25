@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle,
   Grid, TextField, useMediaQuery, useTheme,
 } from '@mui/material';
-import apiClient from '../../../../../infrastructure/http/apiClient';
-import { CampoCiudad } from '../../../../../shared/components/form/FormControles';
+import apiClient from '@/infrastructure/http/apiClient';
+import { CampoCiudad } from '@/shared/components/form/FormControles';
 
 export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   const [form,     setForm]     = useState({ nombre: '', direccion: '', ciudad: '', telefono: '' });

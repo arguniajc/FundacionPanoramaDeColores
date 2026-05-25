@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Autocomplete, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogTitle, FormControl, FormControlLabel, Grid, InputAdornment, InputLabel, MenuItem,
@@ -6,14 +6,14 @@ import {
 } from '@mui/material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import Inventory2Icon  from '@mui/icons-material/Inventory2';
-import { donantesRepository }      from '../../../../../infrastructure/repositories/donantesRepository';
-import { donacionesRepository }    from '../../../../../infrastructure/repositories/donacionesRepository';
-import { sedesRepository }         from '../../../../../infrastructure/repositories/sedesRepository';
-import { inventarioRepository }    from '../../../../../infrastructure/repositories/inventarioRepository';
-import { contabilidadRepository }  from '../../../../../infrastructure/repositories/contabilidadRepository';
+import { donantesRepository }      from '@/infrastructure/repositories/donantesRepository';
+import { donacionesRepository }    from '@/infrastructure/repositories/donacionesRepository';
+import { sedesRepository }         from '@/infrastructure/repositories/sedesRepository';
+import { inventarioRepository }    from '@/infrastructure/repositories/inventarioRepository';
+import { contabilidadRepository }  from '@/infrastructure/repositories/contabilidadRepository';
 import { COLOR_DONACIONES, COLOR_ESPECIE, hoy } from './helpers';
-import { CampoUnidadMedida } from '../../../../../shared/components/form/FormControles';
-import { CATEGORIAS_INVENTARIO } from '../../../../../shared/utils/geodata';
+import { CampoUnidadMedida } from '@/shared/components/form/FormControles';
+import { CATEGORIAS_INVENTARIO } from '@/shared/utils/geodata';
 
 const VACIO = {
   tipo: 'dinero', monto: '', nombreItem: '',

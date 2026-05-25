@@ -1,9 +1,9 @@
-/**
+﻿/**
  * useArchivoUpload
  * Caso de uso: subir un archivo a Supabase Storage y obtener la URL pública.
  */
 import { useState } from 'react';
-import { archivosRepository } from '../../infrastructure/repositories/archivosRepository';
+import { archivosRepository } from '@/infrastructure/repositories/archivosRepository';
 
 export function useArchivoUpload() {
   const [subiendo,  setSubiendo]  = useState(false);

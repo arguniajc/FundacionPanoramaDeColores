@@ -1,10 +1,10 @@
-import { lazy, Suspense } from 'react';
+﻿import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout        from '../layouts/AdminLayout';
-import RutaProtegida      from '../../shared/components/RutaProtegida';
-import SinAcceso          from '../../shared/components/SinAcceso';
-import PantallaCarga      from '../../shared/components/PantallaCarga';
-import { useAuth }        from '../../application/auth/AuthContext';
+import RutaProtegida      from '@/shared/components/RutaProtegida';
+import SinAcceso          from '@/shared/components/SinAcceso';
+import PantallaCarga      from '@/shared/components/PantallaCarga';
+import { useAuth }        from '@/application/auth/AuthContext';
 import LoginPage          from '../modules/auth/pages/LoginPage';
 
 // Módulos cargados bajo demanda — el bundle principal pasa de ~2.6 MB a ~800 KB

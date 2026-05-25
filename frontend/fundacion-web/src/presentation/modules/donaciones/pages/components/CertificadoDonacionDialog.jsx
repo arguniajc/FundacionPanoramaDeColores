@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Typography, Box, Divider, CircularProgress,
 } from '@mui/material';
 import DownloadIcon        from '@mui/icons-material/Download';
 import VerifiedIcon        from '@mui/icons-material/Verified';
-import { useConfiguracion }        from '../../../../../shared/context/ConfiguracionContext';
-import { configuracionRepository } from '../../../../../infrastructure/repositories/configuracionRepository';
+import { useConfiguracion }        from '@/shared/context/ConfiguracionContext';
+import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
 import { fmtMoney, fmtFecha } from './helpers';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 // Convierte un número entero a letras en español (hasta 999.999.999)
 function numeroALetras(num) {

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Button, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Grid, TextField,
 } from '@mui/material';
-import { voluntariosRepository } from '../../../../../infrastructure/repositories/voluntariosRepository';
-import { CampoFecha, CampoDocumento, SelectorUbicacion } from '../../../../../shared/components/form/FormControles';
+import { voluntariosRepository } from '@/infrastructure/repositories/voluntariosRepository';
+import { CampoFecha, CampoDocumento, SelectorUbicacion } from '@/shared/components/form/FormControles';
 import { COLOR, VACIO_VOL, toInputDate } from './helpers';
 
 export function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {

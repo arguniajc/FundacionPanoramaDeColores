@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useConfirm } from '../../../../shared/components/ConfirmDialog';
+﻿import { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '@/shared/components/ConfirmDialog';
 import {
   Box, Typography, Button, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, Chip,
@@ -10,8 +10,8 @@ import AddIcon    from '@mui/icons-material/Add';
 import EditIcon   from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Alert      from '@mui/material/Alert';
-import apiClient  from '../../../../infrastructure/http/apiClient';
-import usePermisos from '../../../../shared/hooks/usePermisos';
+import apiClient  from '@/infrastructure/http/apiClient';
+import usePermisos from '@/shared/hooks/usePermisos';
 
 const ROLES = [
   { value: 'administrador',       label: 'Administrador' },

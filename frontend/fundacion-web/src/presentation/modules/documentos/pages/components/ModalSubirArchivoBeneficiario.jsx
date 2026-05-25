@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+﻿import { useState, useRef } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogTitle, IconButton, TextField, Typography, useMediaQuery, useTheme,
@@ -6,7 +6,7 @@ import {
 import CloseIcon          from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import UploadFileIcon     from '@mui/icons-material/UploadFile';
-import apiClient         from '../../../../../infrastructure/http/apiClient';
+import apiClient         from '@/infrastructure/http/apiClient';
 import { HEADER_GRADIENT } from './helpers';
 
 export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido, onToast }) {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import {
   Alert, Box, Button, Chip, CircularProgress, IconButton, InputAdornment,
   Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead,
@@ -9,7 +9,7 @@ import DeleteIcon     from '@mui/icons-material/Delete';
 import DownloadIcon   from '@mui/icons-material/Download';
 import SearchIcon     from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { useDocumentosInstitucionales } from '../../../../../application/documentos/useDocumentosInstitucionales';
+import { useDocumentosInstitucionales } from '@/application/documentos/useDocumentosInstitucionales';
 import { CATEGORIAS, fmt }              from './helpers';
 import { ModalSubirInstitucional }      from './ModalSubirInstitucional';
 import { ConfirmarEliminar }            from './ConfirmarEliminar';

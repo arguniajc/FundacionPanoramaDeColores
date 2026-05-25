@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { configuracionRepository } from '../../infrastructure/repositories/configuracionRepository';
+﻿import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
 
 export const FONT_OPTIONS = [
   { value: 'Inter',      label: 'Inter',      desc: 'Moderna y limpia — ideal para dashboards' },

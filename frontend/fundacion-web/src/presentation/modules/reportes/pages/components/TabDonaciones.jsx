@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Alert, Box, FormControl, Grid, InputLabel, MenuItem, Select } from '@mui/material';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import {
   AreaChart, Area, BarChart, Bar, CartesianGrid, Cell,
   PieChart, Pie, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import apiClient from '../../../../../infrastructure/http/apiClient';
+import apiClient from '@/infrastructure/http/apiClient';
 import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 export function TabDonaciones() {
   const hoy   = new Date();

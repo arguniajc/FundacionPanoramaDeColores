@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react';
+﻿import { useState, useRef } from 'react';
 import { Box, Button, CircularProgress, IconButton, Typography } from '@mui/material';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import CloseIcon             from '@mui/icons-material/Close';
 import UploadFileIcon        from '@mui/icons-material/UploadFile';
-import apiClient from '../../../../../infrastructure/http/apiClient';
+import apiClient from '@/infrastructure/http/apiClient';
 import { COLOR } from './helpers';
 
 export function ImagenField({ label, value, onChange }) {

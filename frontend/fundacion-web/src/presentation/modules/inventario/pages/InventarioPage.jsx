@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useConfirm } from '../../../../shared/components/ConfirmDialog';
+﻿import { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '@/shared/components/ConfirmDialog';
 import {
   Alert, Box, Button, Chip, CircularProgress, FormControl, Grid, IconButton,
   InputAdornment, InputLabel, MenuItem, Select, Snackbar, TextField, Typography,
@@ -12,8 +12,8 @@ import SearchIcon       from '@mui/icons-material/Search';
 import CloseIcon        from '@mui/icons-material/Close';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import HandshakeIcon    from '@mui/icons-material/Handshake';
-import { inventarioRepository } from '../../../../infrastructure/repositories/inventarioRepository';
-import { sedesRepository }      from '../../../../infrastructure/repositories/sedesRepository';
+import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
+import { sedesRepository }      from '@/infrastructure/repositories/sedesRepository';
 import { COLOR, CATEGORIAS, CAT_COLOR } from './components/helpers';
 import { StatCard }               from './components/StatCard';
 import { ItemCard }               from './components/ItemCard';

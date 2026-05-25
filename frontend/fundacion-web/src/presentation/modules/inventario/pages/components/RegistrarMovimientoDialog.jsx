@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import {
   Alert, Autocomplete, Box, Button, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, FormControl, Grid, InputAdornment, InputLabel,
   MenuItem, Select, TextField, Typography,
 } from '@mui/material';
-import { inventarioRepository } from '../../../../../infrastructure/repositories/inventarioRepository';
+import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { COLOR, fmtNum } from './helpers';
 
 export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegistrado }) {

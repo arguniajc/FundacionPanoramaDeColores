@@ -1,4 +1,4 @@
-// Diálogo de vista y edición del formulario dinámico de una inscripción.
+﻿// Diálogo de vista y edición del formulario dinámico de una inscripción.
 import { useState, useEffect } from 'react';
 import {
   Alert, Avatar, Box, Button, Chip, CircularProgress,
@@ -9,10 +9,10 @@ import EditIcon           from '@mui/icons-material/Edit';
 import GavelIcon          from '@mui/icons-material/Gavel';
 import PictureAsPdfIcon   from '@mui/icons-material/PictureAsPdf';
 import WarningAmberIcon   from '@mui/icons-material/WarningAmber';
-import { beneficiariosRepository } from '../../../../../infrastructure/repositories/beneficiariosRepository';
-import { generarPdfInscripcion }   from '../../../../../shared/utils/generarPdfInscripcion';
-import { sedesRepository }         from '../../../../../infrastructure/repositories/sedesRepository';
-import { inscripcionesRepository } from '../../../../../infrastructure/repositories/inscripcionesRepository';
+import { beneficiariosRepository } from '@/infrastructure/repositories/beneficiariosRepository';
+import { generarPdfInscripcion }   from '@/shared/utils/generarPdfInscripcion';
+import { sedesRepository }         from '@/infrastructure/repositories/sedesRepository';
+import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
 import {
   COLOR, CampoInput, FirmaAutorizacion, SeccionHeader,
   agruparPorSeccion, calcEdad, chipEstado, fmtFechaCorta,

@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Grid, Paper, Snackbar, Typography,
 } from '@mui/material';
 import AddIcon        from '@mui/icons-material/Add';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import apiClient from '../../../../infrastructure/http/apiClient';
+import apiClient from '@/infrastructure/http/apiClient';
 import { DialogSede }     from './components/DialogSede';
 import { DialogPrograma } from './components/DialogPrograma';
 import { TarjetaSede }    from './components/TarjetaSede';

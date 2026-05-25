@@ -1,4 +1,4 @@
-import {
+﻿import {
   Autocomplete, Box, Button, Chip, FormControl, FormControlLabel,
   InputAdornment, InputLabel, MenuItem, Select, Switch, TextField, Typography,
 } from '@mui/material';
@@ -7,7 +7,7 @@ import {
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
   TALLAS_ROPA, TALLAS_PANTALON, TALLAS_ZAPATOS, VALORACIONES,
   GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION,
-} from '../../../../../shared/utils/geodata';
+} from '@/shared/utils/geodata';
 import { TIPOS_CAMPO } from './helpers';
 
 export function CampoPreview({ campo }) {

@@ -1,11 +1,11 @@
-/**
+﻿/**
  * useBeneficiarios
  * Caso de uso: listar beneficiarios con paginación y caché stale-while-revalidate.
  * La UI muestra datos cacheados inmediatamente mientras actualiza en segundo plano.
  */
 import { useState, useEffect, useCallback } from 'react';
-import { beneficiariosRepository } from '../../infrastructure/repositories/beneficiariosRepository';
-import { cacheKey, leerCache, escribirCache } from '../../infrastructure/cache/sessionCache';
+import { beneficiariosRepository } from '@/infrastructure/repositories/beneficiariosRepository';
+import { cacheKey, leerCache, escribirCache } from '@/infrastructure/cache/sessionCache';
 
 const POR_PAGINA = 15;
 

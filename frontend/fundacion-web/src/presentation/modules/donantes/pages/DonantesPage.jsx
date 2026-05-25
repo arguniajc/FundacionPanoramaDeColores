@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useConfirm } from '../../../../shared/components/ConfirmDialog';
+﻿import React, { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '@/shared/components/ConfirmDialog';
 import {
   Box, Typography, Grid, Button, TextField, Dialog, DialogTitle, DialogContent,
   DialogActions, MenuItem, IconButton, Tooltip,
@@ -17,8 +17,8 @@ import AttachMoneyIcon     from '@mui/icons-material/AttachMoney';
 import EmailIcon           from '@mui/icons-material/Email';
 import PhoneIcon           from '@mui/icons-material/Phone';
 import LocationOnIcon      from '@mui/icons-material/LocationOn';
-import { donantesRepository } from '../../../../infrastructure/repositories/donantesRepository';
-import { CampoDocumento, SelectorUbicacion } from '../../../../shared/components/form/FormControles';
+import { donantesRepository } from '@/infrastructure/repositories/donantesRepository';
+import { CampoDocumento, SelectorUbicacion } from '@/shared/components/form/FormControles';
 
 const COLOR = 'var(--color-secundario)';
 

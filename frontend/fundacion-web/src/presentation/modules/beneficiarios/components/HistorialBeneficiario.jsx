@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useAsyncData } from '../../../../shared/hooks/useAsyncData';
+﻿import { useState, useEffect } from 'react';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import {
   Box, Button, Chip, CircularProgress, Collapse,
   Tooltip, Typography,
@@ -7,7 +7,7 @@ import {
 import ExpandMoreIcon  from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon  from '@mui/icons-material/ExpandLess';
 import HistoryIcon     from '@mui/icons-material/History';
-import { beneficiariosRepository } from '../../../../infrastructure/repositories/beneficiariosRepository';
+import { beneficiariosRepository } from '@/infrastructure/repositories/beneficiariosRepository';
 
 const COLOR = 'var(--color-primario)';
 

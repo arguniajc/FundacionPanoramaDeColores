@@ -1,5 +1,5 @@
-import { Box, Card, CardContent, Typography } from '@mui/material';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+﻿import { Box, Card, CardContent, Typography } from '@mui/material';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 export const fmt = (v) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v ?? 0);

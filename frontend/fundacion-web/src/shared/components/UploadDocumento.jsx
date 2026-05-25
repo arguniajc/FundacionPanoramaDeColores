@@ -1,4 +1,4 @@
-// Sube el documento de identidad del beneficiario.
+﻿// Sube el documento de identidad del beneficiario.
 // Tres modos: ver PDF guardado, subir PDF directo, o fotografiar frente+reverso (genera PDF con jsPDF).
 // Props: value (URL guardada), onChange(url), beneficiarioId (para log de descarga).
 import { useRef, useState, useEffect, useCallback } from 'react';
@@ -14,7 +14,7 @@ import CheckCircleIcon   from '@mui/icons-material/CheckCircle';
 import DownloadIcon      from '@mui/icons-material/Download';
 import UploadFileIcon    from '@mui/icons-material/UploadFile';
 import CamaraFoto        from './CamaraFoto';
-import apiClient         from '../../infrastructure/http/apiClient';
+import apiClient         from '@/infrastructure/http/apiClient';
 
 const ACCEPT_IMG = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 const ACCEPT_PDF = 'application/pdf';

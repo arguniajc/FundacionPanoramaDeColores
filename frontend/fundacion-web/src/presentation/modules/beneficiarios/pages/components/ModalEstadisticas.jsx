@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Box, CircularProgress, Dialog, DialogContent, DialogTitle,
   Divider, IconButton, LinearProgress, Paper, Typography,
@@ -8,8 +8,8 @@ import BarChartIcon       from '@mui/icons-material/BarChart';
 import CloseIcon          from '@mui/icons-material/Close';
 import WhatsAppIcon       from '@mui/icons-material/WhatsApp';
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate';
-import apiClient          from '../../../../../infrastructure/http/apiClient';
-import { useAsyncData }   from '../../../../../shared/hooks/useAsyncData';
+import apiClient          from '@/infrastructure/http/apiClient';
+import { useAsyncData }   from '@/shared/hooks/useAsyncData';
 
 function StatCard({ icon, label, value, color }) {
   return (

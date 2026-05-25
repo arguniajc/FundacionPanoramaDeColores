@@ -1,10 +1,10 @@
-/**
+﻿/**
  * useSedes
  * Caso de uso: cargar, crear, editar, toggle y eliminar sedes y programas.
  */
 import { useState, useEffect } from 'react';
-import { sedesRepository } from '../../infrastructure/repositories/sedesRepository';
-import { useAsyncData } from '../../shared/hooks/useAsyncData';
+import { sedesRepository } from '@/infrastructure/repositories/sedesRepository';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 
 export function useSedes() {
   const [toast, setToast] = useState('');

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Button, TextField, MenuItem, Grid, Chip,
   IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Alert,
@@ -8,8 +8,8 @@ import AddIcon    from '@mui/icons-material/Add';
 import EditIcon   from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon   from '@mui/icons-material/Save';
-import { useConfirm } from '../../../../../shared/components/ConfirmDialog';
-import apiClient from '../../../../../infrastructure/http/apiClient';
+import { useConfirm } from '@/shared/components/ConfirmDialog';
+import apiClient from '@/infrastructure/http/apiClient';
 
 const TIPOS_NOVEDAD   = ['vacaciones','incapacidad','permiso_remunerado','permiso_no_remunerado','comision','otro'];
 const ESTADOS_NOVEDAD = ['pendiente','aprobada','rechazada'];

@@ -1,4 +1,4 @@
-import { useState, useEffect, Children, memo } from 'react';
+﻿import { useState, useEffect, Children, memo } from 'react';
 import {
   Box, Typography, Button, Avatar, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, Alert,
@@ -9,11 +9,11 @@ import EditIcon         from '@mui/icons-material/Edit';
 import DeleteIcon       from '@mui/icons-material/Delete';
 import SaveIcon         from '@mui/icons-material/Save';
 import AccountTreeIcon  from '@mui/icons-material/AccountTree';
-import { useConfirm }   from '../../../../../shared/components/ConfirmDialog';
-import apiClient        from '../../../../../infrastructure/http/apiClient';
+import { useConfirm }   from '@/shared/components/ConfirmDialog';
+import apiClient        from '@/infrastructure/http/apiClient';
 import { CARGOS_COMUNES } from './DialogEmpleado';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
-import { useAsyncData } from '../../../../../shared/hooks/useAsyncData';
+import { BRAND_COLOR } from '@/shared/constants/brand';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 
 const LCOLOR       = '#94A3B8';
 const DEPTH_COLORS = ['#1E1B4B',BRAND_COLOR,'#7C3AED','#2563EB','#0891B2','#059669','#D97706','#DC2626'];

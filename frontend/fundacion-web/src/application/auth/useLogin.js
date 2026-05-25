@@ -1,11 +1,11 @@
-/**
+﻿/**
  * useLogin
  * Caso de uso: autenticar al usuario con Google OAuth.
  * Llama al backend, guarda la sesión y navega al panel.
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authRepository } from '../../infrastructure/repositories/authRepository';
+import { authRepository } from '@/infrastructure/repositories/authRepository';
 import { useAuth } from './AuthContext';
 
 export function useLogin() {

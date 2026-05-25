@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Grid, IconButton,
   InputAdornment, Snackbar, TextField, Typography,
@@ -10,8 +10,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import AssignmentIcon  from '@mui/icons-material/Assignment';
 import AccessTimeIcon  from '@mui/icons-material/AccessTime';
 import SearchIcon from '@mui/icons-material/Search';
-import { voluntariosRepository } from '../../../../infrastructure/repositories/voluntariosRepository';
-import { useConfirm }             from '../../../../shared/components/ConfirmDialog';
+import { voluntariosRepository } from '@/infrastructure/repositories/voluntariosRepository';
+import { useConfirm }             from '@/shared/components/ConfirmDialog';
 import { COLOR }               from './components/helpers';
 import { StatCard }            from './components/StatCard';
 import { VoluntarioCard }      from './components/VoluntarioCard';

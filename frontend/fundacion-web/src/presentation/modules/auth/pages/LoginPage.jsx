@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import {
@@ -6,8 +6,8 @@ import {
   CircularProgress, Alert, Divider,
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { useAuth }   from '../../../../application/auth/AuthContext';
-import apiClient     from '../../../../infrastructure/http/apiClient';
+import { useAuth }   from '@/application/auth/AuthContext';
+import apiClient     from '@/infrastructure/http/apiClient';
 
 export default function LoginPage() {
   const { user, login } = useAuth();

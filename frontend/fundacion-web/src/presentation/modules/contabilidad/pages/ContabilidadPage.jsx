@@ -1,4 +1,4 @@
-import {
+﻿import {
   Box, Typography, Grid, Tabs, Tab, Button,
   CircularProgress, Alert, Paper,
 } from '@mui/material';
@@ -10,8 +10,8 @@ import MenuBookIcon             from '@mui/icons-material/MenuBook';
 import SavingsIcon              from '@mui/icons-material/Savings';
 import TrendingDownIcon         from '@mui/icons-material/TrendingDown';
 import TrendingUpIcon           from '@mui/icons-material/TrendingUp';
-import SkeletonTabla            from '../../../../shared/components/SkeletonTabla';
-import { BRAND_COLOR } from '../../../../shared/constants/brand';
+import SkeletonTabla            from '@/shared/components/SkeletonTabla';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 import { fmt, KpiCard } from './components/helpers';
 import { DialogMovimiento }  from './components/DialogMovimiento';
 import { DialogCuenta }      from './components/DialogCuenta';

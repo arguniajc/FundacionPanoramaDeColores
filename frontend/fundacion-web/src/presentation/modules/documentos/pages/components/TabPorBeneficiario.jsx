@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   Alert, Autocomplete, Box, Button, CircularProgress, IconButton,
   Paper, Table, TableBody, TableCell, TableContainer,
@@ -10,8 +10,8 @@ import DownloadIcon       from '@mui/icons-material/Download';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import PersonIcon         from '@mui/icons-material/Person';
 import VisibilityIcon     from '@mui/icons-material/Visibility';
-import apiClient                        from '../../../../../infrastructure/http/apiClient';
-import { useDocumentosBeneficiario }    from '../../../../../application/documentos/useDocumentosBeneficiario';
+import apiClient                        from '@/infrastructure/http/apiClient';
+import { useDocumentosBeneficiario }    from '@/application/documentos/useDocumentosBeneficiario';
 import { fmt }                          from './helpers';
 import { ModalSubirArchivoBeneficiario } from './ModalSubirArchivoBeneficiario';
 import { ConfirmarEliminar }             from './ConfirmarEliminar';

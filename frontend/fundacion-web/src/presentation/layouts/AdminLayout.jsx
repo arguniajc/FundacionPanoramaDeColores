@@ -1,4 +1,4 @@
-// Layout del panel admin: AppBar superior (solo móvil), Drawer lateral con menú
+﻿// Layout del panel admin: AppBar superior (solo móvil), Drawer lateral con menú
 // de módulos colapsables y área de contenido. Incluye auto-logout por inactividad.
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -31,12 +31,12 @@ import DownloadIcon          from '@mui/icons-material/Download';
 import LocationOnIcon        from '@mui/icons-material/LocationOn';
 import HowToRegIcon          from '@mui/icons-material/HowToReg';
 import AccountTreeIcon        from '@mui/icons-material/AccountTree';
-import { useAuth }           from '../../application/auth/AuthContext';
-import { useThemeMode }      from '../../shared/theme/ThemeContext';
-import { useConfiguracion }  from '../../shared/context/ConfiguracionContext';
-import useInactividad        from '../../shared/hooks/useInactividad';
-import usePermisos           from '../../shared/hooks/usePermisos';
-import { LOGIN_URL }         from '../../shared/constants/routes';
+import { useAuth }           from '@/application/auth/AuthContext';
+import { useThemeMode }      from '@/shared/theme/ThemeContext';
+import { useConfiguracion }  from '@/shared/context/ConfiguracionContext';
+import useInactividad        from '@/shared/hooks/useInactividad';
+import usePermisos           from '@/shared/hooks/usePermisos';
+import { LOGIN_URL }         from '@/shared/constants/routes';
 
 const SIDEBAR_WIDTH = 260;
 

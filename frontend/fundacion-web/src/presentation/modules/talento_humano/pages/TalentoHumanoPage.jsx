@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useConfirm } from '../../../../shared/components/ConfirmDialog';
+﻿import { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '@/shared/components/ConfirmDialog';
 import {
   Box, Typography, Button, TextField, MenuItem, Grid, Card, CardContent,
   Avatar, Chip, IconButton, Tabs, Tab, Alert, Skeleton, Tooltip,
@@ -16,14 +16,14 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import EventNoteIcon     from '@mui/icons-material/EventNote';
 import AccountTreeIcon   from '@mui/icons-material/AccountTree';
 import PaymentsIcon      from '@mui/icons-material/Payments';
-import apiClient         from '../../../../infrastructure/http/apiClient';
-import { useAuth }       from '../../../../application/auth/AuthContext';
+import apiClient         from '@/infrastructure/http/apiClient';
+import { useAuth }       from '@/application/auth/AuthContext';
 import { DialogEmpleado } from './components/DialogEmpleado';
 import { PanelEmpleado }  from './components/PanelEmpleado';
 import { PanelNovedades } from './components/PanelNovedades';
 import { OrgChartTab }    from './components/OrgChartTab';
 import { PanelNomina }    from './components/PanelNomina';
-import { BRAND_COLOR } from '../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 const CONTRATO_COLORS = {
   indefinido:           'success',

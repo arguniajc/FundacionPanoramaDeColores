@@ -1,4 +1,4 @@
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+﻿import { BRAND_COLOR } from '@/shared/constants/brand';
 
 export const COLOR     = 'var(--color-primario)';
 export const TIPOS_DOC = ['CC', 'CE', 'PP', 'NIT', 'Otro'];

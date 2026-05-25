@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Checkbox, MenuItem, TextField, Button, Chip,
   Alert, Skeleton, Tooltip,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
-import apiClient from '../../../../infrastructure/http/apiClient';
-import { useAsyncData } from '../../../../shared/hooks/useAsyncData';
+import apiClient from '@/infrastructure/http/apiClient';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 
 // Módulos y las acciones posibles para cada uno
 const MODULOS = [

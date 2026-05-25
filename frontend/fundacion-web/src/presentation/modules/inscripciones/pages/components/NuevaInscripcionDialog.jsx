@@ -1,4 +1,4 @@
-// Stepper para crear una nueva inscripción: beneficiario → programa → formulario dinámico.
+﻿// Stepper para crear una nueva inscripción: beneficiario → programa → formulario dinámico.
 import { useState, useEffect } from 'react';
 import {
   Alert, Autocomplete, Box, Button, CircularProgress,
@@ -7,9 +7,9 @@ import {
   useMediaQuery, useTheme,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
-import { beneficiariosRepository } from '../../../../../infrastructure/repositories/beneficiariosRepository';
-import { sedesRepository }         from '../../../../../infrastructure/repositories/sedesRepository';
-import { inscripcionesRepository } from '../../../../../infrastructure/repositories/inscripcionesRepository';
+import { beneficiariosRepository } from '@/infrastructure/repositories/beneficiariosRepository';
+import { sedesRepository }         from '@/infrastructure/repositories/sedesRepository';
+import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
 import {
   COLOR, CampoInput, FirmaAutorizacion, SeccionHeader,
   agruparPorSeccion, calcEdad, parseMeta,

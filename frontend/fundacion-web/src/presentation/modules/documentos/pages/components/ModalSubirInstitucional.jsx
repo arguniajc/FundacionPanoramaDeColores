@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+﻿import { useState, useRef } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogTitle, FormControl, IconButton, InputLabel, LinearProgress,
@@ -7,7 +7,7 @@ import {
 import CloseIcon          from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import UploadFileIcon     from '@mui/icons-material/UploadFile';
-import apiClient              from '../../../../../infrastructure/http/apiClient';
+import apiClient              from '@/infrastructure/http/apiClient';
 import { CATEGORIAS, HEADER_GRADIENT, sinExtension } from './helpers';
 
 export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {

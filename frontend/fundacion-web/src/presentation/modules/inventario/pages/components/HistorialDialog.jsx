@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
-import { useAsyncData } from '../../../../../shared/hooks/useAsyncData';
+﻿import { useEffect } from 'react';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import {
   Box, CircularProgress, Dialog, DialogContent, DialogTitle,
   IconButton, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { inventarioRepository } from '../../../../../infrastructure/repositories/inventarioRepository';
+import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { COLOR, fmtNum, fmtFecha } from './helpers';
 
 export function HistorialDialog({ open, item, onClose }) {

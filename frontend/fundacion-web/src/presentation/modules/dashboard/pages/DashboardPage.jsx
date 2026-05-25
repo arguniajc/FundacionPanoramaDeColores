@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Box, Typography, Grid, Card, CardActionArea, Chip, Skeleton, Tooltip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -16,10 +16,10 @@ import LocationOnIcon       from '@mui/icons-material/LocationOn';
 import InfoOutlinedIcon     from '@mui/icons-material/InfoOutlined';
 import ExpandMoreIcon       from '@mui/icons-material/ExpandMore';
 import WarningAmberIcon     from '@mui/icons-material/WarningAmber';
-import { useAuth }      from '../../../../application/auth/AuthContext';
-import { useThemeMode } from '../../../../shared/theme/ThemeContext';
-import apiClient        from '../../../../infrastructure/http/apiClient';
-import { useAsyncData } from '../../../../shared/hooks/useAsyncData';
+import { useAuth }      from '@/application/auth/AuthContext';
+import { useThemeMode } from '@/shared/theme/ThemeContext';
+import apiClient        from '@/infrastructure/http/apiClient';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 
 const MODULOS = [
   { label: 'Beneficiarios', desc: 'Niños inscritos en la fundación',    icon: <ChildCareIcon sx={{ fontSize: 36 }} />,        grad: 'linear-gradient(135deg, var(--color-primario) 0%, #7c3aed 100%)', ruta: '/sede/beneficiarios' },

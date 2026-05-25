@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Box, Button, Grid, IconButton, InputAdornment, Snackbar, TextField, Typography,
 } from '@mui/material';
@@ -7,9 +7,9 @@ import AttachMoneyIcon       from '@mui/icons-material/AttachMoney';
 import CloseIcon             from '@mui/icons-material/Close';
 import SearchIcon            from '@mui/icons-material/Search';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
-import { donantesRepository } from '../../../../../infrastructure/repositories/donantesRepository';
-import { useAuth }            from '../../../../../application/auth/AuthContext';
-import { useConfirm }         from '../../../../../shared/components/ConfirmDialog';
+import { donantesRepository } from '@/infrastructure/repositories/donantesRepository';
+import { useAuth }            from '@/application/auth/AuthContext';
+import { useConfirm }         from '@/shared/components/ConfirmDialog';
 import { COLOR_DONANTES, fmtMoney } from './helpers';
 import { StatCard } from './StatCard';
 import { DonanteCard }   from './DonanteCard';

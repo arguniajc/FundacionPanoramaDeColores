@@ -1,7 +1,7 @@
-import { Alert, Box, Divider, Grid, MenuItem, Select, Typography, FormControl, InputLabel } from '@mui/material';
+﻿import { Alert, Box, Divider, Grid, MenuItem, Select, Typography, FormControl, InputLabel } from '@mui/material';
 import { Seccion }      from './Seccion';
 import { ColorPicker }  from './ColorPicker';
-import { FONT_OPTIONS, DEFAULTS } from '../../../../../shared/context/ConfiguracionContext';
+import { FONT_OPTIONS, DEFAULTS } from '@/shared/context/ConfiguracionContext';
 
 const COLORES_MARCA = [
   { key: 'colorPrimario',   cssVar: '--color-primario',   label: 'Color primario',   desc: 'Encabezados, tabs, botones e identidad visual' },

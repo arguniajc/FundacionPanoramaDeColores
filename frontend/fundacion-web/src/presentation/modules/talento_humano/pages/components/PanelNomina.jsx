@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, FormControl, IconButton, InputLabel,
@@ -11,8 +11,8 @@ import CheckCircleIcon  from '@mui/icons-material/CheckCircle';
 import DeleteIcon       from '@mui/icons-material/Delete';
 import ExpandMoreIcon   from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon   from '@mui/icons-material/ExpandLess';
-import { nominaRepository } from '../../../../../infrastructure/repositories/nominaRepository';
-import { useConfirm }       from '../../../../../shared/components/ConfirmDialog';
+import { nominaRepository } from '@/infrastructure/repositories/nominaRepository';
+import { useConfirm }       from '@/shared/components/ConfirmDialog';
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];

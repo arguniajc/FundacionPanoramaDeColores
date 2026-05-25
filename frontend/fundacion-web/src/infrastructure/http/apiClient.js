@@ -1,7 +1,7 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 import { getToken, clearSession } from '../storage/authStorage';
-import logger from '../../shared/utils/logger';
-import { LOGIN_URL } from '../../shared/constants/routes';
+import logger from '@/shared/utils/logger';
+import { LOGIN_URL } from '@/shared/constants/routes';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',

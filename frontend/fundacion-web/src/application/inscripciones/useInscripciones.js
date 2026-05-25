@@ -1,5 +1,5 @@
-import { inscripcionesRepository } from '../../infrastructure/repositories/inscripcionesRepository';
-import { useAsyncData } from '../../shared/hooks/useAsyncData';
+﻿import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 
 export function useInscripciones(filtros = {}) {
   const {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Box, Button, Chip, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper,
   Select, Snackbar, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -13,13 +13,13 @@ import Inventory2Icon        from '@mui/icons-material/Inventory2';
 import ReceiptIcon           from '@mui/icons-material/Receipt';
 import TrendingUpIcon        from '@mui/icons-material/TrendingUp';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
-import SkeletonTabla         from '../../../../../shared/components/SkeletonTabla';
-import { donacionesRepository } from '../../../../../infrastructure/repositories/donacionesRepository';
-import { sedesRepository }      from '../../../../../infrastructure/repositories/sedesRepository';
-import { useAuth }              from '../../../../../application/auth/AuthContext';
-import { useConfirm }           from '../../../../../shared/components/ConfirmDialog';
+import SkeletonTabla         from '@/shared/components/SkeletonTabla';
+import { donacionesRepository } from '@/infrastructure/repositories/donacionesRepository';
+import { sedesRepository }      from '@/infrastructure/repositories/sedesRepository';
+import { useAuth }              from '@/application/auth/AuthContext';
+import { useConfirm }           from '@/shared/components/ConfirmDialog';
 import { COLOR_DONACIONES, COLOR_ESPECIE, fmtMoney, fmtFecha } from './helpers';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 import { StatCard } from './StatCard';
 import { NuevaDonacionDialog }      from './NuevaDonacionDialog';
 import { ReciboDonacionDialog }     from './ReciboDonacionDialog';

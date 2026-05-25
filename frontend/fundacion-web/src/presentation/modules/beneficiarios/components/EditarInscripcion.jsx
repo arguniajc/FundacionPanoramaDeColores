@@ -5,13 +5,13 @@ import {
   InputLabel, Select, Typography, Alert, CircularProgress,
   InputAdornment, Autocomplete, Checkbox, FormControlLabel, Chip,
 } from '@mui/material';
-import apiClient       from '../../../../infrastructure/http/apiClient';
-import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, PAISES } from '../../../../shared/constants/beneficiarios';
+import apiClient       from '@/infrastructure/http/apiClient';
+import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, PAISES } from '@/shared/constants/beneficiarios';
 
 const GENEROS = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];
-import UploadFoto      from '../../../../shared/components/UploadFoto';
-import UploadDocumento from '../../../../shared/components/UploadDocumento';
-import { useGeografia } from '../../../../shared/hooks/useGeografia';
+import UploadFoto      from '@/shared/components/UploadFoto';
+import UploadDocumento from '@/shared/components/UploadDocumento';
+import { useGeografia } from '@/shared/hooks/useGeografia';
 
 const GRADOS = ['Prejardín','Jardín','Transición','1°','2°','3°','4°','5°','6°','7°','8°','9°','10°','11°'];
 

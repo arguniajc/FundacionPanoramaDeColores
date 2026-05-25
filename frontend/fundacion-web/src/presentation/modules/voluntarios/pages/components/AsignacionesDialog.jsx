@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogTitle, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper,
@@ -9,9 +9,9 @@ import AddIcon        from '@mui/icons-material/Add';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import DeleteIcon     from '@mui/icons-material/Delete';
 import EditIcon       from '@mui/icons-material/Edit';
-import { voluntariosRepository } from '../../../../../infrastructure/repositories/voluntariosRepository';
-import { sedesRepository }        from '../../../../../infrastructure/repositories/sedesRepository';
-import { useConfirm }             from '../../../../../shared/components/ConfirmDialog';
+import { voluntariosRepository } from '@/infrastructure/repositories/voluntariosRepository';
+import { sedesRepository }        from '@/infrastructure/repositories/sedesRepository';
+import { useConfirm }             from '@/shared/components/ConfirmDialog';
 import { COLOR, FORM_VACIO_ASIG, fmtFecha, toInputDate } from './helpers';
 
 export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {

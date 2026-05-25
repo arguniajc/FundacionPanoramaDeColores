@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
   Grid, IconButton, MenuItem, TextField, Tooltip, Typography,
 } from '@mui/material';
 import AddIcon    from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { actividadesRepository } from '../../../../../infrastructure/repositories/actividadesRepository';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 const ESTADOS = [
   { value: 'programada',  label: 'Programada'  },

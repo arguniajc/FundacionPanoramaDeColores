@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
-import apiClient from '../../../../infrastructure/http/apiClient';
-import { useAuth } from '../../../../application/auth/AuthContext';
-import { cacheKey, leerCache, escribirCache, limpiarCache } from '../../../../infrastructure/cache/sessionCache';
-import { calcularEdad } from '../../../../shared/utils/fecha';
+import apiClient from '@/infrastructure/http/apiClient';
+import { useAuth } from '@/application/auth/AuthContext';
+import { cacheKey, leerCache, escribirCache, limpiarCache } from '@/infrastructure/cache/sessionCache';
+import { calcularEdad } from '@/shared/utils/fecha';
 
 const POR_PAGINA = 15;
 

@@ -1,5 +1,5 @@
-import { documentosRepository } from '../../infrastructure/repositories/documentosRepository';
-import { useAsyncData } from '../../shared/hooks/useAsyncData';
+﻿import { documentosRepository } from '@/infrastructure/repositories/documentosRepository';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 
 export function useDocumentosBeneficiario() {
   const {

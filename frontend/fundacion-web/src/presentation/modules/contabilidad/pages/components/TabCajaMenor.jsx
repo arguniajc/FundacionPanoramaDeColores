@@ -1,4 +1,4 @@
-import {
+﻿import {
   Alert, Box, Button, CircularProgress, Chip, Divider, FormControl, Grid,
   IconButton, InputLabel, MenuItem, Paper, Select, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography,
@@ -11,7 +11,7 @@ import FactCheckIcon    from '@mui/icons-material/FactCheck';
 import SyncAltIcon      from '@mui/icons-material/SyncAlt';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingUpIcon   from '@mui/icons-material/TrendingUp';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 import { fmt, fmtFecha, MESES, ANIOS, KpiCard, SectionHeader } from './helpers';
 
 export function TabCajaMenor({

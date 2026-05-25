@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Box, Button, Checkbox, Dialog, DialogActions, DialogContent,
   DialogTitle, Divider, FormControlLabel, IconButton, Stack, Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { actividadesRepository } from '../../../../../infrastructure/repositories/actividadesRepository';
+import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
 
 export function DialogAsistencia({ open, actividad, onClose, onGuardado }) {
   const [asistentes,  setAsistentes]  = useState([]);

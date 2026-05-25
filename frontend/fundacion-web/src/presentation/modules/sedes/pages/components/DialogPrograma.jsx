@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle,
   Grid, TextField, useMediaQuery, useTheme,
 } from '@mui/material';
-import apiClient from '../../../../../infrastructure/http/apiClient';
+import apiClient from '@/infrastructure/http/apiClient';
 
 export function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial }) {
   const [form,     setForm]     = useState({ nombre: '', descripcion: '', cupoMaximo: '' });

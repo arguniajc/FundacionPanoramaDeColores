@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Box, CircularProgress, Divider, FormControl, Grid, InputLabel,
   MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer,
@@ -7,8 +7,8 @@ import {
 import TrendingUpIcon   from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import BalanceIcon      from '@mui/icons-material/Balance';
-import { contabilidadRepository } from '../../../../../infrastructure/repositories/contabilidadRepository';
-import { useAsyncData } from '../../../../../shared/hooks/useAsyncData';
+import { contabilidadRepository } from '@/infrastructure/repositories/contabilidadRepository';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 
 const MESES = [
   'Enero','Febrero','Marzo','Abril','Mayo','Junio',

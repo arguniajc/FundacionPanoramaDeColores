@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
   Grid, MenuItem, TextField,
 } from '@mui/material';
-import { donantesRepository } from '../../../../../infrastructure/repositories/donantesRepository';
-import { CampoDocumento, SelectorUbicacion } from '../../../../../shared/components/form/FormControles';
+import { donantesRepository } from '@/infrastructure/repositories/donantesRepository';
+import { CampoDocumento, SelectorUbicacion } from '@/shared/components/form/FormControles';
 import { COLOR_DONANTES } from './helpers';
 
 const VACIO = { nombre: '', tipo: 'persona', tipoDocumento: '', documento: '', email: '', telefono: '', pais: 'Colombia', departamento: '', ciudad: '', notas: '' };

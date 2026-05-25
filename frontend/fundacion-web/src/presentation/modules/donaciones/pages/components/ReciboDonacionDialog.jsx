@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Typography, Box, Divider, CircularProgress, Chip,
@@ -7,12 +7,12 @@ import DownloadIcon        from '@mui/icons-material/Download';
 import EmailIcon           from '@mui/icons-material/Email';
 import ReceiptIcon         from '@mui/icons-material/Receipt';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
-import { useConfiguracion }        from '../../../../../shared/context/ConfiguracionContext';
-import { configuracionRepository } from '../../../../../infrastructure/repositories/configuracionRepository';
-import { donacionesRepository }    from '../../../../../infrastructure/repositories/donacionesRepository';
+import { useConfiguracion }        from '@/shared/context/ConfiguracionContext';
+import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
+import { donacionesRepository }    from '@/infrastructure/repositories/donacionesRepository';
 import { fmtMoney, fmtFecha } from './helpers';
 import { CertificadoDonacionDialog } from './CertificadoDonacionDialog';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 function generarPDF(don, config, firma) {
   import('jspdf').then(({ default: jsPDF }) => {

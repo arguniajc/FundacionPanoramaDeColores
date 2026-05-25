@@ -37,9 +37,9 @@ import CheckCircleIcon          from '@mui/icons-material/CheckCircle';
 import CancelIcon               from '@mui/icons-material/Cancel';
 import HistoryIcon              from '@mui/icons-material/History';
 
-import apiClient                from '../../../../infrastructure/http/apiClient';
-import { calcularEdad }         from '../../../../shared/utils/fecha';
-import { abrirHojaDeVida }      from '../../../../shared/utils/pdf';
+import apiClient                from '@/infrastructure/http/apiClient';
+import { calcularEdad }         from '@/shared/utils/fecha';
+import { abrirHojaDeVida }      from '@/shared/utils/pdf';
 import HistorialBeneficiario    from './HistorialBeneficiario';
 
 const COLOR_PRIMARIO = 'var(--color-primario)';

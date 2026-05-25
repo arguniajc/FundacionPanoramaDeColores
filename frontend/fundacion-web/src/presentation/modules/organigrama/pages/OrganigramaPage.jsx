@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
-import { useAsyncData } from '../../../../shared/hooks/useAsyncData';
+﻿import { useEffect } from 'react';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import { useAuth } from '../../../../application/auth/AuthContext';
-import apiClient   from '../../../../infrastructure/http/apiClient';
+import { useAuth } from '@/application/auth/AuthContext';
+import apiClient   from '@/infrastructure/http/apiClient';
 import { OrgChartTab } from '../../talento_humano/pages/components/OrgChartTab';
-import { BRAND_COLOR } from '../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 const COLOR = BRAND_COLOR;
 

@@ -1,4 +1,4 @@
-import { useAuth } from '../../application/auth/AuthContext';
+﻿import { useAuth } from '@/application/auth/AuthContext';
 
 // Conveniencia: const { puedo, esAdmin, rol } = usePermisos()
 export default function usePermisos() {

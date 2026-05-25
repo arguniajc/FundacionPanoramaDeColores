@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+﻿import { useState, useRef } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, LinearProgress,
@@ -7,8 +7,8 @@ import {
 import UploadFileIcon  from '@mui/icons-material/UploadFile';
 import DownloadIcon    from '@mui/icons-material/Download';
 import * as XLSX from 'xlsx';
-import apiClient from '../../../../../infrastructure/http/apiClient';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import apiClient from '@/infrastructure/http/apiClient';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 const COLOR = BRAND_COLOR;
 

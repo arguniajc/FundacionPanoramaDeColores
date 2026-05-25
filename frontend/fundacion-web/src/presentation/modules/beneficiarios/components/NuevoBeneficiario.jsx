@@ -9,11 +9,11 @@ import {
 import PersonAddIcon   from '@mui/icons-material/PersonAdd';
 import CloseIcon       from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import apiClient       from '../../../../infrastructure/http/apiClient';
-import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, PAISES } from '../../../../shared/constants/beneficiarios';
-import UploadFoto      from '../../../../shared/components/UploadFoto';
-import UploadDocumento from '../../../../shared/components/UploadDocumento';
-import { useGeografia } from '../../../../shared/hooks/useGeografia';
+import apiClient       from '@/infrastructure/http/apiClient';
+import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, PAISES } from '@/shared/constants/beneficiarios';
+import UploadFoto      from '@/shared/components/UploadFoto';
+import UploadDocumento from '@/shared/components/UploadDocumento';
+import { useGeografia } from '@/shared/hooks/useGeografia';
 
 const GRADOS = ['Prejardín','Jardín','Transición','1°','2°','3°','4°','5°','6°','7°','8°','9°','10°','11°'];
 

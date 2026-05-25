@@ -1,6 +1,6 @@
-import { Component } from 'react';
+﻿import { Component } from 'react';
 import { Box, Button, Typography } from '@mui/material';
-import logger from '../../shared/utils/logger';
+import logger from '@/shared/utils/logger';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {

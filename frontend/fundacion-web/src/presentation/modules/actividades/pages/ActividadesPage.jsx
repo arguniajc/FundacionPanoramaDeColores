@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useConfirm } from '../../../../shared/components/ConfirmDialog';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { useConfirm } from '@/shared/components/ConfirmDialog';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin     from '@fullcalendar/daygrid';
 import timeGridPlugin    from '@fullcalendar/timegrid';
@@ -16,14 +16,14 @@ import DeleteIcon     from '@mui/icons-material/Delete';
 import EditIcon       from '@mui/icons-material/Edit';
 import PeopleIcon     from '@mui/icons-material/People';
 import ScheduleIcon   from '@mui/icons-material/Schedule';
-import { actividadesRepository } from '../../../../infrastructure/repositories/actividadesRepository';
-import usePermisos   from '../../../../shared/hooks/usePermisos';
-import apiClient     from '../../../../infrastructure/http/apiClient';
+import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
+import usePermisos   from '@/shared/hooks/usePermisos';
+import apiClient     from '@/infrastructure/http/apiClient';
 import { DialogActividad }       from './components/DialogActividad';
 import { DialogAsistencia }      from './components/DialogAsistencia';
 import { DialogNuevaActividad }  from './components/DialogNuevaActividad';
 import { TabHorarios }           from './components/TabHorarios';
-import { BRAND_COLOR } from '../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 const COLOR = BRAND_COLOR;
 

@@ -1,4 +1,4 @@
-// Gestión de inscripciones: listado con filtros, alta por stepper y edición/PDF del formulario dinámico.
+﻿// Gestión de inscripciones: listado con filtros, alta por stepper y edición/PDF del formulario dinámico.
 import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Avatar, Box, Button, Chip, CircularProgress,
@@ -8,8 +8,8 @@ import {
 import AddIcon        from '@mui/icons-material/Add';
 import DeleteIcon     from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { sedesRepository }    from '../../../../infrastructure/repositories/sedesRepository';
-import { useInscripciones }   from '../../../../application/inscripciones/useInscripciones';
+import { sedesRepository }    from '@/infrastructure/repositories/sedesRepository';
+import { useInscripciones }   from '@/application/inscripciones/useInscripciones';
 import { COLOR, ESTADOS, chipEstado } from './components/campos';
 import { VerFormularioDialog }        from './components/VerFormularioDialog';
 import { NuevaInscripcionDialog }     from './components/NuevaInscripcionDialog';

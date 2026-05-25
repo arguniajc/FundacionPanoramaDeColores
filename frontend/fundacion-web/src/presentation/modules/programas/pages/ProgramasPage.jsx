@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+﻿import { useRef, useState } from 'react';
 import {
   Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
   Divider, FormControl, FormControlLabel, Grid, IconButton, InputLabel,
@@ -12,11 +12,11 @@ import GavelIcon        from '@mui/icons-material/Gavel';
 import HandshakeIcon    from '@mui/icons-material/Handshake';
 import TuneIcon         from '@mui/icons-material/Tune';
 import UploadFileIcon   from '@mui/icons-material/UploadFile';
-import { useSedes }     from '../../../../application/sedes/useSedes';
+import { useSedes }     from '@/application/sedes/useSedes';
 import { COLOR }                from './components/helpers';
 import { chipEstado }           from './components/Chips';
 import { EditorCamposDialog }   from './components/EditorCamposDialog';
-import FirmaPad                 from '../../../../shared/components/FirmaPad';
+import FirmaPad                 from '@/shared/components/FirmaPad';
 import {
   leerArchivoComoDataUrl,
   redimensionarImagen,

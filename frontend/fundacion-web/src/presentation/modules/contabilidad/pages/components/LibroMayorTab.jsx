@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useAsyncData } from '../../../../../shared/hooks/useAsyncData';
+﻿import { useState, useEffect } from 'react';
+import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import {
   Box, Button, Chip, FormControl, InputLabel, MenuItem, Select,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import SearchIcon    from '@mui/icons-material/Search';
 import MenuBookIcon  from '@mui/icons-material/MenuBook';
-import apiClient     from '../../../../../infrastructure/http/apiClient';
+import apiClient     from '@/infrastructure/http/apiClient';
 import { fmt, fmtFecha, MESES, ANIOS } from './helpers';
 
 const COLS_HEAD = ['Fecha', 'Tipo', 'Concepto', 'Soporte', 'Tercero', 'Ingreso', 'Egreso', 'Saldo'];

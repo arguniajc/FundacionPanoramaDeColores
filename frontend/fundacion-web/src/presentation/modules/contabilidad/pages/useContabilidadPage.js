@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import apiClient from '../../../../infrastructure/http/apiClient';
-import { useAuth } from '../../../../application/auth/AuthContext';
-import { useConfirm } from '../../../../shared/components/ConfirmDialog';
-import { useConfiguracion } from '../../../../shared/context/ConfiguracionContext';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import apiClient from '@/infrastructure/http/apiClient';
+import { useAuth } from '@/application/auth/AuthContext';
+import { useConfirm } from '@/shared/components/ConfirmDialog';
+import { useConfiguracion } from '@/shared/context/ConfiguracionContext';
 import { generarComprobantePDF } from './components/generarComprobantePDF';
 
 export function useContabilidadPage() {

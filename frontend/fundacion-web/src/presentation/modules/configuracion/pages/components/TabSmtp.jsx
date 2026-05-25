@@ -1,11 +1,11 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Divider,
   FormControlLabel, Grid, Switch, TextField, Typography,
 } from '@mui/material';
 import EmailIcon  from '@mui/icons-material/Email';
 import CheckIcon  from '@mui/icons-material/Check';
-import { configuracionRepository } from '../../../../../infrastructure/repositories/configuracionRepository';
+import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
 import { COLOR } from './helpers';
 
 export function TabSmtp({ form, set }) {

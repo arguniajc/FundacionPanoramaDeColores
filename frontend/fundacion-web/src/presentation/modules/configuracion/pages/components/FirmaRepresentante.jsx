@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+﻿import { useState, useRef } from 'react';
 import { Box, Button, Tooltip, Typography } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import FirmaPad from '../../../../../shared/components/FirmaPad';
+import FirmaPad from '@/shared/components/FirmaPad';
 import { COLOR, leerArchivoComoDataUrl, redimensionarImagen } from './helpers';
 
 export function FirmaRepresentante({ value, onChange }) {

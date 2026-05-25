@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Card, CardContent, Chip, Grid, LinearProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography,
@@ -9,9 +9,9 @@ import {
   BarChart, Bar, CartesianGrid, Cell, Legend,
   PieChart, Pie, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import apiClient from '../../../../../infrastructure/http/apiClient';
+import apiClient from '@/infrastructure/http/apiClient';
 import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
-import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { BRAND_COLOR } from '@/shared/constants/brand';
 
 export function TabInventario() {
   const [data,  setData]  = useState(null);

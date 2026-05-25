@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Collapse, Dialog, DialogActions, DialogContent,
   DialogTitle, Divider, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography,
 } from '@mui/material';
 import HandshakeIcon from '@mui/icons-material/Handshake';
-import { inventarioRepository } from '../../../../../infrastructure/repositories/inventarioRepository';
+import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { COLOR, CATEGORIAS } from './helpers';
-import { CampoUnidadMedida } from '../../../../../shared/components/form/FormControles';
+import { CampoUnidadMedida } from '@/shared/components/form/FormControles';
 
 const TIPOS_TENENCIA = [
   { value: 'propio',        label: 'Propio',              desc: 'Pertenece a la fundación' },

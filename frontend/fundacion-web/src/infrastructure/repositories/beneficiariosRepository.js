@@ -9,6 +9,7 @@ export const beneficiariosRepository = {
   listar:          (params)      => apiClient.get('/api/beneficiarios', { params }),
   obtener:         (id)          => apiClient.get(`/api/beneficiarios/${id}`),
   stats:           ()            => apiClient.get('/api/beneficiarios/stats'),
+  statsNinos:      ()            => apiClient.get('/api/beneficiarios/stats-ninos'),
   verificarDoc:    (numero)      => apiClient.get(`/api/beneficiarios/verificar-documento/${numero}`),
   crear:           (datos)       => apiClient.post('/api/beneficiarios', datos),
   editar:          (id, datos)   => apiClient.put(`/api/beneficiarios/${id}`, datos),

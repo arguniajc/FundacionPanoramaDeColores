@@ -1,9 +1,8 @@
-﻿import { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Card, CardActionArea, Chip, Skeleton, Tooltip } from '@mui/material';
+import { Box, Card, CardActionArea, Chip, Grid, Skeleton, Tooltip, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
-  ResponsiveContainer, Cell, PieChart, Pie, Legend,
+  ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts';
 import ChildCareIcon        from '@mui/icons-material/ChildCare';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
@@ -15,11 +14,14 @@ import PublicIcon           from '@mui/icons-material/Public';
 import LocationOnIcon       from '@mui/icons-material/LocationOn';
 import InfoOutlinedIcon     from '@mui/icons-material/InfoOutlined';
 import ExpandMoreIcon       from '@mui/icons-material/ExpandMore';
-import WarningAmberIcon     from '@mui/icons-material/WarningAmber';
-import { useAuth }      from '@/application/auth/AuthContext';
-import { useThemeMode } from '@/shared/theme/ThemeContext';
-import apiClient        from '@/infrastructure/http/apiClient';
-import { useAsyncData } from '@/shared/hooks/useAsyncData';
+import { useDashboardPage }  from './useDashboardPage';
+import {
+  COLORES_GENERO,
+  CustomTooltip, GeneroTooltip,
+  KpiCard, FilaOrigen, SeccionHeader, AlertaChip,
+} from './components/DashboardHelpers';
+
+const COLORES_RANGO = ['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 
 const MODULOS = [
   { label: 'Beneficiarios', desc: 'Niños inscritos en la fundación',    icon: <ChildCareIcon sx={{ fontSize: 36 }} />,        grad: 'linear-gradient(135deg, var(--color-primario) 0%, #7c3aed 100%)', ruta: '/sede/beneficiarios' },
@@ -30,169 +32,15 @@ const MODULOS = [
   { label: 'Reportes',      desc: 'Informes y estadísticas',            icon: <AssessmentIcon sx={{ fontSize: 36 }} />,       grad: 'linear-gradient(135deg, #B4E8E8 0%, #0891b2 100%)',               ruta: '/sede/reportes' },
 ];
 
-const COLORES_RANGO = ['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
-
-const COLORES_GENERO = {
-  'Masculino':        '#3b82f6',
-  'Femenino':         '#ec4899',
-  'No binario':       '#8b5cf6',
-  'Prefiero no decir':'#94a3b8',
-  'No especificado':  '#cbd5e1',
-};
-
-// ── Tooltip personalizado del gráfico de rangos ────────────────────────────
-function CustomTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  return (
-    <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
-               borderRadius: 2, p: 1.5, boxShadow: 3, minWidth: 160 }}>
-      <Typography fontWeight={700} fontSize="0.8rem">{d.codigo} — {d.nombre}</Typography>
-      <Typography fontSize="0.75rem" color="text.secondary">{d.rango}</Typography>
-      <Typography fontWeight={800} fontSize="1.1rem" mt={0.5} color={d.color}>
-        {d.total} {d.total === 1 ? 'niño' : 'niños'}
-      </Typography>
-    </Box>
-  );
-}
-
-// ── Tooltip personalizado del gráfico de género ────────────────────────────
-function GeneroTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  return (
-    <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
-               borderRadius: 2, p: 1.5, boxShadow: 3 }}>
-      <Typography fontWeight={700} fontSize="0.82rem">{d.genero}</Typography>
-      <Typography fontWeight={800} fontSize="1rem" mt={0.3} color={COLORES_GENERO[d.genero] ?? '#64748b'}>
-        {d.total} {d.total === 1 ? 'niño' : 'niños'}
-      </Typography>
-    </Box>
-  );
-}
-
-// ── Tarjeta de KPI grande ─────────────────────────────────────────────────
-function KpiCard({ valor, label, sublabel, color, icon, cargando }) {
-  return (
-    <Box sx={{
-      borderRadius: 3, p: 2.5,
-      background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)`,
-      border: '1.5px solid', borderColor: `${color}30`,
-      display: 'flex', alignItems: 'center', gap: 2, height: '100%',
-    }}>
-      <Box sx={{ width: 52, height: 52, borderRadius: '50%', bgcolor: `${color}20`,
-                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        {icon}
-      </Box>
-      <Box>
-        {cargando
-          ? <Skeleton width={50} height={36} />
-          : <Typography fontWeight={800} fontSize={{ xs: '1.6rem', sm: '2rem' }} lineHeight={1} sx={{ color }}>
-              {valor}
-            </Typography>}
-        <Typography fontWeight={700} fontSize="0.82rem" color="text.primary" mt={0.3}>{label}</Typography>
-        {sublabel && <Typography fontSize="0.72rem" color="text.secondary">{sublabel}</Typography>}
-      </Box>
-    </Box>
-  );
-}
-
-// ── Barra de origen (departamento / país) ─────────────────────────────────
-function FilaOrigen({ nombre, total, max, color }) {
-  const pct = max > 0 ? Math.round((total / max) * 100) : 0;
-  return (
-    <Box display="flex" alignItems="center" gap={1.5} mb={0.8}>
-      <Typography fontSize="0.78rem" sx={{ minWidth: 130, color: 'text.secondary', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
-        title={nombre}>{nombre}</Typography>
-      <Box flex={1} sx={{ bgcolor: 'action.hover', borderRadius: 4, height: 8 }}>
-        <Box sx={{ width: `${pct}%`, height: 8, borderRadius: 4, bgcolor: color, transition: 'width 0.6s ease' }} />
-      </Box>
-      <Typography fontSize="0.78rem" fontWeight={700} sx={{ minWidth: 24, textAlign: 'right', color }}>
-        {total}
-      </Typography>
-    </Box>
-  );
-}
-
-// ── Separador de sección ──────────────────────────────────────────────────
-function SeccionHeader({ titulo }) {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-      <Box sx={{ width: 4, height: 22, borderRadius: 1, bgcolor: 'var(--color-primario)' }} />
-      <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: 'text.primary' }}>{titulo}</Typography>
-    </Box>
-  );
-}
-
-// ── Chip de alerta clickeable ─────────────────────────────────────────────
-function AlertaChip({ count, label, color, onClick }) {
-  return (
-    <Box onClick={onClick} sx={{
-      display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.8,
-      bgcolor: `${color}15`, border: `1px solid ${color}40`,
-      borderRadius: 2, cursor: 'pointer', userSelect: 'none',
-      '&:hover': { bgcolor: `${color}28` },
-    }}>
-      <WarningAmberIcon sx={{ fontSize: 16, color }} />
-      <Typography fontSize="0.82rem" fontWeight={800} sx={{ color }}>{count}</Typography>
-      <Typography fontSize="0.82rem" color="text.secondary">{label}</Typography>
-    </Box>
-  );
-}
-
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const { mode } = useThemeMode();
   const navigate = useNavigate();
-  const hora     = new Date().getHours();
-  const saludo   = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches';
-
-  const [alertas, setAlertas] = useState(null);
-
-  const { data: stats, cargando, ejecutar: cargarStats } = useAsyncData(
-    async () => (await apiClient.get('/api/beneficiarios/stats-ninos')).data,
-    { errorMsg: '' }
-  );
-
-  useEffect(() => { cargarStats(); }, [cargarStats]);
-
-  useEffect(() => {
-    Promise.all([
-      apiClient.get('/api/talento-humano/stats'),
-      apiClient.get('/api/inventario/stats'),
-      apiClient.get('/api/inventario/comodatos-proximos'),
-    ]).then(([th, inv, com]) => {
-      const contratosVencer     = th.data.contratosProximosVencer ?? 0;
-      const novedadesPendientes = th.data.novedadesPendientes     ?? 0;
-      const stockBajo           = inv.data.stockBajo              ?? 0;
-      const sinStock            = inv.data.sinStock               ?? 0;
-      const comodatosVencer     = Array.isArray(com.data) ? com.data.length : 0;
-      if (contratosVencer > 0 || novedadesPendientes > 0 || stockBajo > 0 || sinStock > 0 || comodatosVencer > 0)
-        setAlertas({ contratosVencer, novedadesPendientes, stockBajo, sinStock, comodatosVencer });
-    }).catch(() => { /* silencioso */ });
-  }, []);
-
-  const chartData = stats?.porRango?.map((r, i) => ({
-    ...r,
-    color: COLORES_RANGO[i],
-    label: r.codigo,
-  })) ?? [];
-
-  const generoData = stats?.porGenero?.map(g => ({
-    ...g,
-    color: COLORES_GENERO[g.genero] ?? '#94a3b8',
-  })) ?? [];
-
-  const [deptoExpandido, setDeptoExpandido] = useState(null);
-
-  const maxDepto = Math.max(
-    ...(stats?.departamentosConCiudades?.map(d => d.total) ?? [1]),
-    1,
-  );
-  const maxPais = Math.max(
-    ...(stats?.topPaises?.map(p => p.total) ?? [1]),
-    1,
-  );
+  const {
+    user, mode, saludo,
+    alertas,
+    stats, cargando,
+    deptoExpandido, setDeptoExpandido,
+    chartData, generoData,
+  } = useDashboardPage();
 
   const renderLabelGenero = ({ cx, cy, midAngle, outerRadius, percent, index }) => {
     if (percent < 0.03) return null;
@@ -215,7 +63,7 @@ export default function DashboardPage() {
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
 
-      {/* ── Saludo ──────────────────────────────────────────────────── */}
+      {/* Saludo */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary' }} gutterBottom>
           {saludo}, {user?.nombre?.split(' ')[0]}
@@ -225,7 +73,7 @@ export default function DashboardPage() {
         </Typography>
       </Box>
 
-      {/* ── Alertas operativas ──────────────────────────────────────── */}
+      {/* Alertas operativas */}
       {alertas && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 3 }}>
           {alertas.contratosVencer > 0 && (
@@ -271,48 +119,27 @@ export default function DashboardPage() {
         </Box>
       )}
 
-      {/* ── KPIs principales ────────────────────────────────────────── */}
+      {/* KPIs principales */}
       <SeccionHeader titulo="Niños activos" />
       <Grid container spacing={2} sx={{ mb: 4 }}>
-
-        {/* Total activos */}
         <Grid size={{ xs: 12, sm: 4 }}>
-          <KpiCard
-            valor={stats?.totalActivos ?? 0}
-            label="Niños activos"
-            sublabel="Inscritos y vigentes"
-            color="var(--color-primario)"
-            cargando={cargando}
-            icon={<ChildCareIcon sx={{ color: 'var(--color-primario)', fontSize: 26 }} />}
-          />
+          <KpiCard valor={stats?.totalActivos ?? 0} label="Niños activos" sublabel="Inscritos y vigentes"
+            color="var(--color-primario)" cargando={cargando}
+            icon={<ChildCareIcon sx={{ color: 'var(--color-primario)', fontSize: 26 }} />} />
         </Grid>
-
-        {/* Extranjeros */}
         <Grid size={{ xs: 12, sm: 4 }}>
-          <KpiCard
-            valor={stats?.extranjeros ?? 0}
-            label="Extranjeros"
-            sublabel="Nacidos fuera de Colombia"
-            color="#0ea5e9"
-            cargando={cargando}
-            icon={<PublicIcon sx={{ color: '#0ea5e9', fontSize: 26 }} />}
-          />
+          <KpiCard valor={stats?.extranjeros ?? 0} label="Extranjeros" sublabel="Nacidos fuera de Colombia"
+            color="#0ea5e9" cargando={cargando}
+            icon={<PublicIcon sx={{ color: '#0ea5e9', fontSize: 26 }} />} />
         </Grid>
-
-        {/* Otras regiones */}
         <Grid size={{ xs: 12, sm: 4 }}>
-          <KpiCard
-            valor={stats?.otraRegion ?? 0}
-            label="Otras regiones"
-            sublabel="Colombianos de otros departamentos"
-            color="#f59e0b"
-            cargando={cargando}
-            icon={<LocationOnIcon sx={{ color: '#f59e0b', fontSize: 26 }} />}
-          />
+          <KpiCard valor={stats?.otraRegion ?? 0} label="Otras regiones" sublabel="Colombianos de otros departamentos"
+            color="#f59e0b" cargando={cargando}
+            icon={<LocationOnIcon sx={{ color: '#f59e0b', fontSize: 26 }} />} />
         </Grid>
       </Grid>
 
-      {/* ── Rangos etáreos + orígenes ────────────────────────────────── */}
+      {/* Rangos etáreos + orígenes */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
 
         {/* Gráfico rangos */}
@@ -324,32 +151,18 @@ export default function DashboardPage() {
                 <InfoOutlinedIcon sx={{ fontSize: 18, color: 'text.disabled', cursor: 'help' }} />
               </Tooltip>
             </Box>
-
-            {/* Chips resumen */}
             <Box display="flex" flexWrap="wrap" gap={0.8} mb={2}>
               {stats?.porRango?.map((r, i) => (
-                <Chip
-                  key={r.codigo}
-                  label={`${r.codigo}: ${r.total}`}
-                  size="small"
-                  sx={{
-                    bgcolor: `${COLORES_RANGO[i]}20`,
-                    color: COLORES_RANGO[i],
-                    fontWeight: 700,
-                    border: `1px solid ${COLORES_RANGO[i]}40`,
-                    fontSize: '0.72rem',
-                  }}
-                />
+                <Chip key={r.codigo} label={`${r.codigo}: ${r.total}`} size="small" sx={{
+                  bgcolor: `${COLORES_RANGO[i]}20`, color: COLORES_RANGO[i], fontWeight: 700,
+                  border: `1px solid ${COLORES_RANGO[i]}40`, fontSize: '0.72rem',
+                }} />
               ))}
               {stats?.sinEdad > 0 && (
-                <Chip
-                  label={`Sin fecha: ${stats.sinEdad}`}
-                  size="small"
-                  sx={{ bgcolor: 'action.hover', fontWeight: 600, fontSize: '0.72rem' }}
-                />
+                <Chip label={`Sin fecha: ${stats.sinEdad}`} size="small"
+                  sx={{ bgcolor: 'action.hover', fontWeight: 600, fontSize: '0.72rem' }} />
               )}
             </Box>
-
             {cargando ? (
               <Skeleton variant="rectangular" height={180} sx={{ borderRadius: 2 }} />
             ) : (
@@ -360,15 +173,11 @@ export default function DashboardPage() {
                   <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                   <RTooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
                   <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={52}>
-                    {chartData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
+                    {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             )}
-
-            {/* Leyenda */}
             <Box sx={{ mt: 1.5, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5 }}>
               {[
                 { codigo: 'PI',  nombre: 'Primera infancia',  rango: '0 – 5 años',   i: 0 },
@@ -391,8 +200,6 @@ export default function DashboardPage() {
         {/* Orígenes */}
         <Grid size={{ xs: 12, md: 5 }}>
           <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5, height: '100%' }}>
-
-            {/* Título */}
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={2.5}>
               <Typography fontWeight={800} fontSize="0.95rem">Lugar de origen</Typography>
               <Box sx={{ fontSize: '0.68rem', color: 'text.disabled', fontWeight: 500 }}>
@@ -400,7 +207,7 @@ export default function DashboardPage() {
               </Box>
             </Box>
 
-            {/* ── Extranjeros ── */}
+            {/* Extranjeros */}
             <Box mb={2.5}>
               <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
                 <Box display="flex" alignItems="center" gap={0.8}>
@@ -412,8 +219,7 @@ export default function DashboardPage() {
                 </Box>
                 <Box sx={{
                   bgcolor: '#0ea5e915', color: '#0ea5e9', px: 1.2, py: 0.25,
-                  borderRadius: 2, fontSize: '0.78rem', fontWeight: 800,
-                  border: '1px solid #0ea5e930',
+                  borderRadius: 2, fontSize: '0.78rem', fontWeight: 800, border: '1px solid #0ea5e930',
                 }}>
                   {stats?.extranjeros ?? 0}
                 </Box>
@@ -422,10 +228,8 @@ export default function DashboardPage() {
                 stats?.topPaises?.length > 0
                   ? stats.topPaises.map((p, i) => (
                       <Box key={p.pais} display="flex" alignItems="center" gap={1.5}
-                        sx={{ p: '5px 8px', borderRadius: 2, mb: 0.4,
-                              '&:hover': { bgcolor: 'action.hover' } }}>
-                        <Typography fontSize="0.65rem" fontWeight={700} color="text.disabled"
-                          sx={{ minWidth: 14 }}>
+                        sx={{ p: '5px 8px', borderRadius: 2, mb: 0.4, '&:hover': { bgcolor: 'action.hover' } }}>
+                        <Typography fontSize="0.65rem" fontWeight={700} color="text.disabled" sx={{ minWidth: 14 }}>
                           {i + 1}
                         </Typography>
                         <Typography fontSize="0.8rem" fontWeight={600} color="text.primary"
@@ -453,29 +257,25 @@ export default function DashboardPage() {
               }
             </Box>
 
-            {/* Divisor */}
             <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mb: 2 }} />
 
-            {/* ── Departamentos acordeón ── */}
+            {/* Departamentos acordeón */}
             <Box>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                <Box display="flex" alignItems="center" gap={0.8}>
-                  <LocationOnIcon sx={{ fontSize: 14, color: '#f59e0b' }} />
-                  <Typography fontSize="0.72rem" fontWeight={700} color="text.secondary"
-                    sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Colombia · departamentos
-                  </Typography>
-                </Box>
+              <Box display="flex" alignItems="center" gap={0.8} mb={1}>
+                <LocationOnIcon sx={{ fontSize: 14, color: '#f59e0b' }} />
+                <Typography fontSize="0.72rem" fontWeight={700} color="text.secondary"
+                  sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Colombia · departamentos
+                </Typography>
               </Box>
 
               {cargando ? <Skeleton height={120} sx={{ borderRadius: 2 }} /> :
                 stats?.departamentosConCiudades?.length > 0
                   ? stats.departamentosConCiudades.map((d, i) => {
-                      const abierto = deptoExpandido === d.departamento;
+                      const abierto    = deptoExpandido === d.departamento;
                       const hasCiudades = d.ciudades?.length > 0;
                       return (
                         <Box key={d.departamento}>
-                          {/* Fila departamento */}
                           <Box
                             onClick={() => hasCiudades && setDeptoExpandido(abierto ? null : d.departamento)}
                             sx={{
@@ -503,42 +303,33 @@ export default function DashboardPage() {
                               color: abierto ? '#fff' : '#f59e0b',
                               px: 0.9, py: 0.1, borderRadius: 1.5,
                               fontSize: '0.72rem', fontWeight: 800,
-                              minWidth: 24, textAlign: 'center',
-                              transition: 'all 0.15s',
+                              minWidth: 24, textAlign: 'center', transition: 'all 0.15s',
                             }}>
                               {d.total}
                             </Box>
                             {hasCiudades && (
                               <ExpandMoreIcon sx={{
-                                fontSize: 15, color: abierto ? '#f59e0b' : 'text.disabled',
-                                flexShrink: 0, transition: 'transform 0.2s, color 0.15s',
+                                fontSize: 15, color: abierto ? '#f59e0b' : 'text.disabled', flexShrink: 0,
+                                transition: 'transform 0.2s, color 0.15s',
                                 transform: abierto ? 'rotate(180deg)' : 'none',
                               }} />
                             )}
                           </Box>
-
-                          {/* Ciudades desplegadas */}
                           {abierto && hasCiudades && (
-                            <Box sx={{ ml: 3, mb: 0.8, pl: 1.5,
-                                        borderLeft: '2px solid', borderColor: '#f59e0b40' }}>
+                            <Box sx={{ ml: 3, mb: 0.8, pl: 1.5, borderLeft: '2px solid', borderColor: '#f59e0b40' }}>
                               {d.ciudades.map(c => (
-                                <Box key={c.ciudad} display="flex" alignItems="center"
-                                  justifyContent="space-between"
-                                  sx={{ py: 0.4, px: 0.5, borderRadius: 1.5,
-                                        '&:hover': { bgcolor: 'action.hover' } }}>
+                                <Box key={c.ciudad} display="flex" alignItems="center" justifyContent="space-between"
+                                  sx={{ py: 0.4, px: 0.5, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover' } }}>
                                   <Box display="flex" alignItems="center" gap={1}>
-                                    <Box sx={{ width: 5, height: 5, borderRadius: '50%',
-                                                bgcolor: '#8b5cf6', flexShrink: 0 }} />
+                                    <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#8b5cf6', flexShrink: 0 }} />
                                     <Typography fontSize="0.75rem" color="text.secondary"
                                       sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}
                                       title={c.ciudad}>{c.ciudad}
                                     </Typography>
                                   </Box>
                                   <Box sx={{
-                                    bgcolor: '#8b5cf615', color: '#8b5cf6',
-                                    px: 0.8, py: 0.1, borderRadius: 1.5,
-                                    fontSize: '0.7rem', fontWeight: 800,
-                                    minWidth: 22, textAlign: 'center',
+                                    bgcolor: '#8b5cf615', color: '#8b5cf6', px: 0.8, py: 0.1, borderRadius: 1.5,
+                                    fontSize: '0.7rem', fontWeight: 800, minWidth: 22, textAlign: 'center',
                                   }}>
                                     {c.total}
                                   </Box>
@@ -560,13 +351,11 @@ export default function DashboardPage() {
                   )
               }
             </Box>
-
           </Box>
         </Grid>
-
       </Grid>
 
-      {/* ── Género ──────────────────────────────────────────────────── */}
+      {/* Género */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid size={{ xs: 12 }}>
           <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5 }}>
@@ -580,19 +369,11 @@ export default function DashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
-                  <Pie
-                    data={generoData}
-                    dataKey="total"
-                    nameKey="genero"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={95}
+                  <Pie data={generoData} dataKey="total" nameKey="genero"
+                    cx="50%" cy="50%" outerRadius={95}
                     label={renderLabelGenero}
-                    labelLine={{ strokeWidth: 1, stroke: '#94a3b8' }}
-                  >
-                    {generoData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
+                    labelLine={{ strokeWidth: 1, stroke: '#94a3b8' }}>
+                    {generoData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Pie>
                   <RTooltip content={<GeneroTooltip />} />
                 </PieChart>
@@ -602,7 +383,7 @@ export default function DashboardPage() {
         </Grid>
       </Grid>
 
-      {/* ── Acceso rápido ───────────────────────────────────────────── */}
+      {/* Acceso rápido */}
       <SeccionHeader titulo="Acceso rápido" />
       <Grid container spacing={2.5}>
         {MODULOS.map(({ label, desc, icon, grad, ruta }) => (

@@ -137,16 +137,31 @@ export default function ActividadesPage() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  // Eventos del calendario: actividades únicas + horarios recurrentes expandidos
-  const eventosUnicos = actividades.map((a, i) => ({
-    id:    `act-${a.id}`,
-    title: a.titulo,
-    start: a.fechaInicio,
-    end:   a.fechaFin ?? undefined,
-    backgroundColor: COLORES_PROGRAMA[i % COLORES_PROGRAMA.length],
-    borderColor:     COLORES_PROGRAMA[i % COLORES_PROGRAMA.length],
-    extendedProps:   { tipo: 'actividad', ...a },
-  }));
+  // Eventos del calendario: actividades únicas + días adicionales + horarios recurrentes
+  const eventosUnicos = actividades.flatMap((a, i) => {
+    const color = COLORES_PROGRAMA[i % COLORES_PROGRAMA.length];
+    const base = [{
+      id:    `act-${a.id}`,
+      title: a.titulo,
+      start: a.fechaInicio,
+      end:   a.fechaFin ?? undefined,
+      backgroundColor: color,
+      borderColor:     color,
+      extendedProps:   { tipo: 'actividad', ...a },
+    }];
+    for (const dia of (a.diasAdicionales ?? [])) {
+      base.push({
+        id:    `act-${a.id}-dia-${dia.id}`,
+        title: a.titulo,
+        start: `${dia.fecha}T${dia.horaInicio}`,
+        end:   `${dia.fecha}T${dia.horaFin}`,
+        backgroundColor: color,
+        borderColor:     color,
+        extendedProps:   { tipo: 'actividad', ...a },
+      });
+    }
+    return base;
+  });
 
   const eventosRecurrentes = rangoCalendario
     ? expandirHorarios(horarios, rangoCalendario.start, rangoCalendario.end)

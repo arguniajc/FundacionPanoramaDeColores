@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent,
-  DialogTitle, Divider, Grid, MenuItem, Paper, Switch,
-  TextField, ToggleButton, ToggleButtonGroup, Typography,
+  DialogTitle, Divider, Grid, IconButton, MenuItem, Paper,
+  TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from '@mui/material';
 import AccessTimeIcon    from '@mui/icons-material/AccessTime';
+import AddIcon           from '@mui/icons-material/Add';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import DeleteIcon        from '@mui/icons-material/Delete';
 import EventIcon         from '@mui/icons-material/Event';
 import PlaceIcon         from '@mui/icons-material/Place';
 import RepeatIcon        from '@mui/icons-material/Repeat';
@@ -33,7 +35,8 @@ function toggleDia(dias, v) {
 
 const EMPTY_UNICO = {
   titulo: '', programaId: '', lugar: '', descripcion: '',
-  fechaInicio: '', fechaFin: '',
+  fecha: '', horaInicio: '', horaFin: '',
+  diasAdicionales: [],
 };
 const EMPTY_RECURRENTE = {
   programaId: '', diasSemana: [1, 3, 5],
@@ -55,7 +58,8 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
     setUnico({
       ...EMPTY_UNICO,
       programaId:  programas[0]?.id ?? '',
-      fechaInicio: fechaInicialSugerida ?? new Date().toISOString().slice(0, 16),
+      fecha:       fechaInicialSugerida ? fechaInicialSugerida.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      horaInicio:  fechaInicialSugerida?.length > 10 ? fechaInicialSugerida.slice(11, 16) : '08:00',
     });
     setRecur({ ...EMPTY_RECURRENTE, programaId: programas[0]?.id ?? '' });
   }, [open, programas, fechaInicialSugerida]);
@@ -69,14 +73,31 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
     try {
       if (tipo === 'unico') {
         if (!unico.titulo.trim()) { setError('El título es obligatorio.'); return; }
-        if (!unico.fechaInicio)   { setError('La fecha de inicio es obligatoria.'); return; }
+        if (!unico.fecha)          { setError('La fecha es obligatoria.'); return; }
+        if (!unico.horaInicio)     { setError('La hora de inicio es obligatoria.'); return; }
+        if (unico.horaFin && unico.horaFin <= unico.horaInicio) {
+          setError('La hora de fin debe ser posterior a la de inicio.'); return;
+        }
+        for (const dia of unico.diasAdicionales) {
+          if (!dia.fecha || !dia.horaInicio || !dia.horaFin) {
+            setError('Completa todos los campos de los días adicionales.'); return;
+          }
+          if (dia.horaFin <= dia.horaInicio) {
+            setError('En días adicionales, la hora de fin debe ser posterior a la de inicio.'); return;
+          }
+        }
         await actividadesRepository.crear({
-          titulo:      unico.titulo.trim(),
-          descripcion: unico.descripcion.trim() || null,
-          programaId:  unico.programaId || null,
-          fechaInicio: unico.fechaInicio,
-          fechaFin:    unico.fechaFin    || null,
-          lugar:       unico.lugar.trim() || null,
+          titulo:          unico.titulo.trim(),
+          descripcion:     unico.descripcion.trim() || null,
+          programaId:      unico.programaId || null,
+          fechaInicio:     `${unico.fecha}T${unico.horaInicio}:00`,
+          fechaFin:        unico.horaFin ? `${unico.fecha}T${unico.horaFin}:00` : null,
+          lugar:           unico.lugar.trim() || null,
+          diasAdicionales: unico.diasAdicionales.map(d => ({
+            fecha:      d.fecha,
+            horaInicio: d.horaInicio,
+            horaFin:    d.horaFin,
+          })),
         });
       } else {
         if (!recur.programaId)         { setError('Selecciona un programa.'); return; }
@@ -156,15 +177,21 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
                 {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid size={6}>
-              <TextField label="Fecha y hora inicio *" type="datetime-local" fullWidth size="small"
-                value={unico.fechaInicio} onChange={setU('fechaInicio')}
+            <Grid size={4}>
+              <TextField label="Fecha *" type="date" fullWidth size="small"
+                value={unico.fecha} onChange={setU('fecha')}
                 slotProps={{ inputLabel: { shrink: true } }} />
             </Grid>
-            <Grid size={6}>
-              <TextField label="Fecha y hora fin" type="datetime-local" fullWidth size="small"
-                value={unico.fechaFin} onChange={setU('fechaFin')}
+            <Grid size={4}>
+              <TextField label="Hora inicio *" type="time" fullWidth size="small"
+                value={unico.horaInicio} onChange={setU('horaInicio')}
                 slotProps={{ inputLabel: { shrink: true } }} />
+            </Grid>
+            <Grid size={4}>
+              <TextField label="Hora fin" type="time" fullWidth size="small"
+                value={unico.horaFin} onChange={setU('horaFin')}
+                slotProps={{ inputLabel: { shrink: true } }}
+                helperText="Mismo día" />
             </Grid>
             <Grid size={12}>
               <TextField fullWidth size="small" label="Lugar"
@@ -174,6 +201,49 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
             <Grid size={12}>
               <TextField fullWidth size="small" label="Descripción" multiline rows={2}
                 value={unico.descripcion} onChange={setU('descripcion')} />
+            </Grid>
+
+            {/* Días adicionales */}
+            <Grid size={12}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                <Typography variant="caption" fontWeight={700} color="text.secondary"
+                  sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Días adicionales
+                </Typography>
+                <Button size="small" startIcon={<AddIcon />}
+                  onClick={() => setUnico(p => ({ ...p, diasAdicionales: [...p.diasAdicionales, { fecha: '', horaInicio: '', horaFin: '' }] }))}
+                  sx={{ color: COLOR, textTransform: 'none', fontWeight: 600 }}>
+                  Agregar día
+                </Button>
+              </Box>
+              {unico.diasAdicionales.length === 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  Esta actividad ocurre en un solo día. Agrega días si se extiende a más fechas.
+                </Typography>
+              )}
+              {unico.diasAdicionales.map((dia, idx) => (
+                <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 }}>
+                  <TextField label="Fecha" type="date" size="small" sx={{ flex: 2 }}
+                    value={dia.fecha}
+                    onChange={e => setUnico(p => ({ ...p, diasAdicionales: p.diasAdicionales.map((d, i) => i === idx ? { ...d, fecha: e.target.value } : d) }))}
+                    slotProps={{ inputLabel: { shrink: true } }} />
+                  <TextField label="H. inicio" type="time" size="small" sx={{ flex: 1.2 }}
+                    value={dia.horaInicio}
+                    onChange={e => setUnico(p => ({ ...p, diasAdicionales: p.diasAdicionales.map((d, i) => i === idx ? { ...d, horaInicio: e.target.value } : d) }))}
+                    slotProps={{ inputLabel: { shrink: true } }} />
+                  <TextField label="H. fin" type="time" size="small" sx={{ flex: 1.2 }}
+                    value={dia.horaFin}
+                    onChange={e => setUnico(p => ({ ...p, diasAdicionales: p.diasAdicionales.map((d, i) => i === idx ? { ...d, horaFin: e.target.value } : d) }))}
+                    slotProps={{ inputLabel: { shrink: true } }} />
+                  <Tooltip title="Quitar día">
+                    <IconButton size="small" color="error"
+                      onClick={() => setUnico(p => ({ ...p, diasAdicionales: p.diasAdicionales.filter((_, i) => i !== idx) }))}
+                      sx={{ mt: 0.5 }}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              ))}
             </Grid>
           </Grid>
         )}

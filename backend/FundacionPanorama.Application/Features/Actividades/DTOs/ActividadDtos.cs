@@ -1,15 +1,21 @@
 namespace FundacionPanorama.Application.Features.Actividades.DTOs;
 
+public record ActividadDiaDto(Guid Id, string Fecha, string HoraInicio, string HoraFin);
+
+public record CrearActividadDiaDto(string Fecha, string HoraInicio, string HoraFin);
+
 public record ActividadResumenDto(
     Guid    Id,
     string  Titulo,
+    string? Descripcion,
     Guid?   ProgramaId,
     string? ProgramaNombre,
     DateTime FechaInicio,
     DateTime? FechaFin,
     string? Lugar,
     string  Estado,
-    int     TotalInscritos);
+    int     TotalInscritos,
+    IReadOnlyList<ActividadDiaDto> DiasAdicionales);
 
 public record ActividadDto(
     Guid    Id,
@@ -23,7 +29,8 @@ public record ActividadDto(
     string  Estado,
     int     TotalInscritos,
     int     TotalAsistieron,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    IReadOnlyList<ActividadDiaDto> DiasAdicionales);
 
 public record CrearActividadDto(
     string   Titulo,
@@ -31,7 +38,8 @@ public record CrearActividadDto(
     Guid?    ProgramaId,
     DateTime FechaInicio,
     DateTime? FechaFin,
-    string?  Lugar);
+    string?  Lugar,
+    List<CrearActividadDiaDto>? DiasAdicionales);
 
 public record ActualizarActividadDto(
     string   Titulo,
@@ -40,7 +48,8 @@ public record ActualizarActividadDto(
     DateTime FechaInicio,
     DateTime? FechaFin,
     string?  Lugar,
-    string   Estado);
+    string   Estado,
+    List<CrearActividadDiaDto>? DiasAdicionales);
 
 public record AsistenciaItemDto(
     Guid    BeneficiarioId,

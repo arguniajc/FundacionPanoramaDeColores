@@ -1086,5 +1086,17 @@ public static class DbMigrations
         await Migrar(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_inscripciones_unique_activa ON inscripciones(beneficiario_id, programa_id) WHERE activo = true",
             "inscripciones.unique_activa");
+
+        // ── Actividades: días adicionales ─────────────────────────────────────
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS actividad_dias (
+                id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                actividad_id UUID NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
+                fecha        DATE NOT NULL,
+                hora_inicio  TIME NOT NULL,
+                hora_fin     TIME NOT NULL
+            )
+            """, "actividad_dias");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_actividad_dias_actividad ON actividad_dias(actividad_id)", "actividad_dias.idx_actividad");
     }
 }

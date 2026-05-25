@@ -7,7 +7,8 @@ import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin        from '@fullcalendar/list';
 import esLocale          from '@fullcalendar/core/locales/es';
 import {
-  Box, Button, Chip, IconButton, Stack, Tab, Tabs, Tooltip, Typography,
+  Box, Button, Chip, Divider, IconButton, ListItemIcon, ListItemText,
+  Menu, MenuItem, Stack, Tab, Tabs, Tooltip, Typography,
 } from '@mui/material';
 import AddIcon        from '@mui/icons-material/Add';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -93,6 +94,14 @@ export default function ActividadesPage() {
   const [asistenciaOpen,     setAsistenciaOpen]     = useState(false);
   const [actividadSel,       setActividadSel]       = useState(null);
   const [rangoCalendario,    setRangoCalendario]    = useState(null);
+  const [ctxMenu,            setCtxMenu]            = useState(null); // { x, y, actividad }
+
+  const abrirCtxMenu = (e, actividad) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCtxMenu({ x: e.clientX, y: e.clientY, actividad });
+  };
+  const cerrarCtxMenu = () => setCtxMenu(null);
 
   useEffect(() => {
     apiClient.get('/api/sedes')
@@ -257,8 +266,12 @@ export default function ActividadesPage() {
                     </Box>
                   );
                 }
+                const actividadObj = { ...props, id: event.id.replace('act-', '') };
                 return (
-                  <Box sx={{ px: '2px', py: '1px', overflow: 'hidden' }}>
+                  <Box
+                    onContextMenu={(e) => abrirCtxMenu(e, actividadObj)}
+                    sx={{ px: '2px', py: '1px', overflow: 'hidden', width: '100%' }}
+                  >
                     <Typography variant="caption" sx={{ display: 'block', fontWeight: 600, lineHeight: 1.2 }}>
                       {event.title}
                     </Typography>
@@ -280,9 +293,10 @@ export default function ActividadesPage() {
               </Typography>
               <Stack spacing={1}>
                 {actividades.map(a => (
-                  <Box key={a.id} sx={{
+                  <Box key={a.id} onContextMenu={(e) => abrirCtxMenu(e, a)} sx={{
                     display: 'flex', alignItems: 'center', gap: 1,
                     p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper',
+                    cursor: 'context-menu',
                   }}>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="body2" fontWeight={600} noWrap>{a.titulo}</Typography>
@@ -359,6 +373,43 @@ export default function ActividadesPage() {
         open={asistenciaOpen} actividad={actividadSel}
         onClose={() => setAsistenciaOpen(false)}
         onGuardado={cargar} />
+
+      {/* Menú contextual clic derecho */}
+      <Menu
+        open={Boolean(ctxMenu)}
+        onClose={cerrarCtxMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={ctxMenu ? { top: ctxMenu.y, left: ctxMenu.x } : undefined}
+        slotProps={{ paper: { sx: { minWidth: 180, borderRadius: 2, boxShadow: 4 } } }}
+      >
+        <MenuItem disabled sx={{ opacity: 1, pb: 0 }}>
+          <ListItemText
+            primary={ctxMenu?.actividad?.titulo}
+            slotProps={{ primary: { sx: { fontWeight: 700, fontSize: '0.82rem', color: COLOR } } }}
+          />
+        </MenuItem>
+        <Divider />
+        {puedo('actividades', 'editar') && (
+          <MenuItem onClick={() => { abrirEditar(ctxMenu.actividad); cerrarCtxMenu(); }}>
+            <ListItemIcon><EditIcon fontSize="small" sx={{ color: COLOR }} /></ListItemIcon>
+            <ListItemText primary="Editar" />
+          </MenuItem>
+        )}
+        {puedo('actividades', 'editar') && (
+          <MenuItem onClick={() => { setActividadSel(ctxMenu.actividad); setAsistenciaOpen(true); cerrarCtxMenu(); }}>
+            <ListItemIcon><PeopleIcon fontSize="small" color="primary" /></ListItemIcon>
+            <ListItemText primary="Registrar asistencia" />
+          </MenuItem>
+        )}
+        {puedo('actividades', 'eliminar') && <Divider />}
+        {puedo('actividades', 'eliminar') && (
+          <MenuItem onClick={() => { eliminar(ctxMenu.actividad.id); cerrarCtxMenu(); }}
+            sx={{ color: 'error.main' }}>
+            <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
+            <ListItemText primary="Eliminar" />
+          </MenuItem>
+        )}
+      </Menu>
     </Box>
   );
 }

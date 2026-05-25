@@ -19,6 +19,7 @@ import WarningAmberIcon     from '@mui/icons-material/WarningAmber';
 import { useAuth }      from '../../../../application/auth/AuthContext';
 import { useThemeMode } from '../../../../shared/theme/ThemeContext';
 import apiClient        from '../../../../infrastructure/http/apiClient';
+import { useAsyncData } from '../../../../shared/hooks/useAsyncData';
 
 const MODULOS = [
   { label: 'Beneficiarios', desc: 'Niños inscritos en la fundación',    icon: <ChildCareIcon sx={{ fontSize: 36 }} />,        grad: 'linear-gradient(135deg, var(--color-primario) 0%, #7c3aed 100%)', ruta: '/sede/beneficiarios' },
@@ -146,16 +147,14 @@ export default function DashboardPage() {
   const hora     = new Date().getHours();
   const saludo   = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches';
 
-  const [stats,    setStats]    = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [alertas,  setAlertas]  = useState(null);
+  const [alertas, setAlertas] = useState(null);
 
-  useEffect(() => {
-    apiClient.get('/api/beneficiarios/stats-ninos')
-      .then(({ data }) => setStats(data))
-      .catch(() => {/* silencioso – no bloquea el dashboard */})
-      .finally(() => setCargando(false));
-  }, []);
+  const { data: stats, cargando, ejecutar: cargarStats } = useAsyncData(
+    async () => (await apiClient.get('/api/beneficiarios/stats-ninos')).data,
+    { errorMsg: '' }
+  );
+
+  useEffect(() => { cargarStats(); }, [cargarStats]);
 
   useEffect(() => {
     Promise.all([

@@ -2,27 +2,19 @@
  * useSedes
  * Caso de uso: cargar, crear, editar, toggle y eliminar sedes y programas.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { sedesRepository } from '../../infrastructure/repositories/sedesRepository';
+import { useAsyncData } from '../../shared/hooks/useAsyncData';
 
 export function useSedes() {
-  const [sedes,    setSedes]    = useState([]);
-  const [cargando, setCargando] = useState(false);
-  const [error,    setError]    = useState('');
-  const [toast,    setToast]    = useState('');
+  const [toast, setToast] = useState('');
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError('');
-    try {
-      const { data } = await sedesRepository.listar();
-      setSedes(data);
-    } catch {
-      setError('No se pudieron cargar las sedes.');
-    } finally {
-      setCargando(false);
-    }
-  }, []);
+  const {
+    data: sedes, cargando, error, setError, ejecutar: cargar, setData: setSedes,
+  } = useAsyncData(
+    async () => (await sedesRepository.listar()).data,
+    { inicial: [], errorMsg: 'No se pudieron cargar las sedes.' }
+  );
 
   useEffect(() => { cargar(); }, [cargar]);
 

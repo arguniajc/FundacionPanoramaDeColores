@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useAsyncData } from '../../../../shared/hooks/useAsyncData';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from '../../../../application/auth/AuthContext';
 import apiClient   from '../../../../infrastructure/http/apiClient';
@@ -9,15 +10,15 @@ const COLOR = BRAND_COLOR;
 
 export default function OrganigramaPage() {
   const { puedo }  = useAuth();
-  const [empleados, setEmpleados] = useState([]);
-  const [cargando,  setCargando]  = useState(true);
+  const { data: empleados, cargando, ejecutar: cargar } = useAsyncData(
+    async () => {
+      const { data } = await apiClient.get('/api/talento-humano', { params: { porPagina: 200 } });
+      return data.data ?? data ?? [];
+    },
+    { inicial: [], errorMsg: 'No se pudieron cargar los empleados.' }
+  );
 
-  useEffect(() => {
-    apiClient.get('/api/talento-humano', { params: { porPagina: 200 } })
-      .then(({ data }) => setEmpleados(data.data ?? data ?? []))
-      .catch(() => {})
-      .finally(() => setCargando(false));
-  }, []);
+  useEffect(() => { cargar(); }, [cargar]);
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Children, memo } from 'react';
+import { useState, useEffect, Children, memo } from 'react';
 import {
   Box, Typography, Button, Avatar, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, Alert,
@@ -13,6 +13,7 @@ import { useConfirm }   from '../../../../../shared/components/ConfirmDialog';
 import apiClient        from '../../../../../infrastructure/http/apiClient';
 import { CARGOS_COMUNES } from './DialogEmpleado';
 import { BRAND_COLOR } from '../../../../../shared/constants/brand';
+import { useAsyncData } from '../../../../../shared/hooks/useAsyncData';
 
 const LCOLOR       = '#94A3B8';
 const DEPTH_COLORS = ['#1E1B4B',BRAND_COLOR,'#7C3AED','#2563EB','#0891B2','#059669','#D97706','#DC2626'];
@@ -354,16 +355,12 @@ function buildTree(personas) {
 
 export function OrgChartTab({ puedoEditar, empleados }) {
   const confirm = useConfirm();
-  const [personas,   setPersonas]   = useState([]);
-  const [cargando,   setCargando]   = useState(true);
+  const { data: personas, cargando, ejecutar: cargar } = useAsyncData(
+    async () => (await apiClient.get('/api/organigrama')).data,
+    { inicial: [], errorMsg: '' }
+  );
   const [dlg,        setDlg]        = useState({ open: false, persona: null, parentIdInicial: null });
   const [draggingId, setDraggingId] = useState(null);
-
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    try { const { data } = await apiClient.get('/api/organigrama'); setPersonas(data); }
-    catch { /* silent */ } finally { setCargando(false); }
-  }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
 

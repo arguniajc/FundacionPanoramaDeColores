@@ -6,6 +6,9 @@ export function useProgramaCampos(programaId) {
   const [cargando, setCargando] = useState(false);
   const [error,    setError]    = useState('');
 
+  // [programaId] es intencional: los consumidores hacen useEffect([cargar]) para
+  // re-cargar automáticamente cuando cambia el programa. Con useAsyncData el
+  // ejecutar es estable y ese disparo no ocurriría.
   const cargar = useCallback(async () => {
     if (!programaId) return;
     setCargando(true);

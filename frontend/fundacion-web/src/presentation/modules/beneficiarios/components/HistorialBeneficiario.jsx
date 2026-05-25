@@ -39,7 +39,7 @@ export default function HistorialBeneficiario({ beneficiarioId }) {
         return [];
       }
     },
-    { inicial: null }
+    { inicial: null } // null = "aún no cargado"; evita re-fetch cada vez que se abre
   );
 
   useEffect(() => {

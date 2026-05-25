@@ -25,7 +25,7 @@ export function LibroMayorTab() {
       const { data } = await apiClient.get('/api/contabilidad/libro-mayor', { params });
       return data;
     },
-    { inicial: null, errorMsg: 'No se pudo cargar el Libro Mayor.' }
+    { inicial: null, errorMsg: 'No se pudo cargar el Libro Mayor.' } // null = pre-búsqueda; [] = consultado sin resultados
   );
 
   useEffect(() => { cargar(); }, [cargar]);

@@ -123,8 +123,13 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         await using var cmd = conn.CreateCommand();
         // Trae todos los inscritos del programa + los que ya tienen registro de asistencia
         cmd.CommandText = """
-            SELECT DISTINCT b.id, b.nombres || ' ' || b.apellidos AS nombre_completo,
-                   b.foto_url,
+            SELECT DISTINCT b.id,
+                   concat_ws(' ', b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido) AS nombre_completo,
+                   (SELECT ar.url FROM archivos ar
+                    JOIN cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
+                    WHERE ar.entidad_tipo = 'beneficiario' AND ar.entidad_id = b.id
+                      AND cta.nombre = 'Foto del menor' AND ar.activo = true
+                    LIMIT 1) AS foto_url,
                    COALESCE(aa.asistio, false) AS asistio
             FROM inscripciones i
             JOIN beneficiarios b ON b.id = i.beneficiario_id
@@ -132,7 +137,7 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
             LEFT JOIN actividad_asistencia aa ON aa.actividad_id = @aid AND aa.beneficiario_id = b.id
             WHERE (a.programa_id IS NULL OR i.programa_id = a.programa_id)
               AND i.activo = true AND b.activo = true
-            ORDER BY b.nombres
+            ORDER BY b.primer_nombre, b.primer_apellido
             """;
         cmd.Parameters.AddWithValue("aid", actividadId);
         await using var r = await cmd.ExecuteReaderAsync(ct);

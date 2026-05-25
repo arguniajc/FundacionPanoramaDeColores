@@ -4,9 +4,9 @@ on:
   push:
     branches: [master]
     paths:
-      - 'css/**'
-      - 'js/**'
-      - 'images/**'
+      - 'docs/css/**'
+      - 'docs/js/**'
+      - 'docs/images/**'
 
 jobs:
   bump:
@@ -19,13 +19,13 @@ jobs:
       - name: Actualizar versión del caché con timestamp
         run: |
           VERSION="fpc-assets-$(date +%Y%m%d%H%M)"
-          sed -i "s/var CACHE = 'fpc-assets-[^']*'/var CACHE = '$VERSION'/" sw.js
+          sed -i "s/var CACHE = 'fpc-assets-[^']*'/var CACHE = '$VERSION'/" docs/sw.js
           echo "Nueva versión: $VERSION"
 
       - name: Commit y push si cambió sw.js
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add sw.js
+          git add docs/sw.js
           git diff --staged --quiet || git commit -m "chore: auto-bump service worker cache [skip ci]"
           git push

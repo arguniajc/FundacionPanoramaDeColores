@@ -10,28 +10,27 @@ Plataforma digital de la Fundación Panorama de Colores — Arte, deporte y conc
 /
 ├── backend/            API REST — .NET 10 + PostgreSQL
 ├── frontend/           Panel administrativo — React 19 + Vite (código fuente)
-├── gestion/            Panel administrativo compilado (GitHub Pages → /gestion/)
-├── panel/              Redirect /panel/ → /gestion/ (compatibilidad bookmarks)
 ├── database/           Migraciones SQL numeradas (PostgreSQL / Supabase)
 ├── scripts/            Scripts de migración histórica (ejecución única)
 ├── .github/workflows/  CI/CD — build, keep-alive, auto-bump service worker
-│
-│   ── Sitio web público (GitHub Pages sirve desde la raíz) ──
-├── index.html          Landing page principal
-├── 404.html            Página de error personalizada
-├── privacidad.html     Política de privacidad
-├── css/                Estilos del sitio público
-├── js/                 Scripts del sitio público
-├── images/             Imágenes del sitio público
-├── sw.js               Service worker (PWA)
-├── manifest.json       Configuración PWA
-│
-│   ── Configuración ──
-├── CNAME               Dominio: fundacionpanoramadecolores.org
 ├── Dockerfile          Contenedor del backend (Render.com)
-├── sitemap.xml         SEO
-├── robots.txt          SEO
-└── google*.html        Verificación Google Search Console
+└── README.md
+│
+└── docs/               ← GitHub Pages sirve desde aquí
+    ├── index.html          Landing page principal
+    ├── 404.html            Página de error personalizada
+    ├── privacidad.html     Política de privacidad
+    ├── gestion/            Panel administrativo compilado (/gestion/)
+    ├── panel/              Redirect /panel/ → /gestion/
+    ├── css/                Estilos del sitio público
+    ├── js/                 Scripts del sitio público
+    ├── images/             Imágenes del sitio público
+    ├── sw.js               Service worker (PWA)
+    ├── manifest.json       Configuración PWA
+    ├── CNAME               Dominio: fundacionpanoramadecolores.org
+    ├── sitemap.xml         SEO
+    ├── robots.txt          SEO
+    └── google*.html        Verificación Google Search Console
 ```
 
 ---
@@ -87,12 +86,12 @@ npm run dev
 cd frontend/fundacion-web
 npm run build
 
-# Copiar compilado a gestion/
-robocopy dist ..\..\gestion /MIR /NJH /NJS /NFL /NDL
+# Copiar compilado a docs/gestion/
+robocopy dist ..\..\docs\gestion /MIR /NJH /NJS /NFL /NDL
 
 # Commit y push — GitHub Pages publica automáticamente
 cd ..\..
-git add gestion/ frontend/
+git add docs/gestion/ frontend/
 git commit -m "feat: descripción del cambio"
 git push
 ```

@@ -180,19 +180,19 @@ import {
 cd frontend/fundacion-web
 npm run build
 
-# 2. Copiar a gestion/ (GitHub Pages)
+# 2. Copiar a docs/gestion/ (GitHub Pages)
 $src = "dist"
-$dst = "../../gestion"
+$dst = "../../docs/gestion"
 robocopy $src $dst /MIR /NJH /NJS /NFL /NDL
 
 # 3. Commit y push
 cd ../..
-git add gestion/ frontend/
+git add docs/gestion/ frontend/
 git commit -m "feat: descripción del cambio"
 git push
 ```
 
-GitHub Pages sirve automáticamente desde `gestion/` en la rama `master`.
+GitHub Pages sirve automáticamente desde `docs/` en la rama `master`.
 
 ---
 

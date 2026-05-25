@@ -94,6 +94,7 @@ export default function ActividadesPage() {
   const [asistenciaOpen,     setAsistenciaOpen]     = useState(false);
   const [actividadSel,       setActividadSel]       = useState(null);
   const [rangoCalendario,    setRangoCalendario]    = useState(null);
+  const [mesCalendario,      setMesCalendario]      = useState(null); // currentStart del mes visible
   const [ctxMenu,            setCtxMenu]            = useState(null); // { x, y, actividad }
 
   const abrirCtxMenu = (e, actividad) => {
@@ -278,12 +279,15 @@ export default function ActividadesPage() {
               eventClick={({ event }) => {
                 const props = event.extendedProps;
                 if (props.tipo === 'actividad' && puedo('actividades', 'editar')) {
-                  abrirEditar({ ...props, id: event.id.replace('act-', '') });
+                  // props.id viene de ...a y es siempre el UUID correcto de la actividad,
+                  // incluso cuando el evento es un día adicional cuyo event.id es compuesto.
+                  abrirEditar({ ...props });
                 }
                 // click en horario recurrente: no hace nada (solo informativo)
               }}
               datesSet={(info) => {
                 setRangoCalendario({ start: info.start, end: info.end });
+                setMesCalendario(info.view.currentStart);
                 cargar(info);
               }}
               height="auto"
@@ -301,7 +305,7 @@ export default function ActividadesPage() {
                     </Box>
                   );
                 }
-                const actividadObj = { ...props, id: event.id.replace('act-', '') };
+                const actividadObj = { ...props };
                 return (
                   <Box
                     onContextMenu={(e) => abrirCtxMenu(e, actividadObj)}
@@ -402,7 +406,7 @@ export default function ActividadesPage() {
         fechaInicialSugerida={''}
         programas={programas}
         onClose={() => setEditDialogOpen(false)}
-        onGuardado={cargar} />
+        onGuardado={() => cargar(mesCalendario ? { view: { currentStart: mesCalendario } } : undefined)} />
 
       <DialogAsistencia
         open={asistenciaOpen} actividad={actividadSel}

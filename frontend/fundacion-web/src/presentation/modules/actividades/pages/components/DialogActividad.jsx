@@ -105,7 +105,7 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
         })),
       };
       await actividadesRepository.actualizar(editando.id, dto);
-      onGuardado();
+      await onGuardado();
       onClose();
     } catch (e) {
       setError(e.response?.data?.error ?? 'Error al guardar.');

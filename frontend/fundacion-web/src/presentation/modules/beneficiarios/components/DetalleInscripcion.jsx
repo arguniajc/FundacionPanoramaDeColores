@@ -172,6 +172,8 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
 
   const handleDescargar = async () => {
     if (descargando) return;
+    // flushSync: React 18 batchea el estado; sin esto el botón no queda
+    // deshabilitado antes del primer await y el usuario puede hacer doble-click.
     flushSync(() => { setDescargando(true); setErrorDescarga(''); });
     const tInicio = Date.now();
     try {
@@ -191,6 +193,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
     } catch {
       setErrorDescarga('No se pudo iniciar la descarga. Intenta de nuevo.');
     } finally {
+      // Spinner mínimo 1.2s: evita el flash cuando la descarga es instantánea.
       const restante = 1200 - (Date.now() - tInicio);
       if (restante > 0) await new Promise(r => setTimeout(r, restante));
       setDescargando(false);

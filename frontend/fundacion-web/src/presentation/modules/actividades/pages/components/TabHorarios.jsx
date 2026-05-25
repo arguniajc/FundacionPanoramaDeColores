@@ -31,7 +31,7 @@ export function TabHorarios({ programas, puedo, onCambio }) {
   } = useAsyncData(
     async () => {
       const { data } = await actividadesRepository.listarHorarios();
-      onCambio?.();
+      onCambio?.(); // dentro de la fn: fnRef.current garantiza la versión más reciente del prop
       return data;
     },
     { inicial: [], errorMsg: 'No se pudieron cargar los horarios.' }

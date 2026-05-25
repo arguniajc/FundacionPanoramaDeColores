@@ -84,7 +84,8 @@ public class ArchivosController : ControllerBase
         var registros = new List<object>();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            SELECT l.id, l.usuario_email, l.beneficiario_id, b.nombre AS nombre_beneficiario,
+            SELECT l.id, l.usuario_email, l.beneficiario_id,
+                   concat_ws(' ', b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido) AS nombre_beneficiario,
                    l.tipo_archivo, l.url_archivo, l.descargado_en
             FROM log_descargas l
             JOIN beneficiarios b ON b.id = l.beneficiario_id

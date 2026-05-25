@@ -227,7 +227,7 @@ public class InscripcionesController : ControllerBase
         var benefs = new Dictionary<Guid, (string Nombre, string? Documento)>();
         await using (var cmd = conn.CreateCommand())
         {
-            cmd.CommandText = "SELECT id, nombre, numero_documento FROM beneficiarios WHERE id = ANY(@ids)";
+            cmd.CommandText = "SELECT id, concat_ws(' ', primer_nombre, segundo_nombre, primer_apellido, segundo_apellido), numero_documento FROM beneficiarios WHERE id = ANY(@ids)";
             cmd.Parameters.AddWithValue("ids", bIds);
             await using var r = await cmd.ExecuteReaderAsync();
             while (await r.ReadAsync())

@@ -1,31 +1,31 @@
 ﻿import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import AdminLayout        from '../layouts/AdminLayout';
+import AdminLayout        from '@/presentation/layouts/AdminLayout';
 import RutaProtegida      from '@/shared/components/RutaProtegida';
 import SinAcceso          from '@/shared/components/SinAcceso';
 import PantallaCarga      from '@/shared/components/PantallaCarga';
 import { useAuth }        from '@/application/auth/AuthContext';
-import LoginPage          from '../modules/auth/pages/LoginPage';
+import LoginPage          from '@/presentation/modules/auth/pages/LoginPage';
 
 // Módulos cargados bajo demanda — el bundle principal pasa de ~2.6 MB a ~800 KB
-const DashboardPage      = lazy(() => import('../modules/dashboard/pages/DashboardPage'));
-const BeneficiariosPage  = lazy(() => import('../modules/beneficiarios/pages/BeneficiariosPage'));
-const SedesPage          = lazy(() => import('../modules/sedes/pages/SedesPage'));
-const LogDescargasPage   = lazy(() => import('../modules/auditoria/pages/LogDescargasPage'));
-const DocumentosPage     = lazy(() => import('../modules/documentos/pages/DocumentosPage'));
-const ProgramasPage      = lazy(() => import('../modules/programas/pages/ProgramasPage'));
-const InscripcionesPage  = lazy(() => import('../modules/inscripciones/pages/InscripcionesPage'));
-const InventarioPage     = lazy(() => import('../modules/inventario/pages/InventarioPage'));
-const DonacionesPage     = lazy(() => import('../modules/donaciones/pages/DonacionesPage'));
-const VoluntariosPage    = lazy(() => import('../modules/voluntarios/pages/VoluntariosPage'));
-const ConfiguracionPage  = lazy(() => import('../modules/configuracion/pages/ConfiguracionPage'));
-const EquipoPage         = lazy(() => import('../modules/equipo/pages/EquipoPage'));
-const ActividadesPage    = lazy(() => import('../modules/actividades/pages/ActividadesPage'));
-const SeguridadPage      = lazy(() => import('../modules/seguridad/pages/SeguridadPage'));
-const ReportesPage       = lazy(() => import('../modules/reportes/pages/ReportesPage'));
-const TalentoHumanoPage  = lazy(() => import('../modules/talento_humano/pages/TalentoHumanoPage'));
-const ContabilidadPage   = lazy(() => import('../modules/contabilidad/pages/ContabilidadPage'));
-const OrganigramaPage    = lazy(() => import('../modules/organigrama/pages/OrganigramaPage'));
+const DashboardPage      = lazy(() => import('@/presentation/modules/dashboard/pages/DashboardPage'));
+const BeneficiariosPage  = lazy(() => import('@/presentation/modules/beneficiarios/pages/BeneficiariosPage'));
+const SedesPage          = lazy(() => import('@/presentation/modules/sedes/pages/SedesPage'));
+const LogDescargasPage   = lazy(() => import('@/presentation/modules/auditoria/pages/LogDescargasPage'));
+const DocumentosPage     = lazy(() => import('@/presentation/modules/documentos/pages/DocumentosPage'));
+const ProgramasPage      = lazy(() => import('@/presentation/modules/programas/pages/ProgramasPage'));
+const InscripcionesPage  = lazy(() => import('@/presentation/modules/inscripciones/pages/InscripcionesPage'));
+const InventarioPage     = lazy(() => import('@/presentation/modules/inventario/pages/InventarioPage'));
+const DonacionesPage     = lazy(() => import('@/presentation/modules/donaciones/pages/DonacionesPage'));
+const VoluntariosPage    = lazy(() => import('@/presentation/modules/voluntarios/pages/VoluntariosPage'));
+const ConfiguracionPage  = lazy(() => import('@/presentation/modules/configuracion/pages/ConfiguracionPage'));
+const EquipoPage         = lazy(() => import('@/presentation/modules/equipo/pages/EquipoPage'));
+const ActividadesPage    = lazy(() => import('@/presentation/modules/actividades/pages/ActividadesPage'));
+const SeguridadPage      = lazy(() => import('@/presentation/modules/seguridad/pages/SeguridadPage'));
+const ReportesPage       = lazy(() => import('@/presentation/modules/reportes/pages/ReportesPage'));
+const TalentoHumanoPage  = lazy(() => import('@/presentation/modules/talento_humano/pages/TalentoHumanoPage'));
+const ContabilidadPage   = lazy(() => import('@/presentation/modules/contabilidad/pages/ContabilidadPage'));
+const OrganigramaPage    = lazy(() => import('@/presentation/modules/organigrama/pages/OrganigramaPage'));
 
 // Envuelve en layout + auth + permiso de módulo
 function Pagina({ modulo, children }) {

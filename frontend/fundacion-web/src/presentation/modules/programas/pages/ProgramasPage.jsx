@@ -20,7 +20,7 @@ import FirmaPad                 from '@/shared/components/FirmaPad';
 import {
   leerArchivoComoDataUrl,
   redimensionarImagen,
-} from '../../../modules/configuracion/pages/components/helpers';
+} from '@/presentation/modules/configuracion/pages/components/helpers';
 
 const TIPOS_DOC = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI', 'PEP', 'PPT', 'Otro'];
 

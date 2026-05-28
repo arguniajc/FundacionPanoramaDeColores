@@ -340,7 +340,7 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
         return new ResumenDonacionesDto(
             (int)(long)r[0],
             r.IsDBNull(1) ? 0 : (decimal)r[1],
-            r.IsDBNull(2) ? 0 : Math.Round((decimal)(double)r[2], 0));
+            r.IsDBNull(2) ? 0 : Math.Round(Convert.ToDecimal(r[2]), 0));
     }
 
     static async Task<IReadOnlyList<TipoDonacionDto>> QueryTipoDonacion(NpgsqlConnection conn, CancellationToken ct, int year)

@@ -28,7 +28,7 @@ export function GraficaCard({ titulo, children, height = 260 }) {
       <CardContent>
         <Typography variant="subtitle2" fontWeight={700} mb={1} color="text.secondary">{titulo}</Typography>
         <Box sx={{ height }}>
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" debounce={100}>
             {children}
           </ResponsiveContainer>
         </Box>

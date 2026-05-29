@@ -336,6 +336,109 @@ public class BeneficiariosController : BaseController
     }
 
     // =========================================================================
+    // GET api/beneficiarios/incompletos
+    // Devuelve hasta 60 beneficiarios activos con campos de calidad vacíos,
+    // ordenados por cantidad de campos faltantes (más incompleto primero).
+    // =========================================================================
+    [HttpGet("incompletos")]
+    [Authorize]
+    public async Task<IActionResult> Incompletos(CancellationToken ct = default)
+    {
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync(ct);
+
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            WITH flags AS (
+                SELECT
+                    b.id,
+                    TRIM(concat_ws(' ', b.primer_nombre, b.segundo_nombre,
+                                   b.primer_apellido, b.segundo_apellido))             AS nombre,
+                    af1.url                                                             AS foto,
+                    (af1.url IS NULL)::int                                              AS sin_foto,
+                    (af2.url IS NULL)::int                                              AS sin_foto_doc,
+                    (ac.whatsapp  IS NULL OR ac.whatsapp  = '')::int                    AS sin_whatsapp,
+                    (ac.direccion IS NULL OR ac.direccion = '')::int                    AS sin_direccion,
+                    (bt.talla_camisa  IS NULL OR bt.talla_camisa  IN ('No registra',''))::int  AS sin_camisa,
+                    (bt.talla_zapatos IS NULL OR bt.talla_zapatos IN ('No registra',''))::int  AS sin_zapatos,
+                    (bt.peso_kg IS NULL OR bt.peso_kg = 0)::int                        AS sin_peso,
+                    (bt.talla_cm IS NULL OR bt.talla_cm = 0)::int                      AS sin_talla,
+                    (b.tipo = 'niño' AND (b.nombre_colegio IS NULL
+                      OR b.nombre_colegio IN ('No registra','')))::int                 AS sin_colegio,
+                    (b.tipo = 'niño' AND (b.grado_escolar IS NULL
+                      OR b.grado_escolar = ''))::int                                   AS sin_grado
+                FROM beneficiarios b
+                LEFT JOIN beneficiario_acudiente bac
+                       ON bac.beneficiario_id = b.id AND bac.es_principal = true AND bac.activo = true
+                LEFT JOIN acudientes ac ON ac.id = bac.acudiente_id
+                LEFT JOIN beneficiario_talla bt
+                       ON bt.beneficiario_id = b.id AND bt.activo = true
+                LEFT JOIN LATERAL (
+                    SELECT url FROM archivos ar
+                    JOIN   cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
+                    WHERE  ar.entidad_tipo = 'beneficiario' AND ar.entidad_id = b.id
+                      AND  ar.activo = true AND cta.nombre = 'Foto del menor'
+                    LIMIT  1
+                ) af1 ON true
+                LEFT JOIN LATERAL (
+                    SELECT url FROM archivos ar
+                    JOIN   cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
+                    WHERE  ar.entidad_tipo = 'beneficiario' AND ar.entidad_id = b.id
+                      AND  ar.activo = true AND cta.nombre = 'Foto documento'
+                    LIMIT  1
+                ) af2 ON true
+                WHERE b.activo = true
+            ),
+            scored AS (
+                SELECT *,
+                    (sin_foto + sin_foto_doc + sin_whatsapp + sin_direccion
+                     + sin_camisa + sin_zapatos + sin_peso + sin_talla
+                     + sin_colegio + sin_grado) AS total_faltantes
+                FROM flags
+            )
+            SELECT id, nombre, foto,
+                   sin_foto, sin_foto_doc, sin_whatsapp, sin_direccion,
+                   sin_camisa, sin_zapatos, sin_peso, sin_talla,
+                   sin_colegio, sin_grado, total_faltantes
+            FROM   scored
+            WHERE  total_faltantes > 0
+            ORDER  BY total_faltantes DESC, nombre
+            LIMIT  60
+            """;
+
+        var result = new List<PerfilIncompletoDto>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+        {
+            var faltantes = new List<string>();
+            if (r.GetInt32(3)  > 0) faltantes.Add("Foto del menor");
+            if (r.GetInt32(4)  > 0) faltantes.Add("Foto documento");
+            if (r.GetInt32(5)  > 0) faltantes.Add("WhatsApp");
+            if (r.GetInt32(6)  > 0) faltantes.Add("Dirección");
+            if (r.GetInt32(7)  > 0) faltantes.Add("Talla camisa");
+            if (r.GetInt32(8)  > 0) faltantes.Add("Talla zapatos");
+            if (r.GetInt32(9)  > 0) faltantes.Add("Peso");
+            if (r.GetInt32(10) > 0) faltantes.Add("Talla altura");
+            if (r.GetInt32(11) > 0) faltantes.Add("Colegio");
+            if (r.GetInt32(12) > 0) faltantes.Add("Grado escolar");
+
+            int totalFalt  = r.GetInt32(13);
+            int completitud = (int)Math.Round((10.0 - totalFalt) / 10.0 * 100);
+
+            result.Add(new PerfilIncompletoDto
+            {
+                Id          = r.GetGuid(0),
+                Nombre      = r.GetString(1),
+                FotoUrl     = r.IsDBNull(2) ? null : r.GetString(2),
+                Faltantes   = faltantes,
+                Completitud = completitud,
+            });
+        }
+
+        return Ok(result);
+    }
+
+    // =========================================================================
     // GET api/beneficiarios/stats-ninos
     // =========================================================================
     [HttpGet("stats-ninos")]

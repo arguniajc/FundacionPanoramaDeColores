@@ -1,4 +1,5 @@
-﻿import {
+﻿import { useState } from 'react';
+import {
   Box, Typography, Container,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, IconButton, Chip, TextField, InputAdornment, Pagination,
@@ -46,7 +47,9 @@ import EditarInscripcion    from '../components/EditarInscripcion';
 import NuevoBeneficiario    from '../components/NuevoBeneficiario';
 import { ModalEstadisticas, StatCard } from './components/ModalEstadisticas';
 import { ImportarBeneficiariosDialog } from './components/ImportarBeneficiariosDialog';
+import { PerfilesIncompletosPanel }    from './components/PerfilesIncompletosPanel';
 import { useBeneficiariosPage } from './useBeneficiariosPage';
+import apiClient from '@/infrastructure/http/apiClient';
 
 export default function BeneficiariosPage() {
   const {
@@ -73,6 +76,22 @@ export default function BeneficiariosPage() {
     handleGuardadoEdicion, handleBeneficiarioCreado, handleEliminarPermanente,
     handleImportado,
   } = useBeneficiariosPage();
+
+  const [panelRefreshKey, setPanelRefreshKey] = useState(0);
+
+  const handleEditarDesdePanel = async (id) => {
+    const enLista = inscripciones.find(ins => ins.id === id);
+    if (enLista) { setEditando(enLista); return; }
+    try {
+      const { data } = await apiClient.get(`/api/beneficiarios/${id}`);
+      setEditando(data);
+    } catch { /* silencioso */ }
+  };
+
+  const handleGuardadoConRefreshPanel = () => {
+    handleGuardadoEdicion();
+    setPanelRefreshKey(k => k + 1);
+  };
 
   const HOVER_SX = {
     bgcolor: '#ede7f6 !important',
@@ -142,6 +161,11 @@ export default function BeneficiariosPage() {
 
       <Box sx={{ flex: 1 }}>
         <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
+
+          <PerfilesIncompletosPanel
+            onEditar={handleEditarDesdePanel}
+            refreshKey={panelRefreshKey}
+          />
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 1 }}>
             <TextField
@@ -480,7 +504,7 @@ export default function BeneficiariosPage() {
         />
       )}
       {editando && (
-        <EditarInscripcion inscripcion={editando} onCerrar={() => setEditando(null)} onGuardado={handleGuardadoEdicion} />
+        <EditarInscripcion inscripcion={editando} onCerrar={() => setEditando(null)} onGuardado={handleGuardadoConRefreshPanel} />
       )}
 
       <Dialog open={!!idBaja} onClose={() => { setIdBaja(null); setMotivoBaja(''); }} maxWidth="xs" fullWidth>

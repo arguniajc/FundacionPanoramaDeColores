@@ -199,3 +199,12 @@ public class BeneficiarioStatsDto
 }
 
 public record TallaFreq(string Talla, int Cantidad);
+
+public class PerfilIncompletoDto
+{
+    public Guid         Id          { get; set; }
+    public string       Nombre      { get; set; } = string.Empty;
+    public string?      FotoUrl     { get; set; }
+    public List<string> Faltantes   { get; set; } = [];
+    public int          Completitud { get; set; }
+}

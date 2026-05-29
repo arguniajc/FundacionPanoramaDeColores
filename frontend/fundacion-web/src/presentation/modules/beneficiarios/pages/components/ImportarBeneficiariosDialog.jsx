@@ -11,6 +11,7 @@ import ErrorIcon       from '@mui/icons-material/Error';
 import * as XLSX from 'xlsx';
 import apiClient from '@/infrastructure/http/apiClient';
 import { BRAND_COLOR } from '@/shared/constants/brand';
+import { exportarExcel } from '@/shared/utils/exportarExcel';
 
 const COLOR = BRAND_COLOR;
 
@@ -80,47 +81,24 @@ function validarFila(f) {
 
 // ── Descarga de plantilla ──────────────────────────────────────────────────────
 function generarPlantilla() {
-  const wb = XLSX.utils.book_new();
+  const headerRow = COLS.map(c => c.header);
+  const hintsRow  = COLS.map(c => c.vals ? c.vals.join(' / ') : c.hint);
+  const filasVacias = Array.from({ length: 100 }, () => new Array(COLS.length).fill(''));
 
-  // ── Hoja 1: Datos ──
-  const headerRow  = COLS.map(c => c.header);
-  const hintsRow   = COLS.map(c => c.vals ? c.vals.join(' / ') : c.hint);
-  const rows = [headerRow, hintsRow];
-  for (let i = 0; i < 100; i++) rows.push(new Array(COLS.length).fill(''));
+  const ej1 = ['Maria',   'Camila',  'Gonzalez', 'Torres',    '2015-03-22', 'TI', '1234567890', 'femenino',  'Sura',      'Ana Torres', 'madre', '3001234567', 'Calle 5 # 10-20',    'Inst. San Jose',   '3', 'nino'];
+  const ej2 = ['Carlos',  '',        'Perez',    '',          '2018-07-14', '',   '',            '',          '',          '',           '',      '',           '',                   '',                 '',  'nino'];
+  const ej3 = ['Roberto', 'Andres',  'Ramirez',  'Gutierrez', '2010-11-05', 'TI', '9876543210', 'masculino', 'Compensar', 'Luis Guti',  'padre', '3209876543', 'Carrera 12 # 5-30',  'Col. Nuevo Siglo', '7', 'nino'];
 
-  const ws1 = XLSX.utils.aoa_to_sheet(rows);
-  ws1['!cols'] = COLS.map(c => ({ wch: c.req ? 20 : 18 }));
-  ws1['!rows'] = [{ hpt: 22 }, { hpt: 16 }]; // row heights
-
-  // Agregar comentarios (tooltips) en los encabezados
-  COLS.forEach((col, i) => {
-    const addr = XLSX.utils.encode_cell({ c: i, r: 0 });
-    if (!ws1[addr]) ws1[addr] = { v: col.header, t: 's' };
-    ws1[addr].c = [{ a: 'Ayuda', t: col.comment }];
-  });
-
-  XLSX.utils.book_append_sheet(wb, ws1, 'Beneficiarios');
-
-  // ── Hoja 2: Ejemplos ──
-  const ej1 = ['Maria',   'Camila',  'Gonzalez', 'Torres',    '2015-03-22', 'TI', '1234567890', 'femenino', 'Sura',      'Ana Torres', 'madre',  '3001234567', 'Calle 5 # 10-20',   'Inst. San Jose',  '3',       'nino'];
-  const ej2 = ['Carlos',  '',        'Perez',    '',          '2018-07-14', '',   '',           '',         '',          '',           '',       '',           '',                  '',                '',        'nino'];
-  const ej3 = ['Roberto', 'Andres',  'Ramirez',  'Gutierrez', '2010-11-05', 'TI', '9876543210', 'masculino','Compensar', 'Luis Guti',  'padre',  '3209876543', 'Carrera 12 # 5-30', 'Col. Nuevo Siglo', '7',       'nino'];
-
-  const ws2 = XLSX.utils.aoa_to_sheet([headerRow, ej1, ej2, ej3]);
-  ws2['!cols'] = ws1['!cols'];
-  XLSX.utils.book_append_sheet(wb, ws2, 'Ejemplos');
-
-  // ── Hoja 3: Referencia ──
   const refRows = [
     ['Campo', 'Obligatorio', 'Valores válidos', 'Ejemplo'],
     ...COLS.map(c => [
       c.header.replace(' *', ''),
       c.req ? 'SÍ' : 'no',
       c.vals ? c.vals.join(', ') : c.hint.replace('✓ OBLIGATORIO', '—').replace('opcional', '—'),
-      (c.header === 'Fecha nacimiento *') ? '2015-03-22' :
-      (c.header === 'Primer nombre *')    ? 'Maria' :
-      (c.header === 'Primer apellido *')  ? 'Gonzalez' :
-      (c.vals ? c.vals[0] : ''),
+      c.header === 'Fecha nacimiento *' ? '2015-03-22'
+        : c.header === 'Primer nombre *'   ? 'Maria'
+        : c.header === 'Primer apellido *' ? 'Gonzalez'
+        : (c.vals ? c.vals[0] : ''),
     ]),
     [],
     ['NOTAS IMPORTANTES'],
@@ -132,11 +110,26 @@ function generarPlantilla() {
     ['• El encabezado (fila 1) y la fila de pistas (fila 2) se omiten al importar.'],
     ['• Llene los datos a partir de la fila 3.'],
   ];
-  const ws3 = XLSX.utils.aoa_to_sheet(refRows);
-  ws3['!cols'] = [{ wch: 22 }, { wch: 12 }, { wch: 38 }, { wch: 20 }];
-  XLSX.utils.book_append_sheet(wb, ws3, 'Referencia');
 
-  XLSX.writeFile(wb, 'plantilla_beneficiarios.xlsx');
+  exportarExcel('plantilla_beneficiarios', [
+    {
+      nombre: 'Beneficiarios',
+      filas: [headerRow, hintsRow, ...filasVacias],
+      cols: COLS.map(c => c.req ? 20 : 18),
+      altoFilas: [22, 16],
+      comentarios: COLS.map((col, i) => ({ col: i, row: 0, texto: col.comment })),
+    },
+    {
+      nombre: 'Ejemplos',
+      filas: [headerRow, ej1, ej2, ej3],
+      cols: COLS.map(c => c.req ? 20 : 18),
+    },
+    {
+      nombre: 'Referencia',
+      filas: refRows,
+      cols: [22, 12, 38, 20],
+    },
+  ]);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

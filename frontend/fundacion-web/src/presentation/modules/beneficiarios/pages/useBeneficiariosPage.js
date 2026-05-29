@@ -1,9 +1,9 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
-import * as XLSX from 'xlsx';
 import apiClient from '@/infrastructure/http/apiClient';
 import { useAuth } from '@/application/auth/AuthContext';
 import { cacheKey, leerCache, escribirCache, limpiarCache } from '@/infrastructure/cache/sessionCache';
 import { calcularEdad } from '@/shared/utils/fecha';
+import { exportarExcel } from '@/shared/utils/exportarExcel';
 
 const POR_PAGINA = 15;
 
@@ -177,11 +177,11 @@ export function useBeneficiariosPage() {
         ins.createdAt ? new Date(ins.createdAt).toLocaleDateString('es-CO') : '—',
       ]);
 
-      const hoja = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
-      hoja['!cols'] = [30,15,14,18,10,20,10,11,10,10,30,30,30,14,18,30,12,16].map(wch => ({ wch }));
-      const libro = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(libro, hoja, 'Beneficiarios');
-      XLSX.writeFile(libro, `beneficiarios_${new Date().toISOString().slice(0,10)}.xlsx`);
+      exportarExcel(`beneficiarios_${new Date().toISOString().slice(0, 10)}`, [{
+        nombre: 'Beneficiarios',
+        filas: [encabezados, ...filas],
+        cols: [30,15,14,18,10,20,10,11,10,10,30,30,30,14,18,30,12,16],
+      }]);
       setToast(`${todos.length} registros exportados`);
     } catch { setToast('Error al generar el Excel. Intenta de nuevo.'); }
     finally  { setExportando(false); }

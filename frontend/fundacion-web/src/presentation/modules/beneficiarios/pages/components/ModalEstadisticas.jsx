@@ -85,11 +85,11 @@ const TIPOS_FILTRO = [
   { v: 'adulto', label: '🧑 Adultos' },
 ];
 
-export function ModalEstadisticas({ open, onClose }) {
+export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const [tipoFiltro, setTipoFiltro] = useState('todos');
+  const [tipoFiltro, setTipoFiltro] = useState(tipoInicial);
 
   const { data: stats, cargando, ejecutar: cargar } = useAsyncData(
     async (filtro) => {
@@ -104,8 +104,8 @@ export function ModalEstadisticas({ open, onClose }) {
   }, [open, tipoFiltro, cargar]);
 
   useEffect(() => {
-    if (!open) setTipoFiltro('todos');
-  }, [open]);
+    if (!open) setTipoFiltro(tipoInicial);
+  }, [open, tipoInicial]);
 
   const renderBarras = (items, maxVal, color) =>
     items.map(({ key, val }) => (

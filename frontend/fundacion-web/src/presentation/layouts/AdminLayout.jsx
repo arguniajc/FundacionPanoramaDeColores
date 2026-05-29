@@ -11,6 +11,7 @@ import MenuIcon              from '@mui/icons-material/Menu';
 import LogoutIcon            from '@mui/icons-material/Logout';
 import DashboardIcon         from '@mui/icons-material/Dashboard';
 import ChildCareIcon         from '@mui/icons-material/ChildCare';
+import EscalatorWarningIcon  from '@mui/icons-material/EscalatorWarning';
 import MonetizationOnIcon    from '@mui/icons-material/MonetizationOn';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import FolderSpecialIcon     from '@mui/icons-material/FolderSpecial';
@@ -114,7 +115,8 @@ const MENU = [
   {
     grupo: 'MÓDULOS FUNCIONALES',
     items: [
-      { label: 'Beneficiarios',             icon: <ChildCareIcon />,         ruta: '/sede/beneficiarios',  modulo: 'beneficiarios' },
+      { label: 'Beneficiarios (Niños)',      icon: <ChildCareIcon />,         ruta: '/sede/beneficiarios',  modulo: 'beneficiarios' },
+      { label: 'Adultos',                   icon: <EscalatorWarningIcon />,  ruta: '/sede/adultos',        modulo: 'beneficiarios' },
       { label: 'Donantes y Donaciones',     icon: <VolunteerActivismIcon />, ruta: '/sede/donaciones',     modulo: 'donaciones' },
       { label: 'Proyectos',                 icon: <FolderSpecialIcon />,     ruta: '/sede/proyectos',      modulo: 'programas' },
       { label: 'Inscripciones a proyectos', icon: <HowToRegIcon />,          ruta: '/sede/inscripciones',  modulo: 'inscripciones' },

@@ -35,7 +35,7 @@ function AvatarBeneficiario({ nombre, fotoUrl }) {
   );
 }
 
-export function PerfilesIncompletosPanel({ onEditar, refreshKey }) {
+export function PerfilesIncompletosPanel({ onEditar, refreshKey, tipo = 'niño' }) {
   const [datos,     setDatos]     = useState([]);
   const [cargando,  setCargando]  = useState(true);
   const [expandido, setExpandido] = useState(false);
@@ -44,12 +44,12 @@ export function PerfilesIncompletosPanel({ onEditar, refreshKey }) {
   useEffect(() => {
     let activo = true;
     setCargando(true); setError(false);
-    apiClient.get('/api/beneficiarios/incompletos')
+    apiClient.get('/api/beneficiarios/incompletos', { params: { tipo } })
       .then(({ data }) => { if (activo) { setDatos(data); if (data.length > 0) setExpandido(true); } })
       .catch(() => { if (activo) setError(true); })
       .finally(() => { if (activo) setCargando(false); });
     return () => { activo = false; };
-  }, [refreshKey]);
+  }, [refreshKey, tipo]);
 
   if (cargando) return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.5, px: 1, opacity: 0.5 }}>

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import {
   Box, Typography, Container,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -25,9 +25,10 @@ import PersonAddIcon        from '@mui/icons-material/PersonAdd';
 import SyncIcon             from '@mui/icons-material/Sync';
 import UploadFileIcon       from '@mui/icons-material/UploadFile';
 import DeleteForeverIcon    from '@mui/icons-material/DeleteForever';
+import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning';
 import { calcularEdad }     from '@/shared/utils/fecha';
 
-function calcularCompletitud(ins) {
+function calcularCompletitudAdulto(ins) {
   const checks = [
     !!ins.fotoMenorUrl,
     !!ins.fotoDocumentoUrl,
@@ -37,21 +38,20 @@ function calcularCompletitud(ins) {
     !!(ins.tallaCamisa && ins.tallaCamisa !== 'No registra'),
     !!(ins.tallaZapatos && ins.tallaZapatos !== 'No registra'),
     !!(ins.pesoKg && ins.pesoKg > 0),
-    !!(ins.nombreColegio && ins.nombreColegio !== 'No registra'),
-    !!(ins.gradoEscolar),
   ];
   return Math.round(checks.filter(Boolean).length / checks.length * 100);
 }
-import DetalleInscripcion   from '../components/DetalleInscripcion';
-import EditarInscripcion    from '../components/EditarInscripcion';
-import NuevoBeneficiario    from '../components/NuevoBeneficiario';
-import { ModalEstadisticas, StatCard } from './components/ModalEstadisticas';
-import { ImportarBeneficiariosDialog } from './components/ImportarBeneficiariosDialog';
-import { PerfilesIncompletosPanel }    from './components/PerfilesIncompletosPanel';
-import { useBeneficiariosPage } from './useBeneficiariosPage';
+
+import DetalleInscripcion   from '@/presentation/modules/beneficiarios/components/DetalleInscripcion';
+import EditarInscripcion    from '@/presentation/modules/beneficiarios/components/EditarInscripcion';
+import NuevoBeneficiario    from '@/presentation/modules/beneficiarios/components/NuevoBeneficiario';
+import { ModalEstadisticas, StatCard } from '@/presentation/modules/beneficiarios/pages/components/ModalEstadisticas';
+import { ImportarBeneficiariosDialog } from '@/presentation/modules/beneficiarios/pages/components/ImportarBeneficiariosDialog';
+import { PerfilesIncompletosPanel }    from '@/presentation/modules/beneficiarios/pages/components/PerfilesIncompletosPanel';
+import { useBeneficiariosPage } from '@/presentation/modules/beneficiarios/pages/useBeneficiariosPage';
 import apiClient from '@/infrastructure/http/apiClient';
 
-export default function BeneficiariosPage() {
+export default function AdultosPage() {
   const {
     esAdmin,
     inscripciones, pagina, setPagina, totalPaginas, TABS,
@@ -75,7 +75,7 @@ export default function BeneficiariosPage() {
     handleDarDeBaja, handleReactivar,
     handleGuardadoEdicion, handleBeneficiarioCreado, handleEliminarPermanente,
     handleImportado,
-  } = useBeneficiariosPage({ tipo: 'niño' });
+  } = useBeneficiariosPage({ tipo: 'adulto' });
 
   const [panelRefreshKey, setPanelRefreshKey] = useState(0);
 
@@ -94,9 +94,9 @@ export default function BeneficiariosPage() {
   };
 
   const HOVER_SX = {
-    bgcolor: '#ede7f6 !important',
+    bgcolor: '#e8f5e9 !important',
     '& .MuiTableCell-root': { color: '#1a1a1a !important' },
-    '& .MuiTableCell-root:first-of-type': { borderLeft: '3px solid #7C3AED' },
+    '& .MuiTableCell-root:first-of-type': { borderLeft: '3px solid #2e7d32' },
     '& a': { color: '#1a6b35 !important' },
   };
 
@@ -104,7 +104,7 @@ export default function BeneficiariosPage() {
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
 
       <Box sx={{
-        background: 'linear-gradient(135deg, var(--color-primario) 0%, var(--color-gradiente) 60%, var(--color-secundario) 100%)',
+        background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 60%, #43a047 100%)',
         px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 },
       }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
@@ -113,10 +113,10 @@ export default function BeneficiariosPage() {
               Módulo
             </Typography>
             <Typography sx={{ fontSize: { xs: '1.3rem', sm: '1.6rem' }, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
-              Beneficiarios
+              Adultos
             </Typography>
             <Typography sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', mt: 0.3 }}>
-              Gestión de niños y niñas inscritos
+              Gestión de adultos beneficiarios de la fundación
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, width: { xs: '100%', sm: 'auto' }, alignItems: { xs: 'stretch', sm: 'center' } }}>
@@ -145,7 +145,7 @@ export default function BeneficiariosPage() {
               startIcon={<PersonAddIcon />}
               onClick={() => setCreando(true)}
               sx={{
-                bgcolor: 'var(--color-secundario)',
+                bgcolor: 'rgba(255,255,255,0.20)',
                 border: '2px solid rgba(255,255,255,0.45)',
                 color: '#fff', fontWeight: 800,
                 borderRadius: 2, whiteSpace: 'nowrap',
@@ -153,7 +153,7 @@ export default function BeneficiariosPage() {
                 '&:hover': { filter: 'brightness(0.85)', boxShadow: '0 4px 16px rgba(0,0,0,0.35)' },
               }}
             >
-              + Nuevo beneficiario
+              + Nuevo adulto
             </Button>
           </Box>
         </Box>
@@ -165,7 +165,7 @@ export default function BeneficiariosPage() {
           <PerfilesIncompletosPanel
             onEditar={handleEditarDesdePanel}
             refreshKey={panelRefreshKey}
-            tipo="niño"
+            tipo="adulto"
           />
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 1 }}>
@@ -194,30 +194,30 @@ export default function BeneficiariosPage() {
                   sx={{
                     fontWeight: 700, borderRadius: 2, whiteSpace: 'nowrap',
                     ...(hayFiltrosAvanzados
-                      ? { bgcolor: '#7c3aed', '&:hover': { bgcolor: '#5b21b6' }, color: '#fff' }
+                      ? { bgcolor: '#2e7d32', '&:hover': { bgcolor: '#1b5e20' }, color: '#fff' }
                       : { borderColor: 'divider' }),
                   }}
                 >
                   Filtros{hayFiltrosAvanzados ? ` (${[fGenero,fEdadMin||fEdadMax,fEps,fAlergia].filter(Boolean).length})` : ''}
                 </Button>
               </Tooltip>
-              <Tooltip title="Ver estadísticas detalladas de beneficiarios">
+              <Tooltip title="Ver estadísticas detalladas de adultos">
                 <Button
                   variant="contained" size="small"
                   startIcon={cargandoStats ? <CircularProgress size={14} color="inherit" /> : <BarChartIcon />}
                   onClick={() => setModalStats(true)}
                   disabled={cargandoStats}
-                  sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2 }}
+                  sx={{ bgcolor: '#2e7d32', '&:hover': { bgcolor: '#1b5e20' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2 }}
                 >
                   Estadísticas
                 </Button>
               </Tooltip>
-              <Tooltip title="Exporta TODOS los beneficiarios de la base de datos">
+              <Tooltip title="Exporta TODOS los adultos de la base de datos">
                 <Button
                   variant="contained" size="small"
                   startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
                   onClick={exportarExcel} disabled={exportando}
-                  sx={{ bgcolor: 'var(--color-secundario)', '&:hover': { filter: 'brightness(0.85)' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
+                  sx={{ bgcolor: '#43a047', '&:hover': { filter: 'brightness(0.85)' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
                 >
                   {exportando ? 'Exportando…' : 'Exportar Excel'}
                 </Button>
@@ -226,7 +226,7 @@ export default function BeneficiariosPage() {
           </Stack>
 
           <Collapse in={filtrosOpen}>
-            <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: '#faf5ff', borderColor: '#e9d5ff' }}>
+            <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: '#f1f8e9', borderColor: '#c5e1a5' }}>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                   <InputLabel>Género</InputLabel>
@@ -239,10 +239,10 @@ export default function BeneficiariosPage() {
                 </FormControl>
                 <TextField size="small" label="Edad mínima" type="number" value={fEdadMin}
                   onChange={e => setFEdadMin(e.target.value)} sx={{ width: 130 }}
-                  inputProps={{ min: 0, max: 30 }} />
+                  inputProps={{ min: 0, max: 100 }} />
                 <TextField size="small" label="Edad máxima" type="number" value={fEdadMax}
                   onChange={e => setFEdadMax(e.target.value)} sx={{ width: 130 }}
-                  inputProps={{ min: 0, max: 30 }} />
+                  inputProps={{ min: 0, max: 100 }} />
                 <TextField size="small" label="EPS" value={fEps}
                   onChange={e => setFEps(e.target.value)} sx={{ width: 180 }}
                   placeholder="Ej: Sanitas, Sura…" />
@@ -270,8 +270,8 @@ export default function BeneficiariosPage() {
             sx={{
               mb: 2,
               '& .MuiTab-root':       { fontWeight: 600, textTransform: 'none', minHeight: 40, fontSize: '0.85rem' },
-              '& .Mui-selected':      { color: 'var(--color-primario)' },
-              '& .MuiTabs-indicator': { bgcolor: 'var(--color-primario)', height: 3, borderRadius: 2 },
+              '& .Mui-selected':      { color: '#2e7d32' },
+              '& .MuiTabs-indicator': { bgcolor: '#2e7d32', height: 3, borderRadius: 2 },
             }}
           >
             {TABS.map(t => <Tab key={t.value} value={t.value} label={t.label} />)}
@@ -281,7 +281,7 @@ export default function BeneficiariosPage() {
 
           {actualizando && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 1, opacity: 0.6 }}>
-              <SyncIcon sx={{ fontSize: '0.85rem', color: 'var(--color-primario)', animation: 'spin 1.2s linear infinite',
+              <SyncIcon sx={{ fontSize: '0.85rem', color: '#2e7d32', animation: 'spin 1.2s linear infinite',
                 '@keyframes spin': { '100%': { transform: 'rotate(360deg)' } } }} />
               <Typography variant="caption" color="text.secondary">Actualizando…</Typography>
             </Box>
@@ -291,10 +291,10 @@ export default function BeneficiariosPage() {
             <Table size="small" sx={{ minWidth: 650 }}>
               <TableHead>
                 <TableRow sx={{
-                  background: 'linear-gradient(90deg, var(--color-primario), var(--color-gradiente))',
+                  background: 'linear-gradient(90deg, #2e7d32, #43a047)',
                   '& .MuiTableCell-root': { color: '#fff', fontWeight: 700, fontSize: '0.8rem', py: 1.5, borderBottom: 'none', whiteSpace: 'nowrap' },
                 }}>
-                  <TableCell>Nombre del menor</TableCell>
+                  <TableCell>Nombre del adulto</TableCell>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Documento</TableCell>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Edad</TableCell>
                   <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Género</TableCell>
@@ -308,9 +308,9 @@ export default function BeneficiariosPage() {
 
               <TableBody>
                 {cargando ? (
-                  <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6 }}><CircularProgress size={32} sx={{ color: 'var(--color-primario)' }} /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6 }}><CircularProgress size={32} sx={{ color: '#2e7d32' }} /></TableCell></TableRow>
                 ) : inscripciones.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>No se encontraron beneficiarios.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>No se encontraron adultos.</TableCell></TableRow>
                 ) : (
                   inscripciones.map((ins, idx) => (
                     <TableRow
@@ -319,7 +319,7 @@ export default function BeneficiariosPage() {
                       sx={{
                         cursor: 'pointer',
                         opacity: ins.activo ? 1 : 0.65,
-                        bgcolor: idx % 2 === 0 ? 'inherit' : 'rgba(78,27,149,0.04)',
+                        bgcolor: idx % 2 === 0 ? 'inherit' : 'rgba(46,125,50,0.04)',
                         transition: 'background 0.15s',
                         '&:hover': HOVER_SX,
                         '&:last-child td': { borderBottom: 0 },
@@ -329,7 +329,7 @@ export default function BeneficiariosPage() {
                         <Box display="flex" alignItems="center" gap={0.8} flexWrap="wrap">
                           {ins.nombreMenor}
                           {!ins.fotoMenorUrl && (
-                            <Tooltip title="Foto del menor pendiente — haz clic en Editar para cargarla">
+                            <Tooltip title="Foto pendiente — haz clic en Editar para cargarla">
                               <Chip
                                 label="📷 Foto" size="small"
                                 onClick={e => { e.stopPropagation(); setEditando(ins); }}
@@ -390,7 +390,7 @@ export default function BeneficiariosPage() {
                       </TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'table-cell' } }}>
                         {(() => {
-                          const pct = calcularCompletitud(ins);
+                          const pct = calcularCompletitudAdulto(ins);
                           const color = pct >= 80 ? '#2e7d32' : pct >= 50 ? '#e65100' : '#c62828';
                           const bg    = pct >= 80 ? '#e8f5e9' : pct >= 50 ? '#fff3e0' : '#fce4ec';
                           return (
@@ -413,7 +413,7 @@ export default function BeneficiariosPage() {
                       </TableCell>
                       <TableCell onClick={e => e.stopPropagation()} sx={{ whiteSpace: 'nowrap', pr: 0.5 }}>
                         <Tooltip title="Ver detalle">
-                          <IconButton size="small" sx={{ color: 'var(--color-primario)', '&:hover': { bgcolor: 'rgba(78,27,149,0.1)' } }} onClick={() => setSeleccionada(ins)}>
+                          <IconButton size="small" sx={{ color: '#2e7d32', '&:hover': { bgcolor: 'rgba(46,125,50,0.1)' } }} onClick={() => setSeleccionada(ins)}>
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -454,16 +454,16 @@ export default function BeneficiariosPage() {
           {totalPaginas > 1 && (
             <Box display="flex" justifyContent="center" mt={3}>
               <Pagination count={totalPaginas} page={pagina} onChange={(_, v) => setPagina(v)} size="small"
-                sx={{ '& .Mui-selected': { bgcolor: 'var(--color-primario) !important', color: '#fff' }, '& .MuiPaginationItem-root': { fontWeight: 600 } }}
+                sx={{ '& .Mui-selected': { bgcolor: '#2e7d32 !important', color: '#fff' }, '& .MuiPaginationItem-root': { fontWeight: 600 } }}
               />
             </Box>
           )}
 
           <Box sx={{ mt: 5, pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
-              <LockIcon sx={{ fontSize: '1rem', color: 'var(--color-primario)', mt: '2px', flexShrink: 0 }} />
+              <LockIcon sx={{ fontSize: '1rem', color: '#2e7d32', mt: '2px', flexShrink: 0 }} />
               <Box>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: 'var(--color-primario)', display: 'block', mb: 0.3 }}>Aviso de confidencialidad</Typography>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#2e7d32', display: 'block', mb: 0.3 }}>Aviso de confidencialidad</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                   La información contenida en este panel es de carácter <strong>estrictamente confidencial</strong> y de uso exclusivo del personal autorizado de la fundación.
                   Queda prohibida su reproducción, divulgación o uso no autorizado. El acceso indebido a estos datos puede constituir una infracción a la <strong>Ley 1581 de 2012</strong>.
@@ -491,10 +491,11 @@ export default function BeneficiariosPage() {
       <ModalEstadisticas
         open={modalStats}
         onClose={() => setModalStats(false)}
+        tipoInicial="adulto"
       />
 
       {creando && (
-        <NuevoBeneficiario onCerrar={() => setCreando(false)} onCreado={handleBeneficiarioCreado} tipoDefault="niño" />
+        <NuevoBeneficiario onCerrar={() => setCreando(false)} onCreado={handleBeneficiarioCreado} tipoDefault="adulto" />
       )}
 
       {seleccionada && (
@@ -509,9 +510,9 @@ export default function BeneficiariosPage() {
       )}
 
       <Dialog open={!!idBaja} onClose={() => { setIdBaja(null); setMotivoBaja(''); }} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ color: '#e65100', fontWeight: 700, pb: 1 }}>¿Dar de baja al beneficiario?</DialogTitle>
+        <DialogTitle sx={{ color: '#e65100', fontWeight: 700, pb: 1 }}>¿Dar de baja al adulto?</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>El beneficiario quedará inactivo pero su información se conservará. Podrás reactivarlo en cualquier momento.</DialogContentText>
+          <DialogContentText sx={{ mb: 2 }}>El adulto quedará inactivo pero su información se conservará. Podrás reactivarlo en cualquier momento.</DialogContentText>
           <TextField
             fullWidth label="Motivo de retiro" size="small" multiline rows={2}
             value={motivoBaja}
@@ -530,13 +531,13 @@ export default function BeneficiariosPage() {
 
       <Dialog open={!!eliminar} onClose={() => { if (!eliminando) { setEliminar(null); setErrorEliminar(''); } }} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ color: '#c62828', fontWeight: 700, pb: 1 }}>
-          Eliminar beneficiario de la BD
+          Eliminar adulto de la BD
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: errorEliminar ? 1.5 : 0 }}>
             ¿Eliminar permanentemente a <strong>{eliminar?.nombre}</strong>?
             Esta acción borra todos sus datos de perfil y <strong>no se puede deshacer</strong>.
-            Solo es posible si el beneficiario no tiene inscripciones ni movimientos de inventario vinculados.
+            Solo es posible si el adulto no tiene inscripciones ni movimientos de inventario vinculados.
           </DialogContentText>
           {errorEliminar && <Alert severity="error" sx={{ mt: 1 }}>{errorEliminar}</Alert>}
         </DialogContent>

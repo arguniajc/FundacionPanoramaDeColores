@@ -10,6 +10,7 @@ import LoginPage          from '@/presentation/modules/auth/pages/LoginPage';
 // Módulos cargados bajo demanda — el bundle principal pasa de ~2.6 MB a ~800 KB
 const DashboardPage      = lazy(() => import('@/presentation/modules/dashboard/pages/DashboardPage'));
 const BeneficiariosPage  = lazy(() => import('@/presentation/modules/beneficiarios/pages/BeneficiariosPage'));
+const AdultosPage        = lazy(() => import('@/presentation/modules/adultos/pages/AdultosPage'));
 const SedesPage          = lazy(() => import('@/presentation/modules/sedes/pages/SedesPage'));
 const LogDescargasPage   = lazy(() => import('@/presentation/modules/auditoria/pages/LogDescargasPage'));
 const DocumentosPage     = lazy(() => import('@/presentation/modules/documentos/pages/DocumentosPage'));
@@ -49,6 +50,7 @@ export default function AppRoutes() {
 
       <Route path="/sede"               element={<Pagina><DashboardPage /></Pagina>} />
       <Route path="/sede/beneficiarios" element={<Pagina modulo="beneficiarios"><BeneficiariosPage /></Pagina>} />
+      <Route path="/sede/adultos"       element={<Pagina modulo="beneficiarios"><AdultosPage /></Pagina>} />
       <Route path="/sede/sedes"         element={<Pagina modulo="sedes"><SedesPage /></Pagina>} />
       <Route path="/sede/log-descargas" element={<Pagina modulo="log_descargas"><LogDescargasPage /></Pagina>} />
       <Route path="/sede/donantes"      element={<Navigate to="/sede/donaciones" replace />} />

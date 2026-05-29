@@ -7,7 +7,7 @@ import { exportarExcel } from '@/shared/utils/exportarExcel';
 
 const POR_PAGINA = 15;
 
-export function useBeneficiariosPage() {
+export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
   const { esAdmin } = useAuth();
 
   const [inscripciones,  setInscripciones]  = useState([]);
@@ -44,19 +44,19 @@ export function useBeneficiariosPage() {
   const cargarStatsDetalle = useCallback(async () => {
     setCargandoStats(true);
     try {
-      const { data } = await apiClient.get('/api/beneficiarios/stats');
+      const { data } = await apiClient.get('/api/beneficiarios/stats', { params: { tipo } });
       setStatsDetalle(data);
       setStats({ activos: data.activos ?? 0, baja: data.baja ?? 0, total: data.total ?? 0 });
     } catch { /* silencioso */ }
     finally { setCargandoStats(false); }
-  }, []);
+  }, [tipo]);
 
   const filtrosAvanzados = { genero: fGenero, edadMin: fEdadMin, edadMax: fEdadMax, eps: fEps, tieneAlergia: fAlergia };
   const hayFiltrosAvanzados = !!(fGenero || fEdadMin || fEdadMax || fEps || fAlergia);
   const limpiarFiltros = () => { setFGenero(''); setFEdadMin(''); setFEdadMax(''); setFEps(''); setFAlergia(''); };
 
   const buildParams = () => {
-    const p = { pagina, porPagina: POR_PAGINA, buscar: buscar || undefined, estado };
+    const p = { pagina, porPagina: POR_PAGINA, buscar: buscar || undefined, estado, tipo };
     if (fGenero)  p.genero       = fGenero;
     if (fEdadMin) p.edadMin      = fEdadMin;
     if (fEdadMax) p.edadMax      = fEdadMax;
@@ -66,7 +66,7 @@ export function useBeneficiariosPage() {
   };
 
   const cargar = useCallback(async (forzar = false) => {
-    const key    = cacheKey(estado, pagina, buscar, filtrosAvanzados);
+    const key    = cacheKey(estado, pagina, buscar, filtrosAvanzados, tipo);
     const cached = !forzar && leerCache(key);
 
     if (cached) {
@@ -151,7 +151,7 @@ export function useBeneficiariosPage() {
     setToast('Preparando exportación completa…');
     try {
       const { data } = await apiClient.get('/api/beneficiarios', {
-        params: { pagina: 1, porPagina: 9999, estado: 'todos' },
+        params: { pagina: 1, porPagina: 9999, estado: 'todos', tipo },
       });
       const todos = data.data;
       if (!todos.length) { setToast('No hay datos para exportar'); return; }

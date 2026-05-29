@@ -81,11 +81,16 @@ function ErrMsg({ msg }) {
   return <Typography sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.3, ml: 1.5 }}>{msg}</Typography>;
 }
 
-export default function NuevoBeneficiario({ onCerrar, onCreado }) {
+export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'niño' }) {
   const [paso,          setPaso]          = useState(0);
   const [form,          setForm]          = useState(() => {
-    try { const d = localStorage.getItem(DRAFT_KEY); return d ? JSON.parse(d) : FORM_VACIO; }
-    catch { return FORM_VACIO; }
+    try {
+      const d = localStorage.getItem(DRAFT_KEY);
+      if (d) return JSON.parse(d);
+      return tipoDefault === 'adulto'
+        ? { ...FORM_VACIO, tipo: 'adulto', tipoDocumento: 'CC' }
+        : FORM_VACIO;
+    } catch { return FORM_VACIO; }
   });
   const [hasDraft,      setHasDraft]      = useState(() => !!localStorage.getItem(DRAFT_KEY));
   const [touched,       setTouched]       = useState({});

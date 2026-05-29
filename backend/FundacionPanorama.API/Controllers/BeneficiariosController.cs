@@ -41,7 +41,8 @@ public class BeneficiariosController : BaseController
         [FromQuery] int?    edadMin      = null,
         [FromQuery] int?    edadMax      = null,
         [FromQuery] string? eps          = null,
-        [FromQuery] string? tieneAlergia = null)
+        [FromQuery] string? tieneAlergia = null,
+        [FromQuery] string? tipo         = null)
     {
         pagina    = Math.Max(1, pagina);
         porPagina = Math.Clamp(porPagina, 1, 100);
@@ -57,6 +58,8 @@ public class BeneficiariosController : BaseController
             case "todos": break;
             default:      filters.Add("b.activo = true");  break;
         }
+        if (!string.IsNullOrWhiteSpace(tipo) && tipo != "todos")
+            filters.Add("b.tipo = @tipo");
         if (!string.IsNullOrWhiteSpace(buscar))
             filters.Add("""
                 (concat_ws(' ', b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido) ILIKE @buscar
@@ -93,6 +96,8 @@ public class BeneficiariosController : BaseController
         // Agrega los parámetros de filtro avanzado a un comando dado
         void AgregarFiltrosAvanzados(NpgsqlCommand cmd)
         {
+            if (!string.IsNullOrWhiteSpace(tipo) && tipo != "todos")
+                                                     cmd.Parameters.AddWithValue("tipo",    tipo.Trim());
             if (!string.IsNullOrWhiteSpace(buscar))  cmd.Parameters.AddWithValue("buscar",  $"%{buscar}%");
             if (!string.IsNullOrWhiteSpace(genero))  cmd.Parameters.AddWithValue("genero",  genero.Trim());
             if (edadMin.HasValue)                    cmd.Parameters.AddWithValue("edadMin", edadMin.Value);
@@ -342,13 +347,15 @@ public class BeneficiariosController : BaseController
     // =========================================================================
     [HttpGet("incompletos")]
     [Authorize]
-    public async Task<IActionResult> Incompletos(CancellationToken ct = default)
+    public async Task<IActionResult> Incompletos([FromQuery] string? tipo = null, CancellationToken ct = default)
     {
+        bool filtrarTipo = !string.IsNullOrWhiteSpace(tipo) && tipo != "todos";
+
         await using var conn = AbrirConexion();
         await conn.OpenAsync(ct);
 
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             WITH flags AS (
                 SELECT
                     b.id,
@@ -388,6 +395,7 @@ public class BeneficiariosController : BaseController
                     LIMIT  1
                 ) af2 ON true
                 WHERE b.activo = true
+                {(filtrarTipo ? "AND b.tipo = @tipo" : "")}
             ),
             scored AS (
                 SELECT *,
@@ -405,6 +413,7 @@ public class BeneficiariosController : BaseController
             ORDER  BY total_faltantes DESC, nombre
             LIMIT  60
             """;
+        if (filtrarTipo) cmd.Parameters.AddWithValue("tipo", tipo!.Trim());
 
         var result = new List<PerfilIncompletoDto>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
@@ -422,7 +431,7 @@ public class BeneficiariosController : BaseController
             if (r.GetInt32(11) > 0) faltantes.Add("Colegio");
             if (r.GetInt32(12) > 0) faltantes.Add("Grado escolar");
 
-            int totalFalt  = r.GetInt32(13);
+            int totalFalt   = r.GetInt32(13);
             int completitud = (int)Math.Round((10.0 - totalFalt) / 10.0 * 100);
 
             result.Add(new PerfilIncompletoDto

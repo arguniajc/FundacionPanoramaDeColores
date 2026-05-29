@@ -1,16 +1,21 @@
+using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Filters;
 using FundacionPanorama.Application.Features.Nomina;
 using FundacionPanorama.Application.Features.Nomina.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
 
 [ApiController]
 [Route("api/nomina")]
 [Authorize]
-public class NominaController(NominaService svc) : ControllerBase
+public class NominaController(NominaService svc, AppDbContext db) : BaseController
 {
+    private NpgsqlConnection AbrirConexion() => new(db.Database.GetConnectionString());
+
     // ── Períodos ──────────────────────────────────────────────────────────────
 
     [HttpGet("periodos")]
@@ -31,22 +36,31 @@ public class NominaController(NominaService svc) : ControllerBase
     [HttpPost("periodos")]
     [RequierePermiso("talento_humano", "editar")]
     public async Task<IActionResult> CrearPeriodo([FromBody] CrearPeriodoDto dto, CancellationToken ct)
-        => Ok(await svc.CrearPeriodoAsync(dto, ct));
+    {
+        var p = await svc.CrearPeriodoAsync(dto, ct);
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "nomina_periodo", p.Id.ToString(), $"{p.MesLabel} {p.Anio}", "creado");
+        return Ok(p);
+    }
 
     [HttpPost("periodos/{id:int}/cerrar")]
     [RequierePermiso("talento_humano", "editar")]
     public async Task<IActionResult> CerrarPeriodo(int id, CancellationToken ct)
     {
-        var ok = await svc.CerrarPeriodoAsync(id, ct);
-        return ok ? Ok() : NotFound();
+        if (!await svc.CerrarPeriodoAsync(id, ct)) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "nomina_periodo", id.ToString(), null, "cerrado");
+        return Ok();
     }
 
     [HttpDelete("periodos/{id:int}")]
     [RequierePermiso("talento_humano", "editar")]
     public async Task<IActionResult> EliminarPeriodo(int id, CancellationToken ct)
     {
-        var ok = await svc.EliminarPeriodoAsync(id, ct);
-        return ok ? Ok() : NotFound();
+        if (!await svc.EliminarPeriodoAsync(id, ct)) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "nomina_periodo", id.ToString(), null, "eliminado");
+        return Ok();
     }
 
     // ── Liquidaciones ─────────────────────────────────────────────────────────
@@ -62,7 +76,12 @@ public class NominaController(NominaService svc) : ControllerBase
         int periodoId,
         [FromBody] AutoLiquidarDto dto,
         CancellationToken ct)
-        => Ok(await svc.AutoLiquidarAsync(periodoId, dto, ct));
+    {
+        var result = await svc.AutoLiquidarAsync(periodoId, dto, ct);
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "nomina_periodo", periodoId.ToString(), null, "auto-liquidado");
+        return Ok(result);
+    }
 
     [HttpPost("periodos/{periodoId:int}/liquidaciones")]
     [RequierePermiso("talento_humano", "editar")]
@@ -70,13 +89,21 @@ public class NominaController(NominaService svc) : ControllerBase
         int periodoId,
         [FromBody] LiquidarEmpleadoDto dto,
         CancellationToken ct)
-        => Ok(await svc.LiquidarEmpleadoAsync(periodoId, dto, ct));
+    {
+        var liq = await svc.LiquidarEmpleadoAsync(periodoId, dto, ct);
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "nomina_liquidacion", liq.Id.ToString(), null, "liquidado",
+            $"periodo:{periodoId}");
+        return Ok(liq);
+    }
 
     [HttpDelete("liquidaciones/{id:int}")]
     [RequierePermiso("talento_humano", "editar")]
     public async Task<IActionResult> EliminarLiquidacion(int id, CancellationToken ct)
     {
-        var ok = await svc.EliminarLiquidacionAsync(id, ct);
-        return ok ? Ok() : NotFound();
+        if (!await svc.EliminarLiquidacionAsync(id, ct)) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "nomina_liquidacion", id.ToString(), null, "eliminado");
+        return Ok();
     }
 }

@@ -130,14 +130,12 @@ public record IngresarDesdeDonacionDto(
 [ApiController]
 [Route("api/inventario")]
 [Authorize]
-public class InventarioController : ControllerBase
+public class InventarioController : BaseController
 {
     private readonly AppDbContext _db;
     public InventarioController(AppDbContext db) => _db = db;
 
     private NpgsqlConnection AbrirConexion() => new(_db.Database.GetConnectionString());
-    private string? EmailUsuario =>
-        User.FindFirst("email")?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value;
 
     // ── Items ─────────────────────────────────────────────────────────────────
 
@@ -278,6 +276,7 @@ public class InventarioController : ControllerBase
                 item = LeerItem(r);
             }
 
+            await RegistrarAuditAsync(conn, tx, "inventario_item", item.Id.ToString(), item.Nombre, "creado");
             await tx.CommitAsync();
 
             if (item.SedeId.HasValue)
@@ -334,6 +333,8 @@ public class InventarioController : ControllerBase
         var item = LeerItem(r);
         await r.CloseAsync();
 
+        await RegistrarAuditAsync(conn, null, "inventario_item", id.ToString(), item.Nombre, "editado");
+
         if (item.SedeId.HasValue)
         {
             await using var s = conn.CreateCommand();
@@ -361,6 +362,7 @@ public class InventarioController : ControllerBase
                 upd.CommandText = "UPDATE inventario_items SET activo=false, fecha_modificacion=NOW() WHERE id=@id";
                 upd.Parameters.AddWithValue("id", id);
                 await upd.ExecuteNonQueryAsync();
+                await RegistrarAuditAsync(conn, null, "inventario_item", id.ToString(), null, "desactivado");
                 return NoContent();
             }
         }
@@ -368,6 +370,7 @@ public class InventarioController : ControllerBase
         cmd.CommandText = "DELETE FROM inventario_items WHERE id=@id";
         cmd.Parameters.AddWithValue("id", id);
         if (await cmd.ExecuteNonQueryAsync() == 0) return NotFound();
+        await RegistrarAuditAsync(conn, null, "inventario_item", id.ToString(), null, "eliminado");
         return NoContent();
     }
 
@@ -477,6 +480,7 @@ public class InventarioController : ControllerBase
                 newId = (Guid)(await cmd.ExecuteScalarAsync())!;
             }
 
+            await RegistrarAuditAsync(conn, tx, "inventario_movimiento", dto.ItemId.ToString(), null, "registrado");
             await tx.CommitAsync();
             return Ok(new { movimientoId = newId, nuevoStock });
         }
@@ -638,6 +642,7 @@ public class InventarioController : ControllerBase
                 await cmd.ExecuteNonQueryAsync();
             }
 
+            await RegistrarAuditAsync(conn, tx, "inventario_transferencia", grupoId.ToString(), nombre, "transferido");
             await tx.CommitAsync();
             return Ok(new
             {

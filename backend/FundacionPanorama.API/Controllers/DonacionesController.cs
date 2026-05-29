@@ -59,14 +59,12 @@ public record StatsDonacionesDto(
 [ApiController]
 [Route("api/donaciones")]
 [Authorize]
-public class DonacionesController : ControllerBase
+public class DonacionesController : BaseController
 {
     private readonly AppDbContext _db;
     public DonacionesController(AppDbContext db) => _db = db;
 
     private NpgsqlConnection AbrirConexion() => new(_db.Database.GetConnectionString());
-    private string? EmailUsuario =>
-        User.FindFirst("email")?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value;
 
     [HttpGet]
     public async Task<IActionResult> Listar(
@@ -271,6 +269,7 @@ public class DonacionesController : ControllerBase
                 }
             }
 
+            await RegistrarAuditAsync(conn, tx, "donacion", newId.ToString(), reciboNumero, "creado");
             await tx.CommitAsync();
 
             // Registrar automáticamente el movimiento contable (no-fatal)
@@ -412,6 +411,7 @@ public class DonacionesController : ControllerBase
         cmd.Parameters.AddWithValue("recibo", (object?)dto.ReciboNumero?.Trim()    ?? DBNull.Value);
         if (await cmd.ExecuteNonQueryAsync() == 0) return NotFound();
 
+        await RegistrarAuditAsync(conn, null, "donacion", id.ToString(), dto.ReciboNumero, "editado");
         var result = (await ObtenerPorId(id) as OkObjectResult)!.Value;
         return Ok(result);
     }
@@ -425,6 +425,7 @@ public class DonacionesController : ControllerBase
         cmd.CommandText = "UPDATE donaciones SET activo=false, fecha_modificacion=NOW() WHERE id=@id";
         cmd.Parameters.AddWithValue("id", id);
         if (await cmd.ExecuteNonQueryAsync() == 0) return NotFound();
+        await RegistrarAuditAsync(conn, null, "donacion", id.ToString(), null, "eliminado");
         return NoContent();
     }
 
@@ -507,6 +508,7 @@ public class DonacionesController : ControllerBase
         cmd.Parameters.AddWithValue("id", id);
         if (await cmd.ExecuteNonQueryAsync() == 0) return NotFound();
 
+        await RegistrarAuditAsync(conn, null, "donacion", id.ToString(), null, "anulado");
         await RegistrarLogEmisionAsync(conn, id, "anulacion", EmailUsuario, null, null);
         var result = (await ObtenerPorId(id) as OkObjectResult)!.Value;
         return Ok(result);

@@ -1139,5 +1139,12 @@ public static class DbMigrations
 
         await Migrar("CREATE INDEX IF NOT EXISTS idx_nomina_liq_periodo  ON nomina_liquidaciones(periodo_id)",  "nomina_liquidaciones.idx_periodo");
         await Migrar("CREATE INDEX IF NOT EXISTS idx_nomina_liq_empleado ON nomina_liquidaciones(empleado_id)", "nomina_liquidaciones.idx_empleado");
+
+        await Migrar(
+            "ALTER TABLE audit_log ALTER COLUMN entidad_id TYPE TEXT USING entidad_id::TEXT",
+            "audit_log.entidad_id_to_text");
+        await Migrar(
+            "CREATE INDEX IF NOT EXISTS idx_audit_entidad ON audit_log (entidad_tipo, entidad_id)",
+            "audit_log.idx_entidad");
     }
 }

@@ -14,7 +14,7 @@ namespace FundacionPanorama.API.Controllers;
 
 [ApiController]
 [Route("api/beneficiarios")]
-public class BeneficiariosController : ControllerBase
+public class BeneficiariosController : BaseController
 {
     private readonly AppDbContext _db;
     private readonly IMemoryCache _cache;
@@ -585,7 +585,7 @@ public class BeneficiariosController : ControllerBase
         var newId = (Guid)(await ins.ExecuteScalarAsync())!;
 
         await GuardarDependientesAsync(conn, tx, newId, dto, epsId, isNew: true);
-        await RegistrarAuditAsync(conn, tx, newId, dto.NombreCompleto, "creado");
+        await RegistrarAuditAsync(conn, tx, "beneficiario", newId.ToString(), dto.NombreCompleto, "creado");
 
         await tx.CommitAsync();
 
@@ -684,7 +684,7 @@ public class BeneficiariosController : ControllerBase
         await upd.ExecuteNonQueryAsync();
 
         await GuardarDependientesAsync(conn, tx, id, dto, epsId, isNew: false);
-        await RegistrarAuditAsync(conn, tx, id, dto.NombreCompleto, "editado");
+        await RegistrarAuditAsync(conn, tx, "beneficiario", id.ToString(), dto.NombreCompleto, "editado");
 
         await tx.CommitAsync();
 
@@ -714,7 +714,7 @@ public class BeneficiariosController : ControllerBase
 
         var dtos = await CargarDtosAsync(conn, [id]);
         var motivoLog = string.IsNullOrWhiteSpace(dto?.Motivo) ? null : $"Motivo: {dto.Motivo.Trim()}";
-        await RegistrarAuditAsync(conn, null, id, dtos[0].NombreMenor, "baja", motivoLog);
+        await RegistrarAuditAsync(conn, null, "beneficiario", id.ToString(), dtos[0].NombreMenor, "baja", motivoLog);
         return Ok(dtos[0]);
     }
 
@@ -733,7 +733,7 @@ public class BeneficiariosController : ControllerBase
         if (await cmd.ExecuteNonQueryAsync() == 0) return NotFound();
 
         var dtos = await CargarDtosAsync(conn, [id]);
-        await RegistrarAuditAsync(conn, null, id, dtos[0].NombreMenor, "reactivado");
+        await RegistrarAuditAsync(conn, null, "beneficiario", id.ToString(), dtos[0].NombreMenor, "reactivado");
         return Ok(dtos[0]);
     }
 
@@ -802,7 +802,7 @@ public class BeneficiariosController : ControllerBase
             delLog.Parameters.AddWithValue("id", id);
             await delLog.ExecuteNonQueryAsync();
 
-            await RegistrarAuditAsync(conn, tx, id, nombreBen, "eliminado");
+            await RegistrarAuditAsync(conn, tx, "beneficiario", id.ToString(), nombreBen, "eliminado");
 
             await using var delBen = conn.CreateCommand();
             delBen.Transaction = tx;
@@ -825,33 +825,6 @@ public class BeneficiariosController : ControllerBase
     {
         var rol = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
         return string.IsNullOrEmpty(rol) || rol is "administrador" or "Admin";
-    }
-
-    private string? UsuarioEmail() =>
-        User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
-        ?? User.FindFirst("email")?.Value
-        ?? User.Identity?.Name;
-
-    private async Task RegistrarAuditAsync(
-        NpgsqlConnection conn, NpgsqlTransaction? tx,
-        Guid entidadId, string entidadNombre, string accion, string? detalle = null)
-    {
-        try
-        {
-            await using var cmd = conn.CreateCommand();
-            if (tx != null) cmd.Transaction = tx;
-            cmd.CommandText = """
-                INSERT INTO audit_log (entidad_tipo, entidad_id, entidad_nombre, accion, usuario_email, detalle)
-                VALUES ('beneficiario', @eid, @nombre, @accion, @email, @detalle)
-                """;
-            cmd.Parameters.AddWithValue("eid",    entidadId);
-            cmd.Parameters.AddWithValue("nombre", entidadNombre);
-            cmd.Parameters.AddWithValue("accion", accion);
-            cmd.Parameters.Add(new NpgsqlParameter("email",   NpgsqlDbType.Varchar) { Value = (object?)UsuarioEmail() ?? DBNull.Value });
-            cmd.Parameters.Add(new NpgsqlParameter("detalle", NpgsqlDbType.Text)    { Value = (object?)detalle ?? DBNull.Value });
-            await cmd.ExecuteNonQueryAsync();
-        }
-        catch { /* audit failures are non-fatal */ }
     }
 
     // =========================================================================

@@ -1,11 +1,14 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Filters;
 using FundacionPanorama.Application.Features.Contabilidad;
 using FundacionPanorama.Application.Features.Contabilidad.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -15,8 +18,10 @@ namespace FundacionPanorama.API.Controllers;
 public class ContabilidadController(
     ContabilidadService svc,
     IHttpClientFactory httpFactory,
-    IConfiguration configuration) : ControllerBase
+    IConfiguration configuration,
+    AppDbContext db) : BaseController
 {
+    private NpgsqlConnection AbrirConexion() => new(db.Database.GetConnectionString());
     // ── Categorías ─────────────────────────────────────────────────────────────
 
     [HttpGet("categorias")]
@@ -34,20 +39,33 @@ public class ContabilidadController(
     [HttpPost("cuentas")]
     [RequierePermiso("contabilidad", "crear")]
     public async Task<IActionResult> CrearCuenta([FromBody] CrearCuentaCajaDto dto, CancellationToken ct)
-        => Ok(await svc.CrearCuentaAsync(dto, ct));
+    {
+        var c = await svc.CrearCuentaAsync(dto, ct);
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_cuenta", c.Id.ToString(), c.Nombre, "creado");
+        return Ok(c);
+    }
 
     [HttpPut("cuentas/{id:guid}")]
     [RequierePermiso("contabilidad", "editar")]
     public async Task<IActionResult> ActualizarCuenta(Guid id, [FromBody] CrearCuentaCajaDto dto, CancellationToken ct)
     {
         var c = await svc.ActualizarCuentaAsync(id, dto, ct);
-        return c is null ? NotFound() : Ok(c);
+        if (c is null) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_cuenta", id.ToString(), c.Nombre, "editado");
+        return Ok(c);
     }
 
     [HttpDelete("cuentas/{id:guid}")]
     [RequierePermiso("contabilidad", "editar")]
     public async Task<IActionResult> EliminarCuenta(Guid id, CancellationToken ct)
-        => await svc.EliminarCuentaAsync(id, ct) ? NoContent() : NotFound();
+    {
+        if (!await svc.EliminarCuentaAsync(id, ct)) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_cuenta", id.ToString(), null, "eliminado");
+        return NoContent();
+    }
 
     // ── Movimientos ────────────────────────────────────────────────────────────
 
@@ -73,25 +91,43 @@ public class ContabilidadController(
     [HttpPost("movimientos")]
     [RequierePermiso("contabilidad", "crear")]
     public async Task<IActionResult> CrearMovimiento([FromBody] CrearMovimientoDto dto, CancellationToken ct)
-        => Ok(await svc.CrearMovimientoAsync(dto, ct));
+    {
+        var m = await svc.CrearMovimientoAsync(dto, ct);
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_movimiento", m.Id.ToString(), m.Concepto, "creado");
+        return Ok(m);
+    }
 
     [HttpPut("movimientos/{id:guid}")]
     [RequierePermiso("contabilidad", "editar")]
     public async Task<IActionResult> ActualizarMovimiento(Guid id, [FromBody] ActualizarMovimientoDto dto, CancellationToken ct)
     {
         var m = await svc.ActualizarMovimientoAsync(id, dto, ct);
-        return m is null ? NotFound() : Ok(m);
+        if (m is null) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_movimiento", id.ToString(), m.Concepto, "editado");
+        return Ok(m);
     }
 
     [HttpDelete("movimientos/{id:guid}")]
     [RequierePermiso("contabilidad", "editar")]
     public async Task<IActionResult> EliminarMovimiento(Guid id, CancellationToken ct)
-        => await svc.EliminarMovimientoAsync(id, ct) ? NoContent() : NotFound();
+    {
+        if (!await svc.EliminarMovimientoAsync(id, ct)) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_movimiento", id.ToString(), null, "eliminado");
+        return NoContent();
+    }
 
     [HttpPatch("movimientos/{id:guid}/anular")]
     [RequierePermiso("contabilidad", "editar")]
     public async Task<IActionResult> AnularMovimiento(Guid id, CancellationToken ct)
-        => await svc.AnularMovimientoAsync(id, ct) ? NoContent() : NotFound();
+    {
+        if (!await svc.AnularMovimientoAsync(id, ct)) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_movimiento", id.ToString(), null, "anulado");
+        return NoContent();
+    }
 
     // ── Presupuesto ────────────────────────────────────────────────────────────
 
@@ -103,20 +139,33 @@ public class ContabilidadController(
     [HttpPost("presupuesto")]
     [RequierePermiso("contabilidad", "crear")]
     public async Task<IActionResult> CrearPresupuesto([FromBody] CrearPresupuestoDto dto, CancellationToken ct)
-        => Ok(await svc.CrearPresupuestoAsync(dto, ct));
+    {
+        var p = await svc.CrearPresupuestoAsync(dto, ct);
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_presupuesto", p.Id.ToString(), p.ProgramaNombre, "creado");
+        return Ok(p);
+    }
 
     [HttpPut("presupuesto/{id:guid}")]
     [RequierePermiso("contabilidad", "editar")]
     public async Task<IActionResult> ActualizarPresupuesto(Guid id, [FromBody] CrearPresupuestoDto dto, CancellationToken ct)
     {
         var p = await svc.ActualizarPresupuestoAsync(id, dto, ct);
-        return p is null ? NotFound() : Ok(p);
+        if (p is null) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_presupuesto", id.ToString(), p.ProgramaNombre, "editado");
+        return Ok(p);
     }
 
     [HttpDelete("presupuesto/{id:guid}")]
     [RequierePermiso("contabilidad", "editar")]
     public async Task<IActionResult> EliminarPresupuesto(Guid id, CancellationToken ct)
-        => await svc.EliminarPresupuestoAsync(id, ct) ? NoContent() : NotFound();
+    {
+        if (!await svc.EliminarPresupuestoAsync(id, ct)) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_presupuesto", id.ToString(), null, "eliminado");
+        return NoContent();
+    }
 
     // ── Caja Menor ─────────────────────────────────────────────────────────────
 
@@ -137,12 +186,22 @@ public class ContabilidadController(
     [HttpPost("caja-menor/arqueos")]
     [RequierePermiso("contabilidad", "crear")]
     public async Task<IActionResult> CrearArqueo([FromBody] CrearArqueoDto dto, CancellationToken ct)
-        => Ok(await svc.CrearArqueoAsync(dto, ct));
+    {
+        var a = await svc.CrearArqueoAsync(dto, ct);
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_arqueo", a.Id.ToString(), a.CuentaNombre, "creado");
+        return Ok(a);
+    }
 
     [HttpDelete("caja-menor/arqueos/{id:int}")]
     [RequierePermiso("contabilidad", "editar")]
     public async Task<IActionResult> EliminarArqueo(int id, CancellationToken ct)
-        => await svc.EliminarArqueoAsync(id, ct) ? NoContent() : NotFound();
+    {
+        if (!await svc.EliminarArqueoAsync(id, ct)) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "contabilidad_arqueo", id.ToString(), null, "eliminado");
+        return NoContent();
+    }
 
     [HttpPost("caja-menor/reposicion")]
     [RequierePermiso("contabilidad", "crear")]

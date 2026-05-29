@@ -983,6 +983,141 @@ public class BeneficiariosController : BaseController
         return Ok(new { total = lineas.Count - 1, insertados, omitidos, errores });
     }
 
+    // =========================================================================
+    // POST api/beneficiarios/importar-xlsx
+    // =========================================================================
+    [HttpPost("importar-xlsx")]
+    [Authorize]
+    public async Task<IActionResult> ImportarXlsx(
+        [FromBody] List<ImportarBeneficiarioRowDto> filas, CancellationToken ct)
+    {
+        if (filas is null || filas.Count == 0)
+            return BadRequest(new { mensaje = "No hay filas para importar." });
+
+        var insertados = 0;
+        var omitidos   = 0;
+        var errores    = new List<object>();
+
+        await using var conn = AbrirConexion();
+        await conn.OpenAsync(ct);
+
+        static DateOnly? ParseFecha(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return null;
+            var formats = new[] { "yyyy-MM-dd", "dd/MM/yyyy", "d/M/yyyy", "MM/dd/yyyy", "M/d/yyyy" };
+            if (DateOnly.TryParseExact(s.Trim(), formats,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var d)) return d;
+            if (DateOnly.TryParse(s.Trim(), out var d2)) return d2;
+            return null;
+        }
+
+        for (int fi = 0; fi < filas.Count; fi++)
+        {
+            var fila   = filas[fi];
+            var nombre = $"{fila.PrimerNombre?.Trim()} {fila.PrimerApellido?.Trim()}".Trim();
+
+            if (string.IsNullOrWhiteSpace(fila.PrimerNombre) || string.IsNullOrWhiteSpace(fila.PrimerApellido))
+            {
+                errores.Add(new { fila = fi + 2, nombre = nombre.Length > 0 ? nombre : "(vacío)",
+                    motivo = "PRIMER_NOMBRE y PRIMER_APELLIDO son obligatorios." });
+                continue;
+            }
+
+            var fechaNac = ParseFecha(fila.FechaNacimiento);
+            if (fechaNac is null)
+            {
+                errores.Add(new { fila = fi + 2, nombre,
+                    motivo = "FECHA_NACIMIENTO inválida. Use formato AAAA-MM-DD." });
+                continue;
+            }
+
+            var ndoc = fila.NumeroDocumento?.Trim();
+            if (!string.IsNullOrWhiteSpace(ndoc))
+            {
+                await using var chk = conn.CreateCommand();
+                chk.CommandText = "SELECT COUNT(*)::int FROM beneficiarios WHERE numero_documento = @doc";
+                chk.Parameters.AddWithValue("doc", ndoc);
+                if ((int)(await chk.ExecuteScalarAsync(ct))! > 0) { omitidos++; continue; }
+            }
+
+            await using var tx = await conn.BeginTransactionAsync(ct);
+            try
+            {
+                var dto = new CrearBeneficiarioDto
+                {
+                    PrimerNombre    = fila.PrimerNombre!.Trim(),
+                    SegundoNombre   = string.IsNullOrWhiteSpace(fila.SegundoNombre)   ? null : fila.SegundoNombre.Trim(),
+                    PrimerApellido  = fila.PrimerApellido!.Trim(),
+                    SegundoApellido = string.IsNullOrWhiteSpace(fila.SegundoApellido) ? null : fila.SegundoApellido.Trim(),
+                    FechaNacimiento = fechaNac.Value,
+                    TipoDocumento   = fila.TipoDocumento  ?? "",
+                    NumeroDocumento = string.IsNullOrWhiteSpace(ndoc) ? null : ndoc,
+                    Genero          = fila.Genero?.Trim(),
+                    Eps             = fila.Eps?.Trim(),
+                    NombreAcudiente = fila.NombreAcudiente?.Trim(),
+                    Parentesco      = fila.Parentesco?.Trim(),
+                    Whatsapp        = fila.Whatsapp?.Trim(),
+                    Direccion       = fila.Direccion?.Trim(),
+                    GradoEscolar    = fila.GradoEscolar?.Trim(),
+                    NombreColegio   = fila.NombreColegio?.Trim(),
+                    TieneAlergia    = string.IsNullOrWhiteSpace(fila.TieneAlergia) ? "no" : fila.TieneAlergia.Trim().ToLower(),
+                    DescripcionAlergia = fila.DescripcionAlergia?.Trim(),
+                    Tipo            = string.IsNullOrWhiteSpace(fila.Tipo) ? "niño" : fila.Tipo.Trim(),
+                };
+
+                var tipoDocId = await ResolverTipoDocumentoIdAsync(conn, tx, dto.TipoDocumento);
+                var epsId     = await ResolverEpsIdAsync(conn, tx, dto.Eps);
+
+                await using var ins = conn.CreateCommand();
+                ins.Transaction = tx;
+                ins.CommandText = """
+                    INSERT INTO beneficiarios (
+                      primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
+                      fecha_nacimiento, tipo_documento_id, numero_documento,
+                      pais_nacimiento, departamento_nacimiento, ciudad_nacimiento, barrio,
+                      num_personas_vive, num_hermanos, nombre_colegio, grado_escolar,
+                      tiene_discapacidad, descripcion_discapacidad, vive_con_nino,
+                      genero, autorizacion, tipo, activo
+                    ) VALUES (
+                      @pn, @sn, @pa, @sa,
+                      @fn, @tdoc, @ndoc,
+                      NULL, NULL, NULL, NULL,
+                      NULL, NULL, @col, @grado,
+                      false, NULL, NULL,
+                      @genero, false, @tipo, true
+                    ) RETURNING id
+                    """;
+                ins.Parameters.AddWithValue("pn", dto.PrimerNombre);
+                ins.Parameters.AddWithValue("sn", (object?)dto.SegundoNombre   ?? DBNull.Value);
+                ins.Parameters.AddWithValue("pa", dto.PrimerApellido);
+                ins.Parameters.AddWithValue("sa", (object?)dto.SegundoApellido ?? DBNull.Value);
+                ins.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = fechaNac.Value });
+                ins.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = (object?)tipoDocId ?? DBNull.Value });
+                ins.Parameters.AddWithValue("ndoc",  (object?)dto.NumeroDocumento ?? DBNull.Value);
+                ins.Parameters.AddWithValue("col",   (object?)dto.NombreColegio   ?? DBNull.Value);
+                ins.Parameters.AddWithValue("grado", (object?)dto.GradoEscolar    ?? DBNull.Value);
+                ins.Parameters.AddWithValue("genero",(object?)dto.Genero           ?? DBNull.Value);
+                ins.Parameters.AddWithValue("tipo",  dto.Tipo);
+
+                var newId = (Guid)(await ins.ExecuteScalarAsync(ct))!;
+
+                await GuardarDependientesAsync(conn, tx, newId, dto, epsId, isNew: true);
+                await RegistrarAuditAsync(conn, tx, "beneficiario", newId.ToString(), dto.NombreCompleto, "creado");
+
+                await tx.CommitAsync(ct);
+                insertados++;
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync(ct);
+                errores.Add(new { fila = fi + 2, nombre, motivo = ex.Message });
+            }
+        }
+
+        return Ok(new { total = filas.Count, insertados, omitidos, errores });
+    }
+
     private static string[] ParseCsvRow(string line)
     {
         var result  = new List<string>();

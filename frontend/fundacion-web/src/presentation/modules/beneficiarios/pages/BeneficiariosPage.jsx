@@ -103,7 +103,7 @@ export default function BeneficiariosPage() {
                 '&:hover': { bgcolor: 'rgba(255,255,255,0.22)' },
               }}
             >
-              Importar CSV
+              Importar Excel
             </Button>
             <Button
               variant="contained" size="small"

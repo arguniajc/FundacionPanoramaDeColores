@@ -142,6 +142,28 @@ public class CrearBeneficiarioDto
     public string?   FotoDocumentoReversoUrl { get; set; }
 }
 
+public class ImportarBeneficiarioRowDto
+{
+    public string? PrimerNombre       { get; set; }
+    public string? SegundoNombre      { get; set; }
+    public string? PrimerApellido     { get; set; }
+    public string? SegundoApellido    { get; set; }
+    public string? FechaNacimiento    { get; set; }
+    public string? TipoDocumento      { get; set; }
+    public string? NumeroDocumento    { get; set; }
+    public string? Genero             { get; set; }
+    public string? Eps                { get; set; }
+    public string? NombreAcudiente    { get; set; }
+    public string? Parentesco         { get; set; }
+    public string? Whatsapp           { get; set; }
+    public string? Direccion          { get; set; }
+    public string? GradoEscolar       { get; set; }
+    public string? NombreColegio      { get; set; }
+    public string? TieneAlergia       { get; set; }
+    public string? DescripcionAlergia { get; set; }
+    public string? Tipo               { get; set; }
+}
+
 public class BeneficiarioListDto
 {
     public List<BeneficiarioDto> Data      { get; set; } = [];

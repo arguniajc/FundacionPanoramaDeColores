@@ -11,7 +11,6 @@ import ErrorIcon       from '@mui/icons-material/Error';
 import * as XLSX from 'xlsx';
 import apiClient from '@/infrastructure/http/apiClient';
 import { BRAND_COLOR } from '@/shared/constants/brand';
-import { exportarExcel } from '@/shared/utils/exportarExcel';
 
 const COLOR = BRAND_COLOR;
 
@@ -79,67 +78,97 @@ function validarFila(f) {
   return errs;
 }
 
-// ── Descarga de plantilla ──────────────────────────────────────────────────────
-function generarPlantilla() {
-  const headerRow = COLS.map(c => c.header);
-  const hintsRow  = COLS.map(c => c.vals ? c.vals.join(' / ') : c.hint);
-  const filasVacias = Array.from({ length: 100 }, () => new Array(COLS.length).fill(''));
+// ── Descarga de plantilla con listas desplegables (exceljs — dynamic import) ───
+async function generarPlantilla() {
+  const { default: ExcelJS } = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
 
-  const ej1 = ['Maria',   'Camila',  'Gonzalez', 'Torres',    '2015-03-22', 'TI', '1234567890', 'femenino',  'Sura',      'Ana Torres', 'madre', '3001234567', 'Calle 5 # 10-20',    'Inst. San Jose',   '3', 'nino'];
-  const ej2 = ['Carlos',  '',        'Perez',    '',          '2018-07-14', '',   '',            '',          '',          '',           '',      '',           '',                   '',                 '',  'nino'];
-  const ej3 = ['Roberto', 'Andres',  'Ramirez',  'Gutierrez', '2010-11-05', 'TI', '9876543210', 'masculino', 'Compensar', 'Luis Guti',  'padre', '3209876543', 'Carrera 12 # 5-30',  'Col. Nuevo Siglo', '7', 'nino'];
+  // ── Hoja 1: Beneficiarios ──
+  const ws1 = wb.addWorksheet('Beneficiarios');
+  ws1.columns = COLS.map(c => ({ width: c.req ? 22 : 18 }));
 
-  const refRows = [
-    ['Campo', 'Obligatorio', 'Valores válidos', 'Ejemplo'],
-    ...COLS.map(c => [
-      c.header.replace(' *', ''),
-      c.req ? 'SÍ' : 'no',
-      c.vals ? c.vals.join(', ') : c.hint.replace('✓ OBLIGATORIO', '—').replace('opcional', '—'),
-      c.header === 'Fecha nacimiento *' ? '2015-03-22'
-        : c.header === 'Primer nombre *'   ? 'Maria'
-        : c.header === 'Primer apellido *' ? 'Gonzalez'
-        : (c.vals ? c.vals[0] : ''),
-    ]),
-    [],
-    ['NOTAS IMPORTANTES'],
-    ['• Fecha nacimiento: use el formato AAAA-MM-DD  (año-mes-día con guiones)'],
-    ['• Los campos marcados SÍ son obligatorios. Los demás son opcionales.'],
-    ['• No elimine ni reordene las columnas de la hoja Beneficiarios.'],
-    ['• Puede copiar y pegar la fila de Ejemplos como guía.'],
-    ['• Documentos duplicados serán omitidos automáticamente (no causan error).'],
-    ['• El encabezado (fila 1) y la fila de pistas (fila 2) se omiten al importar.'],
-    ['• Llene los datos a partir de la fila 3.'],
-  ];
+  const hRow = ws1.addRow(COLS.map(c => c.header));
+  hRow.height = 22;
+  COLS.forEach((col, i) => { hRow.getCell(i + 1).note = col.comment; });
 
-  exportarExcel('plantilla_beneficiarios_inscripcion', [
-    {
-      nombre: 'Beneficiarios',
-      filas: [headerRow, hintsRow, ...filasVacias],
-      cols: COLS.map(c => c.req ? 20 : 18),
-      altoFilas: [22, 16],
-      comentarios: COLS.map((col, i) => ({ col: i, row: 0, texto: col.comment })),
-    },
-    {
-      nombre: 'Ejemplos',
-      filas: [headerRow, ej1, ej2, ej3],
-      cols: COLS.map(c => c.req ? 20 : 18),
-    },
-    {
-      nombre: 'Referencia',
-      filas: refRows,
-      cols: [22, 12, 38, 20],
-    },
-  ]);
+  const pRow = ws1.addRow(COLS.map(c => c.vals ? `▼ ${c.vals.join(' / ')}` : c.hint));
+  pRow.height = 16;
+
+  for (let i = 0; i < 100; i++) ws1.addRow([]);
+
+  // Listas desplegables en columnas con valores fijos (filas 3–1002)
+  COLS.forEach((col, i) => {
+    if (!col.vals) return;
+    const letra = String.fromCharCode(65 + i);
+    ws1.dataValidations.add(`${letra}3:${letra}1002`, {
+      type: 'list',
+      allowBlank: true,
+      formulae: [`"${col.vals.join(',')}"`],
+      showErrorMessage: true,
+      errorStyle: 'error',
+      errorTitle: 'Valor no permitido',
+      error: `Seleccione una opción de la lista: ${col.vals.join(', ')}`,
+    });
+  });
+
+  // ── Hoja 2: Ejemplos ──
+  const ws2 = wb.addWorksheet('Ejemplos');
+  ws2.columns = COLS.map(c => ({ width: c.req ? 22 : 18 }));
+  ws2.addRow(COLS.map(c => c.header));
+  ws2.addRow(['Maria',   'Camila', 'Gonzalez', 'Torres',    '2015-03-22', 'TI', '1234567890', 'femenino',  'Sura',      'Ana Torres', 'madre', '3001234567', 'Calle 5 # 10-20',   'Inst. San Jose',   '3', 'nino']);
+  ws2.addRow(['Carlos',  '',       'Perez',    '',          '2018-07-14', '',   '',            '',          '',          '',           '',      '',           '',                  '',                 '',  'nino']);
+  ws2.addRow(['Roberto', 'Andres', 'Ramirez',  'Gutierrez', '2010-11-05', 'TI', '9876543210', 'masculino', 'Compensar', 'Luis Guti',  'padre', '3209876543', 'Carrera 12 # 5-30', 'Col. Nuevo Siglo', '7', 'nino']);
+
+  // ── Hoja 3: Referencia ──
+  const ws3 = wb.addWorksheet('Referencia');
+  ws3.columns = [{ width: 22 }, { width: 12 }, { width: 42 }, { width: 20 }];
+  ws3.addRow(['Campo', 'Obligatorio', 'Valores válidos / Formato', 'Ejemplo']);
+  COLS.forEach(c => ws3.addRow([
+    c.header.replace(' *', ''),
+    c.req ? 'SÍ' : 'no',
+    c.vals ? `▼ ${c.vals.join(', ')}` : c.hint.replace('✓ OBLIGATORIO', '—').replace('opcional', '—'),
+    c.header === 'Fecha nacimiento *' ? '2015-03-22'
+      : c.header === 'Primer nombre *'   ? 'Maria'
+      : c.header === 'Primer apellido *' ? 'Gonzalez'
+      : (c.vals ? c.vals[0] : ''),
+  ]));
+  ws3.addRow([]);
+  ws3.addRow(['NOTAS IMPORTANTES']);
+  [
+    '• Los campos con ▼ tienen lista desplegable — seleccione, no escriba a mano.',
+    '• Fecha nacimiento: formato AAAA-MM-DD  (ej: 2015-03-22)',
+    '• Campos marcados SÍ son obligatorios. Los demás son opcionales.',
+    '• No elimine ni reordene columnas de la hoja Beneficiarios.',
+    '• Documentos duplicados serán omitidos automáticamente.',
+    '• Fila 1 (encabezados) y fila 2 (pistas) se omiten al importar.',
+    '• Llene datos a partir de la fila 3.',
+  ].forEach(n => ws3.addRow([n]));
+
+  // Descargar
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: 'plantilla_beneficiarios_inscripcion.xlsx' });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
   const inputRef = useRef();
-  const [archivo,   setArchivo]   = useState(null);
-  const [filas,     setFilas]     = useState([]);
-  const [cargando,  setCargando]  = useState(false);
-  const [resultado, setResultado] = useState(null);
-  const [error,     setError]     = useState('');
+  const [archivo,           setArchivo]           = useState(null);
+  const [filas,             setFilas]             = useState([]);
+  const [cargando,          setCargando]          = useState(false);
+  const [resultado,         setResultado]         = useState(null);
+  const [error,             setError]             = useState('');
+  const [generandoPlantilla, setGenerandoPlantilla] = useState(false);
+
+  const handleGenerarPlantilla = () => {
+    setGenerandoPlantilla(true);
+    generarPlantilla().finally(() => setGenerandoPlantilla(false));
+  };
 
   const reset = () => {
     setArchivo(null); setFilas([]); setResultado(null); setError('');
@@ -235,9 +264,10 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
               <Typography fontSize="0.65rem" color="text.secondary" alignSelf="center">← obligatorios</Typography>
             </Box>
           </Box>
-          <Button variant="outlined" size="small" startIcon={<DownloadIcon />} onClick={generarPlantilla}
+          <Button variant="outlined" size="small" startIcon={generandoPlantilla ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
+            onClick={handleGenerarPlantilla} disabled={generandoPlantilla}
             sx={{ borderColor: COLOR, color: COLOR, whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'flex-start' }}>
-            Plantilla
+            {generandoPlantilla ? 'Generando…' : 'Plantilla'}
           </Button>
         </Box>
 

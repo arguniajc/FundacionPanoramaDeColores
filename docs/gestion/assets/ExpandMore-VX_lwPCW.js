@@ -1,0 +1,1 @@
+import{P as e,wt as t}from"./apiClient-D-j9dXyY.js";var n=e((0,t().jsx)(`path`,{d:`M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z`}),`ExpandMore`);export{n as t};

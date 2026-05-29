@@ -75,18 +75,20 @@ public class CrearBeneficiarioDto
     public DateOnly  FechaNacimiento    { get; set; }
     [StringLength(20)]
     public string    TipoDocumento      { get; set; } = string.Empty;
-    [StringLength(30)]
-    public string?   NumeroDocumento    { get; set; }
-    [StringLength(100)]
-    public string?   Eps                { get; set; }
+    [Required][StringLength(30)]
+    public string    NumeroDocumento    { get; set; } = string.Empty;
+    [Required][StringLength(100)]
+    public string    Eps                { get; set; } = string.Empty;
     // ── Tallas ────────────────────────────────────────────────────────────────
-    [StringLength(10)]
-    public string?   TallaCamisa        { get; set; }
-    [StringLength(10)]
-    public string?   TallaPantalon      { get; set; }
-    [StringLength(10)]
-    public string?   TallaZapatos       { get; set; }
+    [Required][StringLength(10)]
+    public string    TallaCamisa        { get; set; } = string.Empty;
+    [Required][StringLength(10)]
+    public string    TallaPantalon      { get; set; } = string.Empty;
+    [Required][StringLength(10)]
+    public string    TallaZapatos       { get; set; } = string.Empty;
+    [Required]
     public decimal?  PesoKg             { get; set; }
+    [Required]
     public int?      TallaCm            { get; set; }
     // ── Salud ─────────────────────────────────────────────────────────────────
     [StringLength(10)]
@@ -94,7 +96,7 @@ public class CrearBeneficiarioDto
     [StringLength(500)]
     public string?   DescripcionAlergia { get; set; }
     [StringLength(1000)]
-    public string?   ObservacionesSalud { get; set; }
+    public string    ObservacionesSalud { get; set; } = string.Empty;
     public bool      TieneDiscapacidad  { get; set; }
     [StringLength(500)]
     public string?   DescripcionDiscapacidad { get; set; }
@@ -112,16 +114,18 @@ public class CrearBeneficiarioDto
     public string?   Direccion          { get; set; }
     public bool?     ViveConNino        { get; set; }
     // ── Lugar de nacimiento ───────────────────────────────────────────────────
-    [StringLength(100)]
-    public string?   PaisNacimiento          { get; set; }
-    [StringLength(100)]
-    public string?   DepartamentoNacimiento  { get; set; }
-    [StringLength(100)]
-    public string?   CiudadNacimiento        { get; set; }
-    [StringLength(100)]
-    public string?   Barrio                  { get; set; }
+    [Required][StringLength(100)]
+    public string    PaisNacimiento          { get; set; } = string.Empty;
+    [Required][StringLength(100)]
+    public string    DepartamentoNacimiento  { get; set; } = string.Empty;
+    [Required][StringLength(100)]
+    public string    CiudadNacimiento        { get; set; } = string.Empty;
+    [Required][StringLength(100)]
+    public string    Barrio                  { get; set; } = string.Empty;
     // ── Composición familiar ──────────────────────────────────────────────────
+    [Required]
     public int?      NumPersonasVive    { get; set; }
+    [Required]
     public int?      NumHermanos        { get; set; }
     // ── Educación ─────────────────────────────────────────────────────────────
     [StringLength(200)]
@@ -129,8 +133,8 @@ public class CrearBeneficiarioDto
     [StringLength(50)]
     public string?   GradoEscolar       { get; set; }
     // ── Género ────────────────────────────────────────────────────────────────
-    [StringLength(20)]
-    public string?   Genero             { get; set; }
+    [Required][StringLength(20)]
+    public string    Genero             { get; set; } = string.Empty;
     // ── Autorización ──────────────────────────────────────────────────────────
     public bool      Autorizacion       { get; set; }
     // ── Archivos ──────────────────────────────────────────────────────────────

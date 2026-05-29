@@ -205,7 +205,27 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
     form.primerNombre.trim() &&
     form.primerApellido.trim() &&
     form.fechaNacimiento &&
-    (!esNino || form.nombreAcudiente.trim()) &&
+    form.numeroDocumento.trim() &&
+    form.genero &&
+    form.paisNacimiento &&
+    form.departamentoNacimiento &&
+    form.ciudadNacimiento &&
+    form.barrio.trim() &&
+    form.numPersonasVive !== '' &&
+    form.numHermanos !== '' &&
+    form.eps.trim() &&
+    form.tallaCamisa &&
+    form.tallaPantalon.trim() &&
+    form.tallaZapatos.trim() &&
+    form.pesoKg !== '' &&
+    form.tallaCm !== '' &&
+    (!esNino || (
+      form.nombreAcudiente.trim() &&
+      form.parentesco &&
+      form.whatsapp.trim() &&
+      form.viveConNino !== '' &&
+      form.direccion.trim()
+    )) &&
     form.autorizacion &&
     !docExiste &&
     !guardando;
@@ -282,7 +302,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
               value={form.segundoApellido} onChange={capitalizar('segundoApellido')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Fecha de nacimiento *" size="small" type="date"
+            <TextField fullWidth label="Fecha de nacimiento *" size="small" type="date" required
               value={form.fechaNacimiento} onChange={handleFechaNacimiento}
               slotProps={{ inputLabel: { shrink: true } }} />
           </Grid>
@@ -296,7 +316,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField
-              fullWidth label="Número de documento" size="small"
+              fullWidth label="Número de documento *" size="small" required
               value={form.numeroDocumento}
               onChange={e => { soloDigitos('numeroDocumento')(e); setDocExiste(false); }}
               onBlur={verificarDocumento}
@@ -334,10 +354,10 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
             </Grid>
           )}
           <Grid size={{ xs: 12, sm: 4 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Género</InputLabel>
-              <Select label="Género" value={form.genero} onChange={set('genero')}>
-                <MenuItem value=""><em>No especificado</em></MenuItem>
+            <FormControl fullWidth size="small" required>
+              <InputLabel>Género *</InputLabel>
+              <Select label="Género *" value={form.genero} onChange={set('genero')}>
+                <MenuItem value=""><em>Selecciona</em></MenuItem>
                 {GENEROS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
               </Select>
             </FormControl>
@@ -384,24 +404,25 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
             )}
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Barrio" size="small"
+            <TextField fullWidth label="Barrio *" size="small" required
               value={form.barrio} onChange={capitalizar('barrio')}
               slotProps={{ htmlInput: form.barrio === 'No registra' ? { readOnly: true } : undefined }}
               helperText={nr('barrio')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 8 }}>
-            <TextField fullWidth label="Dirección" size="small"
+            <TextField fullWidth label={esNino ? 'Dirección *' : 'Dirección'} size="small"
+              required={esNino}
               value={form.direccion} onChange={capitalizar('direccion')}
               slotProps={{ htmlInput: form.direccion === 'No registra' ? { readOnly: true } : undefined }}
               helperText={nr('direccion')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="N.º personas con quienes vive" size="small" type="number"
+            <TextField fullWidth label="N.º personas con quienes vive *" size="small" type="number" required
               value={form.numPersonasVive} onChange={set('numPersonasVive')}
               slotProps={{ htmlInput: { min: 1, max: 20 } }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label={esNino ? 'N.º de hermanos' : 'N.º de hijos'} size="small" type="number"
+            <TextField fullWidth label={esNino ? 'N.º de hermanos *' : 'N.º de hijos *'} size="small" type="number" required
               value={form.numHermanos} onChange={set('numHermanos')}
               slotProps={{ htmlInput: { min: 0, max: 20 } }} />
           </Grid>
@@ -410,10 +431,10 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           <SeccionTitulo>Tallas</SeccionTitulo>
 
           <Grid size={{ xs: 12, sm: 4 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Talla camisa</InputLabel>
-              <Select label="Talla camisa" value={form.tallaCamisa} onChange={set('tallaCamisa')}>
-                <MenuItem value=""><em>Sin talla</em></MenuItem>
+            <FormControl fullWidth size="small" required>
+              <InputLabel>Talla camisa *</InputLabel>
+              <Select label="Talla camisa *" value={form.tallaCamisa} onChange={set('tallaCamisa')}>
+                <MenuItem value=""><em>Selecciona</em></MenuItem>
                 {TALLAS_CAMISA.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </Select>
             </FormControl>
@@ -424,7 +445,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
               onChange={(_, v) => setV('tallaPantalon', v ?? '')}
               onInputChange={(_, v) => setV('tallaPantalon', v)}
               renderInput={params => (
-                <TextField {...params} fullWidth label="Talla pantalón" size="small" />
+                <TextField {...params} fullWidth label="Talla pantalón *" size="small" required />
               )} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -433,17 +454,17 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
               onChange={(_, v) => setV('tallaZapatos', v ?? '')}
               onInputChange={(_, v) => setV('tallaZapatos', v)}
               renderInput={params => (
-                <TextField {...params} fullWidth label="Talla zapatos" size="small" />
+                <TextField {...params} fullWidth label="Talla zapatos *" size="small" required />
               )} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Peso" size="small" type="number"
+            <TextField fullWidth label="Peso *" size="small" type="number" required
               value={form.pesoKg} onChange={set('pesoKg')}
               slotProps={{ htmlInput: { min: 1, max: 200, step: 0.1 },
                 input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> } }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Talla (altura)" size="small" type="number"
+            <TextField fullWidth label="Talla (altura) *" size="small" type="number" required
               value={form.tallaCm} onChange={set('tallaCm')}
               slotProps={{ htmlInput: { min: 30, max: 250 },
                 input: { endAdornment: <InputAdornment position="end">cm</InputAdornment> } }} />
@@ -465,7 +486,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
               }}
               slotProps={{ popper: { placement: 'bottom-start', modifiers: [{ name: 'flip', enabled: false }] } }}
               renderInput={params => (
-                <TextField {...params} fullWidth label="EPS" size="small"
+                <TextField {...params} fullWidth label="EPS *" size="small" required
                   helperText={nr('eps')}
                   inputProps={{ ...params.inputProps, ...(form.eps === 'No registra' ? { readOnly: true } : {}) }} />
               )} />
@@ -549,28 +570,29 @@ export default function NuevoBeneficiario({ onCerrar, onCreado }) {
           <SeccionTitulo>Acudiente</SeccionTitulo>
 
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Nombre del acudiente *" size="small"
+            <TextField fullWidth label="Nombre del acudiente *" size="small" required
               value={form.nombreAcudiente} onChange={capitalizar('nombreAcudiente')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Parentesco</InputLabel>
-              <Select label="Parentesco" value={form.parentesco} onChange={set('parentesco')}>
+            <FormControl fullWidth size="small" required>
+              <InputLabel>Parentesco *</InputLabel>
+              <Select label="Parentesco *" value={form.parentesco} onChange={set('parentesco')}>
+                <MenuItem value=""><em>Selecciona</em></MenuItem>
                 {PARENTESCOS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
               </Select>
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="WhatsApp" size="small"
+            <TextField fullWidth label="WhatsApp *" size="small" required
               value={form.whatsapp} onChange={soloDigitos('whatsapp')}
               placeholder="Ej: 3001234567"
               slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>¿Vive con el niño?</InputLabel>
-              <Select label="¿Vive con el niño?" value={form.viveConNino} onChange={set('viveConNino')}>
-                <MenuItem value=""><em>No especificado</em></MenuItem>
+            <FormControl fullWidth size="small" required>
+              <InputLabel>¿Vive con el niño? *</InputLabel>
+              <Select label="¿Vive con el niño? *" value={form.viveConNino} onChange={set('viveConNino')}>
+                <MenuItem value=""><em>Selecciona</em></MenuItem>
                 <MenuItem value="si">Sí</MenuItem>
                 <MenuItem value="no">No</MenuItem>
               </Select>

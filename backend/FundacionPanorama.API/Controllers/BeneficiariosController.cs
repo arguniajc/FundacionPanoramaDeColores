@@ -522,6 +522,9 @@ public class BeneficiariosController : BaseController
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearBeneficiarioDto dto)
     {
+        var errVal = ValidarBeneficiario(dto);
+        if (errVal.Count > 0) return BadRequest(new { mensaje = string.Join(" ", errVal), errores = errVal });
+
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var tx = await conn.BeginTransactionAsync();
@@ -564,21 +567,21 @@ public class BeneficiariosController : BaseController
         ins.Parameters.AddWithValue("sn", string.IsNullOrWhiteSpace(dto.SegundoNombre)   ? DBNull.Value : (object)dto.SegundoNombre.Trim());
         ins.Parameters.AddWithValue("pa", dto.PrimerApellido.Trim());
         ins.Parameters.AddWithValue("sa", string.IsNullOrWhiteSpace(dto.SegundoApellido) ? DBNull.Value : (object)dto.SegundoApellido.Trim());
-        ins.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object?)dto.FechaNacimiento ?? DBNull.Value });
+        ins.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object)dto.FechaNacimiento });
         ins.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = (object?)tipoDocId ?? DBNull.Value });
-        ins.Parameters.AddWithValue("ndoc",  string.IsNullOrWhiteSpace(dto.NumeroDocumento)         ? DBNull.Value : (object)dto.NumeroDocumento.Trim());
-        ins.Parameters.AddWithValue("pais",  string.IsNullOrWhiteSpace(dto.PaisNacimiento)          ? DBNull.Value : (object)dto.PaisNacimiento.Trim());
-        ins.Parameters.AddWithValue("depto", string.IsNullOrWhiteSpace(dto.DepartamentoNacimiento)  ? DBNull.Value : (object)dto.DepartamentoNacimiento.Trim());
-        ins.Parameters.AddWithValue("ciudad",string.IsNullOrWhiteSpace(dto.CiudadNacimiento)        ? DBNull.Value : (object)dto.CiudadNacimiento.Trim());
-        ins.Parameters.AddWithValue("barrio",string.IsNullOrWhiteSpace(dto.Barrio)                  ? DBNull.Value : (object)dto.Barrio.Trim());
-        ins.Parameters.Add(new NpgsqlParameter("npv",  NpgsqlDbType.Integer) { Value = (object?)dto.NumPersonasVive ?? DBNull.Value });
-        ins.Parameters.Add(new NpgsqlParameter("nh",   NpgsqlDbType.Integer) { Value = (object?)dto.NumHermanos    ?? DBNull.Value });
+        ins.Parameters.AddWithValue("ndoc",  dto.NumeroDocumento.Trim());
+        ins.Parameters.AddWithValue("pais",  dto.PaisNacimiento.Trim());
+        ins.Parameters.AddWithValue("depto", dto.DepartamentoNacimiento.Trim());
+        ins.Parameters.AddWithValue("ciudad",dto.CiudadNacimiento.Trim());
+        ins.Parameters.AddWithValue("barrio",dto.Barrio.Trim());
+        ins.Parameters.Add(new NpgsqlParameter("npv",  NpgsqlDbType.Integer) { Value = (object)dto.NumPersonasVive!.Value });
+        ins.Parameters.Add(new NpgsqlParameter("nh",   NpgsqlDbType.Integer) { Value = (object)dto.NumHermanos!.Value    });
         ins.Parameters.AddWithValue("col",   string.IsNullOrWhiteSpace(dto.NombreColegio) ? DBNull.Value : (object)dto.NombreColegio.Trim());
         ins.Parameters.AddWithValue("grado", string.IsNullOrWhiteSpace(dto.GradoEscolar) ? DBNull.Value : (object)dto.GradoEscolar.Trim());
         ins.Parameters.AddWithValue("disc",  dto.TieneDiscapacidad);
         ins.Parameters.AddWithValue("disc_desc", string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad) ? DBNull.Value : (object)dto.DescripcionDiscapacidad.Trim());
         ins.Parameters.Add(new NpgsqlParameter("vive", NpgsqlDbType.Boolean) { Value = (object?)dto.ViveConNino ?? DBNull.Value });
-        ins.Parameters.AddWithValue("genero",string.IsNullOrWhiteSpace(dto.Genero) ? DBNull.Value : (object)dto.Genero.Trim());
+        ins.Parameters.AddWithValue("genero",dto.Genero.Trim());
         ins.Parameters.AddWithValue("auth",  dto.Autorizacion);
         ins.Parameters.AddWithValue("tipo",  string.IsNullOrWhiteSpace(dto.Tipo) ? "niño" : dto.Tipo.Trim());
 
@@ -602,6 +605,9 @@ public class BeneficiariosController : BaseController
     [Authorize]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearBeneficiarioDto dto)
     {
+        var errVal = ValidarBeneficiario(dto);
+        if (errVal.Count > 0) return BadRequest(new { mensaje = string.Join(" ", errVal), errores = errVal });
+
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var tx = await conn.BeginTransactionAsync();
@@ -663,21 +669,21 @@ public class BeneficiariosController : BaseController
         upd.Parameters.AddWithValue("sn", string.IsNullOrWhiteSpace(dto.SegundoNombre)   ? DBNull.Value : (object)dto.SegundoNombre.Trim());
         upd.Parameters.AddWithValue("pa", dto.PrimerApellido.Trim());
         upd.Parameters.AddWithValue("sa", string.IsNullOrWhiteSpace(dto.SegundoApellido) ? DBNull.Value : (object)dto.SegundoApellido.Trim());
-        upd.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object?)dto.FechaNacimiento ?? DBNull.Value });
+        upd.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object)dto.FechaNacimiento });
         upd.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = (object?)tipoDocId ?? DBNull.Value });
-        upd.Parameters.AddWithValue("ndoc",  string.IsNullOrWhiteSpace(dto.NumeroDocumento)         ? DBNull.Value : (object)dto.NumeroDocumento.Trim());
-        upd.Parameters.AddWithValue("pais",  string.IsNullOrWhiteSpace(dto.PaisNacimiento)          ? DBNull.Value : (object)dto.PaisNacimiento.Trim());
-        upd.Parameters.AddWithValue("depto", string.IsNullOrWhiteSpace(dto.DepartamentoNacimiento)  ? DBNull.Value : (object)dto.DepartamentoNacimiento.Trim());
-        upd.Parameters.AddWithValue("ciudad",string.IsNullOrWhiteSpace(dto.CiudadNacimiento)        ? DBNull.Value : (object)dto.CiudadNacimiento.Trim());
-        upd.Parameters.AddWithValue("barrio",string.IsNullOrWhiteSpace(dto.Barrio)                  ? DBNull.Value : (object)dto.Barrio.Trim());
-        upd.Parameters.Add(new NpgsqlParameter("npv",  NpgsqlDbType.Integer) { Value = (object?)dto.NumPersonasVive ?? DBNull.Value });
-        upd.Parameters.Add(new NpgsqlParameter("nh",   NpgsqlDbType.Integer) { Value = (object?)dto.NumHermanos    ?? DBNull.Value });
+        upd.Parameters.AddWithValue("ndoc",  dto.NumeroDocumento.Trim());
+        upd.Parameters.AddWithValue("pais",  dto.PaisNacimiento.Trim());
+        upd.Parameters.AddWithValue("depto", dto.DepartamentoNacimiento.Trim());
+        upd.Parameters.AddWithValue("ciudad",dto.CiudadNacimiento.Trim());
+        upd.Parameters.AddWithValue("barrio",dto.Barrio.Trim());
+        upd.Parameters.Add(new NpgsqlParameter("npv",  NpgsqlDbType.Integer) { Value = (object)dto.NumPersonasVive!.Value });
+        upd.Parameters.Add(new NpgsqlParameter("nh",   NpgsqlDbType.Integer) { Value = (object)dto.NumHermanos!.Value    });
         upd.Parameters.AddWithValue("col",   string.IsNullOrWhiteSpace(dto.NombreColegio) ? DBNull.Value : (object)dto.NombreColegio.Trim());
         upd.Parameters.AddWithValue("grado", string.IsNullOrWhiteSpace(dto.GradoEscolar) ? DBNull.Value : (object)dto.GradoEscolar.Trim());
         upd.Parameters.AddWithValue("disc",  dto.TieneDiscapacidad);
         upd.Parameters.AddWithValue("disc_desc", string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad) ? DBNull.Value : (object)dto.DescripcionDiscapacidad.Trim());
         upd.Parameters.Add(new NpgsqlParameter("vive", NpgsqlDbType.Boolean) { Value = (object?)dto.ViveConNino ?? DBNull.Value });
-        upd.Parameters.AddWithValue("genero",string.IsNullOrWhiteSpace(dto.Genero) ? DBNull.Value : (object)dto.Genero.Trim());
+        upd.Parameters.AddWithValue("genero",dto.Genero.Trim());
         upd.Parameters.AddWithValue("auth",  dto.Autorizacion);
         upd.Parameters.AddWithValue("tipo",  string.IsNullOrWhiteSpace(dto.Tipo) ? "niño" : dto.Tipo.Trim());
         upd.Parameters.AddWithValue("id",    id);
@@ -818,6 +824,36 @@ public class BeneficiariosController : BaseController
             await tx.RollbackAsync();
             throw;
         }
+    }
+
+    // Valida campos obligatorios del DTO antes de tocar la BD.
+    private static List<string> ValidarBeneficiario(CrearBeneficiarioDto dto)
+    {
+        var e = new List<string>();
+        if (string.IsNullOrWhiteSpace(dto.NumeroDocumento))       e.Add("El número de documento es obligatorio.");
+        if (string.IsNullOrWhiteSpace(dto.Genero))                e.Add("El género es obligatorio.");
+        if (string.IsNullOrWhiteSpace(dto.PaisNacimiento))        e.Add("El país de nacimiento es obligatorio.");
+        if (string.IsNullOrWhiteSpace(dto.DepartamentoNacimiento))e.Add("El departamento es obligatorio.");
+        if (string.IsNullOrWhiteSpace(dto.CiudadNacimiento))      e.Add("La ciudad es obligatoria.");
+        if (string.IsNullOrWhiteSpace(dto.Barrio))                e.Add("El barrio es obligatorio.");
+        if (!dto.NumPersonasVive.HasValue)                        e.Add("El N.º de personas con quienes vive es obligatorio.");
+        if (!dto.NumHermanos.HasValue)                            e.Add("El N.º de hermanos es obligatorio.");
+        if (string.IsNullOrWhiteSpace(dto.Eps))                   e.Add("La EPS es obligatoria.");
+        if (string.IsNullOrWhiteSpace(dto.TallaCamisa))           e.Add("La talla de camisa es obligatoria.");
+        if (string.IsNullOrWhiteSpace(dto.TallaPantalon))         e.Add("La talla de pantalón es obligatoria.");
+        if (string.IsNullOrWhiteSpace(dto.TallaZapatos))          e.Add("La talla de zapatos es obligatoria.");
+        if (!dto.PesoKg.HasValue)                                 e.Add("El peso es obligatorio.");
+        if (!dto.TallaCm.HasValue)                                e.Add("La talla/altura es obligatoria.");
+        var esNino = string.IsNullOrWhiteSpace(dto.Tipo) || dto.Tipo.ToLower() == "niño";
+        if (esNino)
+        {
+            if (string.IsNullOrWhiteSpace(dto.NombreAcudiente))   e.Add("El nombre del acudiente es obligatorio.");
+            if (string.IsNullOrWhiteSpace(dto.Parentesco))        e.Add("El parentesco es obligatorio.");
+            if (string.IsNullOrWhiteSpace(dto.Whatsapp))          e.Add("El WhatsApp del acudiente es obligatorio.");
+            if (!dto.ViveConNino.HasValue)                        e.Add("Debe indicar si el acudiente vive con el niño.");
+            if (string.IsNullOrWhiteSpace(dto.Direccion))         e.Add("La dirección es obligatoria.");
+        }
+        return e;
     }
 
     // Devuelve true si el JWT corresponde a un administrador (o sesión legacy sin claim de rol).
@@ -1210,8 +1246,8 @@ public class BeneficiariosController : BaseController
         if (!string.IsNullOrWhiteSpace(dto.NombreAcudiente))
         {
             var nombreAcu   = dto.NombreAcudiente.Trim();
-            var whatsappAcu = string.IsNullOrWhiteSpace(dto.Whatsapp)  ? null : dto.Whatsapp.Trim();
-            var direccAcu   = string.IsNullOrWhiteSpace(dto.Direccion) ? null : dto.Direccion.Trim();
+            var whatsappAcu = dto.Whatsapp?.Trim()  ?? "";
+            var direccAcu   = dto.Direccion?.Trim() ?? "";
             Guid? acudienteId = null;
 
             if (!isNew)
@@ -1229,8 +1265,8 @@ public class BeneficiariosController : BaseController
                     RETURNING id
                     """;
                 updAcu.Parameters.AddWithValue("n",   nombreAcu);
-                updAcu.Parameters.AddWithValue("w",   (object?)whatsappAcu ?? DBNull.Value);
-                updAcu.Parameters.AddWithValue("d",   (object?)direccAcu   ?? DBNull.Value);
+                updAcu.Parameters.AddWithValue("w",   whatsappAcu);
+                updAcu.Parameters.AddWithValue("d",   direccAcu);
                 updAcu.Parameters.AddWithValue("bid", benId);
                 var updId = await updAcu.ExecuteScalarAsync();
                 if (updId is not null) acudienteId = (Guid)updId;
@@ -1260,8 +1296,8 @@ public class BeneficiariosController : BaseController
                     insAcu.Transaction = tx;
                     insAcu.CommandText = "INSERT INTO acudientes (nombre, whatsapp, direccion, activo) VALUES (@n,@w,@d,true) RETURNING id";
                     insAcu.Parameters.AddWithValue("n", nombreAcu);
-                    insAcu.Parameters.AddWithValue("w", (object?)whatsappAcu ?? DBNull.Value);
-                    insAcu.Parameters.AddWithValue("d", (object?)direccAcu   ?? DBNull.Value);
+                    insAcu.Parameters.AddWithValue("w", whatsappAcu);
+                    insAcu.Parameters.AddWithValue("d", direccAcu);
                     acudienteId = (Guid)(await insAcu.ExecuteScalarAsync())!;
                 }
 
@@ -1332,7 +1368,7 @@ public class BeneficiariosController : BaseController
             : "INSERT INTO beneficiario_salud (beneficiario_id, eps_id, observaciones, activo) VALUES (@b, @eps, @obs, true)";
         saludCmd.Parameters.AddWithValue("b",   benId);
         saludCmd.Parameters.Add(new NpgsqlParameter("eps", NpgsqlDbType.Smallint) { Value = (object?)epsId ?? DBNull.Value });
-        saludCmd.Parameters.AddWithValue("obs",  string.IsNullOrWhiteSpace(dto.ObservacionesSalud) ? DBNull.Value : (object)dto.ObservacionesSalud.Trim());
+        saludCmd.Parameters.AddWithValue("obs",  dto.ObservacionesSalud?.Trim() ?? "");
         await saludCmd.ExecuteNonQueryAsync();
 
         // ── Alergias ──────────────────────────────────────────────────────────
@@ -1417,11 +1453,11 @@ public class BeneficiariosController : BaseController
                 tlCmd.Parameters.AddWithValue("id", (Guid)tlId);
             }
             tlCmd.Parameters.AddWithValue("b",  benId);
-            tlCmd.Parameters.AddWithValue("tc", string.IsNullOrWhiteSpace(dto.TallaCamisa)   ? DBNull.Value : (object)dto.TallaCamisa.Trim());
-            tlCmd.Parameters.AddWithValue("tp", string.IsNullOrWhiteSpace(dto.TallaPantalon) ? DBNull.Value : (object)dto.TallaPantalon.Trim());
-            tlCmd.Parameters.AddWithValue("tz", string.IsNullOrWhiteSpace(dto.TallaZapatos)  ? DBNull.Value : (object)dto.TallaZapatos.Trim());
-            tlCmd.Parameters.Add(new NpgsqlParameter("pk", NpgsqlDbType.Numeric) { Value = (object?)dto.PesoKg ?? DBNull.Value });
-            tlCmd.Parameters.Add(new NpgsqlParameter("cm", NpgsqlDbType.Integer) { Value = (object?)dto.TallaCm ?? DBNull.Value });
+            tlCmd.Parameters.AddWithValue("tc", string.IsNullOrWhiteSpace(dto.TallaCamisa)   ? "" : dto.TallaCamisa.Trim());
+            tlCmd.Parameters.AddWithValue("tp", string.IsNullOrWhiteSpace(dto.TallaPantalon) ? "" : dto.TallaPantalon.Trim());
+            tlCmd.Parameters.AddWithValue("tz", string.IsNullOrWhiteSpace(dto.TallaZapatos)  ? "" : dto.TallaZapatos.Trim());
+            tlCmd.Parameters.Add(new NpgsqlParameter("pk", NpgsqlDbType.Numeric) { Value = (object?)(dto.PesoKg  ?? 0m) });
+            tlCmd.Parameters.Add(new NpgsqlParameter("cm", NpgsqlDbType.Integer) { Value = (object?)(dto.TallaCm ?? 0)  });
             await tlCmd.ExecuteNonQueryAsync();
         }
 

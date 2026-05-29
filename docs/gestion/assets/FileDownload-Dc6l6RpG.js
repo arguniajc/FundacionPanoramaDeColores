@@ -1,0 +1,1 @@
+import{P as e,wt as t}from"./apiClient-D3BeoiMz.js";var n=e((0,t().jsx)(`path`,{d:`M19 9h-4V3H9v6H5l7 7zM5 18v2h14v-2z`}),`FileDownload`);export{n as t};

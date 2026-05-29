@@ -111,7 +111,7 @@ function generarPlantilla() {
     ['• Llene los datos a partir de la fila 3.'],
   ];
 
-  exportarExcel('plantilla_beneficiarios', [
+  exportarExcel('plantilla_beneficiarios_inscripcion', [
     {
       nombre: 'Beneficiarios',
       filas: [headerRow, hintsRow, ...filasVacias],

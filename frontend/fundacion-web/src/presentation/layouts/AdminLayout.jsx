@@ -1,10 +1,11 @@
-﻿// Layout del panel admin: AppBar superior (solo móvil), Drawer lateral con menú
+// Layout del panel admin: AppBar superior (solo móvil), Drawer lateral con menú
 // de módulos colapsables y área de contenido. Incluye auto-logout por inactividad.
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box, Drawer, List, ListItemButton, ListItemIcon,
   AppBar, Toolbar, Typography, Avatar, IconButton, Collapse, Tooltip,
+  Badge, Popover,
 } from '@mui/material';
 import MenuIcon              from '@mui/icons-material/Menu';
 import LogoutIcon            from '@mui/icons-material/Logout';
@@ -31,14 +32,32 @@ import DownloadIcon          from '@mui/icons-material/Download';
 import LocationOnIcon        from '@mui/icons-material/LocationOn';
 import HowToRegIcon          from '@mui/icons-material/HowToReg';
 import AccountTreeIcon        from '@mui/icons-material/AccountTree';
+import NotificationsIcon     from '@mui/icons-material/Notifications';
+import WarningAmberIcon      from '@mui/icons-material/WarningAmber';
+import InfoIcon              from '@mui/icons-material/Info';
+import ReportProblemIcon     from '@mui/icons-material/ReportProblem';
 import { useAuth }           from '@/application/auth/AuthContext';
 import { useThemeMode }      from '@/shared/theme/ThemeContext';
 import { useConfiguracion }  from '@/shared/context/ConfiguracionContext';
 import useInactividad        from '@/shared/hooks/useInactividad';
 import usePermisos           from '@/shared/hooks/usePermisos';
+import { useAlertas }        from '@/shared/hooks/useAlertas';
 import { LOGIN_URL }         from '@/shared/constants/routes';
 
 const SIDEBAR_WIDTH = 260;
+
+const NIVEL_COLOR = { warning: '#d97706', info: '#2563eb', error: '#dc2626' };
+const NIVEL_BG    = { warning: '#fffbeb', info:  '#eff6ff', error: '#fef2f2' };
+const NIVEL_ICON  = {
+  warning: <WarningAmberIcon sx={{ fontSize: 14 }} />,
+  info:    <InfoIcon         sx={{ fontSize: 14 }} />,
+  error:   <ReportProblemIcon sx={{ fontSize: 14 }} />,
+};
+
+const MODULO_RUTA = {
+  talento_humano: '/sede/talento-humano',
+  inventario:     '/sede/inventario',
+};
 
 /** Luminancia relativa (0 = negro, 1 = blanco). Umbral 0.35 separa fondos claros de oscuros. */
 function luminance(hex) {
@@ -131,40 +150,120 @@ const MENU = [
   },
 ];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Panel de alertas (popover content)
+// ─────────────────────────────────────────────────────────────────────────────
+function AlertasPanel({ alertas, onNavegar, onClose }) {
+  return (
+    <Box sx={{ p: 1.5, minWidth: 280, maxWidth: 340 }}>
+      <Typography fontWeight={800} fontSize="0.82rem" mb={1.2} color="text.primary">
+        Alertas del sistema
+      </Typography>
+      {alertas.length === 0 ? (
+        <Typography fontSize="0.78rem" color="text.secondary" sx={{ py: 1, textAlign: 'center' }}>
+          Sin alertas activas ✓
+        </Typography>
+      ) : (
+        alertas.map((a, i) => (
+          <Box
+            key={i}
+            onClick={() => {
+              if (MODULO_RUTA[a.modulo]) { onNavegar(MODULO_RUTA[a.modulo]); onClose(); }
+            }}
+            sx={{
+              display: 'flex', alignItems: 'center', gap: 1,
+              mb: 0.6, px: 1, py: 0.8, borderRadius: 1.5,
+              bgcolor: NIVEL_BG[a.nivel] ?? '#f9fafb',
+              cursor: MODULO_RUTA[a.modulo] ? 'pointer' : 'default',
+              transition: 'filter 0.15s',
+              '&:hover': MODULO_RUTA[a.modulo] ? { filter: 'brightness(0.96)' } : {},
+            }}
+          >
+            <Box sx={{ color: NIVEL_COLOR[a.nivel] ?? '#374151', flexShrink: 0 }}>
+              {NIVEL_ICON[a.nivel]}
+            </Box>
+            <Typography fontSize="0.78rem" sx={{ color: NIVEL_COLOR[a.nivel] ?? '#374151', flex: 1 }}>
+              {a.mensaje}
+            </Typography>
+          </Box>
+        ))
+      )}
+    </Box>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CRÍTICO: definido a nivel de módulo, NO dentro de AdminLayout.
 // Si se definiera dentro de AdminLayout, React lo trataría como un tipo nuevo
 // en cada render y desmontaría todo el árbol del sidebar — parpadeos y pérdida de scroll.
+// ─────────────────────────────────────────────────────────────────────────────
 function SidebarContent({
   user, mode, toggleMode, location,
   collapsed, onToggleGrupo, onNavegar, onCerrarSesion,
-  bg, sc,
+  bg, sc, alertas, totalAlertas,
 }) {
   const { puedo } = usePermisos();
+  const [bellAnchor, setBellAnchor] = useState(null);
+
   const esActivo = (ruta) =>
     ruta === '/sede'
       ? location.pathname === '/sede'
       : location.pathname.startsWith(ruta);
 
+  const porModulo = (modulo) =>
+    modulo ? alertas.filter(a => a.modulo === modulo).reduce((s, a) => s + (a.valor ?? 0), 0) : 0;
+
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: bg }}>
 
+      {/* Header: nombre + campana */}
       <Box sx={{ px: 2.5, py: 2.5, borderBottom: `1px solid ${sc.divider}` }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-          <Box sx={{ width: 5, height: 32, borderRadius: 1, flexShrink: 0, background: sc.decorBar }} />
-          <Box>
-            <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: sc.texto, lineHeight: 1.25 }}>
-              Fundación
-            </Typography>
-            <Typography sx={{ fontWeight: 700, fontSize: '0.82rem', color: sc.acento, lineHeight: 1.25 }}>
-              Panorama de Colores
-            </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+            <Box sx={{ width: 5, height: 32, borderRadius: 1, flexShrink: 0, background: sc.decorBar }} />
+            <Box>
+              <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: sc.texto, lineHeight: 1.25 }}>
+                Fundación
+              </Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: '0.82rem', color: sc.acento, lineHeight: 1.25 }}>
+                Panorama de Colores
+              </Typography>
+            </Box>
           </Box>
+          <Tooltip title={totalAlertas > 0 ? `${totalAlertas} alerta(s) activa(s)` : 'Sin alertas'}>
+            <IconButton
+              size="small"
+              onClick={e => setBellAnchor(e.currentTarget)}
+              sx={{ color: totalAlertas > 0 ? '#d97706' : sc.textoSubtle, ml: 0.5 }}
+            >
+              <Badge
+                badgeContent={totalAlertas || null}
+                color="error"
+                sx={{ '& .MuiBadge-badge': { fontSize: '0.55rem', minWidth: 15, height: 15, p: 0 } }}
+              >
+                <NotificationsIcon fontSize="small" />
+              </Badge>
+            </IconButton>
+          </Tooltip>
         </Box>
         <Typography sx={{ fontSize: '0.63rem', color: sc.textoSubtle, mt: 0.8, pl: 0.5 }}>
           Panel Administrativo
         </Typography>
       </Box>
 
+      {/* Popover alertas (desktop + mobile via sidebar) */}
+      <Popover
+        open={Boolean(bellAnchor)}
+        anchorEl={bellAnchor}
+        onClose={() => setBellAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: { borderRadius: 2, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' } } }}
+      >
+        <AlertasPanel alertas={alertas} onNavegar={onNavegar} onClose={() => setBellAnchor(null)} />
+      </Popover>
+
+      {/* Tarjeta de usuario */}
       <Box sx={{
         px: 2, py: 1.5, mx: 1.5, my: 1.5, borderRadius: 2,
         bgcolor: sc.userCardBg, border: `1px solid ${sc.userCardBrd}`,
@@ -184,6 +283,7 @@ function SidebarContent({
         </Box>
       </Box>
 
+      {/* Items de menú */}
       <Box sx={{
         flex: 1, overflowY: 'auto', pb: 1,
         '&::-webkit-scrollbar': { width: '3px' },
@@ -215,8 +315,9 @@ function SidebarContent({
 
             <Collapse in={!collapsed[grupo]} timeout="auto">
               <List dense disablePadding>
-                {items.filter(({ modulo }) => !modulo || puedo(modulo, 'ver')).map(({ label, icon, ruta }) => {
+                {items.filter(({ modulo }) => !modulo || puedo(modulo, 'ver')).map(({ label, icon, ruta, modulo }) => {
                   const activo = esActivo(ruta);
+                  const count  = porModulo(modulo);
                   return (
                     <ListItemButton
                       key={ruta}
@@ -230,7 +331,14 @@ function SidebarContent({
                       }}
                     >
                       <ListItemIcon sx={{ minWidth: 32, color: activo ? sc.activoBorde : sc.iconInactivo, my: 0 }}>
-                        {icon}
+                        <Badge
+                          badgeContent={count || null}
+                          color="error"
+                          overlap="circular"
+                          sx={{ '& .MuiBadge-badge': { fontSize: '0.55rem', minWidth: 15, height: 15, p: 0 } }}
+                        >
+                          {icon}
+                        </Badge>
                       </ListItemIcon>
                       <Typography component="span" sx={{
                         fontSize: '0.85rem',
@@ -249,6 +357,7 @@ function SidebarContent({
         ))}
       </Box>
 
+      {/* Footer: modo y logout */}
       <Box sx={{ borderTop: `1px solid ${sc.divider}`, p: 1.5, display: 'flex', flexDirection: 'column', gap: 0.4 }}>
         <ListItemButton
           onClick={toggleMode}
@@ -286,6 +395,7 @@ export default function AdminLayout({ children }) {
   const location                                  = useLocation();
   const [mobileOpen, setMobileOpen]               = useState(false);
   const [collapsed,  setCollapsed]                = useState({});
+  const { alertas, totalAlertas }                 = useAlertas();
 
   const BG = mode === 'dark'
     ? (colorOscuroSidebar || '#1B1035')
@@ -315,6 +425,7 @@ export default function AdminLayout({ children }) {
   const sidebarProps = {
     user, mode, toggleMode, location,
     collapsed, bg: BG, sc,
+    alertas, totalAlertas,
     onToggleGrupo: toggleGrupo,
     onNavegar:     handleNavegar,
     onCerrarSesion: handleCerrarSesion,

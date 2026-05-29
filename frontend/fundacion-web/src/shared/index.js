@@ -38,3 +38,4 @@ export { calcularEdad }                          from './utils/fecha';
 export { default as logger }                     from './utils/logger';
 export { abrirHojaDeVida }                       from './utils/pdf';
 export { generarPdfInscripcion }                 from './utils/generarPdfInscripcion';
+export { exportarExcel }                         from './utils/exportarExcel';

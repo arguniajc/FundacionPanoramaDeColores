@@ -1,6 +1,8 @@
 ﻿import { useState, useEffect } from 'react';
-import { Alert, Box, FormControl, Grid, InputLabel, MenuItem, Select } from '@mui/material';
+import { Alert, Box, Button, FormControl, Grid, InputLabel, MenuItem, Select } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { exportarExcel } from '@/shared/utils/exportarExcel';
 import {
   AreaChart, Area, BarChart, Bar, CartesianGrid, Cell,
   Legend, PieChart, Pie, Tooltip, XAxis, YAxis,
@@ -28,16 +30,38 @@ export function TabBeneficiarios() {
 
   const { resumen, porEdad, porGenero, porPrograma, porGrado, nuevosPorMes } = data ?? {};
 
+  const exportar = () => {
+    if (!data) return;
+    exportarExcel(`Reporte_Beneficiarios_${anio}`, [
+      { nombre: 'Resumen', datos: [
+        { Indicador: 'Total registrados',  Valor: resumen.total },
+        { Indicador: 'Activos',            Valor: resumen.activos },
+        { Indicador: 'Inactivos / baja',   Valor: resumen.inactivos },
+        { Indicador: 'Con discapacidad',   Valor: resumen.conDiscapacidad },
+        { Indicador: 'Con autorización',   Valor: resumen.conAutorizacion },
+      ]},
+      { nombre: 'Por Edad',       datos: porEdad.map(r      => ({ 'Rango de Edad': r.etiqueta, Cantidad: r.cantidad })) },
+      { nombre: 'Por Género',     datos: porGenero.map(r    => ({ Género: r.etiqueta, Cantidad: r.cantidad })) },
+      { nombre: 'Por Programa',   datos: porPrograma.map(r  => ({ Programa: r.etiqueta, Inscritos: r.cantidad })) },
+      { nombre: 'Por Grado',      datos: porGrado.map(r     => ({ 'Grado Escolar': r.etiqueta, Cantidad: r.cantidad })) },
+      { nombre: 'Nuevos por Mes', datos: nuevosPorMes.map(r => ({ Mes: r.mes, 'Nuevos beneficiarios': r.cantidad })) },
+    ]);
+  };
+
   return (
     <Grid container spacing={2}>
       <Grid size={{ xs: 12 }}>
-        <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 1, alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 110 }}>
             <InputLabel>Año</InputLabel>
             <Select value={anio} label="Año" onChange={e => setAnio(Number(e.target.value))}>
               {anios.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
           </FormControl>
+          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
+            onClick={exportar} disabled={!data}>
+            Exportar Excel
+          </Button>
         </Box>
       </Grid>
 

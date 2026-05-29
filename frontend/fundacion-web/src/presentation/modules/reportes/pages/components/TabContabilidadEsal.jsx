@@ -1,9 +1,11 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Box, CircularProgress, Divider, FormControl, Grid, InputLabel,
+  Box, Button, CircularProgress, Divider, FormControl, Grid, InputLabel,
   MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Typography,
 } from '@mui/material';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { exportarExcel } from '@/shared/utils/exportarExcel';
 import TrendingUpIcon   from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import BalanceIcon      from '@mui/icons-material/Balance';
@@ -35,10 +37,35 @@ export function TabContabilidadEsal() {
   const retenciones = reporte?.movimientos?.filter(m => m.retencionPracticada > 0) ?? [];
   const totalRetenciones = retenciones.reduce((s, m) => s + (m.retencionPracticada ?? 0), 0);
 
+  const exportar = () => {
+    if (!reporte) return;
+    const hojas = [
+      { nombre: 'Estado Actividades', datos: [
+        ...ingresos.map(c => ({ 'Código PUC': c.codigoPuc, Cuenta: c.cuenta, Tipo: 'Ingreso', 'Valor (COP)': c.total })),
+        ...egresos.map(c  => ({ 'Código PUC': c.codigoPuc, Cuenta: c.cuenta, Tipo: 'Egreso',  'Valor (COP)': c.total })),
+        { 'Código PUC': '', Cuenta: reporte.balance >= 0 ? 'EXCEDENTE DEL PERÍODO' : 'DÉFICIT DEL PERÍODO',
+          Tipo: '', 'Valor (COP)': reporte.balance },
+      ]},
+    ];
+    if (reporte.porPrograma?.length > 0) {
+      hojas.push({ nombre: 'Por Programa', datos: reporte.porPrograma.map(p => ({
+        Programa: p.programa, 'Ingresos (COP)': p.ingresos, 'Egresos (COP)': p.egresos, 'Balance (COP)': p.balance,
+      }))});
+    }
+    if (retenciones.length > 0) {
+      hojas.push({ nombre: 'Retenciones', datos: retenciones.map(m => ({
+        Fecha: m.fecha, Tercero: m.terceroNombre ?? '', NIT: m.terceroDocumento ?? '',
+        'Concepto RTE': m.conceptoRetencion ?? '', 'Tarifa (%)': m.tarifaRetencion ?? '',
+        'Valor retenido (COP)': m.retencionPracticada,
+      }))});
+    }
+    exportarExcel(`Reporte_Contabilidad_${MESES[mes - 1]}_${anio}`, hojas);
+  };
+
   return (
     <Box>
       {/* Selectores de período */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={2} sx={{ mb: 3 }} alignItems="center">
         <Grid item xs={6} sm={4} md={3}>
           <FormControl fullWidth size="small">
             <InputLabel>Mes</InputLabel>
@@ -54,6 +81,12 @@ export function TabContabilidadEsal() {
               {anios.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
           </FormControl>
+        </Grid>
+        <Grid item>
+          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
+            onClick={exportar} disabled={!reporte}>
+            Exportar Excel
+          </Button>
         </Grid>
       </Grid>
 

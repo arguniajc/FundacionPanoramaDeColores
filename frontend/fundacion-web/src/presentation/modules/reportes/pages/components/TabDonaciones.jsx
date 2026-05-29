@@ -1,6 +1,8 @@
 ﻿import { useState, useEffect } from 'react';
-import { Alert, Box, FormControl, Grid, InputLabel, MenuItem, Select } from '@mui/material';
+import { Alert, Box, Button, FormControl, Grid, InputLabel, MenuItem, Select } from '@mui/material';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { exportarExcel } from '@/shared/utils/exportarExcel';
 import {
   AreaChart, Area, BarChart, Bar, CartesianGrid, Cell,
   PieChart, Pie, Tooltip, XAxis, YAxis,
@@ -29,16 +31,34 @@ export function TabDonaciones() {
   const fmtCop = (v) => `$${Number(v).toLocaleString('es-CO')}`;
   const { resumen, porTipo, montosPorMes, topDonantes } = data ?? {};
 
+  const exportar = () => {
+    if (!data) return;
+    exportarExcel(`Reporte_Donaciones_${anio}`, [
+      { nombre: 'Resumen', datos: [
+        { Indicador: 'Total donaciones',           Valor: resumen.total },
+        { Indicador: 'Monto recaudado (COP)',       Valor: resumen.totalMonto },
+        { Indicador: 'Promedio por donación (COP)', Valor: resumen.promedioMonto },
+      ]},
+      { nombre: 'Por Tipo',       datos: montosPorMes.map(r   => ({ Mes: r.mes, 'Monto (COP)': r.monto })) },
+      { nombre: 'Montos por Mes', datos: porTipo.map(r        => ({ Tipo: r.tipo, Cantidad: r.cantidad })) },
+      { nombre: 'Top Donantes',   datos: topDonantes.map(r    => ({ Donante: r.nombre, 'Total donado (COP)': r.totalMonto })) },
+    ]);
+  };
+
   return (
     <Grid container spacing={2}>
       <Grid size={{ xs: 12 }}>
-        <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 1, alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 110 }}>
             <InputLabel>Año</InputLabel>
             <Select value={anio} label="Año" onChange={e => setAnio(Number(e.target.value))}>
               {anios.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
           </FormControl>
+          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
+            onClick={exportar} disabled={!data}>
+            Exportar Excel
+          </Button>
         </Box>
       </Grid>
 

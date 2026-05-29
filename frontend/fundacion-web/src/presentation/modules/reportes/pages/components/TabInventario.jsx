@@ -1,10 +1,12 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Card, CardContent, Chip, Grid, LinearProgress,
+  Alert, Box, Button, Card, CardContent, Chip, Grid, LinearProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography,
 } from '@mui/material';
 import InventoryIcon    from '@mui/icons-material/Inventory';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { exportarExcel } from '@/shared/utils/exportarExcel';
 import {
   BarChart, Bar, CartesianGrid, Cell, Legend,
   PieChart, Pie, Tooltip, XAxis, YAxis,
@@ -27,8 +29,36 @@ export function TabInventario() {
 
   const { resumen, porCategoria, movimientosPorTipo, itemsCriticos } = data;
 
+  const exportar = () => {
+    exportarExcel('Reporte_Inventario', [
+      { nombre: 'Resumen', datos: [
+        { Indicador: 'Total ítems',             Valor: resumen.totalItems },
+        { Indicador: 'Bajo stock mínimo',       Valor: resumen.itemsBajoStock },
+        { Indicador: 'Categorías',              Valor: resumen.categorias },
+        { Indicador: 'Stock total (unidades)',  Valor: resumen.stockTotal },
+      ]},
+      { nombre: 'Por Categoría', datos: porCategoria.map(r => ({
+        Categoría: r.categoria, Ítems: r.items, 'Stock total': r.stockTotal,
+      }))},
+      { nombre: 'Movimientos 30 días', datos: movimientosPorTipo.map(r => ({
+        Tipo: r.etiqueta, Movimientos: r.cantidad,
+      }))},
+      { nombre: 'Ítems bajo stock', datos: itemsCriticos.map(r => ({
+        Ítem: r.nombre, Categoría: r.categoria,
+        'Stock actual': r.stockActual, 'Stock mínimo': r.stockMinimo,
+      }))},
+    ]);
+  };
+
   return (
     <Grid container spacing={2}>
+      <Grid size={{ xs: 12 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />} onClick={exportar}>
+            Exportar Excel
+          </Button>
+        </Box>
+      </Grid>
       <Grid size={{ xs: 6, sm: 3 }}>
         <KpiCard label="Total ítems" value={resumen.totalItems} icon={<InventoryIcon fontSize="inherit" />} color={BRAND_COLOR} />
       </Grid>

@@ -1,7 +1,9 @@
 ﻿import { useState, useEffect } from 'react';
-import { Alert, Grid } from '@mui/material';
+import { Alert, Box, Button, Grid } from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 import PeopleIcon from '@mui/icons-material/People';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { exportarExcel } from '@/shared/utils/exportarExcel';
 import {
   BarChart, Bar, CartesianGrid, Cell, Legend,
   PieChart, Pie, Tooltip, XAxis, YAxis,
@@ -24,8 +26,32 @@ export function TabProgramas() {
 
   const { resumen, inscritosPorPrograma, estadoInscripciones, porSede } = data;
 
+  const exportar = () => {
+    exportarExcel('Reporte_Programas', [
+      { nombre: 'Resumen', datos: [
+        { Indicador: 'Total programas',              Valor: resumen.total },
+        { Indicador: 'Programas activos',            Valor: resumen.activos },
+        { Indicador: 'Total inscripciones activas',  Valor: resumen.totalInscritos },
+      ]},
+      { nombre: 'Inscritos por Programa', datos: inscritosPorPrograma.map(r => ({
+        Programa: r.programa, 'Total inscritos': r.inscritos, 'Inscritos activos': r.inscritosActivos,
+      }))},
+      { nombre: 'Estado Inscripciones', datos: estadoInscripciones.map(r => ({
+        Estado: r.etiqueta, Cantidad: r.cantidad,
+      }))},
+      { nombre: 'Por Sede', datos: porSede.map(r => ({ Sede: r.etiqueta, Programas: r.cantidad })) },
+    ]);
+  };
+
   return (
     <Grid container spacing={2}>
+      <Grid size={{ xs: 12 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />} onClick={exportar}>
+            Exportar Excel
+          </Button>
+        </Box>
+      </Grid>
       <Grid size={{ xs: 6, sm: 4, md: 4 }}>
         <KpiCard label="Total programas" value={resumen.total} icon={<FolderIcon fontSize="inherit" />} color={BRAND_COLOR} />
       </Grid>

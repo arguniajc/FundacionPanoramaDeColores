@@ -13,7 +13,9 @@ import Inventory2Icon        from '@mui/icons-material/Inventory2';
 import ReceiptIcon           from '@mui/icons-material/Receipt';
 import TrendingUpIcon        from '@mui/icons-material/TrendingUp';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
+import FileDownloadIcon       from '@mui/icons-material/FileDownload';
 import SkeletonTabla         from '@/shared/components/SkeletonTabla';
+import { exportarExcel }    from '@/shared/utils/exportarExcel';
 import { donacionesRepository } from '@/infrastructure/repositories/donacionesRepository';
 import { sedesRepository }      from '@/infrastructure/repositories/sedesRepository';
 import { useAuth }              from '@/application/auth/AuthContext';
@@ -162,13 +164,37 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
             </Button>
           )}
         </Box>
-        {puedo('donaciones', 'crear') && (
-          <Button variant="contained" startIcon={<AddIcon />}
-            onClick={() => { onClearDonanteInicial(); setDialOpen(true); }}
-            sx={{ bgcolor: COLOR_DONACIONES, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#b45309' } }}>
-            Nueva donación
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
+            disabled={donaciones.length === 0}
+            onClick={() => exportarExcel('Donaciones', [{
+              nombre: 'Donaciones',
+              datos: donaciones.map(d => ({
+                Fecha:         d.fechaDonacion,
+                Donante:       d.nombreDonante,
+                'Tipo donante': d.tipoDonante === 'empresa' ? 'Empresa' : 'Persona',
+                Tipo:          d.tipo === 'dinero' ? 'Dinero' : 'Especie',
+                'Monto (COP)':  d.tipo === 'dinero' ? d.monto : '',
+                Cantidad:      d.tipo !== 'dinero' ? d.cantidad : '',
+                Unidad:        d.tipo !== 'dinero' ? (d.unidadMedida ?? '') : '',
+                Artículo:      d.tipo !== 'dinero' ? (d.nombreItem ?? '') : '',
+                Sede:          d.nombreSede ?? '',
+                Programa:      d.nombrePrograma ?? '',
+                'Recibo N°':   d.reciboNumero ?? '',
+                'Estado recibo': d.reciboEstado === 'anulado' ? 'Anulado' : 'Emitido',
+              })),
+            }])}
+          >
+            Exportar Excel
           </Button>
-        )}
+          {puedo('donaciones', 'crear') && (
+            <Button variant="contained" startIcon={<AddIcon />}
+              onClick={() => { onClearDonanteInicial(); setDialOpen(true); }}
+              sx={{ bgcolor: COLOR_DONACIONES, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#b45309' } }}>
+              Nueva donación
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {cargando && donaciones.length === 0 ? (

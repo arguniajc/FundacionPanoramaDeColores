@@ -12,6 +12,8 @@ import SearchIcon       from '@mui/icons-material/Search';
 import CloseIcon        from '@mui/icons-material/Close';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import HandshakeIcon    from '@mui/icons-material/Handshake';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { exportarExcel } from '@/shared/utils/exportarExcel';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { sedesRepository }      from '@/infrastructure/repositories/sedesRepository';
 import { COLOR, CATEGORIAS, CAT_COLOR } from './components/helpers';
@@ -146,13 +148,37 @@ export default function InventarioPage() {
             Control de bienes, materiales y donaciones por sede
           </Typography>
         </Box>
-        <Button
-          variant="contained" startIcon={<AddIcon />}
-          onClick={() => setDialItem({ open: true, item: null })}
-          sx={{ bgcolor: COLOR, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#3b1270' } }}
-        >
-          Nuevo artículo
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            size="small" variant="outlined" startIcon={<FileDownloadIcon />}
+            disabled={items.length === 0}
+            onClick={() => exportarExcel('Inventario', [{
+              nombre: 'Artículos',
+              datos: items.map(i => ({
+                Nombre:              i.nombre,
+                Código:              i.codigo ?? '',
+                Categoría:           i.categoria ?? '',
+                Tenencia:            i.tipoTenencia ?? '',
+                Sede:                i.sede?.nombre ?? '',
+                'Stock actual':      i.stockActual,
+                'Stock mínimo':      i.stockMinimo,
+                'Precio unitario':   i.precioUnitario ?? '',
+                Unidad:              i.unidadMedida ?? '',
+                Descripción:         i.descripcion ?? '',
+                Estado:              i.activo ? 'Activo' : 'Inactivo',
+              })),
+            }])}
+          >
+            Exportar Excel
+          </Button>
+          <Button
+            variant="contained" startIcon={<AddIcon />}
+            onClick={() => setDialItem({ open: true, item: null })}
+            sx={{ bgcolor: COLOR, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#3b1270' } }}
+          >
+            Nuevo artículo
+          </Button>
+        </Box>
       </Box>
 
       {/* Selector de sede */}

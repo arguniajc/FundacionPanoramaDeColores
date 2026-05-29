@@ -5,8 +5,10 @@ import {
 import AddIcon               from '@mui/icons-material/Add';
 import AttachMoneyIcon       from '@mui/icons-material/AttachMoney';
 import CloseIcon             from '@mui/icons-material/Close';
+import FileDownloadIcon      from '@mui/icons-material/FileDownload';
 import SearchIcon            from '@mui/icons-material/Search';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
+import { exportarExcel }    from '@/shared/utils/exportarExcel';
 import { donantesRepository } from '@/infrastructure/repositories/donantesRepository';
 import { useAuth }            from '@/application/auth/AuthContext';
 import { useConfirm }         from '@/shared/components/ConfirmDialog';
@@ -95,13 +97,33 @@ export function TabDonantes({ onNuevaDonacion }) {
           }}
           sx={{ width: { xs: '100%', sm: 340 } }}
         />
-        {puedo('donantes', 'crear') && (
-          <Button variant="contained" startIcon={<AddIcon />}
-            onClick={() => setDialDon({ open: true, donante: null })}
-            sx={{ bgcolor: COLOR_DONANTES, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#1e7a38' } }}>
-            Nuevo donante
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
+            disabled={donantes.length === 0}
+            onClick={() => exportarExcel('Donantes', [{
+              nombre: 'Donantes',
+              datos: donantes.map(d => ({
+                Nombre:            d.nombre,
+                Documento:         d.documento ?? '',
+                Email:             d.email ?? '',
+                Teléfono:          d.telefono ?? '',
+                Tipo:              d.tipoDonante === 'empresa' ? 'Empresa' : 'Persona',
+                'Total donado (COP)': d.totalDinero ?? 0,
+                'N° donaciones':   d.totalDonaciones ?? 0,
+                Estado:            d.activo ? 'Activo' : 'Inactivo',
+              })),
+            }])}
+          >
+            Exportar Excel
           </Button>
-        )}
+          {puedo('donantes', 'crear') && (
+            <Button variant="contained" startIcon={<AddIcon />}
+              onClick={() => setDialDon({ open: true, donante: null })}
+              sx={{ bgcolor: COLOR_DONANTES, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#1e7a38' } }}>
+              Nuevo donante
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {cargando && donantes.length === 0 ? (

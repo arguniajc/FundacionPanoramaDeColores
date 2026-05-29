@@ -1,0 +1,1 @@
+import{P as e,wt as t}from"./apiClient-D3BeoiMz.js";import{n,t as r}from"./xlsx-CflTFCOF.js";var i=e((0,t().jsx)(`path`,{d:`M19 9h-4V3H9v6H5l7 7zM5 18v2h14v-2z`}),`FileDownload`);function a(e,t){let i=r.book_new();t.forEach(({nombre:e,datos:t})=>{let n=r.json_to_sheet(t.length?t:[{}]);r.book_append_sheet(i,n,e.substring(0,31))}),n(i,`${e}.xlsx`)}export{i as n,a as t};

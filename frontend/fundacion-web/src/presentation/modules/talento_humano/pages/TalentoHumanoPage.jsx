@@ -8,8 +8,10 @@ import {
 import AddIcon           from '@mui/icons-material/Add';
 import EditIcon          from '@mui/icons-material/Edit';
 import DeleteIcon        from '@mui/icons-material/Delete';
+import FileDownloadIcon  from '@mui/icons-material/FileDownload';
 import SearchIcon        from '@mui/icons-material/Search';
 import BadgeIcon         from '@mui/icons-material/Badge';
+import { exportarExcel } from '@/shared/utils/exportarExcel';
 import PeopleIcon        from '@mui/icons-material/People';
 import WarningAmberIcon  from '@mui/icons-material/WarningAmber';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -188,7 +190,7 @@ export default function TalentoHumanoPage() {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Filtros */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
         <TextField
           placeholder="Buscar por nombre, cargo, documento…"
           size="small" sx={{ minWidth: 280 }}
@@ -201,6 +203,24 @@ export default function TalentoHumanoPage() {
           <MenuItem value="false">Inactivos</MenuItem>
           <MenuItem value="todos">Todos</MenuItem>
         </TextField>
+        <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
+          disabled={filtrados.length === 0}
+          onClick={() => exportarExcel('Empleados', [{
+            nombre: 'Empleados',
+            datos: filtrados.map(e => ({
+              Nombres:               e.nombres,
+              Apellidos:             e.apellidos,
+              Documento:             e.numeroDocumento ?? '',
+              Cargo:                 e.cargo ?? '',
+              Área:                  e.area ?? '',
+              Contrato:              e.tipoContrato ?? '',
+              Estado:                e.activo ? 'Activo' : 'Inactivo',
+              'Novedades pendientes': e.novedadesPendientes ?? 0,
+            })),
+          }])}
+        >
+          Exportar Excel
+        </Button>
       </Box>
 
       {/* Layout: lista + panel detalle */}

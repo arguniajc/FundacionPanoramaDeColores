@@ -113,10 +113,10 @@ export default function BeneficiariosPage() {
               Módulo
             </Typography>
             <Typography sx={{ fontSize: { xs: '1.3rem', sm: '1.6rem' }, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
-              Beneficiarios
+              Beneficiarios — Niños
             </Typography>
             <Typography sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', mt: 0.3 }}>
-              Gestión de niños y niñas inscritos
+              Menores de 18 años inscritos en la fundación
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, width: { xs: '100%', sm: 'auto' }, alignItems: { xs: 'stretch', sm: 'center' } }}>

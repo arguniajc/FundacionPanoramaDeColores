@@ -58,8 +58,10 @@ public class BeneficiariosController : BaseController
             case "todos": break;
             default:      filters.Add("b.activo = true");  break;
         }
-        if (!string.IsNullOrWhiteSpace(tipo) && tipo != "todos")
-            filters.Add("b.tipo = @tipo");
+        if (tipo == "niño")
+            filters.Add("DATE_PART('year', AGE(b.fecha_nacimiento::date))::int < 18");
+        else if (tipo == "adulto")
+            filters.Add("DATE_PART('year', AGE(b.fecha_nacimiento::date))::int >= 18");
         if (!string.IsNullOrWhiteSpace(buscar))
             filters.Add("""
                 (concat_ws(' ', b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido) ILIKE @buscar
@@ -96,8 +98,6 @@ public class BeneficiariosController : BaseController
         // Agrega los parámetros de filtro avanzado a un comando dado
         void AgregarFiltrosAvanzados(NpgsqlCommand cmd)
         {
-            if (!string.IsNullOrWhiteSpace(tipo) && tipo != "todos")
-                                                     cmd.Parameters.AddWithValue("tipo",    tipo.Trim());
             if (!string.IsNullOrWhiteSpace(buscar))  cmd.Parameters.AddWithValue("buscar",  $"%{buscar}%");
             if (!string.IsNullOrWhiteSpace(genero))  cmd.Parameters.AddWithValue("genero",  genero.Trim());
             if (edadMin.HasValue)                    cmd.Parameters.AddWithValue("edadMin", edadMin.Value);
@@ -144,16 +144,31 @@ public class BeneficiariosController : BaseController
     [Authorize]
     public async Task<IActionResult> Stats([FromQuery] string? tipo = null, CancellationToken ct = default)
     {
-        bool   filtrarTipo   = !string.IsNullOrWhiteSpace(tipo) && tipo != "todos";
+        bool   filtrarTipo   = tipo == "niño" || tipo == "adulto";
         string cacheKeyStr   = filtrarTipo ? $"stats_{tipo!.Trim()}" : "stats";
         if (_cache.TryGetValue(cacheKeyStr, out object? cached)) return Ok(cached);
 
         await using var conn = AbrirConexion();
         await conn.OpenAsync(ct);
 
-        string tf   = filtrarTipo ? "WHERE b.tipo  = @tipo" : "";
-        string tfb2 = filtrarTipo ? "AND b2.tipo   = @tipo" : "";
-        string tfba = filtrarTipo ? $"JOIN beneficiarios bx ON bx.id = ba.beneficiario_id WHERE ba.activo = true AND bx.tipo = @tipo" : "WHERE ba.activo = true";
+        string edadCond       = tipo == "niño"   ? "DATE_PART('year', AGE(b.fecha_nacimiento::date))::int < 18"
+                              : tipo == "adulto" ? "DATE_PART('year', AGE(b.fecha_nacimiento::date))::int >= 18"
+                              : null!;
+        string edadCond2      = tipo == "niño"   ? "DATE_PART('year', AGE(b2.fecha_nacimiento::date))::int < 18"
+                              : tipo == "adulto" ? "DATE_PART('year', AGE(b2.fecha_nacimiento::date))::int >= 18"
+                              : null!;
+        string edadCondX      = tipo == "niño"   ? "DATE_PART('year', AGE(bx.fecha_nacimiento::date))::int < 18"
+                              : tipo == "adulto" ? "DATE_PART('year', AGE(bx.fecha_nacimiento::date))::int >= 18"
+                              : null!;
+        string edadCondPlain  = tipo == "niño"   ? "DATE_PART('year', AGE(fecha_nacimiento::date))::int < 18"
+                              : tipo == "adulto" ? "DATE_PART('year', AGE(fecha_nacimiento::date))::int >= 18"
+                              : null!;
+
+        string tf   = filtrarTipo ? $"WHERE {edadCond}"  : "";
+        string tfb2 = filtrarTipo ? $"AND {edadCond2}" : "";
+        string tfba = filtrarTipo
+            ? $"JOIN beneficiarios bx ON bx.id = ba.beneficiario_id WHERE ba.activo = true AND {edadCondX}"
+            : "WHERE ba.activo = true";
 
         // ── 1. Contadores principales ─────────────────────────────────────────
         await using var cmd1 = conn.CreateCommand();
@@ -171,25 +186,25 @@ public class BeneficiariosController : BaseController
                LEFT   JOIN beneficiario_salud bs ON bs.beneficiario_id = b2.id
                WHERE  bs.eps_id IS NULL {tfb2})                                       AS sin_eps,
               (SELECT COUNT(*)::int FROM beneficiarios b2
-               WHERE  {(filtrarTipo ? "b2.tipo = @tipo AND " : "")}NOT EXISTS (
+               WHERE  {(filtrarTipo ? $"{edadCond2} AND " : "")}NOT EXISTS (
                    SELECT 1 FROM beneficiario_acudiente bac
                    JOIN   acudientes ac ON ac.id = bac.acudiente_id
                    WHERE  bac.beneficiario_id = b2.id
                    AND    bac.es_principal = true AND bac.activo = true
                    AND    ac.whatsapp IS NOT NULL AND ac.whatsapp <> ''))             AS sin_whatsapp,
               (SELECT COUNT(*)::int FROM beneficiarios b2
-               WHERE  {(filtrarTipo ? "b2.tipo = @tipo AND " : "")}NOT EXISTS (
+               WHERE  {(filtrarTipo ? $"{edadCond2} AND " : "")}NOT EXISTS (
                    SELECT 1 FROM beneficiario_acudiente bac
                    JOIN   acudientes ac ON ac.id = bac.acudiente_id
                    WHERE  bac.beneficiario_id = b2.id
                    AND    bac.es_principal = true AND bac.activo = true
                    AND    ac.direccion IS NOT NULL AND ac.direccion <> ''))           AS sin_direccion,
               (SELECT COUNT(*)::int FROM beneficiarios b2
-               WHERE  {(filtrarTipo ? "b2.tipo = @tipo AND " : "")}NOT EXISTS (
+               WHERE  {(filtrarTipo ? $"{edadCond2} AND " : "")}NOT EXISTS (
                    SELECT 1 FROM beneficiario_talla bt
                    WHERE  bt.beneficiario_id = b2.id AND bt.activo = true))          AS sin_tallas,
               (SELECT COUNT(*)::int FROM beneficiarios b2
-               WHERE  {(filtrarTipo ? "b2.tipo = @tipo AND " : "")}NOT EXISTS (
+               WHERE  {(filtrarTipo ? $"{edadCond2} AND " : "")}NOT EXISTS (
                    SELECT 1 FROM archivos ar
                    JOIN   cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
                    WHERE  ar.entidad_tipo = 'beneficiario'
@@ -199,8 +214,6 @@ public class BeneficiariosController : BaseController
             FROM beneficiarios b
             {tf}
             """;
-        if (filtrarTipo) cmd1.Parameters.AddWithValue("tipo", tipo!.Trim());
-
         int total, activos, baja, sinDoc, conAlergia, sinEps, sinWhatsapp, sinDireccion, sinTallas, sinFoto;
         await using (var r = await cmd1.ExecuteReaderAsync(ct))
         {
@@ -231,10 +244,9 @@ public class BeneficiariosController : BaseController
               SELECT DATE_PART('year', AGE(fecha_nacimiento::date))::int AS edad
               FROM   beneficiarios
               WHERE  fecha_nacimiento IS NOT NULL
-              {(filtrarTipo ? "AND tipo = @tipo" : "")}
+              {(filtrarTipo ? $"AND {edadCondPlain}" : "")}
             ) sub
             """;
-        if (filtrarTipo) cmd2.Parameters.AddWithValue("tipo", tipo!.Trim());
         var porEdad = new Dictionary<string, int>();
         await using (var r = await cmd2.ExecuteReaderAsync(ct))
         {
@@ -264,11 +276,10 @@ public class BeneficiariosController : BaseController
             FROM  meses m
             LEFT  JOIN beneficiarios b
                   ON date_trunc('month', b.fecha_creacion) = m.mes
-                  {(filtrarTipo ? "AND b.tipo = @tipo" : "")}
+                  {(filtrarTipo ? $"AND {edadCond}" : "")}
             GROUP BY m.mes
             ORDER BY m.mes
             """;
-        if (filtrarTipo) cmd3.Parameters.AddWithValue("tipo", tipo!.Trim());
         var porMes = new Dictionary<string, int>();
         var esCO   = new System.Globalization.CultureInfo("es-CO");
         await using (var r = await cmd3.ExecuteReaderAsync(ct))
@@ -287,7 +298,7 @@ public class BeneficiariosController : BaseController
               SELECT DISTINCT ON (bt.beneficiario_id)
                 bt.talla_camisa, bt.talla_pantalon, bt.talla_zapatos
               FROM  beneficiario_talla bt
-              {(filtrarTipo ? "JOIN beneficiarios bx ON bx.id = bt.beneficiario_id AND bx.tipo = @tipo" : "")}
+              {(filtrarTipo ? $"JOIN beneficiarios bx ON bx.id = bt.beneficiario_id AND {edadCondX}" : "")}
               WHERE bt.activo = true
               ORDER BY bt.beneficiario_id, bt.fecha_medicion DESC
             )
@@ -300,7 +311,6 @@ public class BeneficiariosController : BaseController
             (SELECT 'zapatos'  AS tipo, talla_zapatos  AS val, COUNT(*)::int AS cnt
              FROM ultima WHERE talla_zapatos IS NOT NULL GROUP BY talla_zapatos  ORDER BY cnt DESC LIMIT 5)
             """;
-        if (filtrarTipo) cmd4.Parameters.AddWithValue("tipo", tipo!.Trim());
         var topCamisa   = new List<TallaFreq>();
         var topPantalon = new List<TallaFreq>();
         var topZapatos  = new List<TallaFreq>();
@@ -349,7 +359,10 @@ public class BeneficiariosController : BaseController
     [Authorize]
     public async Task<IActionResult> Incompletos([FromQuery] string? tipo = null, CancellationToken ct = default)
     {
-        bool filtrarTipo = !string.IsNullOrWhiteSpace(tipo) && tipo != "todos";
+        bool   filtrarTipo    = tipo == "niño" || tipo == "adulto";
+        string tipoEdadFiltro = tipo == "niño"   ? "AND DATE_PART('year', AGE(b.fecha_nacimiento::date))::int < 18"
+                              : tipo == "adulto" ? "AND DATE_PART('year', AGE(b.fecha_nacimiento::date))::int >= 18"
+                              : "";
 
         await using var conn = AbrirConexion();
         await conn.OpenAsync(ct);
@@ -395,7 +408,7 @@ public class BeneficiariosController : BaseController
                     LIMIT  1
                 ) af2 ON true
                 WHERE b.activo = true
-                {(filtrarTipo ? "AND b.tipo = @tipo" : "")}
+                {tipoEdadFiltro}
             ),
             scored AS (
                 SELECT *,
@@ -413,8 +426,6 @@ public class BeneficiariosController : BaseController
             ORDER  BY total_faltantes DESC, nombre
             LIMIT  60
             """;
-        if (filtrarTipo) cmd.Parameters.AddWithValue("tipo", tipo!.Trim());
-
         var result = new List<PerfilIncompletoDto>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))

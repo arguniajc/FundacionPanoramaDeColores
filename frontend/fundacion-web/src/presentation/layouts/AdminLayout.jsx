@@ -115,8 +115,13 @@ const MENU = [
   {
     grupo: 'MÓDULOS FUNCIONALES',
     items: [
-      { label: 'Beneficiarios (Niños)',      icon: <ChildCareIcon />,         ruta: '/sede/beneficiarios',  modulo: 'beneficiarios' },
-      { label: 'Adultos',                   icon: <EscalatorWarningIcon />,  ruta: '/sede/adultos',        modulo: 'beneficiarios' },
+      {
+        label: 'Beneficiarios', icon: <PeopleIcon />, modulo: 'beneficiarios',
+        subItems: [
+          { label: 'Niños',   icon: <ChildCareIcon />,        ruta: '/sede/beneficiarios' },
+          { label: 'Adultos', icon: <EscalatorWarningIcon />, ruta: '/sede/adultos' },
+        ],
+      },
       { label: 'Donantes y Donaciones',     icon: <VolunteerActivismIcon />, ruta: '/sede/donaciones',     modulo: 'donaciones' },
       { label: 'Proyectos',                 icon: <FolderSpecialIcon />,     ruta: '/sede/proyectos',      modulo: 'programas' },
       { label: 'Inscripciones a proyectos', icon: <HowToRegIcon />,          ruta: '/sede/inscripciones',  modulo: 'inscripciones' },
@@ -205,7 +210,8 @@ function SidebarContent({
   bg, sc, alertas, totalAlertas,
 }) {
   const { puedo } = usePermisos();
-  const [bellAnchor, setBellAnchor] = useState(null);
+  const [bellAnchor,  setBellAnchor]  = useState(null);
+  const [subAbierto,  setSubAbierto]  = useState({});
 
   const esActivo = (ruta) =>
     ruta === '/sede'
@@ -317,7 +323,78 @@ function SidebarContent({
 
             <Collapse in={!collapsed[grupo]} timeout="auto">
               <List dense disablePadding>
-                {items.filter(({ modulo }) => !modulo || puedo(modulo, 'ver')).map(({ label, icon, ruta, modulo }) => {
+                {items.filter(({ modulo }) => !modulo || puedo(modulo, 'ver')).map(({ label, icon, ruta, modulo, subItems }) => {
+                  if (subItems) {
+                    const anyActivo  = subItems.some(s => esActivo(s.ruta));
+                    const expandido  = subAbierto[label] !== undefined ? subAbierto[label] : anyActivo;
+                    const count      = porModulo(modulo);
+                    return (
+                      <Box key={label}>
+                        <ListItemButton
+                          onClick={() => setSubAbierto(p => ({ ...p, [label]: !expandido }))}
+                          sx={{
+                            mx: 1, mb: 0.2, borderRadius: 2, gap: 1,
+                            bgcolor:    anyActivo ? sc.activoBg  : 'transparent',
+                            borderLeft: anyActivo ? `3px solid ${sc.activoBorde}` : '3px solid transparent',
+                            transition: 'background 0.15s',
+                            '&:hover':  { bgcolor: sc.hoverBg },
+                          }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 32, color: anyActivo ? sc.activoBorde : sc.iconInactivo, my: 0 }}>
+                            <Badge badgeContent={count || null} color="error" overlap="circular"
+                              sx={{ '& .MuiBadge-badge': { fontSize: '0.55rem', minWidth: 15, height: 15, p: 0 } }}>
+                              {icon}
+                            </Badge>
+                          </ListItemIcon>
+                          <Typography component="span" sx={{
+                            fontSize: '0.85rem', flex: 1,
+                            fontWeight: anyActivo ? 700 : 400,
+                            color: anyActivo ? sc.activoBorde : sc.texto,
+                            lineHeight: 1,
+                          }}>
+                            {label}
+                          </Typography>
+                          {expandido
+                            ? <ExpandLessIcon sx={{ fontSize: 14, color: anyActivo ? sc.activoBorde : sc.textoSubtle }} />
+                            : <ExpandMoreIcon sx={{ fontSize: 14, color: anyActivo ? sc.activoBorde : sc.textoSubtle }} />
+                          }
+                        </ListItemButton>
+                        <Collapse in={expandido} timeout="auto">
+                          <List dense disablePadding>
+                            {subItems.map(({ label: subLabel, icon: subIcon, ruta: subRuta }) => {
+                              const subActivo = esActivo(subRuta);
+                              return (
+                                <ListItemButton
+                                  key={subRuta}
+                                  onClick={() => onNavegar(subRuta)}
+                                  sx={{
+                                    mx: 1, mb: 0.2, pl: 3, borderRadius: 2, gap: 1,
+                                    bgcolor:    subActivo ? sc.activoBg  : 'transparent',
+                                    borderLeft: subActivo ? `3px solid ${sc.activoBorde}` : '3px solid transparent',
+                                    transition: 'background 0.15s',
+                                    '&:hover':  { bgcolor: sc.hoverBg },
+                                  }}
+                                >
+                                  <ListItemIcon sx={{ minWidth: 28, color: subActivo ? sc.activoBorde : sc.iconInactivo, my: 0 }}>
+                                    {subIcon}
+                                  </ListItemIcon>
+                                  <Typography component="span" sx={{
+                                    fontSize: '0.82rem',
+                                    fontWeight: subActivo ? 700 : 400,
+                                    color: subActivo ? sc.activoBorde : sc.texto,
+                                    lineHeight: 1,
+                                  }}>
+                                    {subLabel}
+                                  </Typography>
+                                </ListItemButton>
+                              );
+                            })}
+                          </List>
+                        </Collapse>
+                      </Box>
+                    );
+                  }
+
                   const activo = esActivo(ruta);
                   const count  = porModulo(modulo);
                   return (

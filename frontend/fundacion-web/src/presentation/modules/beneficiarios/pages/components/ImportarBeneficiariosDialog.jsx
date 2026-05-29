@@ -237,7 +237,6 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
 
   const filasValidas   = filas.filter(f => validarFila(f).length === 0);
   const filasInvalidas = filas.filter(f => validarFila(f).length > 0);
-  const preview        = filas.slice(0, 5);
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -310,25 +309,26 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
           </Box>
         )}
 
-        {/* Vista previa */}
-        {preview.length > 0 && !resultado && (
+        {/* Vista previa — todas las filas con scroll */}
+        {filas.length > 0 && !resultado && (
           <Box>
             <Typography fontSize="0.8rem" fontWeight={700} mb={1} color="text.secondary">
-              Vista previa (primeras {preview.length} de {filas.length} filas):
+              Vista previa — {filas.length} fila(s) leída(s)
+              {filasInvalidas.length > 0 && ` · ${filasInvalidas.length} con errores (resaltadas en rojo)`}:
             </Typography>
-            <Box sx={{ overflowX: 'auto', borderRadius: 1, border: '1px solid #e0e0e0' }}>
-              <Table size="small">
+            <Box sx={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 300, borderRadius: 1, border: '1px solid #e0e0e0' }}>
+              <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow sx={{ bgcolor: '#f5f0ff' }}>
-                    <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR }}>#</TableCell>
+                    <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR, bgcolor: '#f5f0ff' }}>#</TableCell>
                     {['Primer nombre','Primer apellido','Fecha nac.','Documento','Acudiente'].map(h => (
-                      <TableCell key={h} sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR, whiteSpace: 'nowrap' }}>{h}</TableCell>
+                      <TableCell key={h} sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR, whiteSpace: 'nowrap', bgcolor: '#f5f0ff' }}>{h}</TableCell>
                     ))}
-                    <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR }}>Estado</TableCell>
+                    <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR, bgcolor: '#f5f0ff' }}>Estado</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {preview.map((f, i) => {
+                  {filas.map((f, i) => {
                     const errs = validarFila(f);
                     return (
                       <TableRow key={i} sx={{ bgcolor: errs.length ? '#fff5f5' : 'inherit' }}>

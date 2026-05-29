@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useRef } from 'react';
 import {
   Box, Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Grid, TextField, MenuItem, FormControl,
@@ -76,6 +76,11 @@ function splitearNombre(ins) {
   return { primerNombre: cap(parts[0]), segundoNombre: cap(parts[1]), primerApellido: cap(parts[2]), segundoApellido: parts.slice(3).map(cap).join(' ') };
 }
 
+function ErrMsg({ msg }) {
+  if (!msg) return null;
+  return <Typography sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.3, ml: 1.5 }}>{msg}</Typography>;
+}
+
 export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado }) {
   const boolToStr = v => v === true ? 'si' : v === false ? 'no' : '';
 
@@ -126,8 +131,20 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
     fotoDocumentoReversoUrl: inscripcion.fotoDocumentoReversoUrl || null,
   });
 
+  const [touched,       setTouched]       = useState({});
+  const [confirmCerrar, setConfirmCerrar] = useState(false);
+  const initialRef = useRef(JSON.stringify(form));
+
   const esNino    = form.tipo === 'niño';
   const categoria = calcularCategoria(form.fechaNacimiento);
+  const isDirty   = JSON.stringify(form) !== initialRef.current;
+
+  const touch = campo => () => setTouched(prev => ({ ...prev, [campo]: true }));
+  const err   = (campo, cond) => touched[campo] && cond ? 'Campo obligatorio' : '';
+  const soloDigitos = campo => e =>
+    setForm(prev => ({ ...prev, [campo]: e.target.value.replace(/\D/g, '') }));
+
+  const handleCerrar = () => { if (isDirty) setConfirmCerrar(true); else onCerrar(); };
 
   const handleFechaNacimiento = (e) => {
     const fecha = e.target.value;
@@ -229,7 +246,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
   };
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="md" fullWidth>
+    <>
+    <Dialog open onClose={handleCerrar} maxWidth="md" fullWidth>
       <DialogTitle sx={{ bgcolor: 'var(--color-primario)', color: 'white', fontWeight: 700 }}>
         Editar inscripción
       </DialogTitle>
@@ -274,7 +292,9 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Primer nombre *" size="small" required
-              value={form.primerNombre} onChange={capitalizar('primerNombre')} />
+              value={form.primerNombre} onChange={capitalizar('primerNombre')} onBlur={touch('primerNombre')}
+              error={!!(touched.primerNombre && !form.primerNombre?.trim())}
+              helperText={err('primerNombre', !form.primerNombre?.trim())} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Segundo nombre" size="small"
@@ -282,7 +302,9 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Primer apellido *" size="small" required
-              value={form.primerApellido} onChange={capitalizar('primerApellido')} />
+              value={form.primerApellido} onChange={capitalizar('primerApellido')} onBlur={touch('primerApellido')}
+              error={!!(touched.primerApellido && !form.primerApellido?.trim())}
+              helperText={err('primerApellido', !form.primerApellido?.trim())} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Segundo apellido" size="small"
@@ -303,7 +325,9 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Número de documento *" size="small" required
-              value={form.numeroDocumento} onChange={set('numeroDocumento')} />
+              value={form.numeroDocumento} onChange={set('numeroDocumento')} onBlur={touch('numeroDocumento')}
+              error={!!(touched.numeroDocumento && !form.numeroDocumento?.trim())}
+              helperText={err('numeroDocumento', !form.numeroDocumento?.trim())} />
           </Grid>
           {categoria && (
             <Grid size={12}>
@@ -324,12 +348,13 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
             </Grid>
           )}
           <Grid size={{ xs: 12, sm: 4 }}>
-            <FormControl fullWidth size="small" required>
+            <FormControl fullWidth size="small" required error={!!(touched.genero && !form.genero)}>
               <InputLabel>Género *</InputLabel>
-              <Select label="Género *" value={form.genero} onChange={set('genero')}>
+              <Select label="Género *" value={form.genero} onChange={set('genero')} onBlur={touch('genero')}>
                 <MenuItem value=""><em>Selecciona</em></MenuItem>
                 {GENEROS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
               </Select>
+              <ErrMsg msg={err('genero', !form.genero)} />
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -375,9 +400,10 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Barrio *" size="small" required
-              value={form.barrio} onChange={capitalizar('barrio')}
+              value={form.barrio} onChange={capitalizar('barrio')} onBlur={touch('barrio')}
+              error={!!(touched.barrio && !form.barrio?.trim())}
               slotProps={{ htmlInput: form.barrio === 'No registra' ? { readOnly: true } : undefined }}
-              helperText={nr('barrio')} />
+              helperText={touched.barrio && !form.barrio?.trim() ? 'Campo obligatorio' : nr('barrio')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 8 }}>
             <TextField fullWidth label={esNino ? 'Dirección *' : 'Dirección'} size="small"
@@ -554,7 +580,9 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="WhatsApp *" size="small" required
-              value={form.whatsapp} onChange={set('whatsapp')} />
+              value={form.whatsapp} onChange={soloDigitos('whatsapp')} onBlur={touch('whatsapp')}
+              error={!!(touched.whatsapp && !form.whatsapp?.trim())}
+              helperText={err('whatsapp', !form.whatsapp?.trim())} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small" required>
@@ -608,7 +636,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
+        <Button onClick={handleCerrar} disabled={guardando}>Cancelar</Button>
         <Button
           variant="contained"
           onClick={handleGuardar}
@@ -644,5 +672,21 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
         </Button>
       </DialogActions>
     </Dialog>
+
+    <Dialog open={confirmCerrar} onClose={() => setConfirmCerrar(false)} maxWidth="xs" fullWidth>
+      <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>¿Salir sin guardar?</DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary">
+          Tienes cambios pendientes que se perderán si cierras sin guardar.
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={() => setConfirmCerrar(false)} variant="outlined">Seguir editando</Button>
+        <Button onClick={() => { setConfirmCerrar(false); onCerrar(); }} variant="contained" color="error">
+          Salir sin guardar
+        </Button>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 }

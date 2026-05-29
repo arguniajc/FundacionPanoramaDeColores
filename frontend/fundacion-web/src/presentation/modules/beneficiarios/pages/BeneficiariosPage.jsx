@@ -25,6 +25,22 @@ import SyncIcon             from '@mui/icons-material/Sync';
 import UploadFileIcon       from '@mui/icons-material/UploadFile';
 import DeleteForeverIcon    from '@mui/icons-material/DeleteForever';
 import { calcularEdad }     from '@/shared/utils/fecha';
+
+function calcularCompletitud(ins) {
+  const checks = [
+    !!ins.fotoMenorUrl,
+    !!ins.fotoDocumentoUrl,
+    !!(ins.eps && ins.eps !== 'No registra'),
+    !!(ins.whatsapp),
+    !!(ins.direccion && ins.direccion !== 'No registra'),
+    !!(ins.tallaCamisa && ins.tallaCamisa !== 'No registra'),
+    !!(ins.tallaZapatos && ins.tallaZapatos !== 'No registra'),
+    !!(ins.pesoKg && ins.pesoKg > 0),
+    !!(ins.nombreColegio && ins.nombreColegio !== 'No registra'),
+    !!(ins.gradoEscolar),
+  ];
+  return Math.round(checks.filter(Boolean).length / checks.length * 100);
+}
 import DetalleInscripcion   from '../components/DetalleInscripcion';
 import EditarInscripcion    from '../components/EditarInscripcion';
 import NuevoBeneficiario    from '../components/NuevoBeneficiario';
@@ -259,6 +275,7 @@ export default function BeneficiariosPage() {
                   <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Género</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>WhatsApp</TableCell>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Alergia</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Perfil</TableCell>
                   <TableCell>Estado</TableCell>
                   <TableCell>Acciones</TableCell>
                 </TableRow>
@@ -266,9 +283,9 @@ export default function BeneficiariosPage() {
 
               <TableBody>
                 {cargando ? (
-                  <TableRow><TableCell colSpan={8} align="center" sx={{ py: 6 }}><CircularProgress size={32} sx={{ color: 'var(--color-primario)' }} /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6 }}><CircularProgress size={32} sx={{ color: 'var(--color-primario)' }} /></TableCell></TableRow>
                 ) : inscripciones.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>No se encontraron beneficiarios.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>No se encontraron beneficiarios.</TableCell></TableRow>
                 ) : (
                   inscripciones.map((ins, idx) => (
                     <TableRow
@@ -345,6 +362,19 @@ export default function BeneficiariosPage() {
                           color={ins.tieneAlergia === 'si' ? 'warning' : 'default'}
                           size="small" sx={{ fontSize: '0.72rem', fontWeight: 600 }}
                         />
+                      </TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'table-cell' } }}>
+                        {(() => {
+                          const pct = calcularCompletitud(ins);
+                          const color = pct >= 80 ? '#2e7d32' : pct >= 50 ? '#e65100' : '#c62828';
+                          const bg    = pct >= 80 ? '#e8f5e9' : pct >= 50 ? '#fff3e0' : '#fce4ec';
+                          return (
+                            <Tooltip title={`Completitud del perfil: ${pct}%`}>
+                              <Chip label={`${pct}%`} size="small"
+                                sx={{ fontSize: '0.7rem', fontWeight: 700, bgcolor: bg, color, height: 20 }} />
+                            </Tooltip>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>
                         <Chip

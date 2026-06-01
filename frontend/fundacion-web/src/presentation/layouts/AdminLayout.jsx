@@ -222,7 +222,7 @@ function SidebarContent({
     modulo ? alertas.filter(a => a.modulo === modulo).reduce((s, a) => s + (a.valor ?? 0), 0) : 0;
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: bg }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: bg, transition: 'background-color 0.25s ease' }}>
 
       {/* Header: nombre + campana */}
       <Box sx={{ px: 2.5, py: 2.5, borderBottom: `1px solid ${sc.divider}` }}>
@@ -538,7 +538,7 @@ export default function AdminLayout({ children }) {
 
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
-        <AppBar position="static" elevation={0} sx={{ bgcolor: BG, display: { md: 'none' } }} style={{ backgroundColor: BG }}>
+        <AppBar position="static" elevation={0} sx={{ bgcolor: BG, display: { md: 'none' }, transition: 'background-color 0.25s ease' }} style={{ backgroundColor: BG }}>
           <Toolbar sx={{ minHeight: '52px !important' }}>
             <IconButton edge="start" sx={{ mr: 1, color: sc.appBarText }} onClick={() => setMobileOpen(true)}>
               <MenuIcon />

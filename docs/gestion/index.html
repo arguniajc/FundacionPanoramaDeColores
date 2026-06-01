@@ -13,7 +13,7 @@
     <link id="google-font-default"
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet" />
-    <script type="module" crossorigin src="/gestion/assets/index-Dyo_EccD.js"></script>
+    <script type="module" crossorigin src="/gestion/assets/index-eq4T3cXt.js"></script>
     <link rel="modulepreload" crossorigin href="/gestion/assets/chunk-DseTPa7n.js">
     <link rel="modulepreload" crossorigin href="/gestion/assets/preload-helper-CmmkLNUv.js">
     <link rel="modulepreload" crossorigin href="/gestion/assets/apiClient-D-j9dXyY.js">
@@ -53,6 +53,27 @@
     <link rel="modulepreload" crossorigin href="/gestion/assets/usePermisos-Bw_UCeAr.js">
   </head>
   <body>
+    <script>
+      // Aplica el tema antes de que React renderice para evitar flash de color
+      (function () {
+        try {
+          var mode = localStorage.getItem('themeMode') || 'light';
+          var cfgRaw = localStorage.getItem('fundacion_config_cache');
+          var data = {};
+          if (cfgRaw) {
+            var parsed = JSON.parse(cfgRaw);
+            data = (parsed && parsed.ts) ? (parsed.data || {}) : (parsed || {});
+          }
+          var r = document.documentElement;
+          r.style.setProperty('--color-sidebar',        data.colorSidebar        || '#F4E3C1');
+          r.style.setProperty('--color-oscuro-sidebar',  data.colorOscuroSidebar  || '#1B1035');
+          r.style.setProperty('--color-oscuro-fondo',    data.colorOscuroFondo    || '#121212');
+          r.style.setProperty('--color-oscuro-paper',    data.colorOscuroPaper    || '#1E1A28');
+          r.style.setProperty('--color-primario',        data.colorPrimario       || '#6735A6');
+          r.setAttribute('data-theme', mode);
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
   </body>
 </html>

@@ -794,9 +794,18 @@ public static class DbMigrations
               ALTER COLUMN datos TYPE JSONB USING datos::jsonb
             """, "inscripciones.datos_jsonb");
 
+        // Solo crear el índice GIN si datos ya fue convertido a JSONB
         await Migrar("""
-            CREATE INDEX IF NOT EXISTS idx_inscripciones_datos_gin
-              ON inscripciones USING GIN (datos jsonb_path_ops)
+            DO $$ BEGIN
+                IF (SELECT data_type FROM information_schema.columns
+                    WHERE table_name = 'inscripciones' AND column_name = 'datos') = 'jsonb' THEN
+                    IF NOT EXISTS (SELECT 1 FROM pg_indexes
+                                   WHERE tablename = 'inscripciones'
+                                     AND indexname = 'idx_inscripciones_datos_gin') THEN
+                        EXECUTE 'CREATE INDEX idx_inscripciones_datos_gin ON inscripciones USING GIN (datos jsonb_path_ops)';
+                    END IF;
+                END IF;
+            END $$
             """, "inscripciones.idx_datos_gin");
 
         // ── Tablas base de beneficiarios (esquema original) ──────────────────
@@ -842,7 +851,51 @@ public static class DbMigrations
             )
             """, "cat_parentescos");
 
+        // Eliminar duplicados lowercase antes de crear el índice único
+        await Migrar("""
+            DO $$ BEGIN
+                -- Reasignar referencias de acudiente al registro canónico (menor id)
+                UPDATE beneficiario_acudiente ba
+                SET parentesco_id = canon.keep_id::smallint
+                FROM (
+                    SELECT c.id AS old_id, dups.keep_id
+                    FROM cat_parentescos c
+                    INNER JOIN (
+                        SELECT LOWER(nombre) AS low, MIN(id) AS keep_id
+                        FROM cat_parentescos
+                        GROUP BY LOWER(nombre)
+                        HAVING COUNT(*) > 1
+                    ) dups ON LOWER(c.nombre) = dups.low AND c.id <> dups.keep_id
+                ) canon
+                WHERE ba.parentesco_id = canon.old_id::smallint;
+
+                -- Eliminar los duplicados lowercase
+                DELETE FROM cat_parentescos a
+                USING (
+                    SELECT LOWER(nombre) AS low, MIN(id) AS keep_id
+                    FROM cat_parentescos
+                    GROUP BY LOWER(nombre)
+                    HAVING COUNT(*) > 1
+                ) dups
+                WHERE LOWER(a.nombre) = dups.low AND a.id <> dups.keep_id;
+            END $$
+            """, "cat_parentescos.dedup_lowercase");
+
         await Migrar("CREATE UNIQUE INDEX IF NOT EXISTS idx_cat_parentescos_nombre ON cat_parentescos(LOWER(nombre))", "cat_parentescos.unique_nombre");
+
+        // Garantizar restricción UNIQUE en nombre (puede faltar si la tabla existía antes)
+        await Migrar("""
+            DO $$ BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conrelid = 'cat_parentescos'::regclass
+                      AND conname  = 'cat_parentescos_nombre_key'
+                      AND contype  = 'u'
+                ) THEN
+                    ALTER TABLE cat_parentescos ADD CONSTRAINT cat_parentescos_nombre_key UNIQUE (nombre);
+                END IF;
+            END $$
+            """, "cat_parentescos.ensure_unique");
 
         await Migrar("""
             INSERT INTO cat_parentescos (nombre) VALUES

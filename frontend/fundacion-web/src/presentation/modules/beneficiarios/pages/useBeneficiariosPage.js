@@ -111,13 +111,14 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
     finally  { setProcesandoBaja(false); }
   };
 
-  const handleReactivar = async (id) => {
+  const handleReactivar = useCallback(async (id) => {
     try {
       await apiClient.patch(`/api/beneficiarios/${id}/reactivar`);
       setToast('Beneficiario reactivado correctamente');
       limpiarCache(); cargar(true); cargarStatsDetalle();
     } catch { setError('No se pudo reactivar el beneficiario.'); }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargar, cargarStatsDetalle]);
 
   const handleEliminarPermanente = async () => {
     if (!eliminar) return;

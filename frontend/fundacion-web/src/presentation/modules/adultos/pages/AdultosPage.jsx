@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import {
   Box, Typography, Container,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -51,6 +51,128 @@ import { PerfilesIncompletosPanel }    from '@/presentation/modules/beneficiario
 import { useBeneficiariosPage } from '@/presentation/modules/beneficiarios/pages/useBeneficiariosPage';
 import apiClient from '@/infrastructure/http/apiClient';
 
+const HOVER_SX_ADULTOS = {
+  bgcolor: '#e8f5e9 !important',
+  '& .MuiTableCell-root': { color: '#1a1a1a !important' },
+  '& .MuiTableCell-root:first-of-type': { borderLeft: '3px solid #2e7d32' },
+  '& a': { color: '#1a6b35 !important' },
+};
+
+const AdultoFila = memo(function AdultoFila({
+  ins, idx, esAdmin, onVer, onEditar, onBaja, onReactivar, onEliminar,
+}) {
+  const pct      = calcularCompletitudAdulto(ins);
+  const pctColor = pct >= 80 ? '#2e7d32' : pct >= 50 ? '#e65100' : '#c62828';
+  const pctBg    = pct >= 80 ? '#e8f5e9' : pct >= 50 ? '#fff3e0' : '#fce4ec';
+
+  return (
+    <TableRow
+      hover
+      onClick={() => onVer(ins)}
+      sx={{
+        cursor: 'pointer',
+        opacity: ins.activo ? 1 : 0.65,
+        bgcolor: idx % 2 === 0 ? 'inherit' : 'rgba(46,125,50,0.04)',
+        transition: 'background 0.15s',
+        '&:hover': HOVER_SX_ADULTOS,
+        '&:last-child td': { borderBottom: 0 },
+      }}
+    >
+      <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'text.primary' }}>
+        <Box display="flex" alignItems="center" gap={0.8} flexWrap="wrap">
+          {ins.nombreMenor}
+          {!ins.fotoMenorUrl && (
+            <Tooltip title="Foto pendiente — haz clic en Editar para cargarla">
+              <Chip label="📷 Foto" size="small"
+                onClick={e => { e.stopPropagation(); onEditar(ins); }}
+                sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: '#fff3e0', color: '#e65100', cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }} />
+            </Tooltip>
+          )}
+          {!ins.fotoDocumentoUrl && (
+            <Tooltip title="Documento de identidad pendiente — haz clic en Editar para cargarlo">
+              <Chip label="📄 Doc." size="small"
+                onClick={e => { e.stopPropagation(); onEditar(ins); }}
+                sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: '#fce4ec', color: '#c62828', cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }} />
+            </Tooltip>
+          )}
+        </Box>
+        <Typography sx={{ display: { xs: 'block', sm: 'none' }, fontSize: '0.72rem', color: 'text.secondary', mt: 0.3 }}>
+          {ins.tipoDocumento} {ins.numeroDocumento || '—'} · {calcularEdad(ins.fechaNacimiento)}
+        </Typography>
+      </TableCell>
+      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.secondary', display: { xs: 'none', sm: 'table-cell' } }}>
+        {ins.tipoDocumento} {ins.numeroDocumento || '—'}
+      </TableCell>
+      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.primary', display: { xs: 'none', sm: 'table-cell' } }}>
+        {calcularEdad(ins.fechaNacimiento)}
+      </TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', lg: 'table-cell' }, fontSize: '0.82rem', color: 'text.secondary' }}>
+        {ins.genero || '—'}
+      </TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'table-cell' } }}>
+        {ins.whatsapp ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <IconButton size="small" component="a" title="Abrir en WhatsApp"
+              href={`https://wa.me/${ins.whatsapp.replace(/\D/g, '')}`}
+              target="_blank" onClick={e => e.stopPropagation()}
+              sx={{ color: '#25D366', p: 0.3, '&:hover': { bgcolor: 'rgba(37,211,102,0.12)' } }}>
+              <WhatsAppIcon sx={{ fontSize: '1rem' }} />
+            </IconButton>
+            <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: 'text.primary' }}>
+              {ins.whatsapp}
+            </Typography>
+          </Box>
+        ) : '—'}
+      </TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', sm: 'table-cell' } }}>
+        <Chip label={ins.tieneAlergia === 'si' ? 'Sí' : 'No'}
+          color={ins.tieneAlergia === 'si' ? 'warning' : 'default'}
+          size="small" sx={{ fontSize: '0.72rem', fontWeight: 600 }} />
+      </TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'table-cell' } }}>
+        <Chip label={`${pct}%`} size="small" title={`Completitud del perfil: ${pct}%`}
+          sx={{ fontSize: '0.7rem', fontWeight: 700, bgcolor: pctBg, color: pctColor, height: 20 }} />
+      </TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+        <Chip label={ins.activo ? 'Activo' : 'Baja'} size="small"
+          sx={{ fontSize: '0.72rem', fontWeight: 700, bgcolor: ins.activo ? '#e8f5e9' : '#fce4ec', color: ins.activo ? '#2e7d32' : '#c62828' }} />
+      </TableCell>
+      <TableCell onClick={e => e.stopPropagation()} sx={{ whiteSpace: 'nowrap', pr: 0.5 }}>
+        <IconButton size="small" title="Ver detalle"
+          sx={{ color: '#2e7d32', '&:hover': { bgcolor: 'rgba(46,125,50,0.1)' } }}
+          onClick={() => onVer(ins)}>
+          <VisibilityIcon fontSize="small" />
+        </IconButton>
+        <IconButton size="small" title="Editar"
+          sx={{ color: '#1976d2', '&:hover': { bgcolor: 'rgba(25,118,210,0.1)' } }}
+          onClick={() => onEditar(ins)}>
+          <EditIcon fontSize="small" />
+        </IconButton>
+        {esAdmin && (ins.activo ? (
+          <IconButton size="small" title="Dar de baja"
+            sx={{ color: '#e65100', '&:hover': { bgcolor: 'rgba(230,81,0,0.1)' } }}
+            onClick={() => onBaja(ins.id)}>
+            <BlockIcon fontSize="small" />
+          </IconButton>
+        ) : (
+          <IconButton size="small" title="Reactivar"
+            sx={{ color: '#2e7d32', '&:hover': { bgcolor: 'rgba(46,125,50,0.1)' } }}
+            onClick={() => onReactivar(ins.id)}>
+            <CheckCircleIcon fontSize="small" />
+          </IconButton>
+        ))}
+        {esAdmin && (
+          <IconButton size="small" title="Eliminar de la BD (irreversible)"
+            sx={{ color: '#c62828', '&:hover': { bgcolor: 'rgba(198,40,40,0.1)' } }}
+            onClick={() => onEliminar({ id: ins.id, nombre: ins.nombreMenor })}>
+            <DeleteForeverIcon fontSize="small" />
+          </IconButton>
+        )}
+      </TableCell>
+    </TableRow>
+  );
+});
+
 export default function AdultosPage() {
   const {
     esAdmin,
@@ -79,6 +201,18 @@ export default function AdultosPage() {
 
   const [panelRefreshKey, setPanelRefreshKey] = useState(0);
 
+  const [inputSearch, setInputSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setBuscar(inputSearch), 350);
+    return () => clearTimeout(t);
+  }, [inputSearch, setBuscar]);
+
+  const onVer       = useCallback((ins) => setSeleccionada(ins), [setSeleccionada]);
+  const onEditar    = useCallback((ins) => setEditando(ins), [setEditando]);
+  const onBaja      = useCallback((id)  => setIdBaja(id), [setIdBaja]);
+  const onReactivar = useCallback((id)  => handleReactivar(id), [handleReactivar]);
+  const onEliminar  = useCallback(({ id, nombre }) => { setEliminar({ id, nombre }); setErrorEliminar(''); }, [setEliminar, setErrorEliminar]);
+
   const handleEditarDesdePanel = async (id) => {
     const enLista = inscripciones.find(ins => ins.id === id);
     if (enLista) { setEditando(enLista); return; }
@@ -91,13 +225,6 @@ export default function AdultosPage() {
   const handleGuardadoConRefreshPanel = () => {
     handleGuardadoEdicion();
     setPanelRefreshKey(k => k + 1);
-  };
-
-  const HOVER_SX = {
-    bgcolor: '#e8f5e9 !important',
-    '& .MuiTableCell-root': { color: '#1a1a1a !important' },
-    '& .MuiTableCell-root:first-of-type': { borderLeft: '3px solid #2e7d32' },
-    '& a': { color: '#1a6b35 !important' },
   };
 
   return (
@@ -172,8 +299,8 @@ export default function AdultosPage() {
             <TextField
               placeholder="Buscar nombre, documento, acudiente…"
               size="small" fullWidth
-              value={buscar}
-              onChange={e => setBuscar(e.target.value)}
+              value={inputSearch}
+              onChange={e => setInputSearch(e.target.value)}
               sx={{ maxWidth: { sm: 420 } }}
               slotProps={{
                 input: {
@@ -313,138 +440,12 @@ export default function AdultosPage() {
                   <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>No se encontraron adultos.</TableCell></TableRow>
                 ) : (
                   inscripciones.map((ins, idx) => (
-                    <TableRow
-                      key={ins.id} hover
-                      onClick={() => setSeleccionada(ins)}
-                      sx={{
-                        cursor: 'pointer',
-                        opacity: ins.activo ? 1 : 0.65,
-                        bgcolor: idx % 2 === 0 ? 'inherit' : 'rgba(46,125,50,0.04)',
-                        transition: 'background 0.15s',
-                        '&:hover': HOVER_SX,
-                        '&:last-child td': { borderBottom: 0 },
-                      }}
-                    >
-                      <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'text.primary' }}>
-                        <Box display="flex" alignItems="center" gap={0.8} flexWrap="wrap">
-                          {ins.nombreMenor}
-                          {!ins.fotoMenorUrl && (
-                            <Tooltip title="Foto pendiente — haz clic en Editar para cargarla">
-                              <Chip
-                                label="📷 Foto" size="small"
-                                onClick={e => { e.stopPropagation(); setEditando(ins); }}
-                                sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: '#fff3e0', color: '#e65100', cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }}
-                              />
-                            </Tooltip>
-                          )}
-                          {!ins.fotoDocumentoUrl && (
-                            <Tooltip title="Documento de identidad pendiente — haz clic en Editar para cargarlo">
-                              <Chip
-                                label="📄 Doc." size="small"
-                                onClick={e => { e.stopPropagation(); setEditando(ins); }}
-                                sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: '#fce4ec', color: '#c62828', cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }}
-                              />
-                            </Tooltip>
-                          )}
-                        </Box>
-                        <Typography sx={{ display: { xs: 'block', sm: 'none' }, fontSize: '0.72rem', color: 'text.secondary', mt: 0.3 }}>
-                          {ins.tipoDocumento} {ins.numeroDocumento || '—'} · {calcularEdad(ins.fechaNacimiento)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.secondary', display: { xs: 'none', sm: 'table-cell' } }}>
-                        {ins.tipoDocumento} {ins.numeroDocumento || '—'}
-                      </TableCell>
-                      <TableCell sx={{ fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'text.primary', display: { xs: 'none', sm: 'table-cell' } }}>
-                        {calcularEdad(ins.fechaNacimiento)}
-                      </TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', lg: 'table-cell' }, fontSize: '0.82rem', color: 'text.secondary' }}>
-                        {ins.genero || '—'}
-                      </TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'table-cell' } }}>
-                        {ins.whatsapp ? (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Tooltip title="Abrir en WhatsApp">
-                              <IconButton
-                                size="small"
-                                component="a"
-                                href={`https://wa.me/${ins.whatsapp.replace(/\D/g, '')}`}
-                                target="_blank"
-                                onClick={e => e.stopPropagation()}
-                                sx={{ color: '#25D366', p: 0.3, '&:hover': { bgcolor: 'rgba(37,211,102,0.12)' } }}
-                              >
-                                <WhatsAppIcon sx={{ fontSize: '1rem' }} />
-                              </IconButton>
-                            </Tooltip>
-                            <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: 'text.primary' }}>
-                              {ins.whatsapp}
-                            </Typography>
-                          </Box>
-                        ) : '—'}
-                      </TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', sm: 'table-cell' } }}>
-                        <Chip
-                          label={ins.tieneAlergia === 'si' ? 'Sí' : 'No'}
-                          color={ins.tieneAlergia === 'si' ? 'warning' : 'default'}
-                          size="small" sx={{ fontSize: '0.72rem', fontWeight: 600 }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'table-cell' } }}>
-                        {(() => {
-                          const pct = calcularCompletitudAdulto(ins);
-                          const color = pct >= 80 ? '#2e7d32' : pct >= 50 ? '#e65100' : '#c62828';
-                          const bg    = pct >= 80 ? '#e8f5e9' : pct >= 50 ? '#fff3e0' : '#fce4ec';
-                          return (
-                            <Tooltip title={`Completitud del perfil: ${pct}%`}>
-                              <Chip label={`${pct}%`} size="small"
-                                sx={{ fontSize: '0.7rem', fontWeight: 700, bgcolor: bg, color, height: 20 }} />
-                            </Tooltip>
-                          );
-                        })()}
-                      </TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                        <Chip
-                          label={ins.activo ? 'Activo' : 'Baja'} size="small"
-                          sx={{
-                            fontSize: '0.72rem', fontWeight: 700,
-                            bgcolor: ins.activo ? '#e8f5e9' : '#fce4ec',
-                            color:   ins.activo ? '#2e7d32' : '#c62828',
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell onClick={e => e.stopPropagation()} sx={{ whiteSpace: 'nowrap', pr: 0.5 }}>
-                        <Tooltip title="Ver detalle">
-                          <IconButton size="small" sx={{ color: '#2e7d32', '&:hover': { bgcolor: 'rgba(46,125,50,0.1)' } }} onClick={() => setSeleccionada(ins)}>
-                            <VisibilityIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Editar">
-                          <IconButton size="small" sx={{ color: '#1976d2', '&:hover': { bgcolor: 'rgba(25,118,210,0.1)' } }} onClick={() => setEditando(ins)}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        {esAdmin && (ins.activo ? (
-                          <Tooltip title="Dar de baja">
-                            <IconButton size="small" sx={{ color: '#e65100', '&:hover': { bgcolor: 'rgba(230,81,0,0.1)' } }} onClick={() => setIdBaja(ins.id)}>
-                              <BlockIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="Reactivar">
-                            <IconButton size="small" sx={{ color: '#2e7d32', '&:hover': { bgcolor: 'rgba(46,125,50,0.1)' } }} onClick={() => handleReactivar(ins.id)}>
-                              <CheckCircleIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        ))}
-                        {esAdmin && (
-                          <Tooltip title="Eliminar de la BD (irreversible)">
-                            <IconButton size="small" sx={{ color: '#c62828', '&:hover': { bgcolor: 'rgba(198,40,40,0.1)' } }}
-                              onClick={() => { setEliminar({ id: ins.id, nombre: ins.nombreMenor }); setErrorEliminar(''); }}>
-                              <DeleteForeverIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                    <AdultoFila
+                      key={ins.id}
+                      ins={ins} idx={idx} esAdmin={esAdmin}
+                      onVer={onVer} onEditar={onEditar} onBaja={onBaja}
+                      onReactivar={onReactivar} onEliminar={onEliminar}
+                    />
                   ))
                 )}
               </TableBody>

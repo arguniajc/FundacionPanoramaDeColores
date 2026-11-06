@@ -1,4 +1,5 @@
 using FundacionPanorama.API.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -13,15 +14,23 @@ public class HealthController : ControllerBase
 
     public HealthController(AppDbContext db) => _db = db;
 
-    // GET api/health — público para ping de cron-job.org
+    // GET api/health — público para el health check de Render y cron-job.org.
+    // No toca la BD: con credenciales inválidas, un ping cada pocos segundos
+    // activaría el circuit breaker del pooler de Supabase.
     [HttpGet]
-    public async Task<IActionResult> Check()
+    public IActionResult Check() => Ok(new { status = "ok", timestamp = DateTime.UtcNow });
+
+    // GET api/health/db — verifica la conexión a la BD (requiere sesión)
+    [Authorize]
+    [HttpGet("db")]
+    public async Task<IActionResult> Db()
     {
         var total = await _db.Beneficiarios.CountAsync();
         return Ok(new { status = "ok", timestamp = DateTime.UtcNow, db = "connected", registros = total });
     }
 
     // GET api/health/tables — diagnóstico: lista todas las tablas y columnas clave
+    [Authorize]
     [HttpGet("tables")]
     public async Task<IActionResult> Tables()
     {

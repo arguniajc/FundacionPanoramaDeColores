@@ -128,6 +128,15 @@ var app = builder.Build();
 {
     var migLogger  = app.Services.GetRequiredService<ILogger<Program>>();
     var migConnStr = app.Configuration.GetConnectionString("DefaultConnection")!;
+
+    // Huella de la conexión (sin revelar la contraseña) para diagnosticar
+    // diferencias entre la configuración local y la de Render.
+    var csb    = new NpgsqlConnectionStringBuilder(migConnStr);
+    var pwd    = csb.Password ?? "";
+    var huella = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(pwd)))[..8];
+    migLogger.LogInformation("🔑 BD: host={H} usuario={U} pwdLen={L} pwdHash={P}",
+        csb.Host, csb.Username, pwd.Length, huella);
+
     await DbMigrations.RunAsync(migConnStr, migLogger);
 }
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────

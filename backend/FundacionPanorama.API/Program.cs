@@ -23,14 +23,24 @@ builder.WebHost.UseUrls($"http://+:{port}");
 builder.WebHost.ConfigureKestrel(k =>
     k.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
 
+// ── Secretos obligatorios ────────────────────────────────────────────────────
+// No viven en appsettings.json: en producción llegan por variables de entorno
+// (ConnectionStrings__DefaultConnection, Jwt__Key, Supabase__ServiceKey) y en
+// local por appsettings.Development.json (ignorado por git).
+string Requerido(string clave) =>
+    builder.Configuration[clave] is { } valor && !string.IsNullOrWhiteSpace(valor)
+        ? valor
+        : throw new InvalidOperationException(
+            $"Falta la configuración '{clave}'. Defínela como variable de entorno '{clave.Replace(":", "__")}'.");
+
+var connStr = Requerido("ConnectionStrings:DefaultConnection");
+var jwtKey  = Requerido("Jwt:Key");
+Requerido("Supabase:ServiceKey");
+
 // ── Base de datos (PostgreSQL via EF Core) ──────────────────────────────────
-// Cambiar la cadena de conexión en appsettings.json para apuntar a otra BD
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connStr));
 
 // ── Autenticación JWT ────────────────────────────────────────────────────────
-var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("JWT Key no configurada en appsettings.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -70,7 +80,6 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<SupabaseStorageService>();
 
 // ── Capas de arquitectura (Infrastructure + Application) ─────────────────────
-var connStr = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Services.AddInfrastructure(connStr);
 
 // ── Controllers + OpenAPI ────────────────────────────────────────────────────

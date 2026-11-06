@@ -76,6 +76,7 @@ public class SupabaseStorageService
             new System.Net.Http.Headers.MediaTypeHeaderValue(archivo.ContentType);
 
         var req = new HttpRequestMessage(HttpMethod.Post, uploadUrl) { Content = cuerpo };
+        req.Headers.Add("apikey", _opts.ServiceKey);
         req.Headers.Add("Authorization", $"Bearer {_opts.ServiceKey}");
         req.Headers.Add("x-upsert", "true");
 

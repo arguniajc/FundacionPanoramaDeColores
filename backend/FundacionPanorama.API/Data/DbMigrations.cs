@@ -7,6 +7,20 @@ public static class DbMigrations
 {
     public static async Task RunAsync(string connStr, ILogger logger)
     {
+        // Cada migración abre su propia conexión: si la credencial es inválida,
+        // decenas de intentos fallidos activan el circuit breaker del pooler de
+        // Supabase y bloquean todas las conexiones. Se verifica una sola vez antes.
+        try
+        {
+            await using var prueba = new NpgsqlConnection(connStr);
+            await prueba.OpenAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "❌ Migraciones canceladas: no se pudo conectar a la BD ({M})", ex.Message);
+            return;
+        }
+
         async Task Migrar(string sql, string etiqueta)
         {
             try

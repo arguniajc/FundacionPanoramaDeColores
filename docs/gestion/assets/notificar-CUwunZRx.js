@@ -1,1 +1,0 @@
-var e=`app:notificar`;function t(t,n=`info`){window.dispatchEvent(new CustomEvent(e,{detail:{mensaje:t,severidad:n}}))}export{t as n,e as t};

@@ -1,0 +1,1 @@
+import{F as e}from"./apiClient-Ba5oEtZ-.js";import{t}from"./react-vendor-CMvWLfeZ.js";var n=t(),r=e((0,n.jsx)(`path`,{d:`M19 9h-4V3H9v6H5l7 7zM5 18v2h14v-2z`}),`FileDownload`);export{r as t};

@@ -10,7 +10,7 @@ Plataforma digital de la Fundación Panorama de Colores — Arte, deporte y conc
 /
 ├── backend/            API REST — .NET 10 + PostgreSQL
 ├── frontend/           Panel administrativo — React 19 + Vite (código fuente)
-├── database/           Migraciones SQL numeradas (PostgreSQL / Supabase)
+├── database/           Guía de migraciones; historico/ = scripts SQL antiguos (solo referencia)
 ├── scripts/            Scripts de migración histórica (ejecución única)
 ├── .github/workflows/  CI/CD — build, keep-alive, auto-bump service worker
 ├── Dockerfile          Contenedor del backend (Render.com)
@@ -102,16 +102,9 @@ Guía completa de convenciones y patrones: [frontend/fundacion-web/CONTRIBUTING.
 
 ## Base de datos
 
-Migraciones en `database/` — aplicar en orden numérico:
+El esquema se gestiona solo desde código: `backend/FundacionPanorama.API/Data/DbMigrations.cs` se ejecuta en cada arranque de la API y es idempotente (levanta una BD vacía desde cero y no hace nada sobre una ya actualizada). Cómo agregar una migración: [database/README.md](database/README.md).
 
-| Archivo | Descripción |
-|---|---|
-| `01_schema.sql` | Schema base — todas las tablas |
-| `02_migracion.sql` | Distribución de datos al nuevo modelo normalizado |
-| `03_tercero_programa.sql` | Entidad ejecutora (tercero) en programas |
-| `04_nomina.sql` | Módulo de nómina |
-| `05_split_nombre_beneficiarios.sql` | División de nombre en 4 columnas |
-| `06_tipo_beneficiario.sql` | Campo tipo (niño / adulto) |
+Los scripts SQL numerados antiguos están en `database/historico/` solo como referencia: no se ejecutan.
 
 ---
 

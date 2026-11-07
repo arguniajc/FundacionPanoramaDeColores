@@ -65,7 +65,7 @@ public class SupabaseStorageService
     public const string PrefijoPrivado = "privado://";
     static readonly string[] CarpetasPublicas = ["web"];
     static readonly System.Text.RegularExpressions.Regex CarpetaValida =
-        new(@"^(web|fotos|documentos|documentos-institucionales|inscripciones|organigrama|documentos-beneficiarios/[0-9a-fA-F-]{36})$",
+        new(@"^(web|fotos|documentos|documentos-institucionales|inscripciones|organigrama|documentos-beneficiarios/[0-9a-fA-F-]{36})\z", // \z: $ aceptaría un "\n" final
             System.Text.RegularExpressions.RegexOptions.Compiled);
 
     static readonly Dictionary<string, string> ExtPorTipo = new()

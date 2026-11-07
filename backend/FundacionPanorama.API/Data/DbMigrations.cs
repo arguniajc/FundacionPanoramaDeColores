@@ -67,6 +67,9 @@ public static class DbMigrations
             )
             """, "_migraciones_ejecutadas.create");
 
+        // Esquema base para BD vacía (no-op si las tablas ya existen)
+        await CrearEsquemaBaseAsync(Migrar);
+
         // Recrear tablas de inventario si fueron creadas con esquema incompleto
         await MigrarUnaVez("DROP TABLE IF EXISTS cat_tipo_movimiento_inv CASCADE", "inventario.drop_cat_tipo_v2");
         await MigrarUnaVez("DROP TABLE IF EXISTS inventario_movimientos CASCADE",  "inventario.drop_movimientos_v2");
@@ -332,6 +335,14 @@ public static class DbMigrations
                 fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
             )
             """, "voluntarios");
+
+        // La versión base (esquema 01) de voluntarios no traía estas columnas.
+        await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS tipo_documento   VARCHAR(20)",  "voluntarios.tipo_documento");
+        await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS documento        VARCHAR(50)",  "voluntarios.documento");
+        await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS ciudad           VARCHAR(100)", "voluntarios.ciudad");
+        await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE",         "voluntarios.fecha_nacimiento");
+        await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS fecha_inicio     DATE",         "voluntarios.fecha_inicio");
+        await Migrar("ALTER TABLE voluntarios ADD COLUMN IF NOT EXISTS notas            TEXT",         "voluntarios.notas");
 
         await Migrar("""
             CREATE TABLE IF NOT EXISTS voluntario_programas (
@@ -1113,6 +1124,7 @@ public static class DbMigrations
         await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS segundo_nombre   VARCHAR(80)", "beneficiarios.segundo_nombre");
         await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS primer_apellido  VARCHAR(80)", "beneficiarios.primer_apellido");
         await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS segundo_apellido VARCHAR(80)", "beneficiarios.segundo_apellido");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_ben_nombres ON beneficiarios (primer_nombre, primer_apellido)", "beneficiarios.idx_nombres");
         await MigrarUnaVez("""
             WITH parts AS (
               SELECT id,
@@ -1213,5 +1225,674 @@ public static class DbMigrations
         await Migrar(
             "CREATE INDEX IF NOT EXISTS idx_audit_entidad ON audit_log (entidad_tipo, entidad_id)",
             "audit_log.idx_entidad");
+
+        // ── Campos obligatorios (antes database/05 y 07) ──────────────────────
+        // Solo se aplica SET NOT NULL si la columna aún admite NULL y no hay filas
+        // con NULL; si las hay, el paso se omite con un aviso en el log (no se
+        // reescriben datos aquí: el relleno de 07 fue una corrección histórica).
+        (string Tabla, string Columna)[] obligatorios =
+        [
+            ("beneficiarios", "primer_nombre"),
+            ("beneficiarios", "primer_apellido"),
+            ("beneficiarios", "fecha_nacimiento"),
+            ("beneficiarios", "genero"),
+            ("beneficiarios", "pais_nacimiento"),
+            ("beneficiarios", "departamento_nacimiento"),
+            ("beneficiarios", "ciudad_nacimiento"),
+            ("beneficiarios", "barrio"),
+            ("beneficiarios", "num_personas_vive"),
+            ("beneficiarios", "num_hermanos"),
+            ("beneficiarios", "numero_documento"),
+            ("beneficiario_talla", "talla_camisa"),
+            ("beneficiario_talla", "talla_pantalon"),
+            ("beneficiario_talla", "talla_zapatos"),
+            ("beneficiario_talla", "peso_kg"),
+            ("beneficiario_talla", "talla_cm"),
+            ("acudientes", "whatsapp"),
+            ("acudientes", "direccion"),
+            ("beneficiario_acudiente", "parentesco_id"),
+            ("beneficiario_salud", "eps_id"),
+            ("beneficiario_salud", "observaciones"),
+        ];
+        foreach (var (tabla, columna) in obligatorios)
+            await Migrar(SqlNotNullSiNoHayNulos(tabla, columna), $"{tabla}.{columna}.not_null");
+    }
+
+    /// <summary>
+    /// SET NOT NULL protegido: no hace nada si la columna no existe o ya es NOT NULL;
+    /// lanza (y Migrar lo registra como aviso) si existen filas con NULL.
+    /// Tabla y columna son constantes del código, nunca entrada de usuario.
+    /// </summary>
+    private static string SqlNotNullSiNoHayNulos(string tabla, string columna) => $"""
+        DO $nn$
+        DECLARE hay_nulos BOOLEAN;
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_schema = current_schema()
+                         AND table_name = '{tabla}' AND column_name = '{columna}'
+                         AND is_nullable = 'YES') THEN
+                EXECUTE 'SELECT EXISTS (SELECT 1 FROM {tabla} WHERE {columna} IS NULL)' INTO hay_nulos;
+                IF hay_nulos THEN
+                    RAISE EXCEPTION '{tabla}.{columna} tiene filas con NULL; NOT NULL no aplicado';
+                END IF;
+                ALTER TABLE {tabla} ALTER COLUMN {columna} SET NOT NULL;
+            END IF;
+        END $nn$
+        """;
+
+    /// <summary>
+    /// Esquema base (antes database/01_schema.sql). Cada tabla se crea, junto con
+    /// sus índices, trigger y datos semilla, SOLO si la tabla no existe: en una BD
+    /// ya poblada (producción) todo este bloque es un no-op. Permite levantar un
+    /// entorno nuevo desde una BD vacía; los pasos posteriores de RunAsync
+    /// completan el esquema hasta su estado actual.
+    /// Diferencias deliberadas frente al 01 original:
+    ///  - No crea cat_tipo_movimiento_inv / inventario_items / inventario_movimientos:
+    ///    esas versiones fueron eliminadas (inventario.drop_*_v2) y RunAsync las
+    ///    crea con su esquema vigente.
+    ///  - beneficiarios.tipo_documento_id y beneficiario_acudiente.parentesco_id
+    ///    quedan sin FK hacia cat_tipo_documento / cat_parentesco: la API guarda ids
+    ///    de cat_tipos_documento / cat_parentescos, que no coinciden con esos catálogos.
+    ///  - Crea sedes, que ningún script creaba y RunAsync solo altera.
+    /// </summary>
+    private static async Task CrearEsquemaBaseAsync(Func<string, string, Task> migrar)
+    {
+        Task SiNoExiste(string tabla, string ddl) => migrar(
+            $"DO $base$ BEGIN IF to_regclass('{tabla}') IS NULL THEN\n{ddl}\nEND IF; END $base$",
+            $"base.{tabla}");
+
+        await migrar("""
+            DO $base$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pgcrypto') THEN
+                    CREATE EXTENSION pgcrypto;
+                END IF;
+            END $base$
+            """, "base.pgcrypto");
+
+        await migrar("""
+            DO $base$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'fn_set_fecha_modificacion') THEN
+                    CREATE FUNCTION fn_set_fecha_modificacion() RETURNS TRIGGER AS $fn$
+                    BEGIN
+                        NEW.fecha_modificacion = NOW();
+                        RETURN NEW;
+                    END;
+                    $fn$ LANGUAGE plpgsql;
+                END IF;
+            END $base$
+            """, "base.fn_set_fecha_modificacion");
+
+        // ── Catálogos ─────────────────────────────────────────────────────────
+        await SiNoExiste("cat_tipo_documento", """
+            CREATE TABLE cat_tipo_documento (
+              id      SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+              codigo  VARCHAR(10) UNIQUE NOT NULL,
+              nombre  VARCHAR(60)        NOT NULL,
+              activo  BOOLEAN            NOT NULL DEFAULT TRUE
+            );
+            INSERT INTO cat_tipo_documento (codigo, nombre) VALUES
+              ('RC',   'Registro Civil'),
+              ('TI',   'Tarjeta de Identidad'),
+              ('CC',   'Cédula de Ciudadanía'),
+              ('CE',   'Cédula de Extranjería'),
+              ('PA',   'Pasaporte'),
+              ('NUIP', 'Número Único de Identificación Personal');
+            """);
+
+        await SiNoExiste("cat_parentesco", """
+            CREATE TABLE cat_parentesco (
+              id     SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+              nombre VARCHAR(60) UNIQUE NOT NULL,
+              activo BOOLEAN            NOT NULL DEFAULT TRUE
+            );
+            INSERT INTO cat_parentesco (nombre) VALUES
+              ('Madre'), ('Padre'), ('Abuelo'), ('Abuela'),
+              ('Tío'), ('Tía'), ('Hermano'), ('Hermana'),
+              ('Tutor legal'), ('Otro');
+            """);
+
+        await SiNoExiste("cat_eps", """
+            CREATE TABLE cat_eps (
+              id     SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+              nombre VARCHAR(120) UNIQUE NOT NULL,
+              activo BOOLEAN             NOT NULL DEFAULT TRUE
+            );
+            """);
+
+        await SiNoExiste("cat_tipo_sangre", """
+            CREATE TABLE cat_tipo_sangre (
+              id     SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+              codigo VARCHAR(5) UNIQUE NOT NULL,
+              activo BOOLEAN           NOT NULL DEFAULT TRUE
+            );
+            INSERT INTO cat_tipo_sangre (codigo) VALUES
+              ('A+'), ('A-'), ('B+'), ('B-'), ('AB+'), ('AB-'), ('O+'), ('O-');
+            """);
+
+        await SiNoExiste("cat_tipo_alergia", """
+            CREATE TABLE cat_tipo_alergia (
+              id     SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+              nombre VARCHAR(60) UNIQUE NOT NULL,
+              activo BOOLEAN            NOT NULL DEFAULT TRUE
+            );
+            INSERT INTO cat_tipo_alergia (nombre) VALUES
+              ('Alimentaria'), ('Medicamentosa'), ('Ambiental'),
+              ('Picadura de insecto'), ('Látex'), ('Otra');
+            """);
+
+        await SiNoExiste("cat_tipo_archivo", """
+            CREATE TABLE cat_tipo_archivo (
+              id     SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+              nombre VARCHAR(60) UNIQUE NOT NULL,
+              activo BOOLEAN            NOT NULL DEFAULT TRUE
+            );
+            INSERT INTO cat_tipo_archivo (nombre) VALUES
+              ('Foto del menor'), ('Foto documento'), ('Contrato'),
+              ('Acta'), ('Soporte donación'), ('Otro');
+            """);
+
+        await SiNoExiste("cat_tipo_evento", """
+            CREATE TABLE cat_tipo_evento (
+              id     SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+              nombre VARCHAR(60) UNIQUE NOT NULL,
+              activo BOOLEAN            NOT NULL DEFAULT TRUE
+            );
+            INSERT INTO cat_tipo_evento (nombre) VALUES
+              ('Taller'), ('Actividad recreativa'), ('Reunión'),
+              ('Jornada de salud'), ('Celebración'), ('Capacitación');
+            """);
+
+        await SiNoExiste("cat_estado_evento", """
+            CREATE TABLE cat_estado_evento (
+              id     SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+              nombre VARCHAR(30) UNIQUE NOT NULL,
+              activo BOOLEAN            NOT NULL DEFAULT TRUE
+            );
+            INSERT INTO cat_estado_evento (nombre) VALUES
+              ('Planificado'), ('En curso'), ('Finalizado'), ('Cancelado'), ('Pospuesto');
+            """);
+
+        await SiNoExiste("cat_categoria_tesoreria", """
+            CREATE TABLE cat_categoria_tesoreria (
+              id     SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+              nombre VARCHAR(80)  UNIQUE NOT NULL,
+              tipo   VARCHAR(10)  NOT NULL CHECK (tipo IN ('ingreso', 'egreso')),
+              activo BOOLEAN      NOT NULL DEFAULT TRUE
+            );
+            INSERT INTO cat_categoria_tesoreria (nombre, tipo) VALUES
+              ('Donación monetaria',          'ingreso'),
+              ('Subsidio estatal',            'ingreso'),
+              ('Cuota de membresía',          'ingreso'),
+              ('Venta de productos',          'ingreso'),
+              ('Otros ingresos',              'ingreso'),
+              ('Arriendo sede',               'egreso'),
+              ('Servicios públicos',          'egreso'),
+              ('Sueldos y honorarios',        'egreso'),
+              ('Materiales y suministros',    'egreso'),
+              ('Transporte',                  'egreso'),
+              ('Alimentación beneficiarios',  'egreso'),
+              ('Otros gastos',                'egreso');
+            """);
+
+        await SiNoExiste("cat_tipo_donante", """
+            CREATE TABLE cat_tipo_donante (
+              id     SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+              nombre VARCHAR(60) UNIQUE NOT NULL,
+              activo BOOLEAN            NOT NULL DEFAULT TRUE
+            );
+            INSERT INTO cat_tipo_donante (nombre) VALUES
+              ('Persona natural'), ('Empresa'), ('ONG'),
+              ('Entidad gubernamental'), ('Otro');
+            """);
+
+        // ── Usuarios ──────────────────────────────────────────────────────────
+        await SiNoExiste("usuarios", """
+            CREATE TABLE usuarios (
+              id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+              email                VARCHAR(150) UNIQUE NOT NULL,
+              nombre               VARCHAR(120)        NOT NULL,
+              avatar_url           TEXT,
+              rol                  VARCHAR(20)         NOT NULL DEFAULT 'coordinador'
+                                     CHECK (rol IN ('admin','coordinador','voluntario','tesorero','readonly')),
+              activo               BOOLEAN             NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
+              fecha_modificacion   TIMESTAMPTZ         NOT NULL DEFAULT NOW()
+            );
+            CREATE INDEX idx_usuarios_email ON usuarios (email);
+            CREATE INDEX idx_usuarios_rol   ON usuarios (rol);
+            CREATE TRIGGER trg_usuarios_mod BEFORE UPDATE ON usuarios
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Sedes (no estaba en ningún script; RunAsync solo le agrega columnas) ──
+        await SiNoExiste("sedes", """
+            CREATE TABLE sedes (
+              id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+              nombre             VARCHAR(150) NOT NULL,
+              direccion          VARCHAR(300),
+              ciudad             VARCHAR(100),
+              telefono           VARCHAR(30),
+              activo             BOOLEAN      NOT NULL DEFAULT TRUE,
+              fecha_creacion     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+              fecha_modificacion TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            );
+            """);
+
+        // ── Beneficiarios ─────────────────────────────────────────────────────
+        await SiNoExiste("beneficiarios", """
+            CREATE TABLE beneficiarios (
+              id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+              primer_nombre        VARCHAR(80)         NOT NULL,
+              segundo_nombre       VARCHAR(80),
+              primer_apellido      VARCHAR(80)         NOT NULL,
+              segundo_apellido     VARCHAR(80),
+              fecha_nacimiento     DATE,
+              tipo_documento_id    SMALLINT,
+              numero_documento     VARCHAR(30) UNIQUE,
+              activo               BOOLEAN             NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID        REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID        REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_ben_documento ON beneficiarios (numero_documento);
+            CREATE INDEX idx_ben_nombres   ON beneficiarios (primer_nombre, primer_apellido);
+            CREATE INDEX idx_ben_activo    ON beneficiarios (activo);
+            CREATE TRIGGER trg_ben_mod BEFORE UPDATE ON beneficiarios
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        await SiNoExiste("acudientes", """
+            CREATE TABLE acudientes (
+              id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+              nombre               VARCHAR(150)        NOT NULL,
+              whatsapp             VARCHAR(20),
+              direccion            TEXT,
+              activo               BOOLEAN             NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID        REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID        REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_acu_nombre   ON acudientes (nombre);
+            CREATE INDEX idx_acu_whatsapp ON acudientes (whatsapp);
+            CREATE TRIGGER trg_acu_mod BEFORE UPDATE ON acudientes
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        await SiNoExiste("beneficiario_acudiente", """
+            CREATE TABLE beneficiario_acudiente (
+              id                   UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+              beneficiario_id      UUID     NOT NULL REFERENCES beneficiarios (id) ON DELETE CASCADE,
+              acudiente_id         UUID     NOT NULL REFERENCES acudientes    (id) ON DELETE CASCADE,
+              parentesco_id        SMALLINT,
+              es_principal         BOOLEAN  NOT NULL DEFAULT FALSE,
+              activo               BOOLEAN  NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID     REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID     REFERENCES usuarios (id),
+              UNIQUE (beneficiario_id, acudiente_id)
+            );
+            CREATE INDEX idx_ba_beneficiario ON beneficiario_acudiente (beneficiario_id);
+            CREATE INDEX idx_ba_acudiente    ON beneficiario_acudiente (acudiente_id);
+            CREATE TRIGGER trg_ba_mod BEFORE UPDATE ON beneficiario_acudiente
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Salud ─────────────────────────────────────────────────────────────
+        await SiNoExiste("beneficiario_salud", """
+            CREATE TABLE beneficiario_salud (
+              id                   UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+              beneficiario_id      UUID     NOT NULL UNIQUE REFERENCES beneficiarios (id) ON DELETE CASCADE,
+              eps_id               SMALLINT REFERENCES cat_eps        (id),
+              tipo_sangre_id       SMALLINT REFERENCES cat_tipo_sangre(id),
+              observaciones        TEXT,
+              activo               BOOLEAN  NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID     REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID     REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_salud_ben ON beneficiario_salud (beneficiario_id);
+            CREATE TRIGGER trg_salud_mod BEFORE UPDATE ON beneficiario_salud
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        await SiNoExiste("alergias_catalogo", """
+            CREATE TABLE alergias_catalogo (
+              id                   UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+              nombre               VARCHAR(120)        NOT NULL,
+              tipo_alergia_id      SMALLINT REFERENCES cat_tipo_alergia (id),
+              activo               BOOLEAN  NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID     REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID     REFERENCES usuarios (id)
+            );
+            CREATE TRIGGER trg_alg_cat_mod BEFORE UPDATE ON alergias_catalogo
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        await SiNoExiste("beneficiario_alergia", """
+            CREATE TABLE beneficiario_alergia (
+              id                   UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+              beneficiario_id      UUID     NOT NULL REFERENCES beneficiarios    (id) ON DELETE CASCADE,
+              alergia_id           UUID     NOT NULL REFERENCES alergias_catalogo(id),
+              descripcion          TEXT,
+              activo               BOOLEAN  NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID     REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID     REFERENCES usuarios (id),
+              UNIQUE (beneficiario_id, alergia_id)
+            );
+            CREATE INDEX idx_balg_ben ON beneficiario_alergia (beneficiario_id);
+            CREATE TRIGGER trg_balg_mod BEFORE UPDATE ON beneficiario_alergia
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Tallas ────────────────────────────────────────────────────────────
+        await SiNoExiste("beneficiario_talla", """
+            CREATE TABLE beneficiario_talla (
+              id                   UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+              beneficiario_id      UUID     NOT NULL REFERENCES beneficiarios (id) ON DELETE CASCADE,
+              talla_camisa         VARCHAR(10),
+              talla_pantalon       VARCHAR(10),
+              talla_zapatos        VARCHAR(10),
+              fecha_medicion       DATE     NOT NULL DEFAULT CURRENT_DATE,
+              activo               BOOLEAN  NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID     REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID     REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_talla_ben_fecha ON beneficiario_talla (beneficiario_id, fecha_medicion DESC);
+            CREATE TRIGGER trg_talla_mod BEFORE UPDATE ON beneficiario_talla
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Archivos (polimórfico) ────────────────────────────────────────────
+        await SiNoExiste("archivos", """
+            CREATE TABLE archivos (
+              id                   UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+              entidad_tipo         VARCHAR(30)  NOT NULL,
+              entidad_id           UUID         NOT NULL,
+              tipo_archivo_id      SMALLINT REFERENCES cat_tipo_archivo (id),
+              url                  TEXT         NOT NULL,
+              nombre_original      VARCHAR(200),
+              activo               BOOLEAN      NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID     REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID     REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_arch_entidad ON archivos (entidad_tipo, entidad_id);
+            CREATE TRIGGER trg_arch_mod BEFORE UPDATE ON archivos
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Programas y proyectos ─────────────────────────────────────────────
+        await SiNoExiste("programas", """
+            CREATE TABLE programas (
+              id                   UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+              nombre               VARCHAR(150) NOT NULL,
+              descripcion          TEXT,
+              fecha_inicio         DATE,
+              fecha_fin            DATE,
+              activo               BOOLEAN NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID    REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID    REFERENCES usuarios (id)
+            );
+            CREATE TRIGGER trg_prog_mod BEFORE UPDATE ON programas
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        await SiNoExiste("proyectos", """
+            CREATE TABLE proyectos (
+              id                   UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+              programa_id          UUID          REFERENCES programas (id),
+              nombre               VARCHAR(150)  NOT NULL,
+              descripcion          TEXT,
+              fecha_inicio         DATE,
+              fecha_fin            DATE,
+              presupuesto          NUMERIC(15,2),
+              activo               BOOLEAN       NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID          REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID          REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_proy_programa ON proyectos (programa_id);
+            CREATE TRIGGER trg_proy_mod BEFORE UPDATE ON proyectos
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        await SiNoExiste("beneficiario_programa", """
+            CREATE TABLE beneficiario_programa (
+              id                   UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+              beneficiario_id      UUID    NOT NULL REFERENCES beneficiarios (id),
+              programa_id          UUID    NOT NULL REFERENCES programas     (id),
+              fecha_inscripcion    DATE    NOT NULL DEFAULT CURRENT_DATE,
+              activo               BOOLEAN NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID    REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID    REFERENCES usuarios (id),
+              UNIQUE (beneficiario_id, programa_id)
+            );
+            CREATE INDEX idx_bp_ben  ON beneficiario_programa (beneficiario_id);
+            CREATE INDEX idx_bp_prog ON beneficiario_programa (programa_id);
+            CREATE TRIGGER trg_bp_mod BEFORE UPDATE ON beneficiario_programa
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Voluntarios (antes que eventos: evento_asistencia la referencia) ───
+        await SiNoExiste("voluntarios", """
+            CREATE TABLE voluntarios (
+              id                   UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+              nombre               VARCHAR(150) NOT NULL,
+              email                VARCHAR(150),
+              telefono             VARCHAR(20),
+              whatsapp             VARCHAR(20),
+              tipo_documento_id    SMALLINT REFERENCES cat_tipo_documento (id),
+              numero_documento     VARCHAR(30),
+              profesion            VARCHAR(100),
+              activo               BOOLEAN  NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID     REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID     REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_vol_nombre ON voluntarios (nombre);
+            CREATE INDEX idx_vol_email  ON voluntarios (email);
+            CREATE TRIGGER trg_vol_mod BEFORE UPDATE ON voluntarios
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Eventos ───────────────────────────────────────────────────────────
+        await SiNoExiste("eventos", """
+            CREATE TABLE eventos (
+              id                   UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+              programa_id          UUID     REFERENCES programas     (id),
+              proyecto_id          UUID     REFERENCES proyectos     (id),
+              tipo_evento_id       SMALLINT REFERENCES cat_tipo_evento  (id),
+              estado_id            SMALLINT REFERENCES cat_estado_evento(id),
+              titulo               VARCHAR(200) NOT NULL,
+              descripcion          TEXT,
+              lugar                VARCHAR(200),
+              fecha_inicio         TIMESTAMPTZ  NOT NULL,
+              fecha_fin            TIMESTAMPTZ,
+              cupo_maximo          INTEGER,
+              activo               BOOLEAN  NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID     REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID     REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_ev_fecha  ON eventos (fecha_inicio);
+            CREATE INDEX idx_ev_prog   ON eventos (programa_id);
+            CREATE INDEX idx_ev_estado ON eventos (estado_id);
+            CREATE TRIGGER trg_ev_mod BEFORE UPDATE ON eventos
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        await SiNoExiste("evento_asistencia", """
+            CREATE TABLE evento_asistencia (
+              id                   UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+              evento_id            UUID    NOT NULL REFERENCES eventos       (id) ON DELETE CASCADE,
+              beneficiario_id      UUID             REFERENCES beneficiarios (id),
+              voluntario_id        UUID,
+              asistio              BOOLEAN,
+              observaciones        TEXT,
+              activo               BOOLEAN NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID    REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID    REFERENCES usuarios (id),
+              UNIQUE (evento_id, beneficiario_id),
+              CONSTRAINT fk_asis_voluntario FOREIGN KEY (voluntario_id) REFERENCES voluntarios (id)
+            );
+            CREATE INDEX idx_asis_evento ON evento_asistencia (evento_id);
+            CREATE INDEX idx_asis_ben    ON evento_asistencia (beneficiario_id);
+            CREATE TRIGGER trg_asis_mod BEFORE UPDATE ON evento_asistencia
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Talento humano ────────────────────────────────────────────────────
+        await SiNoExiste("empleados", """
+            CREATE TABLE empleados (
+              id                   UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+              nombre               VARCHAR(150)  NOT NULL,
+              email                VARCHAR(150),
+              telefono             VARCHAR(20),
+              tipo_documento_id    SMALLINT      REFERENCES cat_tipo_documento (id),
+              numero_documento     VARCHAR(30)   UNIQUE,
+              cargo                VARCHAR(100),
+              fecha_ingreso        DATE,
+              fecha_retiro         DATE,
+              salario              NUMERIC(12,2),
+              activo               BOOLEAN       NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID          REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID          REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_emp_nombre ON empleados (nombre);
+            CREATE TRIGGER trg_emp_mod BEFORE UPDATE ON empleados
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Donantes y donaciones ─────────────────────────────────────────────
+        await SiNoExiste("donantes", """
+            CREATE TABLE donantes (
+              id                   UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+              tipo_donante_id      SMALLINT      REFERENCES cat_tipo_donante (id),
+              nombre               VARCHAR(200)  NOT NULL,
+              identificacion       VARCHAR(30),
+              email                VARCHAR(150),
+              telefono             VARCHAR(20),
+              ciudad               VARCHAR(100),
+              activo               BOOLEAN       NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID          REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID          REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_don_nombre ON donantes (nombre);
+            CREATE INDEX idx_don_id     ON donantes (identificacion);
+            CREATE TRIGGER trg_don_mod BEFORE UPDATE ON donantes
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        await SiNoExiste("donaciones", """
+            CREATE TABLE donaciones (
+              id                   UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+              donante_id           UUID          REFERENCES donantes  (id),
+              proyecto_id          UUID          REFERENCES proyectos (id),
+              fecha                DATE          NOT NULL DEFAULT CURRENT_DATE,
+              monto                NUMERIC(15,2),
+              en_especie           BOOLEAN       NOT NULL DEFAULT FALSE,
+              descripcion_especie  TEXT,
+              observaciones        TEXT,
+              activo               BOOLEAN       NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID          REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID          REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_dnc_donante ON donaciones (donante_id);
+            CREATE INDEX idx_dnc_fecha   ON donaciones (fecha);
+            CREATE INDEX idx_dnc_proy    ON donaciones (proyecto_id);
+            CREATE TRIGGER trg_dnc_mod BEFORE UPDATE ON donaciones
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Tesorería ─────────────────────────────────────────────────────────
+        await SiNoExiste("tesoreria_cuentas", """
+            CREATE TABLE tesoreria_cuentas (
+              id                   UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+              nombre               VARCHAR(100)  NOT NULL,
+              banco                VARCHAR(100),
+              numero_cuenta        VARCHAR(50),
+              saldo_inicial        NUMERIC(15,2) NOT NULL DEFAULT 0,
+              saldo_actual         NUMERIC(15,2) NOT NULL DEFAULT 0,
+              activo               BOOLEAN       NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID          REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID          REFERENCES usuarios (id)
+            );
+            CREATE TRIGGER trg_tc_mod BEFORE UPDATE ON tesoreria_cuentas
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        await SiNoExiste("tesoreria_movimientos", """
+            CREATE TABLE tesoreria_movimientos (
+              id                   UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+              cuenta_id            UUID          NOT NULL REFERENCES tesoreria_cuentas       (id),
+              categoria_id         SMALLINT               REFERENCES cat_categoria_tesoreria (id),
+              donacion_id          UUID                   REFERENCES donaciones  (id),
+              proyecto_id          UUID                   REFERENCES proyectos   (id),
+              fecha                DATE          NOT NULL DEFAULT CURRENT_DATE,
+              tipo                 VARCHAR(10)   NOT NULL CHECK (tipo IN ('ingreso', 'egreso')),
+              monto                NUMERIC(15,2) NOT NULL,
+              descripcion          TEXT,
+              comprobante_url      TEXT,
+              activo               BOOLEAN       NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID          REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID          REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_tmov_cuenta ON tesoreria_movimientos (cuenta_id);
+            CREATE INDEX idx_tmov_fecha  ON tesoreria_movimientos (fecha);
+            CREATE INDEX idx_tmov_tipo   ON tesoreria_movimientos (tipo);
+            CREATE TRIGGER trg_tmov_mod BEFORE UPDATE ON tesoreria_movimientos
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
+
+        // ── Actas ─────────────────────────────────────────────────────────────
+        await SiNoExiste("actas", """
+            CREATE TABLE actas (
+              id                   UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+              evento_id            UUID    REFERENCES eventos (id),
+              titulo               VARCHAR(200) NOT NULL,
+              contenido            TEXT,
+              fecha_acta           DATE    NOT NULL DEFAULT CURRENT_DATE,
+              url_documento        TEXT,
+              activo               BOOLEAN NOT NULL DEFAULT TRUE,
+              fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_creacion     UUID    REFERENCES usuarios (id),
+              fecha_modificacion   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              usuario_modificacion UUID    REFERENCES usuarios (id)
+            );
+            CREATE INDEX idx_acta_fecha  ON actas (fecha_acta);
+            CREATE INDEX idx_acta_evento ON actas (evento_id);
+            CREATE TRIGGER trg_acta_mod BEFORE UPDATE ON actas
+              FOR EACH ROW EXECUTE FUNCTION fn_set_fecha_modificacion();
+            """);
     }
 }

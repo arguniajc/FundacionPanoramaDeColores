@@ -12,6 +12,7 @@ import FilterListIcon       from '@mui/icons-material/FilterList';
 import FilterListOffIcon    from '@mui/icons-material/FilterListOff';
 import VisibilityIcon       from '@mui/icons-material/Visibility';
 import EditIcon             from '@mui/icons-material/Edit';
+import AssignmentLateIcon   from '@mui/icons-material/AssignmentLate';
 import DownloadIcon         from '@mui/icons-material/Download';
 import BlockIcon            from '@mui/icons-material/Block';
 import CheckCircleIcon      from '@mui/icons-material/CheckCircle';
@@ -47,7 +48,7 @@ import EditarInscripcion    from '@/presentation/modules/beneficiarios/component
 import NuevoBeneficiario    from '@/presentation/modules/beneficiarios/components/NuevoBeneficiario';
 import { ModalEstadisticas, StatCard } from '@/presentation/modules/beneficiarios/pages/components/ModalEstadisticas';
 import { ImportarBeneficiariosDialog } from '@/presentation/modules/beneficiarios/pages/components/ImportarBeneficiariosDialog';
-import { PerfilesIncompletosPanel }    from '@/presentation/modules/beneficiarios/pages/components/PerfilesIncompletosPanel';
+import { PerfilesIncompletosDialog }    from '@/presentation/modules/beneficiarios/pages/components/PerfilesIncompletosDialog';
 import { useBeneficiariosPage } from '@/presentation/modules/beneficiarios/pages/useBeneficiariosPage';
 import apiClient from '@/infrastructure/http/apiClient';
 
@@ -199,7 +200,7 @@ export default function AdultosPage() {
     handleImportado,
   } = useBeneficiariosPage({ tipo: 'adulto' });
 
-  const [panelRefreshKey, setPanelRefreshKey] = useState(0);
+  const [pendientesOpen, setPendientesOpen] = useState(false);
 
   const [inputSearch, setInputSearch] = useState('');
   useEffect(() => {
@@ -214,17 +215,13 @@ export default function AdultosPage() {
   const onEliminar  = useCallback(({ id, nombre }) => { setEliminar({ id, nombre }); setErrorEliminar(''); }, [setEliminar, setErrorEliminar]);
 
   const handleEditarDesdePanel = async (id) => {
+    setPendientesOpen(false);
     const enLista = inscripciones.find(ins => ins.id === id);
     if (enLista) { setEditando(enLista); return; }
     try {
       const { data } = await apiClient.get(`/api/beneficiarios/${id}`);
       setEditando(data);
     } catch { /* silencioso */ }
-  };
-
-  const handleGuardadoConRefreshPanel = () => {
-    handleGuardadoEdicion();
-    setPanelRefreshKey(k => k + 1);
   };
 
   return (
@@ -289,12 +286,6 @@ export default function AdultosPage() {
       <Box sx={{ flex: 1 }}>
         <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
 
-          <PerfilesIncompletosPanel
-            onEditar={handleEditarDesdePanel}
-            refreshKey={panelRefreshKey}
-            tipo="adulto"
-          />
-
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 1 }}>
             <TextField
               placeholder="Buscar nombre, documento, acudiente…"
@@ -347,6 +338,16 @@ export default function AdultosPage() {
                   sx={{ bgcolor: '#43a047', '&:hover': { filter: 'brightness(0.85)' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
                 >
                   {exportando ? 'Exportando…' : 'Exportar Excel'}
+                </Button>
+              </Tooltip>
+              <Tooltip title="Perfiles con datos sin completar">
+                <Button
+                  variant="outlined" size="small"
+                  startIcon={<AssignmentLateIcon />}
+                  onClick={() => setPendientesOpen(true)}
+                  sx={{ borderColor: '#f59e0b', color: '#b45309', '&:hover': { bgcolor: '#fffbeb', borderColor: '#d97706' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
+                >
+                  Pendientes
                 </Button>
               </Tooltip>
             </Box>
@@ -506,8 +507,15 @@ export default function AdultosPage() {
           onEditar={() => { setEditando(seleccionada); setSeleccionada(null); }}
         />
       )}
+      <PerfilesIncompletosDialog
+        open={pendientesOpen}
+        onClose={() => setPendientesOpen(false)}
+        onEditar={handleEditarDesdePanel}
+        tipo="adulto"
+      />
+
       {editando && (
-        <EditarInscripcion inscripcion={editando} onCerrar={() => setEditando(null)} onGuardado={handleGuardadoConRefreshPanel} />
+        <EditarInscripcion inscripcion={editando} onCerrar={() => setEditando(null)} onGuardado={handleGuardadoEdicion} />
       )}
 
       <Dialog open={!!idBaja} onClose={() => { setIdBaja(null); setMotivoBaja(''); }} maxWidth="xs" fullWidth>

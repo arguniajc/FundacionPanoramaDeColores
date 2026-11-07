@@ -13,7 +13,8 @@ import {
 } from 'recharts';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
-import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
+import { GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
+import { COLORES } from './colores';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 
 export function TabInventario() {

@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
-import { useConfiguracion }        from '@/shared/context/ConfiguracionContext';
+import { useConfiguracion } from '@/shared/context/useConfiguracion';
 import { COLOR, DEFAULT_WEB, VACIO_FORM, mergeDeep } from './components/helpers';
 import { TabFundacion }   from './components/TabFundacion';
 import { TabRepLegal }    from './components/TabRepLegal';

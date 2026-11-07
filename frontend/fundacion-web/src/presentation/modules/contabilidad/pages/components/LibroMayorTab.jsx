@@ -8,7 +8,7 @@ import {
 import SearchIcon    from '@mui/icons-material/Search';
 import MenuBookIcon  from '@mui/icons-material/MenuBook';
 import apiClient     from '@/infrastructure/http/apiClient';
-import { fmt, fmtFecha, MESES, ANIOS } from './helpers';
+import { fmt, fmtFecha, MESES, ANIOS } from './formato';
 
 const COLS_HEAD = ['Fecha', 'Tipo', 'Concepto', 'Soporte', 'Tercero', 'Ingreso', 'Egreso', 'Saldo'];
 

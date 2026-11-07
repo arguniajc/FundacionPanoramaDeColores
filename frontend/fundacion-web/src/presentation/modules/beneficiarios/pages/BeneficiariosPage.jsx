@@ -51,7 +51,7 @@ import { ImportarBeneficiariosDialog } from './components/ImportarBeneficiariosD
 import { PerfilesIncompletosDialog }    from './components/PerfilesIncompletosDialog';
 import { useBeneficiariosPage } from './useBeneficiariosPage';
 import apiClient from '@/infrastructure/http/apiClient';
-import { useToast } from '@/shared/context/ToastContext';
+import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 // Fuera del componente — no se recrea en cada render
@@ -192,7 +192,7 @@ export default function BeneficiariosPage() {
   const {
     esAdmin,
     inscripciones, pagina, setPagina, totalPaginas, TABS,
-    buscar, setBuscar,
+    setBuscar,
     estado, setEstado,
     filtrosOpen, setFiltrosOpen,
     fGenero, setFGenero, fEdadMin, setFEdadMin, fEdadMax, setFEdadMax,

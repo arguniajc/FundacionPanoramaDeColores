@@ -15,11 +15,8 @@ import LocationOnIcon       from '@mui/icons-material/LocationOn';
 import InfoOutlinedIcon     from '@mui/icons-material/InfoOutlined';
 import ExpandMoreIcon       from '@mui/icons-material/ExpandMore';
 import { useDashboardPage }  from './useDashboardPage';
-import {
-  COLORES_GENERO,
-  CustomTooltip, GeneroTooltip,
-  KpiCard, FilaOrigen, SeccionHeader, AlertaChip,
-} from './components/DashboardHelpers';
+import { CustomTooltip, GeneroTooltip, KpiCard, FilaOrigen, SeccionHeader, AlertaChip } from './components/DashboardHelpers';
+import { COLORES_GENERO } from './components/coloresGenero';
 
 const COLORES_RANGO = ['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 

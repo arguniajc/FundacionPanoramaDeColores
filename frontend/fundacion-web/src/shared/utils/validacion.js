@@ -11,6 +11,8 @@
  *   validarEsquema(ESQUEMA, form) // → { campo: mensaje } solo con los que fallan
  */
 
+import { parsearFechaISO } from './fecha';
+
 export const vacio = v => v === null || v === undefined || String(v).trim() === '';
 const num = v => (vacio(v) ? NaN : Number(String(v).replace(',', '.')));
 const ej  = ejemplo => (ejemplo !== undefined && ejemplo !== '' ? ` Ejemplo: ${ejemplo}` : '');
@@ -114,8 +116,8 @@ export const r = {
   /** Fecha 'AAAA-MM-DD' con límites opcionales. */
   fecha: ({ noFutura = false, noPasada = false, ejemplo } = {}) => v => {
     if (vacio(v)) return '';
-    const d = new Date(`${v}T00:00:00`);
-    if (Number.isNaN(d.getTime())) return `La fecha no es válida.${ej(ejemplo)}`;
+    const d = parsearFechaISO(v);
+    if (!d) return `La fecha no es válida.${ej(ejemplo)}`;
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
     if (noFutura && d > hoy) return 'La fecha no puede ser futura. Revisa el día y el año.';
     if (noPasada && d < hoy) return 'La fecha no puede ser anterior a hoy.';

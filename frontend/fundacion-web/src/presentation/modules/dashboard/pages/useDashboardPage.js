@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useAuth }                    from '@/application/auth/AuthContext';
-import { useThemeMode }               from '@/shared/theme/ThemeContext';
+import { useAuth } from '@/application/auth/useAuth';
+import { useThemeMode } from '@/shared/theme/useThemeMode';
 import { useAsyncData }               from '@/shared/hooks/useAsyncData';
-import { useToast }                   from '@/shared/context/ToastContext';
+import { useToast } from '@/shared/context/useToast';
 import { beneficiariosRepository }    from '@/infrastructure/repositories/beneficiariosRepository';
 import { talentoHumanoRepository }    from '@/infrastructure/repositories/talentoHumanoRepository';
 import { inventarioRepository }       from '@/infrastructure/repositories/inventarioRepository';
-import { COLORES_GENERO }             from './components/DashboardHelpers';
+import { COLORES_GENERO } from './components/coloresGenero';
 
 const COLORES_RANGO = ['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 

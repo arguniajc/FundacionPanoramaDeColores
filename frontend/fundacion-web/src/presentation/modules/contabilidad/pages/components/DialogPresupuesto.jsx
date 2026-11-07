@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle,
   FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
@@ -18,8 +18,15 @@ export function DialogPresupuesto({ open, modo, data, categorias, programas, pre
   const v = useValidacion(ESQUEMA, form);
   const { reiniciar } = v;
 
-  useEffect(() => {
-    if (!open) return;
+  // Al abrir (o cambiar el registro o el año) se reinicia el formulario. Se ajusta durante
+  // el render al detectar el cambio, en vez de en un efecto.
+  const [previo, setPrevio] = useState(null);
+  if (!previo || previo.open !== open || previo.modo !== modo || previo.data !== data || previo.presAnio !== presAnio) {
+    setPrevio({ open, modo, data, presAnio });
+    if (open) reiniciarFormulario();
+  }
+
+  function reiniciarFormulario() {
     reiniciar();
     if (modo === 'editar' && data) {
       setForm({
@@ -31,7 +38,7 @@ export function DialogPresupuesto({ open, modo, data, categorias, programas, pre
     } else {
       setForm({ anio: presAnio, categoriaId: '', programaId: '', montoPresupuestado: '' });
     }
-  }, [open, modo, data, presAnio, reiniciar]);
+  }
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 

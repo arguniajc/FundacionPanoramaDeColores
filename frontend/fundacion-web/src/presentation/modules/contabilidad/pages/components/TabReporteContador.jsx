@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import PrintIcon        from '@mui/icons-material/Print';
-import { fmt, fmtFecha, MESES, ANIOS } from './helpers';
+import { fmt, fmtFecha, MESES, ANIOS } from './formato';
 import { generarReportePDF } from './generarReportePDF';
 
 export function TabReporteContador({

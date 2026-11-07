@@ -129,9 +129,6 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
   const repNombre     = programa.repNombre  ?? null;
   const repDocumento  = programa.repDocumento ?? null;
   const repCargo      = programa.repCargo   ?? null;
-  const repFechaLabel = programa.repAutorizacionFecha
-    ? new Date(programa.repAutorizacionFecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })
-    : null;
 
   // Datos del representante de la entidad ejecutora (tercero)
   const terceroRepFirma     = programa.terceroRepFirma     ?? null;

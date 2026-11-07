@@ -14,9 +14,9 @@ import CloudIcon    from '@mui/icons-material/Cloud';
 import apiClient    from '@/infrastructure/http/apiClient';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import { exportarExcel } from '@/shared/utils/exportarExcel';
-import { useToast } from '@/shared/context/ToastContext';
+import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
-import { useAuth } from '@/application/auth/AuthContext';
+import { useAuth } from '@/application/auth/useAuth';
 import TabAlmacenamiento from './TabAlmacenamiento';
 
 // ── Permisos ──────────────────────────────────────────────────────────────────

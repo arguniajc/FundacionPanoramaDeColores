@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
-import { useConfirm } from '@/shared/components/ConfirmDialog';
+import { useConfirm } from '@/shared/components/useConfirm';
 import {
   Box, Typography, Grid, Button, TextField, IconButton, Tooltip,
   Chip, Avatar, Divider, CircularProgress, Snackbar, Alert, InputAdornment,
@@ -168,9 +168,6 @@ export default function DonantesPage() {
   const [buscar,    setBuscar]    = useState('');
   const [dialDon,   setDialDon]   = useState({ open: false, donante: null });
   const [snack,     setSnack]     = useState({ open: false, msg: '', sev: 'success' });
-
-  // Navegar a donaciones con el donante preseleccionado
-  const [donantePendiente, setDonantePendiente] = useState(null);
 
   const ok  = msg => setSnack({ open: true, msg, sev: 'success' });
   const err = msg => setSnack({ open: true, msg, sev: 'error' });

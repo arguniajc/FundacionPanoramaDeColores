@@ -1,6 +1,7 @@
 // ── Components ────────────────────────────────────────────────────────────────
 export { default as SkeletonTabla }      from './components/SkeletonTabla';
-export { ConfirmProvider, useConfirm }   from './components/ConfirmDialog';
+export { ConfirmProvider }               from './components/ConfirmDialog';
+export { useConfirm }                    from './components/useConfirm';
 export { default as FirmaPad }           from './components/FirmaPad';
 export { default as UploadFoto }         from './components/UploadFoto';
 export { default as UploadDocumento }    from './components/UploadDocumento';
@@ -20,9 +21,12 @@ export { default as usePermisos }                from './hooks/usePermisos';
 export { useGeografia, useGeografiaColombia }    from './hooks/useGeografia';
 
 // ── Context ───────────────────────────────────────────────────────────────────
-export { FONT_OPTIONS, DEFAULTS, useConfiguracion, ConfiguracionProvider } from './context/ConfiguracionContext';
-export { ToastProvider, useToast }               from './context/ToastContext';
-export { useThemeMode, AppThemeProvider }         from './theme/ThemeContext';
+export { ConfiguracionProvider }         from './context/ConfiguracionContext';
+export { FONT_OPTIONS, DEFAULTS, useConfiguracion } from './context/useConfiguracion';
+export { ToastProvider }                 from './context/ToastContext';
+export { useToast }                      from './context/useToast';
+export { AppThemeProvider }              from './theme/ThemeContext';
+export { useThemeMode }                  from './theme/useThemeMode';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 export { BRAND_COLOR }                           from './constants/brand';

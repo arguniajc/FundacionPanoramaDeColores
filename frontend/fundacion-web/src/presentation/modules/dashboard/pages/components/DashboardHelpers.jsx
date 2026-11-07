@@ -1,13 +1,6 @@
 import { Box, Skeleton, Typography } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-
-export const COLORES_GENERO = {
-  'Masculino':         '#3b82f6',
-  'Femenino':          '#ec4899',
-  'No binario':        '#8b5cf6',
-  'Prefiero no decir': '#94a3b8',
-  'No especificado':   '#cbd5e1',
-};
+import { COLORES_GENERO } from './coloresGenero';
 
 export function CustomTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;

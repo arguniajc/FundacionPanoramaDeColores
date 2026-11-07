@@ -1,4 +1,4 @@
-import { fmt, fmtFecha } from './helpers';
+import { fmt, fmtFecha } from './formato';
 
 const COLOR  = [78, 27, 149];
 const VERDE  = [22, 163, 74];

@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authRepository } from '@/infrastructure/repositories/authRepository';
-import { useAuth } from './AuthContext';
+import { useAuth } from './useAuth';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function useLogin() {

@@ -8,7 +8,7 @@ import {
 import LockIcon from '@mui/icons-material/Lock';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
-import { useConfirm } from '@/shared/components/ConfirmDialog';
+import { useConfirm } from '@/shared/components/useConfirm';
 
 export default function TabAlmacenamiento() {
   const confirm = useConfirm();

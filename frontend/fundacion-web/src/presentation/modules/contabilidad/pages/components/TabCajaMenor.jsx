@@ -12,7 +12,8 @@ import SyncAltIcon      from '@mui/icons-material/SyncAlt';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingUpIcon   from '@mui/icons-material/TrendingUp';
 import { BRAND_COLOR } from '@/shared/constants/brand';
-import { fmt, fmtFecha, MESES, ANIOS, KpiCard, SectionHeader } from './helpers';
+import { KpiCard, SectionHeader } from './helpers';
+import { fmt, fmtFecha, MESES, ANIOS } from './formato';
 
 export function TabCajaMenor({
   cuentas,

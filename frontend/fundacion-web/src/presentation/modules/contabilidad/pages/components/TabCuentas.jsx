@@ -5,7 +5,7 @@ import {
 import AddIcon    from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon   from '@mui/icons-material/Edit';
-import { fmt } from './helpers';
+import { fmt } from './formato';
 
 export function TabCuentas({ cuentas, puedeCrear, puedeEditar, onCrear, onEditar, onEliminar }) {
   return (

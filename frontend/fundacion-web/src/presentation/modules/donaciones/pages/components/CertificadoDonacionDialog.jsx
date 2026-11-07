@@ -5,11 +5,11 @@ import {
 } from '@mui/material';
 import DownloadIcon        from '@mui/icons-material/Download';
 import VerifiedIcon        from '@mui/icons-material/Verified';
-import { useConfiguracion }        from '@/shared/context/ConfiguracionContext';
+import { useConfiguracion } from '@/shared/context/useConfiguracion';
 import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
 import { fmtMoney, fmtFecha } from './helpers';
 import { BRAND_COLOR } from '@/shared/constants/brand';
-import { useToast } from '@/shared/context/ToastContext';
+import { useToast } from '@/shared/context/useToast';
 
 // Convierte un número entero a letras en español (hasta 999.999.999)
 function numeroALetras(num) {

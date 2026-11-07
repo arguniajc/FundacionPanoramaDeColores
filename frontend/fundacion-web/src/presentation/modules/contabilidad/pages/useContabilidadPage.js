@@ -1,9 +1,9 @@
 ﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import apiClient from '@/infrastructure/http/apiClient';
-import { useAuth } from '@/application/auth/AuthContext';
-import { useConfirm } from '@/shared/components/ConfirmDialog';
-import { useConfiguracion } from '@/shared/context/ConfiguracionContext';
-import { useToast } from '@/shared/context/ToastContext';
+import { useAuth } from '@/application/auth/useAuth';
+import { useConfirm } from '@/shared/components/useConfirm';
+import { useConfiguracion } from '@/shared/context/useConfiguracion';
+import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { generarComprobantePDF } from './components/generarComprobantePDF';
 
@@ -158,10 +158,12 @@ export function useContabilidadPage() {
       const primera = cuentas.find(c => c.tipo !== 'cuenta_bancaria');
       if (primera) setCajaCuentaId(primera.id);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe elegir la caja por defecto al entrar a la pestaña o al cargar cuentas, no cada vez que cambia la caja elegida
   }, [tab, cuentas]);
 
   useEffect(() => {
     if (cajaCuentaId) cargarCajaMenor();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- recarga solo al cambiar de caja; al cambiar mes/año se recarga con el botón Filtrar
   }, [cajaCuentaId]);
 
   const generarReporte = async () => {

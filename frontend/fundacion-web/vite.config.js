@@ -16,4 +16,9 @@ export default defineConfig({
   esbuild: {
     drop: ['console', 'debugger'],
   },
+  // Pruebas unitarias (vitest lee este archivo): lógica pura, sin DOM.
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.{js,jsx}'],
+  },
 })

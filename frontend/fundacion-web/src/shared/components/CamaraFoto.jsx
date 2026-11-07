@@ -23,7 +23,8 @@ export default function CamaraFoto({ open, onCerrar, onCaptura }) {
 
   useEffect(() => {
     if (!open) return;
-    setError(''); setListo(false); setIniciando(true);
+    // Reinicio del estado visual dentro de una función async (su cuerpo corre igual, de inmediato)
+    (async () => { setError(''); setListo(false); setIniciando(true); })();
 
     navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
@@ -41,7 +42,7 @@ export default function CamaraFoto({ open, onCerrar, onCaptura }) {
       });
 
     return detener;
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleCerrar = () => { detener(); setListo(false); onCerrar(); };
 

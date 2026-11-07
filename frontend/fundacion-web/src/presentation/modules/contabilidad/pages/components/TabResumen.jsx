@@ -5,7 +5,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import { fmt, fmtFecha, MESES } from './helpers';
+import { fmt, fmtFecha, MESES } from './formato';
 
 export function TabResumen({ stats, cuentas, movimientos }) {
   const now = new Date();

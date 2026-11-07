@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle,
   Grid, InputAdornment, TextField,
 } from '@mui/material';
-import { fmt, hoy } from './helpers';
+import { fmt, hoy } from './formato';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
@@ -25,12 +25,15 @@ export function DialogArqueo({ open, cuenta, guardando, onClose, onGuardar }) {
   const v = useValidacion(ESQUEMA, form);
   const { reiniciar } = v;
 
-  useEffect(() => {
+  // Al abrir se reinicia el formulario. Se ajusta durante el render al detectar el cambio, en vez de en un efecto.
+  const [abiertoAntes, setAbiertoAntes] = useState(false);
+  if (open !== abiertoAntes) {
+    setAbiertoAntes(open);
     if (open) {
       setForm({ fecha: hoy(), saldoFisico: '', observacion: '', responsable: '' });
       reiniciar();
     }
-  }, [open, reiniciar]);
+  }
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const saldoFisicoNum = parseFloat(form.saldoFisico) || 0;

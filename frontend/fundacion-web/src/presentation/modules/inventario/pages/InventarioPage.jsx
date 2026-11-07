@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
-import { useConfirm } from '@/shared/components/ConfirmDialog';
+import { useConfirm } from '@/shared/components/useConfirm';
 import {
   Alert, Box, Button, Chip, CircularProgress, FormControl, Grid, IconButton,
   InputAdornment, InputLabel, MenuItem, Select, Snackbar, TextField, Typography,

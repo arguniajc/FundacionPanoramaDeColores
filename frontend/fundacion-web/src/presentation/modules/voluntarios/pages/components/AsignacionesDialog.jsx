@@ -11,7 +11,7 @@ import DeleteIcon     from '@mui/icons-material/Delete';
 import EditIcon       from '@mui/icons-material/Edit';
 import { voluntariosRepository } from '@/infrastructure/repositories/voluntariosRepository';
 import { sedesRepository }        from '@/infrastructure/repositories/sedesRepository';
-import { useConfirm }             from '@/shared/components/ConfirmDialog';
+import { useConfirm } from '@/shared/components/useConfirm';
 import { COLOR, FORM_VACIO_ASIG, fmtFecha, toInputDate } from './helpers';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r, vacio } from '@/shared/utils/validacion';

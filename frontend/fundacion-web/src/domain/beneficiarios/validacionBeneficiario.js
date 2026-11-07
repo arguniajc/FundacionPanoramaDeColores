@@ -6,6 +6,8 @@
  * Sin React, sin Axios, sin MUI — solo lógica.
  */
 
+import { parsearFechaISO } from '@/shared/utils/fecha';
+
 const NO_REGISTRA = 'No registra';
 
 /** Tipos de documento que solo llevan números. */
@@ -24,8 +26,8 @@ const numero = v => (vacio(v) ? NaN : Number(String(v).replace(',', '.')));
 /** Edad en años cumplidos a partir de 'AAAA-MM-DD' (null si la fecha no es válida). */
 export function edadDesde(fecha) {
   if (!fecha) return null;
-  const fn = new Date(`${fecha}T00:00:00`);
-  if (Number.isNaN(fn.getTime())) return null;
+  const fn = parsearFechaISO(fecha);
+  if (!fn) return null;
   const hoy = new Date();
   let edad = hoy.getFullYear() - fn.getFullYear();
   const m  = hoy.getMonth() - fn.getMonth();

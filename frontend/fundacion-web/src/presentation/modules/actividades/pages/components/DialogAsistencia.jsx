@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
-import { useToast } from '@/shared/context/ToastContext';
+import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function DialogAsistencia({ open, actividad, onClose, onGuardado }) {

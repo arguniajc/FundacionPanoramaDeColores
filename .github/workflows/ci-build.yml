@@ -42,6 +42,10 @@ jobs:
         run: npm ci
         working-directory: frontend/fundacion-web
 
+      - name: Test
+        run: npm test
+        working-directory: frontend/fundacion-web
+
       - name: Build
         run: npm run build
         working-directory: frontend/fundacion-web

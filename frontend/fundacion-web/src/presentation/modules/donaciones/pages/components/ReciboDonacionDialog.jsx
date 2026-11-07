@@ -7,7 +7,7 @@ import DownloadIcon        from '@mui/icons-material/Download';
 import EmailIcon           from '@mui/icons-material/Email';
 import ReceiptIcon         from '@mui/icons-material/Receipt';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
-import { useConfiguracion }        from '@/shared/context/ConfiguracionContext';
+import { useConfiguracion } from '@/shared/context/useConfiguracion';
 import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
 import { donacionesRepository }    from '@/infrastructure/repositories/donacionesRepository';
 import { fmtMoney, fmtFecha } from './helpers';

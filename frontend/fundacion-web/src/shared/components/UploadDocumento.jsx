@@ -145,6 +145,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
         generandoRef.current = false;
       }
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- el PDF se genera solo cuando cambian los archivos; las vistas previas derivan de ellos
   }, [frente.file, reverso.file]);
 
   const handleDescargar = async () => {

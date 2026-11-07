@@ -3,7 +3,7 @@ import {
   Grid, Typography,
 } from '@mui/material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import { fmt, fmtFecha } from './helpers';
+import { fmt, fmtFecha } from './formato';
 import { generarComprobantePDF } from './generarComprobantePDF';
 
 export function DialogComprobante({ mov, onClose, config }) {

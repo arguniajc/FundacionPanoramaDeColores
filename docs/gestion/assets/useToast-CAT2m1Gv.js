@@ -1,0 +1,1 @@
+import{i as e}from"./chunk-DseTPa7n.js";import{Nt as t}from"./apiClient-BsGaAyUG.js";var n=e(t(),1),r=(0,n.createContext)(null);function i(){let e=(0,n.useContext)(r);if(!e)throw Error(`useToast debe usarse dentro de ToastProvider`);return e}export{i as n,r as t};

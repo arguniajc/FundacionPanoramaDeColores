@@ -4,7 +4,7 @@ import {
   FormControl, FormControlLabel, FormHelperText, Grid, InputAdornment, InputLabel,
   MenuItem, Radio, RadioGroup, Select, TextField, Typography,
 } from '@mui/material';
-import { hoy } from './helpers';
+import { hoy } from './formato';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';

@@ -18,3 +18,15 @@ export function fechaLocalISO(d = new Date()) {
   const dd = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
+
+/**
+ * Convierte 'AAAA-MM-DD' en una fecha local, o null si no existe.
+ * new Date('2026-02-30') no falla: se corre en silencio al 2 de marzo.
+ */
+export function parsearFechaISO(texto) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(texto ?? ''));
+  if (!m) return null;
+  const [anio, mes, dia] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const d = new Date(anio, mes - 1, dia);
+  return d.getFullYear() === anio && d.getMonth() === mes - 1 && d.getDate() === dia ? d : null;
+}

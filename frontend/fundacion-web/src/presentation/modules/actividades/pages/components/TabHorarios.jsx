@@ -11,7 +11,7 @@ import AccessTimeIcon    from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlaceIcon         from '@mui/icons-material/Place';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
-import { useConfirm }            from '@/shared/components/ConfirmDialog';
+import { useConfirm } from '@/shared/components/useConfirm';
 import { DialogHorario }         from './DialogHorario';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';

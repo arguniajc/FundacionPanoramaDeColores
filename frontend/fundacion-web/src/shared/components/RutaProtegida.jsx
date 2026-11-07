@@ -1,5 +1,5 @@
 ﻿import { Navigate }    from 'react-router-dom';
-import { useAuth }     from '@/application/auth/AuthContext';
+import { useAuth } from '@/application/auth/useAuth';
 import PantallaCarga   from './PantallaCarga';
 
 export default function RutaProtegida({ children }) {

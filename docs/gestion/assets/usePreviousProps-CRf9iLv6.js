@@ -1,1 +1,0 @@
-import{i as e}from"./chunk-DseTPa7n.js";import{Lt as t}from"./apiClient-13EF4tsF.js";var n=e(t(),1);function r(e){let t=n.useRef({});return n.useEffect(()=>{t.current=e}),t.current}export{r as t};

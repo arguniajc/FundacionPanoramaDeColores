@@ -13,7 +13,7 @@ import { TabInventario }         from './components/TabInventario';
 import { TabActividades }        from './components/TabActividades';
 import { TabDonaciones }         from './components/TabDonaciones';
 import { TabContabilidadEsal }   from './components/TabContabilidadEsal';
-import { useToast }              from '@/shared/context/ToastContext';
+import { useToast } from '@/shared/context/useToast';
 
 const TABS = [
   { label: 'Beneficiarios',     icon: <PeopleIcon />,            component: <TabBeneficiarios /> },

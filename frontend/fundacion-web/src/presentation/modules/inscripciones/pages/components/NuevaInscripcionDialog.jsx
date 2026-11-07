@@ -12,10 +12,8 @@ import { sedesRepository }         from '@/infrastructure/repositories/sedesRepo
 import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
 import { mensajeErrorApi }         from '@/shared/utils/mensajeErrorApi';
 import ResumenErrores              from '@/shared/components/ResumenErrores';
-import {
-  COLOR, CampoInput, FirmaAutorizacion, SeccionHeader,
-  agruparPorSeccion, calcEdad,
-} from './campos';
+import { CampoInput, FirmaAutorizacion, SeccionHeader } from './campos';
+import { COLOR, agruparPorSeccion, calcEdad } from './camposUtils';
 import {
   ETIQUETAS_FIRMA, erroresCamposDinamicos, erroresFirma, esPanelResponsable, faltantesPanel,
 } from './validacionFormulario';

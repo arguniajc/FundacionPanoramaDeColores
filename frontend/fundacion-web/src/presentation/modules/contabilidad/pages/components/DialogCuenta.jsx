@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle,
   FormControl, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
@@ -24,8 +24,15 @@ export function DialogCuenta({ open, modo, data, guardando, onClose, onGuardar }
   const v = useValidacion(ESQUEMA, { ...form, crear: modo === 'crear' });
   const { reiniciar } = v;
 
-  useEffect(() => {
-    if (!open) return;
+  // Al abrir (o cambiar el registro) se reinicia el formulario. Se ajusta durante el render
+  // al detectar el cambio, en vez de en un efecto.
+  const [previo, setPrevio] = useState(null);
+  if (!previo || previo.open !== open || previo.modo !== modo || previo.data !== data) {
+    setPrevio({ open, modo, data });
+    if (open) reiniciarFormulario();
+  }
+
+  function reiniciarFormulario() {
     reiniciar();
     if (modo === 'editar' && data) {
       setForm({
@@ -38,7 +45,7 @@ export function DialogCuenta({ open, modo, data, guardando, onClose, onGuardar }
     } else {
       setForm({ nombre: '', tipo: 'caja', banco: '', numeroCuenta: '', saldoInicial: '0' });
     }
-  }, [open, modo, data, reiniciar]);
+  }
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 

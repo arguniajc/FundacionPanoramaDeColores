@@ -1,7 +1,6 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Snackbar, Alert } from '@mui/material';
-
-const ToastContext = createContext(null);
+import { ToastContext } from './useToast';
 
 export function ToastProvider({ children }) {
   const [toast, setToast] = useState({ open: false, msg: '', severity: 'success' });
@@ -27,10 +26,4 @@ export function ToastProvider({ children }) {
       </Snackbar>
     </ToastContext.Provider>
   );
-}
-
-export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast debe usarse dentro de ToastProvider');
-  return ctx;
 }

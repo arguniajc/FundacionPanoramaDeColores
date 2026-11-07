@@ -231,7 +231,7 @@ export async function abrirHojaDeVida(ins, edad) {
 
   <div class="pie">Generado por Panel Admin · Fundación Panorama de Colores · ${new Date().toLocaleDateString('es-CO')}</div>
 </div>
-<script>window.onload=()=>window.print()<\/script>
+<script>window.onload=()=>window.print()</script>
 </body></html>`);
 
   ventana.document.close();

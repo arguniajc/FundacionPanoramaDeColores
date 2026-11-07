@@ -1,7 +1,7 @@
 ﻿import { Alert, Box, Divider, Grid, MenuItem, Select, Typography, FormControl, InputLabel } from '@mui/material';
 import { Seccion }      from './Seccion';
 import { ColorPicker }  from './ColorPicker';
-import { FONT_OPTIONS, DEFAULTS } from '@/shared/context/ConfiguracionContext';
+import { FONT_OPTIONS, DEFAULTS } from '@/shared/context/useConfiguracion';
 
 const COLORES_MARCA = [
   { key: 'colorPrimario',   cssVar: '--color-primario',   label: 'Color primario',   desc: 'Encabezados, tabs, botones e identidad visual' },
@@ -158,7 +158,7 @@ export function TabApariencia({ form, setForm }) {
               </Box>
               {['Dashboard', 'Beneficiarios', 'Configuración'].map((item, i) => (
                 <Box key={item} sx={{
-                  px: 1.5, py: 0.7, bgcolor: cs,
+                  px: 1.5, py: 0.7,
                   borderLeft: i === 1 ? `3px solid ${sidebarAcc}` : '3px solid transparent',
                   bgcolor: i === 1 ? `${cp}1a` : cs,
                 }}>

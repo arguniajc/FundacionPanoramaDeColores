@@ -11,7 +11,7 @@ import AssignmentIcon  from '@mui/icons-material/Assignment';
 import AccessTimeIcon  from '@mui/icons-material/AccessTime';
 import SearchIcon from '@mui/icons-material/Search';
 import { voluntariosRepository } from '@/infrastructure/repositories/voluntariosRepository';
-import { useConfirm }             from '@/shared/components/ConfirmDialog';
+import { useConfirm } from '@/shared/components/useConfirm';
 import { COLOR }               from './components/helpers';
 import { StatCard }            from './components/StatCard';
 import { VoluntarioCard }      from './components/VoluntarioCard';

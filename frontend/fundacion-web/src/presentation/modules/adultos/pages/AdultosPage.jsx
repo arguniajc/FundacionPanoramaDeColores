@@ -51,7 +51,7 @@ import { ImportarBeneficiariosDialog } from '@/presentation/modules/beneficiario
 import { PerfilesIncompletosDialog }    from '@/presentation/modules/beneficiarios/pages/components/PerfilesIncompletosDialog';
 import { useBeneficiariosPage } from '@/presentation/modules/beneficiarios/pages/useBeneficiariosPage';
 import apiClient from '@/infrastructure/http/apiClient';
-import { useToast } from '@/shared/context/ToastContext';
+import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const HOVER_SX_ADULTOS = {
@@ -180,7 +180,7 @@ export default function AdultosPage() {
   const {
     esAdmin,
     inscripciones, pagina, setPagina, totalPaginas, TABS,
-    buscar, setBuscar,
+    setBuscar,
     estado, setEstado,
     filtrosOpen, setFiltrosOpen,
     fGenero, setFGenero, fEdadMin, setFEdadMin, fEdadMax, setFEdadMax,

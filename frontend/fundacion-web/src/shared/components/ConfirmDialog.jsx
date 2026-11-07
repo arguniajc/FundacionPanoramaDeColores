@@ -1,7 +1,6 @@
-import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-
-const ConfirmContext = createContext(null);
+import { ConfirmContext } from './useConfirm';
 
 /** @param {{ children: React.ReactNode }} props */
 export function ConfirmProvider({ children }) {
@@ -37,10 +36,4 @@ export function ConfirmProvider({ children }) {
       </Dialog>
     </ConfirmContext.Provider>
   );
-}
-
-export function useConfirm() {
-  const ctx = useContext(ConfirmContext);
-  if (!ctx) throw new Error('useConfirm debe usarse dentro de ConfirmProvider');
-  return ctx;
 }

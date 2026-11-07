@@ -103,9 +103,13 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
     if (open) cargar(tipoFiltro);
   }, [open, tipoFiltro, cargar]);
 
-  useEffect(() => {
+  // Al cerrar (o si cambia el tipo inicial estando cerrado) se vuelve al filtro inicial.
+  // Se ajusta durante el render al detectar el cambio, en vez de hacerlo en un efecto.
+  const [previo, setPrevio] = useState({ open, tipoInicial });
+  if (previo.open !== open || previo.tipoInicial !== tipoInicial) {
+    setPrevio({ open, tipoInicial });
     if (!open) setTipoFiltro(tipoInicial);
-  }, [open, tipoInicial]);
+  }
 
   const renderBarras = (items, maxVal, color) =>
     items.map(({ key, val }) => (

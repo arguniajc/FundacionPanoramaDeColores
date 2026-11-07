@@ -13,8 +13,9 @@ export function useAlertas() {
     } catch { /* silencioso — no interrumpir la sesión por fallos de alertas */ }
   }, []);
 
+  // La carga es asíncrona: se lanza dentro de una función async para no llamar setState de forma síncrona en el efecto
   useEffect(() => {
-    cargar();
+    (async () => { await cargar(); })();
     const id = setInterval(cargar, INTERVALO_MS);
     return () => clearInterval(id);
   }, [cargar]);

@@ -4,7 +4,7 @@ import AdminLayout        from '@/presentation/layouts/AdminLayout';
 import RutaProtegida      from '@/shared/components/RutaProtegida';
 import SinAcceso          from '@/shared/components/SinAcceso';
 import PantallaCarga      from '@/shared/components/PantallaCarga';
-import { useAuth }        from '@/application/auth/AuthContext';
+import { useAuth } from '@/application/auth/useAuth';
 import LoginPage          from '@/presentation/modules/auth/pages/LoginPage';
 
 // Módulos cargados bajo demanda — el bundle principal pasa de ~2.6 MB a ~800 KB

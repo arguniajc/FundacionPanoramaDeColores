@@ -3,7 +3,7 @@ import {
   Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle,
   FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
 } from '@mui/material';
-import { fmt, hoy } from './helpers';
+import { fmt, hoy } from './formato';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';

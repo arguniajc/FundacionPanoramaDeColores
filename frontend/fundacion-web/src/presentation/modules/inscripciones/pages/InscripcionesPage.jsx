@@ -10,9 +10,9 @@ import DeleteIcon     from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { sedesRepository }    from '@/infrastructure/repositories/sedesRepository';
 import { useInscripciones }   from '@/application/inscripciones/useInscripciones';
-import { useToast }           from '@/shared/context/ToastContext';
+import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi }    from '@/shared/utils/mensajeErrorApi';
-import { COLOR, ESTADOS, chipEstado } from './components/campos';
+import { COLOR, ESTADOS } from './components/camposUtils';
 import { VerFormularioDialog }        from './components/VerFormularioDialog';
 import { NuevaInscripcionDialog }     from './components/NuevaInscripcionDialog';
 

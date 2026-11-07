@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useConfirm }             from '@/shared/components/ConfirmDialog';
+import { useConfirm } from '@/shared/components/useConfirm';
 import { actividadesRepository }  from '@/infrastructure/repositories/actividadesRepository';
 import { sedesRepository }        from '@/infrastructure/repositories/sedesRepository';
 import usePermisos                from '@/shared/hooks/usePermisos';
 import { BRAND_COLOR }            from '@/shared/constants/brand';
-import { useToast }               from '@/shared/context/ToastContext';
+import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi }        from '@/shared/utils/mensajeErrorApi';
 
 const COLOR = BRAND_COLOR;
@@ -92,7 +92,8 @@ export function useActividadesPage() {
     } catch (e) { toast(mensajeErrorApi(e, { accion: 'cargar los horarios' }), 'error'); }
   }, [toast]);
 
-  useEffect(() => { cargarHorarios(); }, [cargarHorarios]);
+  // La carga es asíncrona: se lanza dentro de una función async para no llamar setState de forma síncrona en el efecto
+  useEffect(() => { (async () => { await cargarHorarios(); })(); }, [cargarHorarios]);
 
   const cargar = useCallback(async (info) => {
     try {
@@ -105,7 +106,8 @@ export function useActividadesPage() {
     } catch (e) { toast(mensajeErrorApi(e, { accion: 'cargar las actividades' }), 'error'); }
   }, [toast]);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  // La carga es asíncrona: se lanza dentro de una función async para no llamar setState de forma síncrona en el efecto
+  useEffect(() => { (async () => { await cargar(); })(); }, [cargar]);
 
   const eventosUnicos = actividades.flatMap((a, i) => {
     const color = COLORES_PROGRAMA[i % COLORES_PROGRAMA.length];

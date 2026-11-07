@@ -52,7 +52,7 @@ const FORM_VACIO = {
 export default function ProgramasPage() {
   const {
     sedes, cargando, error, setError, toast, setToast,
-    guardarPrograma, togglePrograma, eliminarPrograma,
+    guardarPrograma, togglePrograma,
     autorizarRepPrograma, revocarRepPrograma,
   } = useSedes();
 

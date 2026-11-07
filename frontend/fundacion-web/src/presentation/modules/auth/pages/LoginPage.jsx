@@ -6,7 +6,7 @@ import {
   CircularProgress, Alert, Divider,
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { useAuth }   from '@/application/auth/AuthContext';
+import { useAuth } from '@/application/auth/useAuth';
 import apiClient     from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 

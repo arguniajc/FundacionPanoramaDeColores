@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, LinearProgress,
 } from '@mui/material';
-import { useAuth } from '@/application/auth/AuthContext';
+import { useAuth } from '@/application/auth/useAuth';
 import { authRepository } from '@/infrastructure/repositories/authRepository';
 import { getToken } from '@/infrastructure/storage/authStorage';
 import { LOGIN_URL } from '@/shared/constants/routes';

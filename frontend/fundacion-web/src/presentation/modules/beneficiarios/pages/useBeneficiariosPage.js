@@ -1,10 +1,10 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import apiClient from '@/infrastructure/http/apiClient';
-import { useAuth } from '@/application/auth/AuthContext';
+import { useAuth } from '@/application/auth/useAuth';
 import { cacheKey, leerCache, escribirCache, limpiarCache } from '@/infrastructure/cache/sessionCache';
 import { calcularEdad } from '@/shared/utils/fecha';
 import { exportarExcel } from '@/shared/utils/exportarExcel';
-import { useToast } from '@/shared/context/ToastContext';
+import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const POR_PAGINA = 15;
@@ -123,7 +123,6 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
       setToast('Beneficiario reactivado correctamente');
       limpiarCache(); cargar(true); cargarStatsDetalle();
     } catch (err) { setError(mensajeErrorApi(err, { accion: 'reactivar el beneficiario' })); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargar, cargarStatsDetalle]);
 
   const handleEliminarPermanente = async () => {

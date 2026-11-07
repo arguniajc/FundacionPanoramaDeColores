@@ -15,12 +15,15 @@ import { sedesRepository }         from '@/infrastructure/repositories/sedesRepo
 import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
 import { mensajeErrorApi }         from '@/shared/utils/mensajeErrorApi';
 import ResumenErrores              from '@/shared/components/ResumenErrores';
-import {
-  COLOR, CampoInput, FirmaAutorizacion, SeccionHeader,
-  agruparPorSeccion, calcEdad, chipEstado, fmtFechaCorta,
-} from './campos';
+import { CampoInput, FirmaAutorizacion, SeccionHeader } from './campos';
+import { COLOR, ESTADOS, agruparPorSeccion, calcEdad, fmtFechaCorta } from './camposUtils';
 import { erroresCamposDinamicos } from './validacionFormulario';
 import { abrirArchivo, useArchivoUrl } from '@/shared/utils/archivos';
+
+function chipEstado(estado) {
+  const e = ESTADOS.find(x => x.value === estado) ?? { label: estado, color: 'default' };
+  return <Chip label={e.label} size="small" color={e.color} />;
+}
 
 export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [campos,        setCampos]        = useState([]);
@@ -76,6 +79,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       })
       .catch(err => setError(mensajeErrorApi(err, { accion: 'cargar el formulario de la inscripción' })))
       .finally(() => setCargando(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- se recarga solo al cambiar de inscripción, no cuando el padre pasa otro objeto con el mismo id
   }, [inscripcion.id]);
 
   // Errores de los campos del programa (obligatorios y formato), con el mismo criterio que al inscribir

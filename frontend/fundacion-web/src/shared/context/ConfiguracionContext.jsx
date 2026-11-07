@@ -1,13 +1,6 @@
-﻿import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
-
-export const FONT_OPTIONS = [
-  { value: 'Inter',      label: 'Inter',      desc: 'Moderna y limpia — ideal para dashboards' },
-  { value: 'Poppins',    label: 'Poppins',    desc: 'Amigable y moderna — sensación humana' },
-  { value: 'Nunito',     label: 'Nunito',     desc: 'Social y cálida — perfecta para fundaciones' },
-  { value: 'Roboto',     label: 'Roboto',     desc: 'Clásica Google — excelente legibilidad' },
-  { value: 'Open Sans',  label: 'Open Sans',  desc: 'Cómoda para lectura extensa' },
-];
+import { DEFAULTS, ConfiguracionCtx } from './useConfiguracion';
 
 const FONT_GOOGLE_MAP = {
   'Inter':     'Inter:wght@400;500;600;700;800',
@@ -15,29 +8,6 @@ const FONT_GOOGLE_MAP = {
   'Nunito':    'Nunito:wght@400;500;600;700;800',
   'Roboto':    'Roboto:wght@400;500;700',
   'Open Sans': 'Open+Sans:wght@400;500;600;700',
-};
-
-export const DEFAULTS = {
-  colorPrimario:      '#6735A6',
-  colorSidebar:       '#F4E3C1',
-  colorSecundario:    '#51A432',
-  colorGradiente:     '#085A9D',
-  colorAccento:       '#FAA112',
-  colorOscuroFondo:   '#121212',
-  colorOscuroPaper:   '#1E1A28',
-  colorOscuroSidebar: '#1B1035',
-  fontFamily:         'Inter',
-  nombreFundacion:    'Fundación Panorama de Colores',
-  nit:                '',
-  direccion:          '',
-  telefono:           '',
-  tagline:            '',
-  mision:             '',
-  vision:             '',
-  emailContacto:      '',
-  sitioWeb:           '',
-  mensajeBienvenida:  '',
-  footerTexto:        '',
 };
 
 const CACHE_KEY = 'fundacion_config_cache';
@@ -88,9 +58,6 @@ function cargarCache() {
 function guardarCache(data) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch { /* opcional: si localStorage está lleno o bloqueado solo se pierde la caché */ }
 }
-
-const ConfiguracionCtx = createContext({ ...DEFAULTS, actualizarConfig: () => {} });
-export const useConfiguracion = () => useContext(ConfiguracionCtx);
 
 export function ConfiguracionProvider({ children }) {
   const [config, setConfig] = useState(() => {

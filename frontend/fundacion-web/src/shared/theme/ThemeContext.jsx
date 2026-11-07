@@ -1,9 +1,7 @@
-import { createContext, useContext, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { createTheme, ThemeProvider, CssBaseline } from '@mui/material';
-import { useConfiguracion, DEFAULTS } from '../context/ConfiguracionContext';
-
-const ThemeCtx = createContext({ mode: 'light', toggleMode: () => {} });
-export const useThemeMode = () => useContext(ThemeCtx);
+import { useConfiguracion, DEFAULTS } from '../context/useConfiguracion';
+import { ThemeCtx } from './useThemeMode';
 
 export function AppThemeProvider({ children }) {
   const [mode, setMode] = useState(

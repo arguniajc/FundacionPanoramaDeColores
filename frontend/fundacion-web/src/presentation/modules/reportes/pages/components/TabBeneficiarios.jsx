@@ -9,7 +9,8 @@ import {
 } from 'recharts';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
-import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
+import { GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
+import { COLORES } from './colores';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 
 export function TabBeneficiarios() {
@@ -21,10 +22,13 @@ export function TabBeneficiarios() {
   const anios = Array.from({ length: 5 }, (_, i) => hoy.getFullYear() - i);
 
   useEffect(() => {
-    setData(null);
-    apiClient.get('/api/reportes/beneficiarios', { params: { anio } })
-      .then(r => setData(r.data))
-      .catch(err => setError(mensajeErrorApi(err, { accion: 'cargar el reporte de beneficiarios' })));
+    // Se reinicia y carga dentro de una función async (no setState síncrono en el efecto)
+    (async () => {
+      setData(null);
+      apiClient.get('/api/reportes/beneficiarios', { params: { anio } })
+        .then(r => setData(r.data))
+        .catch(err => setError(mensajeErrorApi(err, { accion: 'cargar el reporte de beneficiarios' })));
+    })();
   }, [anio]);
 
   if (error) return <Alert severity="error">{error}</Alert>;

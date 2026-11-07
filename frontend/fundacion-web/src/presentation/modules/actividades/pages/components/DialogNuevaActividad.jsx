@@ -157,8 +157,6 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
     }
   };
 
-  const diasLabel = recur.diasSemana.map(d => DIAS_CORTO[d]).join(', ');
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, pb: 1, color: COLOR }}>

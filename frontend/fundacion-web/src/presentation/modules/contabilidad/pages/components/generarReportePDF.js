@@ -1,4 +1,4 @@
-import { fmt, fmtFecha } from './helpers';
+import { fmt, fmtFecha } from './formato';
 
 export function generarReportePDF(reporte, config) {
   import('jspdf').then(({ default: jsPDF }) => {
@@ -109,7 +109,7 @@ export function generarReportePDF(reporte, config) {
         row.forEach((cell, ci) => {
           const txt = String(cell ?? '—');
           const maxW = colWidths[ci] - 2;
-          doc.text(txt, xr, y + 4, { maxWidth });
+          doc.text(txt, xr, y + 4, { maxWidth: maxW });
           xr += colWidths[ci];
         });
         y += 6;

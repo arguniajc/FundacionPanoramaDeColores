@@ -11,7 +11,7 @@ import EditIcon         from '@mui/icons-material/Edit';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import SearchIcon       from '@mui/icons-material/Search';
 import VisibilityIcon   from '@mui/icons-material/Visibility';
-import { fmt, fmtFecha, MESES, ANIOS } from './helpers';
+import { fmt, fmtFecha, MESES, ANIOS } from './formato';
 
 export function TabMovimientos({
   movimientos, cuentas,

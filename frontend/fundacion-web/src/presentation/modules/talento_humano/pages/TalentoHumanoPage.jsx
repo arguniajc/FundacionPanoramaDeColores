@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
-import { useConfirm } from '@/shared/components/ConfirmDialog';
+import { useConfirm } from '@/shared/components/useConfirm';
 import {
   Box, Typography, Button, TextField, MenuItem, Grid, Card, CardContent,
   Avatar, Chip, IconButton, Tabs, Tab, Alert, Skeleton, Tooltip,
@@ -19,7 +19,7 @@ import EventNoteIcon     from '@mui/icons-material/EventNote';
 import AccountTreeIcon   from '@mui/icons-material/AccountTree';
 import PaymentsIcon      from '@mui/icons-material/Payments';
 import apiClient         from '@/infrastructure/http/apiClient';
-import { useAuth }       from '@/application/auth/AuthContext';
+import { useAuth } from '@/application/auth/useAuth';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { DialogEmpleado } from './components/DialogEmpleado';
 import { PanelEmpleado }  from './components/PanelEmpleado';

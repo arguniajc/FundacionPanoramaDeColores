@@ -6,7 +6,7 @@ import {
 import AddIcon    from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon   from '@mui/icons-material/Edit';
-import { fmt, ANIOS } from './helpers';
+import { fmt, ANIOS } from './formato';
 
 export function TabPresupuesto({
   presupuesto, presAnio, setPresAnio,

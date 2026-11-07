@@ -1,25 +1,19 @@
-﻿import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+﻿import { useState, useCallback } from 'react';
 import {
   getToken, getUser, getRol, getPermisos,
   saveSession, clearSession,
 } from '@/infrastructure/storage/authStorage';
-
-const AuthContext = createContext(null);
+import { AuthContext } from './useAuth';
 
 export function AuthProvider({ children }) {
-  const [user,     setUser]     = useState(null);
-  const [rol,      setRol]      = useState('');
-  const [permisos, setPermisos] = useState({});
-  const [cargando, setCargando] = useState(true);
-
-  useEffect(() => {
-    if (getToken()) {
-      setUser(getUser());
-      setRol(getRol());
-      setPermisos(getPermisos());
-    }
-    setCargando(false);
-  }, []);
+  // La sesión guardada se lee una sola vez al crear el estado (antes se copiaba en un efecto)
+  const [sesionInicial] = useState(() => (getToken()
+    ? { user: getUser(), rol: getRol(), permisos: getPermisos() }
+    : { user: null, rol: '', permisos: {} }));
+  const [user,     setUser]     = useState(sesionInicial.user);
+  const [rol,      setRol]      = useState(sesionInicial.rol);
+  const [permisos, setPermisos] = useState(sesionInicial.permisos);
+  const cargando = false;
 
   const login = useCallback((token, userData, rolData, permisosData) => {
     saveSession(token, userData, rolData, permisosData);
@@ -48,10 +42,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider');
-  return ctx;
 }

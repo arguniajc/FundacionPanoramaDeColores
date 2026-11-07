@@ -136,9 +136,6 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
     }
   };
 
-  const diasSelLabel = form.diasSemana.map(d => DIAS_CORTO[d]).join(', ');
-  const progNombre   = programas.find(p => p.id === form.programaId)?.nombre ?? '';
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, pb: 1, color: COLOR }}>

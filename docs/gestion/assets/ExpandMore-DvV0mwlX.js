@@ -1,0 +1,1 @@
+import{t as e}from"./react-vendor-CMK0e4R0.js";import{F as t}from"./apiClient-TWeVXkBY.js";var n=t((0,e().jsx)(`path`,{d:`M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z`}),`ExpandMore`);export{n as t};

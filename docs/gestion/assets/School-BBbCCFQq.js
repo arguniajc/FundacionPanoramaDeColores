@@ -1,0 +1,1 @@
+import{t as e}from"./react-vendor-CMK0e4R0.js";import{F as t}from"./apiClient-TWeVXkBY.js";var n=t((0,e().jsx)(`path`,{d:`M5 13.18v4L12 21l7-3.82v-4L12 17zM12 3 1 9l11 6 9-4.91V17h2V9z`}),`School`);export{n as t};

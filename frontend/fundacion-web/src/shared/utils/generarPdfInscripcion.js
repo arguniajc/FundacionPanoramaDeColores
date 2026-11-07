@@ -1,4 +1,3 @@
-import jsPDF from 'jspdf';
 import { resolverArchivo } from './archivos';
 
 // Carga una imagen desde URL y devuelve un JPEG con fondo morado, aro blanco y foto circular recortada.
@@ -106,6 +105,7 @@ const QUIEN_PDF_LABEL = { padre: 'Padre', madre: 'Madre', tutor: 'Tutor legal' }
 
 // ── Generador principal ───────────────────────────────────────────────────────
 export async function generarPdfInscripcion({ inscripcion, beneficiario, campos, datos, observaciones, conTercero = false, nombreTercero = '', programa = {} }) {
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const PW = 210, PH = 297, ML = 13, CW = PW - ML * 2;
   let y = ML;

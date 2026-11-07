@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Snackbar, Alert } from '@mui/material';
 import { ToastContext } from './useToast';
+import { EVENTO_NOTIFICAR } from '@/shared/utils/notificar';
 
 export function ToastProvider({ children }) {
   const [toast, setToast] = useState({ open: false, msg: '', severity: 'success' });
@@ -8,6 +9,13 @@ export function ToastProvider({ children }) {
   const show = useCallback((msg, severity = 'success') => {
     setToast({ open: true, msg, severity });
   }, []);
+
+  // Avisos lanzados con notificar() desde utilidades que no son componentes
+  useEffect(() => {
+    const escuchar = e => show(e.detail.mensaje, e.detail.severidad);
+    window.addEventListener(EVENTO_NOTIFICAR, escuchar);
+    return () => window.removeEventListener(EVENTO_NOTIFICAR, escuchar);
+  }, [show]);
 
   const handleClose = () => setToast(t => ({ ...t, open: false }));
 

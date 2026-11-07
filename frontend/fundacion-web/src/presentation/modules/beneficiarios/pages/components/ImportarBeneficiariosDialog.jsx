@@ -8,7 +8,6 @@ import UploadFileIcon  from '@mui/icons-material/UploadFile';
 import DownloadIcon    from '@mui/icons-material/Download';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon       from '@mui/icons-material/Error';
-import * as XLSX from 'xlsx';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { BRAND_COLOR } from '@/shared/constants/brand';
@@ -186,6 +185,7 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
     setArchivo(f); setResultado(null); setError('');
     try {
       const ab = await f.arrayBuffer();
+      const XLSX = await import('xlsx');
       const wb = XLSX.read(ab, { cellDates: true, dateNF: 'yyyy-mm-dd' });
       const ws = wb.Sheets[wb.SheetNames[0]];
 

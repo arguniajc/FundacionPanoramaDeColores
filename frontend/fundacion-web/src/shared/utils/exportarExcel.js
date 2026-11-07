@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import { notificar } from './notificar';
 
 /**
  * Genera y descarga un archivo .xlsx.
@@ -12,8 +12,22 @@ import * as XLSX from 'xlsx';
  *   altoFilas?: number[], // alturas de fila en puntos        [22, 16]  (0/null = auto)
  *   comentarios?: Array<{ col: number, row: number, texto: string }>,
  * }>} hojas
+ * @returns {Promise<boolean>} true si se descargó; si falla avisa con el toast global y devuelve false
  */
-export function exportarExcel(nombreArchivo, hojas) {
+export async function exportarExcel(nombreArchivo, hojas) {
+  try {
+    await generarExcel(nombreArchivo, hojas);
+    return true;
+  } catch (err) {
+    console.error(err);
+    notificar('No se pudo generar el archivo Excel. Intenta de nuevo; si persiste, avisa al administrador.', 'error');
+    return false;
+  }
+}
+
+async function generarExcel(nombreArchivo, hojas) {
+  // SheetJS (~420 kB minificado) se carga solo al exportar, no con la página.
+  const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
 
   hojas.forEach(({ nombre, datos, filas, cols, altoFilas, comentarios }) => {

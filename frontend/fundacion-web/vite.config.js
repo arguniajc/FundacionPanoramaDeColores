@@ -13,6 +13,21 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   base: '/gestion/',
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          // React/ReactDOM/router siempre se cargan al inicio y cambian poco:
+          // en su propio chunk el navegador los conserva en caché entre despliegues.
+          // (MUI no se agrupa: juntarlo metería en la carga inicial componentes
+          // que hoy solo usan las páginas diferidas.)
+          groups: [
+            { name: 'react-vendor', test: /node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom)[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
   // Pruebas unitarias (vitest lee este archivo): lógica pura, sin DOM.
   test: {
     environment: 'node',

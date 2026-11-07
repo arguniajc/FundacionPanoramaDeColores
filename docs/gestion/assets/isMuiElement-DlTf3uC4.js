@@ -1,0 +1,1 @@
+import{i as e}from"./rolldown-runtime-B1FJdls4.js";import{d as t}from"./react-vendor-CMK0e4R0.js";var n=e(t(),1);function r(e,t){return n.isValidElement(e)&&t.indexOf(e.type.muiName??e.type?._payload?.value?.muiName)!==-1}export{r as t};

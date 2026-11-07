@@ -190,11 +190,12 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
         ins.createdAt ? new Date(ins.createdAt).toLocaleDateString('es-CO') : '—',
       ]);
 
-      exportarExcel(`beneficiarios_${fechaLocalISO()}`, [{
+      const ok = await exportarExcel(`beneficiarios_${fechaLocalISO()}`, [{
         nombre: 'Beneficiarios',
         filas: [encabezados, ...filas],
         cols: [30,15,14,18,10,20,10,11,10,10,30,30,30,14,18,30,12,16],
       }]);
+      if (!ok) { setToast(''); return; } // exportarExcel ya avisó el error
       setToast(`${todos.length} registros exportados`);
     } catch (err) {
       setToast('');

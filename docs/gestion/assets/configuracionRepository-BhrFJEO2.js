@@ -1,0 +1,1 @@
+import{t as e}from"./apiClient-TWeVXkBY.js";var t={obtenerPublica:()=>e.get(`/api/configuracion/publica`),obtener:()=>e.get(`/api/configuracion`),guardar:t=>e.put(`/api/configuracion`,t),probarSmtp:()=>e.post(`/api/configuracion/probar-smtp`)};export{t};

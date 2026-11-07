@@ -1,0 +1,1 @@
+import{t as e}from"./react-vendor-CMK0e4R0.js";import{F as t}from"./apiClient-TWeVXkBY.js";var n=t((0,e().jsx)(`path`,{d:`M22 11V3h-7v3H9V3H2v8h7V8h2v10h4v3h7v-8h-7v3h-2V8h2v3z`}),`AccountTree`);export{n as t};

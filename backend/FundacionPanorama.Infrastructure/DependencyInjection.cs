@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IContabilidadRepository, ContabilidadRepository>();
         services.AddScoped<IOrganigramaRepository, OrganigramaRepository>();
         services.AddScoped<INominaRepository, NominaRepository>();
+        services.AddScoped<FundacionPanorama.Application.Features.Salud.Interfaces.ISaludRepository, SaludRepository>();
 
         // Services
         services.AddScoped<ConfiguracionService>();
@@ -50,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<ContabilidadService>();
         services.AddScoped<OrganigramaService>();
         services.AddScoped<NominaService>();
+        services.AddScoped<FundacionPanorama.Application.Features.Salud.SaludService>();
         services.AddInventario();
         services.AddDonacionesDonantesInscripciones();
         services.AddBeneficiarios();

@@ -258,8 +258,19 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
                 NombreColegio   = fila.NombreColegio?.Trim(),
                 TieneAlergia    = string.IsNullOrWhiteSpace(fila.TieneAlergia) ? "no" : fila.TieneAlergia.Trim().ToLower(),
                 DescripcionAlergia = fila.DescripcionAlergia?.Trim(),
-                Tipo            = string.IsNullOrWhiteSpace(fila.Tipo) ? "niño" : fila.Tipo.Trim(),
+                // La plantilla de Excel usa "nino" (sin ñ): se normaliza a los valores del sistema
+                // ("niño" / "adulto"); vacío o cualquier otro valor = niño.
+                Tipo            = string.Equals(fila.Tipo?.Trim(), "adulto", StringComparison.OrdinalIgnoreCase) ? "adulto" : "niño",
             };
+
+            // Mismas reglas de formato que crear/editar, solo sobre los campos que trae la fila.
+            var esNino = dto.Tipo == "niño";
+            var errFmt = ValidacionBeneficiario.ValidarFormato(dto, esNino);
+            if (errFmt.Count > 0)
+            {
+                errores.Add(new { fila = fi + 2, nombre, motivo = string.Join(" ", errFmt) });
+                continue;
+            }
 
             var error = await repo.InsertarFilaImportacionAsync(dto, fechaNac.Value, usuarioEmail, ct);
             if (error is null) insertados++;

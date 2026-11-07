@@ -20,6 +20,7 @@ public static class DocumentosRegistro
         services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
         services.AddScoped<IAlertasRepository, AlertasRepository>();
         services.AddScoped<IArchivosRepository, ArchivosRepository>();
+        services.AddScoped<IAlmacenamientoMigracionRepository, AlmacenamientoMigracionRepository>();
 
         services.AddScoped<DocumentosService>();
         services.AddScoped<AuditoriaService>();

@@ -367,7 +367,9 @@ public class BeneficiariosServiceTests
         CrearBeneficiarioDto? insertado = null;
         InsercionOk((d, _) => insertado = d);
 
-        var fila = Fila();
+        // Un adulto debe tener 18+ y no usar TI (reglas de formato de la importación).
+        var fila = Fila(fecha: "1990-05-10");
+        fila.TipoDocumento = "CC";
         fila.Tipo = " adulto ";
 
         await _sut.ImportarFilasAsync([fila], null);
@@ -484,5 +486,92 @@ public class BeneficiariosServiceTests
         Assert.Equal(2, Prop<int>(res.Valor!, "insertados"));
         Assert.Equal(1, Prop<int>(res.Valor!, "omitidos"));
         Assert.Equal([3, 5], Errores(res.Valor!).Select(e => Prop<int>(e, "fila")).ToList());
+    }
+
+    // ── Importación: reglas de formato ───────────────────────────────────────
+
+    public static TheoryData<Action<ImportarBeneficiarioRowDto>, string> FilasConFormatoInvalido => new()
+    {
+        { f => f.Whatsapp = "12345",            "El WhatsApp debe ser un celular de 10 dígitos que empiece por 3." },
+        { f => f.NumeroDocumento = "11.44",     "El documento TI debe tener entre 6 y 11 dígitos" },
+        { f => { f.TipoDocumento = "CE"; f.NumeroDocumento = "A B"; }, "El número de documento debe tener de 4 a 15 letras o números" },
+        { f => f.TipoDocumento = "CC",          "Un menor de edad no tiene Cédula." },
+        { f => f.SegundoApellido = "P3rez",     "El segundo apellido solo puede tener letras." },
+        { f => f.Tipo = "adulto",               "un adulto debe tener 18 o más" },
+        { f => f.FechaNacimiento = "2100-01-01","La fecha de nacimiento no puede ser futura." },
+    };
+
+    [Theory]
+    [MemberData(nameof(FilasConFormatoInvalido))]
+    public async Task ImportarFilasAsync_Formato_Invalido_Rechaza_La_Fila_Con_Su_Numero(
+        Action<ImportarBeneficiarioRowDto> danar, string motivoEsperado)
+    {
+        InsercionOk();
+        var mala = Fila(doc: "222222");
+        danar(mala);
+
+        var res = await _sut.ImportarFilasAsync([Fila(doc: "111111"), mala], null);
+
+        Assert.Equal(1, Prop<int>(res.Valor!, "insertados"));
+        var err = Assert.Single(Errores(res.Valor!));
+        Assert.Equal(3, Prop<int>(err, "fila"));
+        Assert.Equal("Ana Pérez", Prop<string>(err, "nombre"));
+        Assert.Contains(motivoEsperado, Prop<string>(err, "motivo"));
+        _repo.Verify(r => r.InsertarFilaImportacionAsync(It.IsAny<CrearBeneficiarioDto>(), It.IsAny<DateOnly>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ImportarFilasAsync_Varios_Errores_De_Formato_Van_En_Un_Solo_Motivo()
+    {
+        var fila = Fila();
+        fila.Whatsapp = "999";
+        fila.NumeroDocumento = "12";
+
+        var res = await _sut.ImportarFilasAsync([fila], null);
+
+        var motivo = Prop<string>(Assert.Single(Errores(res.Valor!)), "motivo");
+        Assert.Contains("El documento TI", motivo);
+        Assert.Contains("El WhatsApp", motivo);
+        _repo.Verify(r => r.InsertarFilaImportacionAsync(It.IsAny<CrearBeneficiarioDto>(), It.IsAny<DateOnly>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("nino")]   // valor de la plantilla (sin ñ)
+    [InlineData("Niño")]
+    public async Task ImportarFilasAsync_Fila_Solo_Con_Obligatorios_Se_Importa(string? tipo)
+    {
+        InsercionOk();
+        var fila = new ImportarBeneficiarioRowDto
+        {
+            PrimerNombre = "Ana", PrimerApellido = "Pérez", FechaNacimiento = "2015-03-04", Tipo = tipo,
+        };
+
+        var res = await _sut.ImportarFilasAsync([fila], null);
+
+        Assert.Equal(1, Prop<int>(res.Valor!, "insertados"));
+        Assert.Empty(Errores(res.Valor!));
+    }
+
+    [Fact]
+    public async Task ImportarFilasAsync_Alergia_Sin_Descripcion_No_Es_Error()
+    {
+        InsercionOk();
+        var fila = Fila();
+        fila.TieneAlergia = "si";
+
+        var res = await _sut.ImportarFilasAsync([fila], null);
+
+        Assert.Equal(1, Prop<int>(res.Valor!, "insertados"));
+    }
+
+    [Fact]
+    public void ValidarFormato_No_Exige_Campos_Obligatorios()
+    {
+        var dto = new CrearBeneficiarioDto { PrimerNombre = "Ana", PrimerApellido = "Pérez", FechaNacimiento = Hoy.AddYears(-8) };
+        Assert.Empty(ValidacionBeneficiario.ValidarFormato(dto, esNino: true));
+
+        dto.PesoKg = 500m;
+        Assert.Equal(["El peso debe estar entre 2 y 150 kg."], ValidacionBeneficiario.ValidarFormato(dto, esNino: true));
     }
 }

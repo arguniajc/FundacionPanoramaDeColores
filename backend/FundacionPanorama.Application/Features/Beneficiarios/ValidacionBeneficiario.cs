@@ -33,9 +33,17 @@ public static class ValidacionBeneficiario
             if (!dto.ViveConNino.HasValue)                        e.Add("Debe indicar si el acudiente vive con el niño.");
             if (string.IsNullOrWhiteSpace(dto.Direccion))         e.Add("La dirección es obligatoria.");
         }
-        e.AddRange(ValidarFormatoBeneficiario(dto, esNino));
+        e.AddRange(ValidarFormatoBeneficiario(dto, esNino, incluirDescripciones: true));
         return e;
     }
+
+    /// <summary>
+    /// Solo las reglas de formato (sin campos obligatorios): cada una se aplica únicamente
+    /// si el campo trae valor. No incluye "si tiene alergia/discapacidad, descríbela",
+    /// porque exige un campo opcional. La usa la importación desde Excel.
+    /// </summary>
+    public static List<string> ValidarFormato(CrearBeneficiarioDto dto, bool esNino)
+        => ValidarFormatoBeneficiario(dto, esNino, incluirDescripciones: false).ToList();
 
     // Mismas reglas de formato que el panel (domain/beneficiarios/validacionBeneficiario.js),
     // para que no se puedan guardar datos inválidos llamando a la API directamente.
@@ -43,7 +51,7 @@ public static class ValidacionBeneficiario
     private static readonly System.Text.RegularExpressions.Regex SoloLetras =
         new(@"^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
-    private static IEnumerable<string> ValidarFormatoBeneficiario(CrearBeneficiarioDto dto, bool esNino)
+    private static IEnumerable<string> ValidarFormatoBeneficiario(CrearBeneficiarioDto dto, bool esNino, bool incluirDescripciones)
     {
         foreach (var (valor, etiqueta) in new[]
         {
@@ -86,9 +94,9 @@ public static class ValidacionBeneficiario
         if (dto.TallaCm.HasValue && (dto.TallaCm < tMin || dto.TallaCm > tMax))
             yield return $"La estatura debe estar entre {tMin} y {tMax} cm.";
 
-        if (dto.TieneAlergia == "si" && string.IsNullOrWhiteSpace(dto.DescripcionAlergia))
+        if (incluirDescripciones && dto.TieneAlergia == "si" && string.IsNullOrWhiteSpace(dto.DescripcionAlergia))
             yield return "Describe la alergia. Ejemplo: Alergia al maní.";
-        if (dto.TieneDiscapacidad && string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad))
+        if (incluirDescripciones && dto.TieneDiscapacidad &&string.IsNullOrWhiteSpace(dto.DescripcionDiscapacidad))
             yield return "Describe la discapacidad o condición. Ejemplo: Discapacidad auditiva leve.";
 
         if (esNino && !string.IsNullOrWhiteSpace(dto.Whatsapp)

@@ -1,13 +1,11 @@
-using FundacionPanorama.Infrastructure.Persistence;
 // Sube archivos a Supabase Storage y lleva auditoría de descargas de documentos.
 using System.Security.Claims;
-using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Services;
 using FundacionPanorama.Application.Features.Archivos;
 using FundacionPanorama.Application.Features.Archivos.DTOs;
+using FundacionPanorama.Application.Features.Archivos.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -15,15 +13,15 @@ namespace FundacionPanorama.API.Controllers;
 [Route("api/archivos")]
 public class ArchivosController : ControllerBase
 {
-    private readonly SupabaseStorageService _storage;
-    private readonly DbConnectionFactory           _db;
-    private readonly ArchivosService        _archivos;
+    private readonly SupabaseStorageService             _storage;
+    private readonly IAlmacenamientoMigracionRepository _migracion;
+    private readonly ArchivosService                    _archivos;
 
-    public ArchivosController(SupabaseStorageService storage, DbConnectionFactory db, ArchivosService archivos)
+    public ArchivosController(SupabaseStorageService storage, IAlmacenamientoMigracionRepository migracion, ArchivosService archivos)
     {
-        _storage  = storage;
-        _db       = db;
-        _archivos = archivos;
+        _storage   = storage;
+        _migracion = migracion;
+        _archivos  = archivos;
     }
 
     // POST api/archivos/upload?carpeta=fotos
@@ -81,47 +79,18 @@ public class ArchivosController : ControllerBase
     private bool EsAdministrador() =>
         User.FindFirst(ClaimTypes.Role)?.Value is "administrador" or "Admin";
 
-    private static string Ident(string nombre) => "\"" + nombre.Replace("\"", "\"\"") + "\"";
-
     // Columnas de texto/JSON de la BD que contienen URLs públicas del bucket
-    private async Task<List<(string Tabla, string Columna, string Tipo)>> ColumnasConUrlsAsync(NpgsqlConnection conn, CancellationToken ct)
-    {
-        var columnas = new List<(string, string, string)>();
-        await using (var cmd = conn.CreateCommand())
-        {
-            cmd.CommandText = @"
-                SELECT c.table_name, c.column_name, c.data_type
-                FROM information_schema.columns c
-                JOIN information_schema.tables t ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-                WHERE c.table_schema = 'public' AND t.table_type = 'BASE TABLE'
-                  AND c.data_type IN ('text', 'character varying', 'json', 'jsonb')";
-            await using var r = await cmd.ExecuteReaderAsync(ct);
-            while (await r.ReadAsync(ct)) columnas.Add((r.GetString(0), r.GetString(1), r.GetString(2)));
-        }
-
-        var conUrls = new List<(string, string, string)>();
-        foreach (var (tabla, col, tipo) in columnas)
-        {
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = $"SELECT EXISTS (SELECT 1 FROM {Ident(tabla)} WHERE {Ident(col)}::text LIKE @p)";
-            cmd.Parameters.AddWithValue("p", "%" + _storage.PrefijoPublicoBucket + "%");
-            if ((bool)(await cmd.ExecuteScalarAsync(ct))!) conUrls.Add((tabla, col, tipo));
-        }
-        return conUrls;
-    }
+    private Task<List<ColumnaConUrls>> ColumnasConUrlsAsync(CancellationToken ct)
+        => _migracion.ColumnasConPrefijoAsync(_storage.PrefijoPublicoBucket, ct);
 
     // URLs públicas de archivos personales (no carpeta web) que aparecen en una columna
-    private async Task<HashSet<string>> UrlsMigrablesAsync(NpgsqlConnection conn, string tabla, string col, CancellationToken ct)
+    private async Task<HashSet<string>> UrlsMigrablesAsync(ColumnaConUrls columna, CancellationToken ct)
     {
         var urls  = new HashSet<string>();
         var regex = new System.Text.RegularExpressions.Regex(
             System.Text.RegularExpressions.Regex.Escape(_storage.PrefijoPublicoBucket) + @"[^""'\s,)\]}\\]+");
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"SELECT {Ident(col)}::text FROM {Ident(tabla)} WHERE {Ident(col)}::text LIKE @p";
-        cmd.Parameters.AddWithValue("p", "%" + _storage.PrefijoPublicoBucket + "%");
-        await using var r = await cmd.ExecuteReaderAsync(ct);
-        while (await r.ReadAsync(ct))
-            foreach (System.Text.RegularExpressions.Match m in regex.Matches(r.GetString(0)))
+        foreach (var valor in await _migracion.ValoresConPrefijoAsync(columna.Tabla, columna.Columna, _storage.PrefijoPublicoBucket, ct))
+            foreach (System.Text.RegularExpressions.Match m in regex.Matches(valor))
                 if (_storage.RutaPublicaMigrable(m.Value) is not null) urls.Add(m.Value);
         return urls;
     }
@@ -138,16 +107,14 @@ public class ArchivosController : ControllerBase
         if (!EsAdministrador()) return StatusCode(403, new { mensaje = "Solo un administrador puede migrar archivos." });
 
         await _storage.AsegurarBucketPrivadoAsync(ct);
-        await using var conn = AbrirConexion();
-        await conn.OpenAsync(ct);
 
         var detalle  = new List<DetalleMigracion>();
         var copiados = new Dictionary<string, bool>(); // url → copiado OK
         var filasActualizadas = 0;
 
-        foreach (var (tabla, col, tipo) in await ColumnasConUrlsAsync(conn, ct))
+        foreach (var columna in await ColumnasConUrlsAsync(ct))
         {
-            var urls = await UrlsMigrablesAsync(conn, tabla, col, ct);
+            var urls = await UrlsMigrablesAsync(columna, ct);
             if (urls.Count == 0) continue;
             var filasCol = 0;
 
@@ -159,18 +126,12 @@ public class ArchivosController : ControllerBase
                         copiados[url] = ok = await _storage.CopiarAPrivadoAsync(_storage.RutaPublicaMigrable(url)!, ct);
                     if (!ok) continue; // si no se pudo copiar, la URL pública se conserva
 
-                    await using var upd = conn.CreateCommand();
-                    var cast = tipo is "json" or "jsonb" ? "::" + tipo : "";
-                    upd.CommandText = $"UPDATE {Ident(tabla)} SET {Ident(col)} = replace({Ident(col)}::text, @url, @ref){cast} " +
-                                      $"WHERE {Ident(col)}::text LIKE @like";
-                    upd.Parameters.AddWithValue("url",  url);
-                    upd.Parameters.AddWithValue("ref",  SupabaseStorageService.PrefijoPrivado + _storage.RutaPublicaMigrable(url));
-                    upd.Parameters.AddWithValue("like", "%" + url + "%");
-                    filasCol += await upd.ExecuteNonQueryAsync(ct);
+                    filasCol += await _migracion.ReemplazarAsync(columna, url,
+                        SupabaseStorageService.PrefijoPrivado + _storage.RutaPublicaMigrable(url), ct);
                 }
                 filasActualizadas += filasCol;
             }
-            detalle.Add(new DetalleMigracion(tabla, col, urls.Count, filasCol));
+            detalle.Add(new DetalleMigracion(columna.Tabla, columna.Columna, urls.Count, filasCol));
         }
 
         var fallidos = copiados.Where(c => !c.Value).Select(c => c.Key).ToList();
@@ -194,13 +155,10 @@ public class ArchivosController : ControllerBase
     {
         if (!EsAdministrador()) return StatusCode(403, new { mensaje = "Solo un administrador puede borrar archivos." });
 
-        await using var conn = AbrirConexion();
-        await conn.OpenAsync(ct);
-
         // Archivos públicos que todavía se usan en la BD: nunca se borran
         var enUso = new HashSet<string>();
-        foreach (var (tabla, col, _) in await ColumnasConUrlsAsync(conn, ct))
-            foreach (var url in await UrlsMigrablesAsync(conn, tabla, col, ct))
+        foreach (var columna in await ColumnasConUrlsAsync(ct))
+            foreach (var url in await UrlsMigrablesAsync(columna, ct))
                 enUso.Add(_storage.RutaPublicaMigrable(url)!);
 
         var publicos   = await _storage.ListarPublicosPersonalesAsync(ct);
@@ -231,6 +189,4 @@ public class ArchivosController : ControllerBase
         await _archivos.RegistrarDescargaAsync(email, dto);
         return Ok();
     }
-
-    private NpgsqlConnection AbrirConexion() => _db.Create();
 }

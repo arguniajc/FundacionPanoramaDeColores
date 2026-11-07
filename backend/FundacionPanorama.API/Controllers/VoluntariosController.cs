@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using FundacionPanorama.API.Data;
+using FundacionPanorama.API.Filters;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -182,6 +183,7 @@ public class VoluntariosController : ControllerBase
     }
 
     [HttpPost]
+    [RequierePermiso("voluntarios", "crear")]
     public async Task<IActionResult> Crear([FromBody] CrearVoluntarioDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Nombre))
@@ -204,6 +206,7 @@ public class VoluntariosController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [RequierePermiso("voluntarios", "editar")]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearVoluntarioDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Nombre))
@@ -230,6 +233,7 @@ public class VoluntariosController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/toggle")]
+    [RequierePermiso("voluntarios", "editar")]
     public async Task<IActionResult> Toggle(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -243,6 +247,7 @@ public class VoluntariosController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [RequierePermiso("voluntarios", "eliminar")]
     public async Task<IActionResult> Eliminar(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -298,6 +303,7 @@ public class VoluntariosController : ControllerBase
     }
 
     [HttpPost("{id:guid}/asignaciones")]
+    [RequierePermiso("voluntarios", "editar")]
     public async Task<IActionResult> AgregarAsignacion(Guid id, [FromBody] CrearAsignacionVolDto dto)
     {
         await using var conn = AbrirConexion();
@@ -332,6 +338,7 @@ public class VoluntariosController : ControllerBase
     }
 
     [HttpPut("asignaciones/{asigId:guid}")]
+    [RequierePermiso("voluntarios", "editar")]
     public async Task<IActionResult> EditarAsignacion(Guid asigId, [FromBody] EditarAsignacionVolDto dto)
     {
         await using var conn = AbrirConexion();
@@ -365,6 +372,7 @@ public class VoluntariosController : ControllerBase
     }
 
     [HttpDelete("asignaciones/{asigId:guid}")]
+    [RequierePermiso("voluntarios", "editar")]
     public async Task<IActionResult> EliminarAsignacion(Guid asigId)
     {
         await using var conn = AbrirConexion();

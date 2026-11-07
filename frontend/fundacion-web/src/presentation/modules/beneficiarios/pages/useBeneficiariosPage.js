@@ -157,10 +157,16 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
     setExportando(true);
     setToast('Preparando exportación completa…');
     try {
-      const { data } = await apiClient.get('/api/beneficiarios', {
-        params: { pagina: 1, porPagina: 9999, estado: 'todos', tipo },
-      });
-      const todos = data.data;
+      // La API entrega máximo 100 por página: se piden todas las páginas
+      const POR_PAGINA = 100;
+      const todos = [];
+      for (let pagina = 1; ; pagina++) {
+        const { data } = await apiClient.get('/api/beneficiarios', {
+          params: { pagina, porPagina: POR_PAGINA, estado: 'todos', tipo },
+        });
+        todos.push(...data.data);
+        if (data.data.length < POR_PAGINA || todos.length >= data.total) break;
+      }
       if (!todos.length) { setToast('No hay datos para exportar'); return; }
 
       const encabezados = [

@@ -3,6 +3,7 @@ using FundacionPanorama.Application.Features.Configuracion.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using FundacionPanorama.API.Filters;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -56,6 +57,7 @@ public class ConfiguracionController(ConfiguracionService svc, IMemoryCache cach
     }
 
     [HttpPost("probar-smtp")]
+    [RequierePermiso("configuracion", "editar")]
     public async Task<IActionResult> ProbarSmtp(
         [FromServices] FundacionPanorama.API.Services.EmailService emailSvc,
         CancellationToken ct)
@@ -72,6 +74,7 @@ public class ConfiguracionController(ConfiguracionService svc, IMemoryCache cach
     }
 
     [HttpPut]
+    [RequierePermiso("configuracion", "editar")]
     public async Task<IActionResult> Guardar([FromBody] GuardarConfiguracionDto dto, CancellationToken ct)
     {
         var result = await svc.GuardarAsync(dto, ct);

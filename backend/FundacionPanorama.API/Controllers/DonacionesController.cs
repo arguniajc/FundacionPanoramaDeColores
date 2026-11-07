@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using FundacionPanorama.API.Data;
 using System.Security.Claims;
+using FundacionPanorama.API.Filters;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -142,6 +143,7 @@ public class DonacionesController : BaseController
     }
 
     [HttpPost]
+    [RequierePermiso("donaciones", "crear")]
     public async Task<IActionResult> Crear([FromBody] CrearDonacionDto dto)
     {
         if (dto.Tipo == "dinero" && (dto.Monto is null || dto.Monto <= 0))
@@ -385,6 +387,7 @@ public class DonacionesController : BaseController
     }
 
     [HttpPut("{id:guid}")]
+    [RequierePermiso("donaciones", "editar")]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearDonacionDto dto)
     {
         await using var conn = AbrirConexion();
@@ -417,6 +420,7 @@ public class DonacionesController : BaseController
     }
 
     [HttpDelete("{id:guid}")]
+    [RequierePermiso("donaciones", "eliminar")]
     public async Task<IActionResult> Eliminar(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -499,6 +503,7 @@ public class DonacionesController : BaseController
     // PATCH api/donaciones/{id}/anular
     // =========================================================================
     [HttpPatch("{id:guid}/anular")]
+    [RequierePermiso("donaciones", "editar")]
     public async Task<IActionResult> Anular(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -532,6 +537,7 @@ public class DonacionesController : BaseController
     // POST api/donaciones/{id}/enviar-recibo
     // =========================================================================
     [HttpPost("{id:guid}/enviar-recibo")]
+    [RequierePermiso("donaciones", "ver")]
     public async Task<IActionResult> EnviarRecibo(
         Guid id,
         [FromServices] FundacionPanorama.API.Services.EmailService emailSvc,

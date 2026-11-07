@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using FundacionPanorama.API.Filters;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -78,6 +79,7 @@ public class DocumentosController : ControllerBase
 
     // POST api/documentos
     [HttpPost]
+    [RequierePermiso("documentos", "crear")]
     public async Task<IActionResult> Crear([FromBody] CrearDocumentoDto dto)
     {
         var email = User.FindFirst(ClaimTypes.Email)?.Value
@@ -103,6 +105,7 @@ public class DocumentosController : ControllerBase
 
     // DELETE api/documentos/{id}
     [HttpDelete("{id:guid}")]
+    [RequierePermiso("documentos", "eliminar")]
     public async Task<IActionResult> Eliminar(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -150,6 +153,7 @@ public class DocumentosController : ControllerBase
 
     // POST api/documentos/beneficiario/{id}
     [HttpPost("beneficiario/{beneficiarioId:guid}")]
+    [RequierePermiso("documentos", "crear")]
     public async Task<IActionResult> GuardarArchivoBeneficiario(
         Guid beneficiarioId, [FromBody] GuardarArchivoDto dto)
     {
@@ -178,6 +182,7 @@ public class DocumentosController : ControllerBase
 
     // DELETE api/documentos/archivo/{id}
     [HttpDelete("archivo/{id:guid}")]
+    [RequierePermiso("documentos", "eliminar")]
     public async Task<IActionResult> EliminarArchivo(Guid id)
     {
         await using var conn = AbrirConexion();

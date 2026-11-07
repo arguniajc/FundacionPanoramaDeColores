@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
 using NpgsqlTypes;
+using FundacionPanorama.API.Filters;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -628,6 +629,7 @@ public class BeneficiariosController : BaseController
     // GET api/beneficiarios/verificar-documento/{numero}
     // =========================================================================
     [HttpGet("verificar-documento/{numero}")]
+    [Authorize]
     public async Task<IActionResult> VerificarDocumento(string numero)
     {
         await using var conn = AbrirConexion();
@@ -643,6 +645,7 @@ public class BeneficiariosController : BaseController
     // POST api/beneficiarios
     // =========================================================================
     [HttpPost]
+    [RequierePermiso("beneficiarios", "crear")]
     public async Task<IActionResult> Crear([FromBody] CrearBeneficiarioDto dto)
     {
         var errVal = ValidarBeneficiario(dto);
@@ -725,7 +728,7 @@ public class BeneficiariosController : BaseController
     // PUT api/beneficiarios/{id}
     // =========================================================================
     [HttpPut("{id:guid}")]
-    [Authorize]
+    [RequierePermiso("beneficiarios", "editar")]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearBeneficiarioDto dto)
     {
         var errVal = ValidarBeneficiario(dto);
@@ -829,10 +832,10 @@ public class BeneficiariosController : BaseController
     public record DarDeBajaDto(string? Motivo);
 
     [HttpPatch("{id:guid}/baja")]
-    [Authorize]
+    [RequierePermiso("beneficiarios", "editar")]
     public async Task<IActionResult> DarDeBaja(Guid id, [FromBody] DarDeBajaDto? dto)
     {
-        if (!EsAdmin()) return Forbid();
+        if (!EsAdmin()) return StatusCode(403, new { mensaje = "Solo un administrador puede hacer esta acción." });
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
@@ -851,7 +854,7 @@ public class BeneficiariosController : BaseController
     // PATCH api/beneficiarios/{id}/reactivar
     // =========================================================================
     [HttpPatch("{id:guid}/reactivar")]
-    [Authorize]
+    [RequierePermiso("beneficiarios", "editar")]
     public async Task<IActionResult> Reactivar(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -870,10 +873,10 @@ public class BeneficiariosController : BaseController
     // DELETE api/beneficiarios/{id}
     // =========================================================================
     [HttpDelete("{id:guid}")]
-    [Authorize]
+    [RequierePermiso("beneficiarios", "eliminar")]
     public async Task<IActionResult> Eliminar(Guid id)
     {
-        if (!EsAdmin()) return Forbid();
+        if (!EsAdmin()) return StatusCode(403, new { mensaje = "Solo un administrador puede hacer esta acción." });
 
         await using var conn = AbrirConexion();
         await conn.OpenAsync();
@@ -979,11 +982,11 @@ public class BeneficiariosController : BaseController
         return e;
     }
 
-    // Devuelve true si el JWT corresponde a un administrador (o sesión legacy sin claim de rol).
+    // Devuelve true si el JWT corresponde a un administrador.
     private bool EsAdmin()
     {
         var rol = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
-        return string.IsNullOrEmpty(rol) || rol is "administrador" or "Admin";
+        return rol is "administrador" or "Admin";
     }
 
     // =========================================================================
@@ -1027,8 +1030,8 @@ public class BeneficiariosController : BaseController
     // POST api/beneficiarios/importar-csv
     // =========================================================================
     [HttpPost("importar-csv")]
-    [Authorize]
     [RequestSizeLimit(5_242_880)]
+    [RequierePermiso("beneficiarios", "crear")]
     public async Task<IActionResult> ImportarCsv(IFormFile archivo)
     {
         if (archivo is null || archivo.Length == 0)
@@ -1146,7 +1149,7 @@ public class BeneficiariosController : BaseController
     // POST api/beneficiarios/importar-xlsx
     // =========================================================================
     [HttpPost("importar-xlsx")]
-    [Authorize]
+    [RequierePermiso("beneficiarios", "crear")]
     public async Task<IActionResult> ImportarXlsx(
         [FromBody] List<ImportarBeneficiarioRowDto> filas, CancellationToken ct)
     {

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NpgsqlTypes;
+using FundacionPanorama.API.Filters;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -83,6 +84,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpPost]
+    [RequierePermiso("sedes", "crear")]
     public async Task<IActionResult> Crear([FromBody] CrearSedeDto dto)
     {
         await using var conn = AbrirConexion();
@@ -102,6 +104,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [RequierePermiso("sedes", "editar")]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearSedeDto dto)
     {
         await using var conn = AbrirConexion();
@@ -123,6 +126,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/toggle")]
+    [RequierePermiso("sedes", "editar")]
     public async Task<IActionResult> Toggle(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -138,6 +142,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [RequierePermiso("sedes", "eliminar")]
     public async Task<IActionResult> Eliminar(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -180,6 +185,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpPost("programas")]
+    [RequierePermiso("programas", "crear")]
     public async Task<IActionResult> CrearPrograma([FromBody] CrearProgramaDto dto)
     {
         await using var conn = AbrirConexion();
@@ -225,6 +231,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpPut("programas/{id:guid}")]
+    [RequierePermiso("programas", "editar")]
     public async Task<IActionResult> ActualizarPrograma(Guid id, [FromBody] CrearProgramaDto dto)
     {
         await using var conn = AbrirConexion();
@@ -265,6 +272,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpPatch("programas/{id:guid}/toggle")]
+    [RequierePermiso("programas", "editar")]
     public async Task<IActionResult> TogglePrograma(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -287,6 +295,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpDelete("programas/{id:guid}")]
+    [RequierePermiso("programas", "eliminar")]
     public async Task<IActionResult> EliminarPrograma(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -300,6 +309,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpPut("programas/{id:guid}/autorizar-rep")]
+    [RequierePermiso("programas", "autorizar")]
     public async Task<IActionResult> AutorizarRepLegal(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -348,6 +358,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpDelete("programas/{id:guid}/autorizar-rep")]
+    [RequierePermiso("programas", "autorizar")]
     public async Task<IActionResult> RevocarRepLegal(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -395,6 +406,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpPost("programas/{programaId:guid}/campos")]
+    [RequierePermiso("programas", "editar")]
     public async Task<IActionResult> CrearCampo(Guid programaId, [FromBody] CrearCampoDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Seccion))
@@ -430,6 +442,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpPut("programas/{programaId:guid}/campos/{campoId:guid}")]
+    [RequierePermiso("programas", "editar")]
     public async Task<IActionResult> ActualizarCampo(Guid programaId, Guid campoId, [FromBody] CrearCampoDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Seccion))
@@ -456,6 +469,7 @@ public class SedesController : ControllerBase
     }
 
     [HttpDelete("programas/{programaId:guid}/campos/{campoId:guid}")]
+    [RequierePermiso("programas", "editar")]
     public async Task<IActionResult> EliminarCampo(Guid programaId, Guid campoId)
     {
         await using var conn = AbrirConexion();

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using FundacionPanorama.API.Data;
+using FundacionPanorama.API.Filters;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -127,6 +128,7 @@ public class DonantesController : ControllerBase
     }
 
     [HttpPost]
+    [RequierePermiso("donantes", "crear")]
     public async Task<IActionResult> Crear([FromBody] CrearDonanteDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Nombre))
@@ -157,6 +159,7 @@ public class DonantesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [RequierePermiso("donantes", "editar")]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearDonanteDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Nombre))
@@ -191,6 +194,7 @@ public class DonantesController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/toggle")]
+    [RequierePermiso("donantes", "editar")]
     public async Task<IActionResult> Toggle(Guid id)
     {
         await using var conn = AbrirConexion();
@@ -205,6 +209,7 @@ public class DonantesController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [RequierePermiso("donantes", "eliminar")]
     public async Task<IActionResult> Eliminar(Guid id)
     {
         await using var conn = AbrirConexion();

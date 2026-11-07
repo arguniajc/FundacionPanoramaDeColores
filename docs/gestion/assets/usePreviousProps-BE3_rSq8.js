@@ -1,0 +1,1 @@
+import{i as e}from"./chunk-DseTPa7n.js";import{Mt as t}from"./apiClient-tY3mY1xy.js";var n=e(t(),1);function r(e){let t=n.useRef({});return n.useEffect(()=>{t.current=e}),t.current}export{r as t};

@@ -6,6 +6,7 @@ import { calcularEdad } from '@/shared/utils/fecha';
 import { exportarExcel } from '@/shared/utils/exportarExcel';
 import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { fechaLocalISO } from '@/shared/utils/fecha';
 
 const POR_PAGINA = 15;
 
@@ -189,7 +190,7 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
         ins.createdAt ? new Date(ins.createdAt).toLocaleDateString('es-CO') : '—',
       ]);
 
-      exportarExcel(`beneficiarios_${new Date().toISOString().slice(0, 10)}`, [{
+      exportarExcel(`beneficiarios_${fechaLocalISO()}`, [{
         nombre: 'Beneficiarios',
         filas: [encabezados, ...filas],
         cols: [30,15,14,18,10,20,10,11,10,10,30,30,30,14,18,30,12,16],

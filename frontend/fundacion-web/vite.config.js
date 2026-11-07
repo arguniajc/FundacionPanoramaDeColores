@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { writeFileSync } from 'fs'
-import path from 'path'
+import { fileURLToPath } from 'url'
 
 export default defineConfig({
   plugins: [
@@ -10,12 +10,9 @@ export default defineConfig({
     { name: 'nojekyll', closeBundle() { writeFileSync('dist/.nojekyll', '') } },
   ],
   resolve: {
-    alias: { '@': path.resolve(__dirname, 'src') },
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   base: '/gestion/',
-  esbuild: {
-    drop: ['console', 'debugger'],
-  },
   // Pruebas unitarias (vitest lee este archivo): lógica pura, sin DOM.
   test: {
     environment: 'node',

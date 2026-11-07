@@ -6,6 +6,7 @@ import { useConfiguracion } from '@/shared/context/useConfiguracion';
 import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { generarComprobantePDF } from './components/generarComprobantePDF';
+import { fechaLocalISO } from '@/shared/utils/fecha';
 
 export function useContabilidadPage() {
   const { puedo }  = useAuth();
@@ -376,7 +377,7 @@ export function useContabilidadPage() {
     const csv = [header, ...filas].join('\n');
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-    a.download = 'movimientos_' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.download = 'movimientos_' + fechaLocalISO() + '.csv';
     a.click();
   };
 

@@ -155,6 +155,8 @@ public class BeneficiariosController : BaseController
     [RequierePermiso("beneficiarios", "editar")]
     public async Task<IActionResult> Reactivar(Guid id)
     {
+        // Igual que dar de baja: solo un administrador (el panel solo le muestra el botón a él)
+        if (!EsAdmin()) return StatusCode(403, new { mensaje = "Solo un administrador puede hacer esta acción." });
         var result = await _svc.ReactivarAsync(id, EmailUsuario);
         return result is null ? NotFound() : Ok(result);
     }

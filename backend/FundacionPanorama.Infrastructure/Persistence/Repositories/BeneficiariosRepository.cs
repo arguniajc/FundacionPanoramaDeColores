@@ -1010,8 +1010,9 @@ public class BeneficiariosRepository(DbConnectionFactory factory) : IBeneficiari
                     insAcu.Transaction = tx;
                     insAcu.CommandText = "INSERT INTO acudientes (nombre, whatsapp, direccion, activo) VALUES (@n,@w,@d,true) RETURNING id";
                     insAcu.Parameters.AddWithValue("n", nombreAcu);
-                    insAcu.Parameters.AddWithValue("w", whatsappAcu);
-                    insAcu.Parameters.AddWithValue("d", direccAcu);
+                    // null → DBNull: Npgsql no acepta null en un parámetro (fallaba sin WhatsApp)
+                    insAcu.Parameters.AddWithValue("w", (object?)whatsappAcu ?? DBNull.Value);
+                    insAcu.Parameters.AddWithValue("d", (object?)direccAcu ?? DBNull.Value);
                     acudienteId = (Guid)(await insAcu.ExecuteScalarAsync())!;
                 }
 

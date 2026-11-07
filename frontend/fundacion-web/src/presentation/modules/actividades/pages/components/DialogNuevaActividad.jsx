@@ -17,6 +17,7 @@ import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
+import { fechaLocalISO } from '@/shared/utils/fecha';
 
 const COLOR = BRAND_COLOR;
 
@@ -107,7 +108,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
     setUnico({
       ...EMPTY_UNICO,
       programaId:  programas[0]?.id ?? '',
-      fecha:       fechaInicialSugerida ? fechaInicialSugerida.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      fecha:       fechaInicialSugerida ? fechaInicialSugerida.slice(0, 10) : fechaLocalISO(), // local: toISOString daba mañana después de las 7 p. m.
       horaInicio:  fechaInicialSugerida?.length > 10 ? fechaInicialSugerida.slice(11, 16) : '08:00',
     });
     setRecur({ ...EMPTY_RECURRENTE, programaId: programas[0]?.id ?? '' });

@@ -1,3 +1,5 @@
+import { fechaLocalISO } from '@/shared/utils/fecha';
+
 export const COLOR = 'var(--color-primario)';
 
 export function fmtFecha(d) {
@@ -7,7 +9,8 @@ export function fmtFecha(d) {
 
 export function toInputDate(d) {
   if (!d) return '';
-  return new Date(d).toISOString().slice(0, 10);
+  // 'AAAA-MM-DD…' ya trae la fecha; con fecha y hora se usa el día local (no UTC)
+  return /^\d{4}-\d{2}-\d{2}/.test(String(d)) ? String(d).slice(0, 10) : fechaLocalISO(new Date(d));
 }
 
 export const VACIO_VOL = {

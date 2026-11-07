@@ -6,6 +6,7 @@ import usePermisos                from '@/shared/hooks/usePermisos';
 import { BRAND_COLOR }            from '@/shared/constants/brand';
 import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi }        from '@/shared/utils/mensajeErrorApi';
+import { fechaLocalISO } from '@/shared/utils/fecha';
 
 const COLOR = BRAND_COLOR;
 
@@ -35,7 +36,7 @@ function expandirHorarios(horarios, start, end) {
     cur.setHours(0, 0, 0, 0);
     while (cur <= hasta) {
       if (cur.getDay() === h.diaSemana) {
-        const fecha = cur.toISOString().slice(0, 10);
+        const fecha = fechaLocalISO(cur); // día local del calendario, no UTC
         eventos.push({
           id:              `horario-${h.id}-${fecha}`,
           title:           h.programaNombre,

@@ -39,12 +39,17 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
   const v = useValidacion(ESQUEMA, { categoria, archivos });
 
   const agregarArchivos = (lista) => {
-    const nuevos = Array.from(lista).filter(f => f.type === 'application/pdf');
+    const todos     = Array.from(lista);
+    const nuevos    = todos.filter(f => f.type === 'application/pdf');
+    const omitidos  = todos.filter(f => f.type !== 'application/pdf').map(f => f.name);
     setArchivos(prev => {
       const nombres = new Set(prev.map(f => f.name));
       return [...prev, ...nuevos.filter(f => !nombres.has(f.name))];
     });
-    setError('');
+    // se avisa en lugar de descartar en silencio los que no son PDF
+    setError(omitidos.length
+      ? `Se omitieron ${omitidos.length} archivo(s) que no son PDF: ${omitidos.join(', ')}. Solo se aceptan documentos PDF.`
+      : '');
     v.tocar('archivos');
   };
 

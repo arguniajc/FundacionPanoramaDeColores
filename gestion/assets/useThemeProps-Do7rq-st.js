@@ -1,1 +1,0 @@
-import{et as e,ot as t,tt as n}from"./apiClient-D3BeoiMz.js";var r=n();function i(t){let{theme:n,name:r,props:i}=t;return!n||!n.components||!n.components[r]||!n.components[r].defaultProps?i:e(n.components[r].defaultProps,i)}function a({props:e,name:n,defaultTheme:r,themeId:a}){let o=t(r);return a&&(o=o[a]||o),i({theme:o,name:n,props:e})}export{i as n,r,a as t};

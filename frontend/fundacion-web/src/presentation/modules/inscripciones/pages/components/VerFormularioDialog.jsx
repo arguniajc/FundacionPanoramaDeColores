@@ -84,6 +84,12 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const errCampo   = id => (intentado ? (errores[id] ?? '') : '');
 
   const cerrarEdicion = () => { setEditando(false); setError(''); setIntentado(false); setVerResumen(false); };
+  // Cancelar descarta lo editado y vuelve a los datos guardados
+  const cancelarEdicion = () => {
+    try { setDatos(JSON.parse(inscripcion.datos || '{}')); } catch { setDatos({}); }
+    setObservaciones(inscripcion.observaciones ?? '');
+    cerrarEdicion();
+  };
 
   const handleGuardar = async () => {
     if (hayErrores) { setIntentado(true); setVerResumen(true); return; }
@@ -490,7 +496,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         <Box flex={1} />
         {editando ? (
           <>
-            <Button onClick={cerrarEdicion} disabled={guardando}>
+            <Button onClick={cancelarEdicion} disabled={guardando}>
               Cancelar
             </Button>
             <Button variant="contained" onClick={handleGuardar}

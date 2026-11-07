@@ -142,6 +142,8 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
         fechaDonacion: form.fechaDonacion || hoy(),
       });
       let aviso = null;
+      if (form.tipo === 'dinero' && form.registrarContabilidad && form.cuentaContabId && !catDonId)
+        aviso = 'La donación se registró, pero no se registró el ingreso en contabilidad porque no existe la categoría PUC 4120 (Donaciones). Créala en Contabilidad o registra el ingreso manualmente.';
       if (form.tipo === 'dinero' && form.registrarContabilidad && form.cuentaContabId && catDonId) {
         try {
           await contabilidadRepository.crearMovimiento({

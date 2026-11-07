@@ -47,8 +47,8 @@ export function DialogCuenta({ open, modo, data, guardando, onClose, onGuardar }
     onGuardar({
       nombre: form.nombre.trim(),
       tipo: form.tipo,
-      banco: form.banco || null,
-      numeroCuenta: form.numeroCuenta || null,
+      banco:        esBancaria(form) ? form.banco || null : null,
+      numeroCuenta: esBancaria(form) ? form.numeroCuenta || null : null,
       saldoInicial: parseFloat(form.saldoInicial) || 0,
     });
   };

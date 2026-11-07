@@ -147,7 +147,7 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
     limpiarCache(); cargar(true); cargarStatsDetalle();
   };
 
-  const exportarExcel = async () => {
+  const handleExportarExcel = async () => {
     setExportando(true);
     setToast('Preparando exportación completa…');
     try {
@@ -210,7 +210,7 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
     hayFiltrosAvanzados, limpiarFiltros,
     cargando, error, actualizando,
     toast, setToast,
-    exportando, exportarExcel,
+    exportando, exportarExcel: handleExportarExcel,
     stats, statsDetalle, cargandoStats,
     modalStats, setModalStats,
     seleccionada, setSeleccionada,

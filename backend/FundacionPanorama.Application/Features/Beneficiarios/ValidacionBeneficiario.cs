@@ -1,8 +1,8 @@
 // Validación de beneficiarios (campos obligatorios + formato), extraída de BeneficiariosController
 // para poder probarla de forma aislada. El comportamiento y los mensajes son los mismos.
-using FundacionPanorama.API.DTOs;
+using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 
-namespace FundacionPanorama.API.Validation;
+namespace FundacionPanorama.Application.Features.Beneficiarios;
 
 public static class ValidacionBeneficiario
 {

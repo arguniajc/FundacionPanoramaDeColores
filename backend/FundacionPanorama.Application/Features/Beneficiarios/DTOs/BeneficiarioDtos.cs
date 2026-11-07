@@ -1,7 +1,7 @@
 // DTOs del módulo Beneficiarios: salida (BeneficiarioDto), entrada (CrearBeneficiarioDto),
 // paginación (BeneficiarioListDto) y estadísticas (BeneficiarioStatsDto).
 using System.ComponentModel.DataAnnotations;
-namespace FundacionPanorama.API.DTOs;
+namespace FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 
 // Forma plana que consume el frontend — combina datos del menor, acudiente, tallas y archivos.
 public class BeneficiarioDto
@@ -207,4 +207,46 @@ public class PerfilIncompletoDto
     public string?      FotoUrl     { get; set; }
     public List<string> Faltantes   { get; set; } = [];
     public int          Completitud { get; set; }
+}
+
+// Cuerpo de PATCH api/beneficiarios/{id}/baja (antes anidado en BeneficiariosController).
+public record DarDeBajaDto(string? Motivo);
+
+// ── Datos internos entre servicio y repositorio (no se serializan tal cual) ───
+
+public sealed record FiltroBeneficiarios(
+    string? Buscar, string Estado, string? Genero, int? EdadMin, int? EdadMax,
+    string? Eps, string? TieneAlergia, string? Tipo);
+
+// Fila de "incompletos": Flags trae los 10 indicadores sin_* en el orden del SELECT.
+public sealed record PerfilIncompletoFila(Guid Id, string Nombre, string? FotoUrl, int[] Flags, int TotalFaltantes);
+
+public sealed record StatsNinosDatos(
+    int TotalActivos, int SinEdad, int Extranjeros, int OtraRegion,
+    int PI, int IN1, int IN2, int PA, int AD,
+    List<(string Pais, int Total)> TopPaises,
+    List<(string Depto, string Ciudad, int Total)> DeptoRows,
+    List<(string Genero, int Total)> PorGenero);
+
+public sealed record HistorialFila(Guid Id, string Accion, string? UsuarioEmail, string? Detalle, DateTime Fecha);
+
+public sealed record DependenciasBeneficiario(string? Nombre, int Inscripciones, int Movimientos);
+
+public enum EstadoActualizacion { Ok, NoEncontrado, DocumentoDuplicado }
+
+public enum EstadoResultado { Ok, Invalido, NoEncontrado, Conflicto }
+
+// Resultado de una operación del servicio; el controlador lo traduce a código HTTP.
+public sealed class ResultadoBeneficiario<T>
+{
+    public EstadoResultado Estado  { get; private init; }
+    public T?              Valor   { get; private init; }
+    public string?         Mensaje { get; private init; }
+    public List<string>    Errores { get; private init; } = [];
+
+    public static ResultadoBeneficiario<T> Ok(T valor)                  => new() { Estado = EstadoResultado.Ok, Valor = valor };
+    public static ResultadoBeneficiario<T> Invalido(List<string> errores) => new() { Estado = EstadoResultado.Invalido, Errores = errores };
+    public static ResultadoBeneficiario<T> Invalido(string mensaje)     => new() { Estado = EstadoResultado.Invalido, Mensaje = mensaje };
+    public static ResultadoBeneficiario<T> NoEncontrado()               => new() { Estado = EstadoResultado.NoEncontrado };
+    public static ResultadoBeneficiario<T> Conflicto(string mensaje)    => new() { Estado = EstadoResultado.Conflicto, Mensaje = mensaje };
 }

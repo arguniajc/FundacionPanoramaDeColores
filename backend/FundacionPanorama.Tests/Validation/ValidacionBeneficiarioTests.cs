@@ -1,5 +1,5 @@
-using FundacionPanorama.API.DTOs;
-using FundacionPanorama.API.Validation;
+using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
+using FundacionPanorama.Application.Features.Beneficiarios;
 
 namespace FundacionPanorama.Tests.Validation;
 

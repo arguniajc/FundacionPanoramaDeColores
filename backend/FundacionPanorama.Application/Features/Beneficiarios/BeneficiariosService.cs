@@ -1,0 +1,289 @@
+// Reglas del módulo Beneficiarios (niños inscritos y adultos). Regla de negocio: los
+// beneficiarios no se eliminan permanentemente desde la UI, solo se "dan de baja"
+// (activo=false). El DELETE existe para limpieza de datos por admin.
+using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
+using FundacionPanorama.Application.Features.Beneficiarios.Interfaces;
+
+namespace FundacionPanorama.Application.Features.Beneficiarios;
+
+public class BeneficiariosService(IBeneficiariosRepository repo)
+{
+    // ── Lecturas ──────────────────────────────────────────────────────────────
+
+    public Task<BeneficiarioListDto> ListarAsync(
+        int pagina, int porPagina, string? buscar, string estado, string? genero,
+        int? edadMin, int? edadMax, string? eps, string? tieneAlergia, string? tipo,
+        CancellationToken ct = default)
+    {
+        pagina    = Math.Max(1, pagina);
+        porPagina = Math.Clamp(porPagina, 1, 100);
+        var filtro = new FiltroBeneficiarios(buscar, estado, genero, edadMin, edadMax, eps, tieneAlergia, tipo);
+        return repo.ListarAsync(filtro, pagina, porPagina, ct);
+    }
+
+    public Task<BeneficiarioStatsDto> ObtenerStatsAsync(string? tipo, CancellationToken ct = default)
+        => repo.ObtenerStatsAsync(tipo, ct);
+
+    // Hasta 60 beneficiarios activos con campos de calidad vacíos,
+    // ordenados por cantidad de campos faltantes (más incompleto primero).
+    public async Task<List<PerfilIncompletoDto>> ListarIncompletosAsync(string? tipo, CancellationToken ct = default)
+    {
+        var filas  = await repo.ListarIncompletosAsync(tipo, ct);
+        var result = new List<PerfilIncompletoDto>();
+        foreach (var f in filas)
+        {
+            var faltantes = new List<string>();
+            if (f.Flags[0] > 0) faltantes.Add("Foto del menor");
+            if (f.Flags[1] > 0) faltantes.Add("Foto documento");
+            if (f.Flags[2] > 0) faltantes.Add("WhatsApp");
+            if (f.Flags[3] > 0) faltantes.Add("Dirección");
+            if (f.Flags[4] > 0) faltantes.Add("Talla camisa");
+            if (f.Flags[5] > 0) faltantes.Add("Talla zapatos");
+            if (f.Flags[6] > 0) faltantes.Add("Peso");
+            if (f.Flags[7] > 0) faltantes.Add("Talla altura");
+            if (f.Flags[8] > 0) faltantes.Add("Colegio");
+            if (f.Flags[9] > 0) faltantes.Add("Grado escolar");
+
+            int totalFalt   = f.TotalFaltantes;
+            int completitud = (int)Math.Round((10.0 - totalFalt) / 10.0 * 100);
+
+            result.Add(new PerfilIncompletoDto
+            {
+                Id          = f.Id,
+                Nombre      = f.Nombre,
+                FotoUrl     = f.FotoUrl,
+                Faltantes   = faltantes,
+                Completitud = completitud,
+            });
+        }
+        return result;
+    }
+
+    // La forma del objeto (anónimo) es el contrato JSON de GET stats-ninos: no cambiarla.
+    public async Task<object> ObtenerStatsNinosAsync(CancellationToken ct = default)
+    {
+        var d = await repo.ObtenerStatsNinosAsync(ct);
+
+        var porRango = new object[]
+        {
+            new { Codigo = "PI",  Nombre = "Primera infancia",  rango = "0 a 5 años",   total = d.PI  },
+            new { Codigo = "IN1", Nombre = "Infancia inicial",  rango = "6 a 8 años",   total = d.IN1 },
+            new { Codigo = "IN2", Nombre = "Infancia media",    rango = "9 a 11 años",  total = d.IN2 },
+            new { Codigo = "PA",  Nombre = "Preadolescencia",   rango = "12 a 13 años", total = d.PA  },
+            new { Codigo = "AD",  Nombre = "Adolescencia",      rango = "14 a 16 años", total = d.AD  },
+        };
+
+        var topPaises = new List<object>();
+        foreach (var p in d.TopPaises)
+            topPaises.Add(new { pais = p.Pais, total = p.Total });
+
+        var departamentosConCiudades = d.DeptoRows
+            .GroupBy(x => x.Depto)
+            .Select(g => new {
+                departamento = g.Key,
+                total        = g.Sum(x => x.Total),
+                ciudades     = g
+                    .Where(x => x.Ciudad != "")
+                    .OrderByDescending(x => x.Total)
+                    .Take(10)
+                    .Select(x => new { ciudad = x.Ciudad, total = x.Total })
+                    .ToList()
+            })
+            .OrderByDescending(g => g.total)
+            .Take(15)
+            .ToList();
+
+        var porGenero = new List<object>();
+        foreach (var g in d.PorGenero)
+            porGenero.Add(new { genero = g.Genero, total = g.Total });
+
+        int totalActivos = d.TotalActivos, sinEdad = d.SinEdad, extranjeros = d.Extranjeros, otraRegion = d.OtraRegion;
+        return new {
+            totalActivos,
+            sinEdad,
+            extranjeros,
+            otraRegion,
+            porRango,
+            topPaises,
+            departamentosConCiudades,
+            porGenero,
+        };
+    }
+
+    public Task<BeneficiarioDto?> ObtenerAsync(Guid id, CancellationToken ct = default)
+        => repo.ObtenerAsync(id, ct);
+
+    public Task<bool> ExisteDocumentoAsync(string numero, CancellationToken ct = default)
+        => repo.ExisteDocumentoAsync(numero, ct);
+
+    // La forma del objeto (anónimo) es el contrato JSON de GET {id}/historial: no cambiarla.
+    public async Task<List<object>> HistorialAsync(Guid id, int limite, CancellationToken ct = default)
+    {
+        limite = Math.Clamp(limite, 1, 200);
+        var filas  = await repo.HistorialAsync(id, limite, ct);
+        var result = new List<object>();
+        foreach (var f in filas)
+        {
+            result.Add(new
+            {
+                id           = f.Id,
+                accion       = f.Accion,
+                usuarioEmail = f.UsuarioEmail,
+                detalle      = f.Detalle,
+                fecha        = f.Fecha,
+            });
+        }
+        return result;
+    }
+
+    // ── Escrituras ────────────────────────────────────────────────────────────
+
+    public async Task<ResultadoBeneficiario<BeneficiarioDto>> CrearAsync(
+        CrearBeneficiarioDto dto, string? usuarioEmail, CancellationToken ct = default)
+    {
+        var errVal = ValidacionBeneficiario.Validar(dto);
+        if (errVal.Count > 0) return ResultadoBeneficiario<BeneficiarioDto>.Invalido(errVal);
+
+        var newId = await repo.CrearAsync(dto, usuarioEmail, ct);
+        if (newId is null)
+            return ResultadoBeneficiario<BeneficiarioDto>.Conflicto("Este número de documento ya está inscrito.");
+
+        return ResultadoBeneficiario<BeneficiarioDto>.Ok(await CargarExistenteAsync(newId.Value, ct));
+    }
+
+    public async Task<ResultadoBeneficiario<BeneficiarioDto>> ActualizarAsync(
+        Guid id, CrearBeneficiarioDto dto, string? usuarioEmail, CancellationToken ct = default)
+    {
+        var errVal = ValidacionBeneficiario.Validar(dto);
+        if (errVal.Count > 0) return ResultadoBeneficiario<BeneficiarioDto>.Invalido(errVal);
+
+        switch (await repo.ActualizarAsync(id, dto, usuarioEmail, ct))
+        {
+            case EstadoActualizacion.NoEncontrado:
+                return ResultadoBeneficiario<BeneficiarioDto>.NoEncontrado();
+            case EstadoActualizacion.DocumentoDuplicado:
+                return ResultadoBeneficiario<BeneficiarioDto>.Conflicto("Ese número de documento ya está registrado.");
+        }
+
+        return ResultadoBeneficiario<BeneficiarioDto>.Ok(await CargarExistenteAsync(id, ct));
+    }
+
+    /// <summary>Null si el beneficiario no existe.</summary>
+    public Task<BeneficiarioDto?> DarDeBajaAsync(Guid id, string? motivo, string? usuarioEmail, CancellationToken ct = default)
+    {
+        var motivoLimpio = string.IsNullOrWhiteSpace(motivo) ? null : motivo.Trim();
+        var motivoLog    = motivoLimpio is null ? null : $"Motivo: {motivoLimpio}";
+        return repo.DarDeBajaAsync(id, motivoLimpio, motivoLog, usuarioEmail, ct);
+    }
+
+    /// <summary>Null si el beneficiario no existe.</summary>
+    public Task<BeneficiarioDto?> ReactivarAsync(Guid id, string? usuarioEmail, CancellationToken ct = default)
+        => repo.ReactivarAsync(id, usuarioEmail, ct);
+
+    public async Task<ResultadoBeneficiario<bool>> EliminarAsync(Guid id, string? usuarioEmail, CancellationToken ct = default)
+    {
+        var dep = await repo.ObtenerDependenciasAsync(id, ct);
+        if (dep.Nombre == null) return ResultadoBeneficiario<bool>.NoEncontrado();
+
+        // Tablas que bloquean la eliminación
+        var cntIns = dep.Inscripciones;
+        var cntMov = dep.Movimientos;
+        if (cntIns > 0 || cntMov > 0)
+        {
+            var partes = new List<string>();
+            if (cntIns > 0) partes.Add($"{cntIns} inscripción{(cntIns > 1 ? "es" : "")} a programa{(cntIns > 1 ? "s" : "")}");
+            if (cntMov > 0) partes.Add($"{cntMov} movimiento{(cntMov > 1 ? "s" : "")} de inventario");
+            return ResultadoBeneficiario<bool>.Conflicto($"No se puede eliminar: el beneficiario tiene {string.Join(" y ", partes)} vinculados.");
+        }
+
+        await repo.EliminarAsync(id, dep.Nombre, usuarioEmail, ct);
+        return ResultadoBeneficiario<bool>.Ok(true);
+    }
+
+    // ── Importación ───────────────────────────────────────────────────────────
+
+    // La forma del objeto (anónimo) es el contrato JSON de POST importar-xlsx: no cambiarla.
+    public async Task<ResultadoBeneficiario<object>> ImportarFilasAsync(
+        List<ImportarBeneficiarioRowDto>? filas, string? usuarioEmail, CancellationToken ct = default)
+    {
+        if (filas is null || filas.Count == 0)
+            return ResultadoBeneficiario<object>.Invalido("No hay filas para importar.");
+
+        var insertados = 0;
+        var omitidos   = 0;
+        var errores    = new List<object>();
+
+        for (int fi = 0; fi < filas.Count; fi++)
+        {
+            var fila   = filas[fi];
+            var nombre = $"{fila.PrimerNombre?.Trim()} {fila.PrimerApellido?.Trim()}".Trim();
+
+            if (string.IsNullOrWhiteSpace(fila.PrimerNombre) || string.IsNullOrWhiteSpace(fila.PrimerApellido))
+            {
+                errores.Add(new { fila = fi + 2, nombre = nombre.Length > 0 ? nombre : "(vacío)",
+                    motivo = "PRIMER_NOMBRE y PRIMER_APELLIDO son obligatorios." });
+                continue;
+            }
+
+            var fechaNac = ParseFecha(fila.FechaNacimiento);
+            if (fechaNac is null)
+            {
+                errores.Add(new { fila = fi + 2, nombre,
+                    motivo = "FECHA_NACIMIENTO inválida. Use formato AAAA-MM-DD." });
+                continue;
+            }
+
+            var ndoc = fila.NumeroDocumento?.Trim();
+            if (!string.IsNullOrWhiteSpace(ndoc))
+            {
+                if (await repo.ExisteDocumentoAsync(ndoc, ct)) { omitidos++; continue; }
+            }
+
+            var dto = new CrearBeneficiarioDto
+            {
+                PrimerNombre    = fila.PrimerNombre!.Trim(),
+                SegundoNombre   = string.IsNullOrWhiteSpace(fila.SegundoNombre)   ? null : fila.SegundoNombre.Trim(),
+                PrimerApellido  = fila.PrimerApellido!.Trim(),
+                SegundoApellido = string.IsNullOrWhiteSpace(fila.SegundoApellido) ? null : fila.SegundoApellido.Trim(),
+                FechaNacimiento = fechaNac.Value,
+                TipoDocumento   = fila.TipoDocumento  ?? "",
+                NumeroDocumento = string.IsNullOrWhiteSpace(ndoc) ? null! : ndoc,
+                Genero          = fila.Genero?.Trim()!,
+                Eps             = fila.Eps?.Trim()!,
+                NombreAcudiente = fila.NombreAcudiente?.Trim(),
+                Parentesco      = fila.Parentesco?.Trim(),
+                Whatsapp        = fila.Whatsapp?.Trim(),
+                Direccion       = fila.Direccion?.Trim(),
+                GradoEscolar    = fila.GradoEscolar?.Trim(),
+                NombreColegio   = fila.NombreColegio?.Trim(),
+                TieneAlergia    = string.IsNullOrWhiteSpace(fila.TieneAlergia) ? "no" : fila.TieneAlergia.Trim().ToLower(),
+                DescripcionAlergia = fila.DescripcionAlergia?.Trim(),
+                Tipo            = string.IsNullOrWhiteSpace(fila.Tipo) ? "niño" : fila.Tipo.Trim(),
+            };
+
+            var error = await repo.InsertarFilaImportacionAsync(dto, fechaNac.Value, usuarioEmail, ct);
+            if (error is null) insertados++;
+            else               errores.Add(new { fila = fi + 2, nombre, motivo = error });
+        }
+
+        return ResultadoBeneficiario<object>.Ok(new { total = filas.Count, insertados, omitidos, errores });
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private async Task<BeneficiarioDto> CargarExistenteAsync(Guid id, CancellationToken ct)
+        => await repo.ObtenerAsync(id, ct)
+           ?? throw new InvalidOperationException($"Beneficiario {id} no encontrado tras guardarlo.");
+
+    private static DateOnly? ParseFecha(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        var formats = new[] { "yyyy-MM-dd", "dd/MM/yyyy", "d/M/yyyy", "MM/dd/yyyy", "M/d/yyyy" };
+        if (DateOnly.TryParseExact(s.Trim(), formats,
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var d)) return d;
+        if (DateOnly.TryParse(s.Trim(), out var d2)) return d2;
+        return null;
+    }
+
+}

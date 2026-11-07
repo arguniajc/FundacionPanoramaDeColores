@@ -50,6 +50,9 @@ public static class DependencyInjection
         services.AddScoped<ContabilidadService>();
         services.AddScoped<OrganigramaService>();
         services.AddScoped<NominaService>();
+        services.AddInventario();
+        services.AddDonacionesDonantesInscripciones();
+        services.AddBeneficiarios();
 
         return services;
     }

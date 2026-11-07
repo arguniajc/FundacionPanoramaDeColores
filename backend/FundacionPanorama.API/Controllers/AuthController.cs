@@ -2,6 +2,8 @@ using FundacionPanorama.Application.Features.Permisos;
 using FundacionPanorama.Application.Features.Usuarios;
 using FundacionPanorama.API.DTOs;
 using FundacionPanorama.API.Services;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -72,5 +74,38 @@ public class AuthController(
                 Permisos  = [],
             });
         }
+    }
+
+    // POST api/auth/renovar — emite un JWT nuevo antes de que venza el actual, para que
+    // un usuario activo no pierda lo que está escribiendo. Vuelve a leer el usuario en BD:
+    // si fue desactivado o cambió de rol, la renovación lo refleja.
+    [HttpPost("renovar")]
+    [Authorize]
+    public async Task<IActionResult> Renovar(CancellationToken ct)
+    {
+        var email  = User.FindFirst(ClaimTypes.Email)?.Value;
+        var nombre = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
+        var avatar = User.FindFirst("avatar")?.Value;
+        if (string.IsNullOrWhiteSpace(email))
+            return Unauthorized(new { mensaje = "Sesión inválida. Vuelve a iniciar sesión." });
+
+        var usuario = await usuariosService.ObtenerPorEmailAsync(email, ct);
+        var rol     = usuario?.Rol ?? (authService.EsAdminBootstrap(email) ? "administrador" : null);
+        if (rol is null)
+            return StatusCode(403, new { mensaje = "Tu usuario ya no tiene acceso al panel." });
+
+        var permisos = rol == "administrador"
+            ? new Dictionary<string, List<string>>()
+            : await permisosService.ObtenerPorRolAsync(rol, ct);
+
+        return Ok(new AuthResponseDto
+        {
+            Token     = authService.GenerarJwt(email, nombre, avatar, rol),
+            Email     = email,
+            Nombre    = nombre,
+            AvatarUrl = string.IsNullOrEmpty(avatar) ? null : avatar,
+            Rol       = rol,
+            Permisos  = permisos,
+        });
     }
 }

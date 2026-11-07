@@ -25,6 +25,10 @@ export function useInscripciones(filtros = {}) {
     return data;
   };
 
+  // Refleja en la lista una inscripción que ya se guardó en otro lugar (sin volver a llamar a la API)
+  const reemplazarLocal = (data) =>
+    setInscripciones(prev => prev.map(i => i.id === data.id ? data : i));
+
   const cambiarEstado = async (id, estado) => {
     const { data } = await inscripcionesRepository.cambiarEstado(id, estado);
     setInscripciones(prev => prev.map(i => i.id === id ? data : i));
@@ -35,5 +39,5 @@ export function useInscripciones(filtros = {}) {
     setInscripciones(prev => prev.filter(i => i.id !== id));
   };
 
-  return { inscripciones, cargando, error, cargar, crear, actualizar, cambiarEstado, eliminar };
+  return { inscripciones, cargando, error, cargar, crear, actualizar, reemplazarLocal, cambiarEstado, eliminar };
 }

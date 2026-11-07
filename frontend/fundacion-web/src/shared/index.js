@@ -17,7 +17,6 @@ export {
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 export { useAsyncData }                          from './hooks/useAsyncData';
 export { default as usePermisos }                from './hooks/usePermisos';
-export { default as useInactividad }             from './hooks/useInactividad';
 export { useGeografia, useGeografiaColombia }    from './hooks/useGeografia';
 
 // ── Context ───────────────────────────────────────────────────────────────────

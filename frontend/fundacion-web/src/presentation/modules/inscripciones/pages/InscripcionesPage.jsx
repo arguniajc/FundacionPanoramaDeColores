@@ -17,7 +17,7 @@ import { VerFormularioDialog }        from './components/VerFormularioDialog';
 import { NuevaInscripcionDialog }     from './components/NuevaInscripcionDialog';
 
 export default function InscripcionesPage() {
-  const { inscripciones, cargando, error, cargar, actualizar, cambiarEstado, eliminar } = useInscripciones();
+  const { inscripciones, cargando, error, cargar, reemplazarLocal, cambiarEstado, eliminar } = useInscripciones();
   const toastGlobal = useToast();
 
   const [filtroProg,     setFiltroProg]     = useState('');
@@ -226,8 +226,8 @@ export default function InscripcionesPage() {
           inscripcion={verInscripcion}
           onCerrar={() => setVerInscripcion(null)}
           onActualizada={(updated) => {
-            actualizar(verInscripcion.id, { datos: updated.datos, observaciones: updated.observaciones })
-              .catch(err => toastGlobal(mensajeErrorApi(err, { accion: 'actualizar la inscripción' }), 'error'));
+            // El diálogo ya guardó en el servidor: solo se refleja en la lista
+            reemplazarLocal(updated);
             setVerInscripcion(updated);
             setToast('Formulario actualizado');
           }}

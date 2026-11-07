@@ -1,5 +1,5 @@
 // Layout del panel admin: AppBar superior (solo móvil), Drawer lateral con menú
-// de módulos colapsables y área de contenido. Incluye auto-logout por inactividad.
+// de módulos colapsables y área de contenido. ControlSesion renueva la sesión y avisa antes de cerrarla.
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -40,10 +40,9 @@ import ReportProblemIcon     from '@mui/icons-material/ReportProblem';
 import { useAuth }           from '@/application/auth/AuthContext';
 import { useThemeMode }      from '@/shared/theme/ThemeContext';
 import { useConfiguracion }  from '@/shared/context/ConfiguracionContext';
-import useInactividad        from '@/shared/hooks/useInactividad';
+import ControlSesion         from '@/shared/components/ControlSesion';
 import usePermisos           from '@/shared/hooks/usePermisos';
 import { useAlertas }        from '@/shared/hooks/useAlertas';
-import { LOGIN_URL }         from '@/shared/constants/routes';
 
 const SIDEBAR_WIDTH = 260;
 
@@ -496,10 +495,6 @@ export default function AdminLayout({ children }) {
     setCollapsed(p => ({ ...p, [g]: !p[g] }))
   , []);
 
-  useInactividad(60, () => {
-    logout();
-    window.location.href = LOGIN_URL;
-  }, !!user);
 
   const sidebarProps = {
     user, mode, toggleMode, location,
@@ -512,6 +507,8 @@ export default function AdminLayout({ children }) {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Renueva la sesión de quien está activo y avisa antes de cerrarla por inactividad */}
+      <ControlSesion />
 
       <Drawer
         variant="permanent"

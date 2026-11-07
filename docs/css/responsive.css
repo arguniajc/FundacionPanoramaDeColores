@@ -68,6 +68,14 @@
    ≤ 768px — Menú hamburguesa · Tablet pequeña
 ══════════════════════════════════════════════════════ */
 @media screen and (max-width: 768px) {
+  /* ── Zonas táctiles de al menos ~44px en enlaces pequeños (pie, contacto, aviso) ── */
+  .footer-links a,
+  .footer-copyright a,
+  #don-whatsapp, #don-email,
+  #contact-email-link { display: inline-block; padding-block: 0.7rem; }
+  .footer-links ul { gap: 0; }
+  #privacy-accept   { min-height: 44px; }
+
   /* ── Navbar ── */
   .menu-toggle { display: flex; }
   .logo img     { height: 56px; width: 56px; }

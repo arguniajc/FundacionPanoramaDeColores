@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
-  Button, Dialog, DialogActions, DialogContent, DialogTitle,
+  Button, DialogActions, DialogContent, DialogTitle,
   FormControl, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';

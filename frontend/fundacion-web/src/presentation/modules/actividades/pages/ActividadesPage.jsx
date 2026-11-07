@@ -47,7 +47,7 @@ export default function ActividadesPage() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1.5, mb: 2.5 }}>
         <Box>
           <Typography sx={{
             fontSize: '0.68rem', color: 'text.secondary',
@@ -81,11 +81,11 @@ export default function ActividadesPage() {
       {tab === 0 && (
         <>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2, alignItems: 'center' }}>
-            <Box display="flex" alignItems="center" gap={0.7}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
               <Box sx={{ width: 14, height: 14, borderRadius: 1, bgcolor: COLOR }} />
               <Typography variant="caption" color="text.secondary">Actividad única</Typography>
             </Box>
-            <Box display="flex" alignItems="center" gap={0.7}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
               <Box sx={{ width: 14, height: 14, borderRadius: 1, bgcolor: '#e8def8', border: `2px solid ${COLOR}` }} />
               <Typography variant="caption" color="text.secondary">Sesión recurrente</Typography>
             </Box>
@@ -93,7 +93,11 @@ export default function ActividadesPage() {
 
           <Box sx={{
             '& .fc': { fontFamily: 'inherit' },
-            '& .fc-toolbar-title': { fontSize: '1.1rem', fontWeight: 700 },
+            '& .fc-toolbar-title': { fontSize: { xs: '1rem', sm: '1.1rem' }, fontWeight: 700 },
+            // En móvil la barra del calendario (navegación / título / vistas) pasa a varias líneas
+            '& .fc-header-toolbar': { flexWrap: { xs: 'wrap', sm: 'nowrap' }, gap: 1 },
+            '& .fc-toolbar-chunk': { display: 'flex', alignItems: 'center' },
+            '& .fc .fc-button': { px: { xs: 1, sm: 1.5 } },
             '& .fc-event': { cursor: 'pointer', borderRadius: '4px', px: '4px' },
           }}>
             <FullCalendar
@@ -160,12 +164,12 @@ export default function ActividadesPage() {
               <Stack spacing={1}>
                 {actividades.map(a => (
                   <Box key={a.id} onContextMenu={(e) => abrirCtxMenu(e, a)} sx={{
-                    display: 'flex', alignItems: 'center', gap: 1,
+                    display: 'flex', alignItems: 'center', gap: 1, flexWrap: { xs: 'wrap', sm: 'nowrap' },
                     p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider',
                     bgcolor: 'background.paper', cursor: 'context-menu',
                   }}>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="body2" fontWeight={600} noWrap>{a.titulo}</Typography>
+                    <Box sx={{ flex: 1, minWidth: 0, flexBasis: { xs: '100%', sm: 0 } }}>
+                      <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>{a.titulo}</Typography>
                       <Typography variant="caption" color="text.secondary">
                         {new Date(a.fechaInicio).toLocaleString('es-CO', {
                           day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',

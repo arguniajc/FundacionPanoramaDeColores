@@ -1,8 +1,9 @@
 ﻿import { useRef, useEffect, useState } from 'react';
 import SignaturePad from 'signature_pad';
 import {
-  Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Typography,
+  Box, Button, Chip, DialogActions, DialogContent, DialogTitle, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import DrawIcon   from '@mui/icons-material/Draw';
 import DeleteIcon from '@mui/icons-material/Delete';
 

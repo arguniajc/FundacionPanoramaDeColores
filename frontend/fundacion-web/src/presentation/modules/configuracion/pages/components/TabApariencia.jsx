@@ -1,4 +1,6 @@
-﻿import { Alert, Box, Divider, Grid, MenuItem, Select, Typography, FormControl, InputLabel } from '@mui/material';
+﻿import { Alert, Box, Button, Divider, Grid, MenuItem, Select, Typography, FormControl, InputLabel } from '@mui/material';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import { APARIENCIA_RECOMENDADA } from '@/shared/theme/paleta';
 import { Seccion }      from './Seccion';
 import { ColorPicker }  from './ColorPicker';
 import { FONT_OPTIONS, DEFAULTS } from '@/shared/context/useConfiguracion';
@@ -48,6 +50,14 @@ export function TabApariencia({ form, setForm }) {
     document.body.style.fontFamily = `'${familia}', sans-serif`;
   };
 
+  // Aplica la paleta recomendada (contraste AA y modo oscuro propio); queda guardada al pulsar "Guardar"
+  const usarRecomendada = () => {
+    setForm(p => ({ ...p, ...APARIENCIA_RECOMENDADA }));
+    [...COLORES_MARCA, ...COLORES_OSCURO].forEach(c =>
+      document.documentElement.style.setProperty(c.cssVar, APARIENCIA_RECOMENDADA[c.key]));
+    cambiarFuente(APARIENCIA_RECOMENDADA.fontFamily);
+  };
+
   const cp  = form.colorPrimario   || DEFAULTS.colorPrimario;
   const cs  = form.colorSidebar    || DEFAULTS.colorSidebar;
   const cgr = form.colorGradiente  || DEFAULTS.colorGradiente;
@@ -69,6 +79,11 @@ export function TabApariencia({ form, setForm }) {
 
   return (
     <Box>
+      <Alert severity="info" icon={<AutoAwesomeIcon />} sx={{ mb: 3, alignItems: 'center' }}
+        action={<Button color="inherit" size="small" variant="outlined" onClick={usarRecomendada}>Usar paleta recomendada</Button>}>
+        Paleta pensada para leer con comodidad en modo claro y oscuro. Después de aplicarla, pulsa <b>Guardar</b>.
+      </Alert>
+
       {/* ── Tipografía ── */}
       <Seccion titulo="Tipografía">
         <Grid container spacing={3} alignItems="flex-start">

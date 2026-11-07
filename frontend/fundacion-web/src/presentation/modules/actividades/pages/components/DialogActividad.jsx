@@ -1,8 +1,9 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
+  Alert, Box, Button, DialogActions, DialogContent, DialogTitle,
   FormHelperText, Grid, IconButton, MenuItem, TextField, Tooltip, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon    from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';

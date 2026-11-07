@@ -1,8 +1,9 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Button, CircularProgress, Collapse, Dialog, DialogActions, DialogContent,
+  Alert, Box, Button, CircularProgress, Collapse, DialogActions, DialogContent,
   DialogTitle, Divider, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { COLOR, CATEGORIAS } from './helpers';

@@ -122,6 +122,7 @@ export function TabReporteContador({
               <Card>
                 <CardContent>
                   <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Por Cuenta PUC</Typography>
+                  <TableContainer>
                   <Table size="small">
                     <TableHead>
                       <TableRow>
@@ -152,6 +153,7 @@ export function TabReporteContador({
                       )}
                     </TableBody>
                   </Table>
+                  </TableContainer>
                 </CardContent>
               </Card>
             </Grid>
@@ -159,6 +161,7 @@ export function TabReporteContador({
               <Card>
                 <CardContent>
                   <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Por Programa</Typography>
+                  <TableContainer>
                   <Table size="small">
                     <TableHead>
                       <TableRow>
@@ -182,6 +185,7 @@ export function TabReporteContador({
                       ))}
                     </TableBody>
                   </Table>
+                  </TableContainer>
                 </CardContent>
               </Card>
             </Grid>

@@ -17,7 +17,7 @@ export function VoluntarioCard({ voluntario: v, onEditar, onEliminar, onAsignaci
         <Avatar sx={{ bgcolor: COLOR, width: 42, height: 42, fontWeight: 800, fontSize: '0.85rem', flexShrink: 0 }}>
           {v.nombre.slice(0, 2).toUpperCase()}
         </Avatar>
-        <Box minWidth={0} flex={1}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography fontWeight={800} sx={{ fontSize: '0.92rem', lineHeight: 1.3 }} noWrap title={v.nombre}>
             {v.nombre}
           </Typography>

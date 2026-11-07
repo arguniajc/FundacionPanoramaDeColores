@@ -2,9 +2,10 @@
 // Props: open, onCerrar, onCaptura(file: File)
 import { useRef, useState, useEffect } from 'react';
 import {
-  Dialog, DialogContent, DialogActions,
+   DialogContent, DialogActions,
   Button, Box, Typography, IconButton, CircularProgress,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import CloseIcon       from '@mui/icons-material/Close';
 

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
-  Button, CircularProgress, Dialog, DialogActions, DialogContent,
+  Button, CircularProgress, DialogActions, DialogContent,
   DialogTitle, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import DeleteIcon       from '@mui/icons-material/Delete';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 

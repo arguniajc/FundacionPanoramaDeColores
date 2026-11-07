@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
+  Box, Button, DialogActions, DialogContent, DialogTitle,
   FormControl, FormControlLabel, FormHelperText, Grid, InputAdornment, InputLabel,
   MenuItem, Radio, RadioGroup, Select, TextField, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import { hoy } from './formato';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
@@ -182,7 +183,7 @@ export function DialogMovimiento({
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Fecha *" type="date" size="small"
-              value={form.fecha} onChange={set('fecha')} InputLabelProps={{ shrink: true }}
+              value={form.fecha} onChange={set('fecha')} slotProps={{ inputLabel: { shrink: true } }}
               {...v.props('fecha')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>

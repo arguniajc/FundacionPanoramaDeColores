@@ -38,8 +38,8 @@ export function ItemCard({ item, onMovimiento, onEditar, onEliminar, onHistorial
         <Avatar sx={{ bgcolor: catColor, width: 40, height: 40, fontSize: '0.75rem', fontWeight: 800, flexShrink: 0 }}>
           {item.nombre.slice(0, 2).toUpperCase()}
         </Avatar>
-        <Box minWidth={0} flex={1}>
-          <Typography fontWeight={800} sx={{ lineHeight: 1.3, fontSize: '0.92rem' }} noWrap title={item.nombre}>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography sx={{ fontWeight: 800, lineHeight: 1.3, fontSize: '0.92rem' }} noWrap title={item.nombre}>
             {item.nombre}
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.5, mt: 0.3, flexWrap: 'wrap' }}>

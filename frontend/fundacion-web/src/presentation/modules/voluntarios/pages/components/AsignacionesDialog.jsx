@@ -1,10 +1,11 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import {
-  Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
+  Alert, Box, Button, CircularProgress, DialogActions, DialogContent,
   DialogTitle, FormControl, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper,
   Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   TextField, Tooltip, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon        from '@mui/icons-material/Add';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import DeleteIcon     from '@mui/icons-material/Delete';
@@ -205,7 +206,7 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
           <Grid size={{ xs: 6, sm: 2 }}>
             <TextField fullWidth size="small" label="Desde" type="date"
               value={form.fechaInicio} onChange={e => setF('fechaInicio', e.target.value)}
-              InputLabelProps={{ shrink: true }} {...v.props('fechaInicio')} />
+              slotProps={{ inputLabel: { shrink: true } }} {...v.props('fechaInicio')} />
           </Grid>
           {v.resumen.visible && (
             <Grid size={12}>

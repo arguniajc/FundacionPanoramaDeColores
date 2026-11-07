@@ -1,8 +1,9 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
+   DialogTitle, DialogContent, DialogActions,
   Button, Typography, Box, Divider, CircularProgress, Chip,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import DownloadIcon        from '@mui/icons-material/Download';
 import EmailIcon           from '@mui/icons-material/Email';
 import ReceiptIcon         from '@mui/icons-material/Receipt';

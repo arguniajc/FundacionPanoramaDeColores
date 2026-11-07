@@ -1,10 +1,11 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import {
-  Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
+  Alert, Box, Button, Chip, CircularProgress, DialogActions,
   DialogContent, DialogTitle, FormControl, FormHelperText, IconButton, InputLabel,
   MenuItem, Paper, Select, Snackbar, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon          from '@mui/icons-material/Add';
 import AutorenewIcon    from '@mui/icons-material/Autorenew';
 import CheckCircleIcon  from '@mui/icons-material/CheckCircle';

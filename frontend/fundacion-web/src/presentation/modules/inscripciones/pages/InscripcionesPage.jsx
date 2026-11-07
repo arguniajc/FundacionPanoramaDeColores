@@ -136,7 +136,7 @@ export default function InscripcionesPage() {
                   <Avatar sx={{ bgcolor: COLOR, width: 44, height: 44, flexShrink: 0, fontWeight: 800 }}>
                     {(i.nombreBeneficiario || '?')[0].toUpperCase()}
                   </Avatar>
-                  <Box minWidth={0} flex={1}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography fontWeight={800} noWrap sx={{ fontSize: '0.95rem' }}>
                       {i.nombreBeneficiario}
                     </Typography>

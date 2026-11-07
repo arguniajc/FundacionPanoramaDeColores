@@ -24,7 +24,7 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
         borderBottom: expandida ? '1px solid' : 'none', borderColor: 'divider',
       }}>
         <LocationOnIcon sx={{ color: 'var(--color-primario)', flexShrink: 0 }} />
-        <Box flex={1} minWidth={0}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
             <Typography fontWeight={700} noWrap>{sede.nombre}</Typography>
             <Chip label={sede.activo ? 'Activa' : 'Inactiva'} size="small"

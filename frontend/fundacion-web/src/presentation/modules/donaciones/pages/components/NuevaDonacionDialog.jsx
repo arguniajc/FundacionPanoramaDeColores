@@ -1,9 +1,10 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import {
-  Alert, Autocomplete, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent,
+  Alert, Autocomplete, Button, Checkbox, CircularProgress, DialogActions, DialogContent,
   DialogTitle, FormControl, FormControlLabel, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem,
   Select, TextField, ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import Inventory2Icon  from '@mui/icons-material/Inventory2';
 import { donantesRepository }      from '@/infrastructure/repositories/donantesRepository';
@@ -366,7 +367,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
           <Grid size={5}>
             <TextField fullWidth size="small" label="Fecha" type="date"
               value={form.fechaDonacion} onChange={e => set('fechaDonacion', e.target.value)}
-              InputLabelProps={{ shrink: true }} {...v.props('fechaDonacion')} />
+              slotProps={{ inputLabel: { shrink: true } }} {...v.props('fechaDonacion')} />
           </Grid>
           <Grid size={7}>
             <TextField fullWidth size="small" label="Descripción" value={form.descripcion}

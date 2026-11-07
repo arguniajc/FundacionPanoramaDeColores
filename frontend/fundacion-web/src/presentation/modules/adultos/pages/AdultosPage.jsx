@@ -3,10 +3,11 @@ import {
   Box, Typography, Container,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, IconButton, Chip, TextField, InputAdornment, Pagination,
-  CircularProgress, Alert, Dialog, DialogTitle, DialogContent,
+  CircularProgress, Alert, DialogTitle, DialogContent,
   DialogContentText, DialogActions, Tooltip, Button, Snackbar, Tabs, Tab,
   Divider, Stack, Collapse, MenuItem, Select, FormControl, InputLabel,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import SearchIcon           from '@mui/icons-material/Search';
 import FilterListIcon       from '@mui/icons-material/FilterList';
 import FilterListOffIcon    from '@mui/icons-material/FilterListOff';
@@ -236,7 +237,7 @@ export default function AdultosPage() {
         background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 60%, #43a047 100%)',
         px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 },
       }}>
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2 }}>
           <Box>
             <Typography sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.3 }}>
               Módulo
@@ -248,7 +249,7 @@ export default function AdultosPage() {
               Mayores de 18 años inscritos en la fundación
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, width: { xs: '100%', sm: 'auto' }, alignItems: { xs: 'stretch', sm: 'center' } }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, flexWrap: { sm: 'wrap', md: 'nowrap' }, gap: 1, width: { xs: '100%', md: 'auto' }, alignItems: { xs: 'stretch', sm: 'center' } }}>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <StatCard icon={<PeopleIcon />}       label="Total"   value={stats.total}   color="#B4E8E8" />
               <StatCard icon={<VerifiedUserIcon />} label="Activos" value={stats.activos} color="#81c784" />
@@ -291,13 +292,13 @@ export default function AdultosPage() {
       <Box sx={{ flex: 1 }}>
         <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 1 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', md: 'center' }} sx={{ mb: 1 }}>
             <TextField
               placeholder="Buscar nombre, documento, acudiente…"
               size="small" fullWidth
               value={inputSearch}
               onChange={e => setInputSearch(e.target.value)}
-              sx={{ maxWidth: { sm: 420 } }}
+              sx={{ maxWidth: { md: 420 } }}
               slotProps={{
                 input: {
                   startAdornment: (
@@ -308,7 +309,7 @@ export default function AdultosPage() {
                 },
               }}
             />
-            <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+            <Box sx={{ display: 'flex', flexWrap: { xs: 'wrap', md: 'nowrap' }, gap: 1, flexShrink: 0 }}>
               <Tooltip title={filtrosOpen ? 'Ocultar filtros avanzados' : 'Filtros avanzados'}>
                 <Button
                   size="small" variant={hayFiltrosAvanzados ? 'contained' : 'outlined'}

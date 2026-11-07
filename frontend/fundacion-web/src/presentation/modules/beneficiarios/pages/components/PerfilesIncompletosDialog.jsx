@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import {
   Box, Typography, Chip, Button, Avatar, Tooltip, CircularProgress,
-  Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Alert,
+   DialogTitle, DialogContent, DialogActions, IconButton, Alert,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import WarningAmberIcon  from '@mui/icons-material/WarningAmber';
 import EditIcon          from '@mui/icons-material/Edit';
 import CheckCircleIcon   from '@mui/icons-material/CheckCircle';

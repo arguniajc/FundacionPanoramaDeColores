@@ -212,11 +212,11 @@ function TabAuditoria() {
 
         <TextField size="small" label="Desde" type="date" value={filtDesde}
           onChange={e => setFiltDesde(e.target.value)}
-          InputLabelProps={{ shrink: true }} sx={{ width: 150 }} />
+          slotProps={{ inputLabel: { shrink: true } }} sx={{ width: 150 }} />
 
         <TextField size="small" label="Hasta" type="date" value={filtHasta}
           onChange={e => setFiltHasta(e.target.value)}
-          InputLabelProps={{ shrink: true }} sx={{ width: 150 }} />
+          slotProps={{ inputLabel: { shrink: true } }} sx={{ width: 150 }} />
 
         {hayFiltros && (
           <Button size="small" onClick={limpiar} sx={{ color: 'text.secondary' }}>
@@ -408,7 +408,7 @@ export default function SeguridadPage() {
       </Box>
 
       {/* Tabs */}
-      <Tabs value={mainTab} onChange={(_, v) => setMainTab(v)}
+      <Tabs value={mainTab} onChange={(_, v) => setMainTab(v)} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile
         sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
         <Tab label="Permisos" icon={<SecurityIcon fontSize="small" />} iconPosition="start"
           sx={{ minHeight: 42, py: 0, fontWeight: 600 }} />
@@ -423,14 +423,15 @@ export default function SeguridadPage() {
       {/* ── Tab Permisos ──────────────────────────────────────────────────────── */}
       {mainTab === 0 && (
         <>
-          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-            <TextField select label="Rol" size="small" sx={{ minWidth: 260 }}
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <TextField select label="Rol" size="small" sx={{ minWidth: { xs: '100%', sm: 260 } }}
               value={rol} onChange={e => setRol(e.target.value)}>
               {ROLES.map(r => (
                 <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>
               ))}
             </TextField>
-            <Chip label="El Administrador siempre tiene acceso total" size="small" color="warning" />
+            <Chip label="El Administrador siempre tiene acceso total" size="small" color="warning"
+              sx={{ maxWidth: '100%', height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.25 } }} />
           </Box>
 
           {error    && <Alert severity="error"   sx={{ mb: 2 }}>{error}</Alert>}
@@ -438,10 +439,10 @@ export default function SeguridadPage() {
 
           <TableContainer component={Paper} elevation={0}
             sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-            <Table size="small" sx={{ tableLayout: 'fixed' }}>
+            <Table size="small" sx={{ tableLayout: 'fixed', minWidth: 640 }}>
               <TableHead>
                 <TableRow sx={{ bgcolor: 'action.hover' }}>
-                  <TableCell sx={{ width: 200, fontWeight: 700 }}>Módulo</TableCell>
+                  <TableCell sx={{ width: { xs: 150, sm: 200 }, fontWeight: 700 }}>Módulo</TableCell>
                   {TODAS_ACCIONES.map(acc => (
                     <TableCell key={acc} align="center"
                       sx={{ fontWeight: 700, textTransform: 'capitalize', cursor: 'pointer', '&:hover': { bgcolor: 'action.selected' } }}

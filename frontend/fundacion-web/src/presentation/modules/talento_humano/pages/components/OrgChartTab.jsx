@@ -1,9 +1,10 @@
 ﻿import { useState, useEffect, Children, memo } from 'react';
 import {
   Box, Typography, Button, Avatar, IconButton,
-  Dialog, DialogTitle, DialogContent, DialogActions, Alert,
+   DialogTitle, DialogContent, DialogActions, Alert,
   FormControl, InputLabel, Select, MenuItem, Autocomplete, TextField, CircularProgress,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon          from '@mui/icons-material/Add';
 import EditIcon         from '@mui/icons-material/Edit';
 import DeleteIcon       from '@mui/icons-material/Delete';
@@ -525,7 +526,7 @@ export function OrgChartTab({ puedoEditar, empleados }) {
             </Typography>
           </Box>
         ) : (
-          <Box sx={{ display: 'flex', justifyContent: 'center', userSelect: 'none' }}>
+          <Box sx={{ display: 'flex', width: 'max-content', minWidth: '100%', justifyContent: 'center', userSelect: 'none' }}>
             <HBranch>
               {roots.map(root => (
                 <TreeNode

@@ -1,12 +1,13 @@
 // Formulario wizard: stepper 5 pasos, borrador localStorage, validación en tiempo real, confirmación al cerrar.
 import { useState, useEffect } from 'react';
 import {
-  Box, Dialog, DialogTitle, DialogContent, DialogActions,
+  Box, DialogTitle, DialogContent, DialogActions,
   Button, Grid, TextField, MenuItem, FormControl,
   InputLabel, Select, Typography, Alert, CircularProgress,
   InputAdornment, IconButton, Autocomplete, Checkbox, FormControlLabel, Chip,
   Stepper, Step, StepLabel,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import PersonAddIcon      from '@mui/icons-material/PersonAdd';
 import CloseIcon          from '@mui/icons-material/Close';
 import CheckCircleIcon    from '@mui/icons-material/CheckCircle';
@@ -698,11 +699,11 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
             </Alert>
           )}
 
-          <Stepper activeStep={paso} alternativeLabel sx={{ mb: 3 }}>
+          <Stepper activeStep={paso} alternativeLabel sx={{ mb: 3, '& .MuiStep-root': { px: { xs: 0.25, sm: 1 } } }}>
             {PASOS.map((label, i) => (
               <Step key={label} completed={i < paso}>
                 <StepLabel sx={{
-                  '& .MuiStepLabel-label': { fontSize: '0.73rem' },
+                  '& .MuiStepLabel-label': { fontSize: { xs: '0.66rem', sm: '0.73rem' }, overflowWrap: 'anywhere' },
                   '& .MuiStepIcon-root.Mui-active':    { color: 'var(--color-primario)' },
                   '& .MuiStepIcon-root.Mui-completed': { color: 'var(--color-secundario)' },
                 }}>
@@ -732,12 +733,12 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
             {error}
           </Alert>
         )}
-        <DialogActions sx={{ px: 3, py: 2, gap: 1, justifyContent: 'space-between' }}>
+        <DialogActions sx={{ px: { xs: 2, sm: 3 }, py: 2, gap: 1, justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <Button onClick={() => { setResumenPaso(false); setPaso(p => p - 1); }} disabled={paso === 0}
             startIcon={<NavigateBeforeIcon />} variant="outlined">
             Anterior
           </Button>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end', ml: 'auto' }}>
             <Button onClick={handleCerrar} disabled={guardando} variant="outlined" color="inherit">
               Cancelar
             </Button>

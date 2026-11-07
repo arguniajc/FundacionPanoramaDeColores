@@ -1,7 +1,8 @@
 import {
-  Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
+  Box, Button, Chip, DialogActions, DialogContent, DialogTitle,
   Grid, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { fmt, fmtFecha } from './formato';
 import { generarComprobantePDF } from './generarComprobantePDF';

@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import {
-  Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
+  Alert, Box, Button, Chip, CircularProgress, DialogActions,
   DialogContent, DialogTitle, Divider, LinearProgress,
   Table, TableBody, TableCell, TableHead, TableRow, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import UploadFileIcon  from '@mui/icons-material/UploadFile';
 import DownloadIcon    from '@mui/icons-material/Download';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';

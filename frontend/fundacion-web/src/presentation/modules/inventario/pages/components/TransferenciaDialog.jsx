@@ -1,9 +1,10 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
+  Alert, Box, Button, CircularProgress, DialogActions, DialogContent,
   DialogTitle, FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select,
   TextField, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { fmtNum } from './helpers';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';

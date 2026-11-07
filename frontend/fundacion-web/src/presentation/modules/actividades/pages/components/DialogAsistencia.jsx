@@ -1,8 +1,9 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Box, Button, Checkbox, Dialog, DialogActions, DialogContent,
+  Box, Button, Checkbox, DialogActions, DialogContent,
   DialogTitle, Divider, FormControlLabel, IconButton, Stack, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import CloseIcon from '@mui/icons-material/Close';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
 import { useToast } from '@/shared/context/useToast';

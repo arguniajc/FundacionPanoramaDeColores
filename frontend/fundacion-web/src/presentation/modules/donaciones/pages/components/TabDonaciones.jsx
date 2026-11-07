@@ -154,10 +154,10 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
           </FormControl>
           <TextField size="small" label="Desde" type="date" value={filtDesde}
             onChange={e => setFiltDesde(e.target.value)}
-            InputLabelProps={{ shrink: true }} sx={{ width: 150 }} />
+            slotProps={{ inputLabel: { shrink: true } }} sx={{ width: 150 }} />
           <TextField size="small" label="Hasta" type="date" value={filtHasta}
             onChange={e => setFiltHasta(e.target.value)}
-            InputLabelProps={{ shrink: true }} sx={{ width: 150 }} />
+            slotProps={{ inputLabel: { shrink: true } }} sx={{ width: 150 }} />
           {hayFiltros && (
             <Button size="small" startIcon={<CloseIcon />}
               onClick={() => { setFiltTipo(''); setFiltSedeId(''); setFiltDesde(''); setFiltHasta(''); }}>

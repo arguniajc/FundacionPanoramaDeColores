@@ -102,7 +102,7 @@ export default function HistorialBeneficiario({ beneficiarioId }) {
                     height: 22, flexShrink: 0, mt: 0.2,
                   }}
                 />
-                <Box flex={1} minWidth={0}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                     <Typography variant="caption" fontWeight={600} color="text.secondary">
                       {fmtFecha(item.fecha)}

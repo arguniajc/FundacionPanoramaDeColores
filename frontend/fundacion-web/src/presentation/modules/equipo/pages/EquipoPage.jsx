@@ -3,9 +3,10 @@ import { useConfirm } from '@/shared/components/useConfirm';
 import {
   Box, Typography, Button, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, Chip,
-  Dialog, DialogTitle, DialogContent, DialogActions,
+   DialogTitle, DialogContent, DialogActions,
   TextField, MenuItem, IconButton, Tooltip, Switch,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon    from '@mui/icons-material/Add';
 import EditIcon   from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -153,7 +154,7 @@ export default function EquipoPage() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
         <Box>
           <Typography variant="h5" fontWeight={700}>Equipo</Typography>
           <Typography variant="body2" color="text.secondary">Usuarios con acceso al panel administrativo</Typography>
@@ -185,7 +186,7 @@ export default function EquipoPage() {
               <TableRow key={u.id} hover>
                 <TableCell>
                   <Typography variant="body2" fontWeight={600}>{u.nombre ?? '—'}</Typography>
-                  <Typography variant="caption" color="text.secondary">{u.email}</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>{u.email}</Typography>
                 </TableCell>
                 <TableCell>
                   <Chip

@@ -1,8 +1,9 @@
 ﻿import { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, TextField, MenuItem, Grid,
-  Dialog, DialogTitle, DialogContent, DialogActions, Alert, Autocomplete,
+   DialogTitle, DialogContent, DialogActions, Alert, Autocomplete,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import SaveIcon from '@mui/icons-material/Save';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
@@ -176,10 +177,10 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
             </TextField>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Fecha ingreso" value={form.fechaIngreso} onChange={set('fechaIngreso')} size="small" type="date" InputLabelProps={{ shrink: true }} {...v.props('fechaIngreso')} />
+            <TextField fullWidth label="Fecha ingreso" value={form.fechaIngreso} onChange={set('fechaIngreso')} size="small" type="date" slotProps={{ inputLabel: { shrink: true } }} {...v.props('fechaIngreso')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Fecha fin contrato" value={form.fechaFinContrato} onChange={set('fechaFinContrato')} size="small" type="date" InputLabelProps={{ shrink: true }} {...v.props('fechaFinContrato')} />
+            <TextField fullWidth label="Fecha fin contrato" value={form.fechaFinContrato} onChange={set('fechaFinContrato')} size="small" type="date" slotProps={{ inputLabel: { shrink: true } }} {...v.props('fechaFinContrato')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Salario (COP)" value={form.salario} onChange={set('salario')} size="small" type="number" {...v.props('salario')} />

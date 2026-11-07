@@ -1,8 +1,9 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
+  Alert, Button, CircularProgress, DialogActions, DialogContent, DialogTitle,
   Grid, MenuItem, TextField,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import { donantesRepository } from '@/infrastructure/repositories/donantesRepository';
 import { CampoDocumento, SelectorUbicacion } from '@/shared/components/form/FormControles';
 import { COLOR_DONANTES } from './helpers';

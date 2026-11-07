@@ -1,10 +1,11 @@
 ﻿import { useState, useRef } from 'react';
 import {
-  Box, Dialog, DialogTitle, DialogContent, DialogActions,
+  Box, DialogTitle, DialogContent, DialogActions,
   Button, Grid, TextField, MenuItem, FormControl,
   InputLabel, Select, Typography, Alert, CircularProgress,
   InputAdornment, Autocomplete, Checkbox, FormControlLabel, Chip,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import apiClient       from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { DOCS_NUMERICOS, validarFormulario, describirError } from '@/domain/beneficiarios/validacionBeneficiario';

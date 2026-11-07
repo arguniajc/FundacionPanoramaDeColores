@@ -31,7 +31,7 @@ export function CampoFecha({
       type="date"
       value={value || ''}
       onChange={e => onChange(e.target.value)}
-      InputLabelProps={{ shrink: true }}
+      slotProps={{ inputLabel: { shrink: true } }}
       disabled={disabled}
       {...rest}
     />

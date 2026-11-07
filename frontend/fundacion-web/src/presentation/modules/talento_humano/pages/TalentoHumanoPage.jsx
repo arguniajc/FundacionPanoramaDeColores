@@ -142,6 +142,7 @@ export default function TalentoHumanoPage() {
       <Tabs
         value={mainTab}
         onChange={(_, v) => setMainTab(v)}
+        variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile
         sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
       >
         <Tab
@@ -234,9 +235,10 @@ export default function TalentoHumanoPage() {
       </Box>
 
       {/* Layout: lista + panel detalle */}
-      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+      {/* En móvil y tablet el panel de detalle va debajo de la lista */}
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, alignItems: { xs: 'stretch', md: 'flex-start' } }}>
         {/* Lista de empleados */}
-        <Box sx={{ flex: panelEmpleado ? '0 0 380px' : 1, minWidth: 0 }}>
+        <Box sx={{ flex: { xs: '0 0 auto', md: panelEmpleado ? '0 0 380px' : 1 }, minWidth: 0 }}>
           {cargando ? (
             [...Array(4)].map((_, i) => <Skeleton key={i} variant="rounded" height={76} sx={{ mb: 1 }} />)
           ) : filtrados.length === 0 ? (
@@ -261,11 +263,11 @@ export default function TalentoHumanoPage() {
                       {iniciales(emp.nombres, emp.apellidos)}
                     </Avatar>
                   </Badge>
-                  <Box flex={1} minWidth={0}>
-                    <Typography variant="body2" fontWeight={600} noWrap>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
                       {emp.nombres} {emp.apellidos}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" noWrap>
+                    <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
                       {emp.cargo ?? 'Sin cargo'}{emp.area ? ` · ${emp.area}` : ''}
                     </Typography>
                   </Box>

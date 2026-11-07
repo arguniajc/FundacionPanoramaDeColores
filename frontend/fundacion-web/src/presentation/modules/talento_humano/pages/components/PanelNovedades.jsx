@@ -1,9 +1,10 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Button, TextField, MenuItem, Grid, Chip,
-  IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Alert,
+  IconButton, DialogTitle, DialogContent, DialogActions, Alert,
   Skeleton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon    from '@mui/icons-material/Add';
 import EditIcon   from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -105,11 +106,11 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Fecha inicio *" value={form.fechaInicio} onChange={set('fechaInicio')}
-              size="small" type="date" InputLabelProps={{ shrink: true }} {...v.props('fechaInicio')} />
+              size="small" type="date" slotProps={{ inputLabel: { shrink: true } }} {...v.props('fechaInicio')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Fecha fin" value={form.fechaFin} onChange={set('fechaFin')}
-              size="small" type="date" InputLabelProps={{ shrink: true }} {...v.props('fechaFin')} />
+              size="small" type="date" slotProps={{ inputLabel: { shrink: true } }} {...v.props('fechaFin')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Días" value={form.dias} onChange={set('dias')} size="small" type="number" {...v.props('dias')} />

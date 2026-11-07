@@ -29,7 +29,7 @@ export function SortableCampoRow({ campo, ci, grupoLength, onEditar, onEliminar,
         <DragIndicatorIcon fontSize="small" />
       </Box>
 
-      <Box flex={1} minWidth={0}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography variant="body2" fontWeight={700} noWrap>{campo.etiqueta}</Typography>
         <Box display="flex" gap={0.8} flexWrap="wrap" mt={0.6}>
           <Chip label={tipoLabel} size="small"

@@ -9,14 +9,15 @@ export const FONT_OPTIONS = [
 ];
 
 export const DEFAULTS = {
-  colorPrimario:      '#6735A6',
-  colorSidebar:       '#F4E3C1',
-  colorSecundario:    '#51A432',
-  colorGradiente:     '#085A9D',
-  colorAccento:       '#FAA112',
-  colorOscuroFondo:   '#121212',
-  colorOscuroPaper:   '#1E1A28',
-  colorOscuroSidebar: '#1B1035',
+  // Paleta recomendada (ver shared/theme/paleta.js → APARIENCIA_RECOMENDADA)
+  colorPrimario:      '#5B2BB3',
+  colorSidebar:       '#1C1433',
+  colorSecundario:    '#15803D',
+  colorGradiente:     '#43208A',
+  colorAccento:       '#D97706',
+  colorOscuroFondo:   '#0D1017',
+  colorOscuroPaper:   '#161A23',
+  colorOscuroSidebar: '#11141C',
   fontFamily:         'Inter',
   nombreFundacion:    'Fundación Panorama de Colores',
   nit:                '',

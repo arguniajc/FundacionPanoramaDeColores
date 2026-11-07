@@ -1,8 +1,9 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import {
-  Alert, Box, Button, CircularProgress, Dialog, DialogActions,
+  Alert, Box, Button, CircularProgress, DialogActions,
   DialogContent, DialogTitle, Grid, Paper, Snackbar, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon        from '@mui/icons-material/Add';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import apiClient from '@/infrastructure/http/apiClient';

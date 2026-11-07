@@ -1,9 +1,10 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent,
+  Alert, Box, Button, Chip, DialogActions, DialogContent,
   DialogTitle, Divider, FormHelperText, Grid, IconButton, MenuItem, Paper,
   TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import AccessTimeIcon    from '@mui/icons-material/AccessTime';
 import AddIcon           from '@mui/icons-material/Add';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';

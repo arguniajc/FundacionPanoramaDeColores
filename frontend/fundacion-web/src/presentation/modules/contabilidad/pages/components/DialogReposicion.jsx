@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
-  Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle,
+  Alert, Button, DialogActions, DialogContent, DialogTitle,
   FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import { fmt, hoy } from './formato';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
@@ -80,7 +81,7 @@ export function DialogReposicion({ open, cuentaCajaId, cuentas, guardando, onClo
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Fecha *" type="date" size="small"
-              value={form.fecha} onChange={set('fecha')} InputLabelProps={{ shrink: true }}
+              value={form.fecha} onChange={set('fecha')} slotProps={{ inputLabel: { shrink: true } }}
               {...v.props('fecha')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>

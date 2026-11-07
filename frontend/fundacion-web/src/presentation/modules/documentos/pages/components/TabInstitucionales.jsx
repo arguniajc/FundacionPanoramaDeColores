@@ -48,8 +48,8 @@ export function TabInstitucionales({ onToast }) {
 
   return (
     <Box>
-      <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1} mb={2}>
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
           <Chip label={`Todos (${documentos.length})`} onClick={() => setCategoriaFiltro('')}
             sx={{ fontWeight: 600, bgcolor: categoriaFiltro === '' ? 'var(--color-primario)' : undefined, color: categoriaFiltro === '' ? '#fff' : undefined }} />
           {CATEGORIAS.map(c => (

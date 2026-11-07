@@ -1,7 +1,7 @@
 ﻿import { useState, useRef } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
-  DialogTitle, FormControl, IconButton, InputLabel, LinearProgress,
+  DialogTitle, FormControl, FormHelperText, IconButton, InputLabel, LinearProgress,
   MenuItem, Select, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
 import CloseIcon          from '@mui/icons-material/Close';
@@ -9,7 +9,23 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import UploadFileIcon     from '@mui/icons-material/UploadFile';
 import apiClient              from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi }        from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
 import { CATEGORIAS, HEADER_GRADIENT, sinExtension } from './helpers';
+
+const MAX_MB = 10;
+
+// Reglas del formulario: cada una dice qué está mal y cómo llenarlo
+const ESQUEMA = {
+  categoria: { etiqueta: 'Categoría', reglas: [r.seleccion('Actas')] },
+  archivos:  { etiqueta: 'Archivos', reglas: [r.propia(lista => {
+    if (!lista?.length) return 'Selecciona al menos un PDF haciendo clic o arrastrándolo al recuadro. Ejemplo: acta_asamblea_2025.pdf';
+    const grandes = lista.filter(f => f.size > MAX_MB * 1024 * 1024).map(f => f.name);
+    return grandes.length
+      ? `Superan el máximo de ${MAX_MB} MB: ${grandes.join(', ')}. Quítalos de la lista o comprímelos.` : '';
+  })] },
+};
 
 export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
   const [categoria, setCategoria] = useState('Otros');
@@ -20,6 +36,7 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
   const inputRef = useRef();
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const v = useValidacion(ESQUEMA, { categoria, archivos });
 
   const agregarArchivos = (lista) => {
     const nuevos = Array.from(lista).filter(f => f.type === 'application/pdf');
@@ -28,12 +45,13 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
       return [...prev, ...nuevos.filter(f => !nombres.has(f.name))];
     });
     setError('');
+    v.tocar('archivos');
   };
 
   const quitarArchivo = (nombre) => setArchivos(prev => prev.filter(f => f.name !== nombre));
 
   const handleSubir = async () => {
-    if (archivos.length === 0) { setError('Selecciona al menos un PDF.'); return; }
+    if (!v.validarTodo()) return;
     setSubiendo(true); setError('');
     let ok = 0;
     const fallos = [];
@@ -77,18 +95,20 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
       </DialogTitle>
       <DialogContent dividers sx={{ py: 2.5, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
         {error && <Alert severity="error">{error}</Alert>}
-        <FormControl size="small" fullWidth>
+        <FormControl size="small" fullWidth error={!!v.err('categoria')}>
           <InputLabel>Categoría</InputLabel>
-          <Select label="Categoría" value={categoria} onChange={e => setCategoria(e.target.value)}>
+          <Select label="Categoría" value={categoria} onChange={e => setCategoria(e.target.value)}
+            onBlur={() => v.tocar('categoria')}>
             {CATEGORIAS.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
           </Select>
+          {v.err('categoria') && <FormHelperText>{v.err('categoria')}</FormHelperText>}
         </FormControl>
 
         <Box onClick={() => inputRef.current.click()}
           onDragOver={e => e.preventDefault()}
           onDrop={e => { e.preventDefault(); agregarArchivos(e.dataTransfer.files); }}
           sx={{
-            border: '2px dashed', borderColor: archivos.length ? 'var(--color-primario)' : 'divider',
+            border: '2px dashed', borderColor: v.err('archivos') ? 'error.main' : archivos.length ? 'var(--color-primario)' : 'divider',
             borderRadius: 2, p: 2.5, textAlign: 'center', cursor: 'pointer',
             bgcolor: archivos.length ? '#f5f0ff' : 'transparent',
             '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f5f0ff' },
@@ -105,6 +125,7 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
           <input ref={inputRef} type="file" accept="application/pdf" multiple hidden
             onChange={e => agregarArchivos(e.target.files)} />
         </Box>
+        {v.err('archivos') && <FormHelperText error sx={{ mt: -1.5 }}>{v.err('archivos')}</FormHelperText>}
 
         {archivos.length > 0 && (
           <Box sx={{ maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -132,10 +153,11 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
           </Box>
         )}
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion="subir los documentos" />
       <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
         <Button onClick={onCerrar} variant="outlined" disabled={subiendo}>Cancelar</Button>
         <Button variant="contained" onClick={handleSubir}
-          disabled={subiendo || archivos.length === 0}
+          disabled={subiendo}
           startIcon={subiendo ? <CircularProgress size={16} color="inherit" /> : <UploadFileIcon />}
           sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, fontWeight: 700, minWidth: 140 }}>
           {subiendo ? `Subiendo ${progreso}%` : `Subir ${archivos.length > 1 ? `${archivos.length} archivos` : 'archivo'}`}

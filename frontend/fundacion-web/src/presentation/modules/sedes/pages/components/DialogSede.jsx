@@ -6,6 +6,16 @@ import {
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { CampoCiudad } from '@/shared/components/form/FormControles';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+// Reglas del formulario: cada una dice qué está mal y cómo llenarlo
+const ESQUEMA = {
+  nombre:    { etiqueta: 'Nombre',    reglas: [r.obligatorio('Sede Siloé'), r.texto({ min: 3, max: 150 })] },
+  direccion: { etiqueta: 'Dirección', reglas: [r.texto({ min: 5, max: 300, ejemplo: 'Calle 5 # 40-20' })] },
+  telefono:  { etiqueta: 'Teléfono',  reglas: [r.telefono()] },
+};
 
 export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   const [form,     setForm]     = useState({ nombre: '', direccion: '', ciudad: '', telefono: '' });
@@ -13,6 +23,8 @@ export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   const [error,    setError]    = useState('');
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const v = useValidacion(ESQUEMA, form);
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (abierto) setForm({
@@ -22,12 +34,13 @@ export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
       telefono:  inicial?.telefono  ?? '',
     });
     setError('');
-  }, [abierto, inicial]);
+    reiniciar();
+  }, [abierto, inicial, reiniciar]);
 
   const set = campo => e => setForm(p => ({ ...p, [campo]: e.target.value }));
 
   const handleGuardar = async () => {
-    if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
+    if (!v.validarTodo()) return;
     setGuardando(true); setError('');
     try {
       const resp = inicial?.id
@@ -51,23 +64,27 @@ export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2.5} mt={0}>
           <Grid size={12}>
-            <TextField fullWidth label="Nombre *" size="small" value={form.nombre} onChange={set('nombre')} />
+            <TextField fullWidth label="Nombre *" size="small" value={form.nombre} onChange={set('nombre')}
+              {...v.props('nombre')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 8 }}>
-            <TextField fullWidth label="Dirección" size="small" value={form.direccion} onChange={set('direccion')} />
+            <TextField fullWidth label="Dirección" size="small" value={form.direccion} onChange={set('direccion')}
+              {...v.props('direccion')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <CampoCiudad value={form.ciudad} onChange={v => setForm(p => ({ ...p, ciudad: v }))} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Teléfono" size="small" value={form.telefono} onChange={set('telefono')} />
+            <TextField fullWidth label="Teléfono" size="small" value={form.telefono} onChange={set('telefono')}
+              {...v.props('telefono')} />
           </Grid>
         </Grid>
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion={inicial?.id ? 'guardar' : 'crear la sede'} />
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={handleGuardar}
-          disabled={guardando || !form.nombre.trim()}
+          disabled={guardando}
           sx={{ bgcolor: 'var(--color-primario)' }}>
           {guardando ? 'Guardando…' : 'Guardar'}
         </Button>

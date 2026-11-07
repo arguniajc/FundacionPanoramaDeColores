@@ -11,6 +11,9 @@ import SaveIcon   from '@mui/icons-material/Save';
 import { useConfirm } from '@/shared/components/ConfirmDialog';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
 
 const TIPOS_NOVEDAD   = ['vacaciones','incapacidad','permiso_remunerado','permiso_no_remunerado','comision','otro'];
 const ESTADOS_NOVEDAD = ['pendiente','aprobada','rechazada'];
@@ -26,6 +29,13 @@ const NOVEDAD_COLORS = {
 const ESTADO_NOVEDAD_COLORS = { pendiente: 'warning', aprobada: 'success', rechazada: 'error' };
 const NOVEDAD_VACIA = { tipo: 'vacaciones', fechaInicio: '', fechaFin: '', dias: '', descripcion: '', estado: 'pendiente' };
 
+// Reglas del formulario de novedad
+const ESQUEMA_NOVEDAD = {
+  fechaInicio: { etiqueta: 'Fecha inicio', reglas: [r.obligatorio('2025-07-01'), r.fecha({ ejemplo: '2025-07-01' })] },
+  fechaFin:    { etiqueta: 'Fecha fin',    reglas: [r.fecha({ ejemplo: '2025-07-15' }), r.fechaDesde('fechaInicio', 'la fecha de inicio')] },
+  dias:        { etiqueta: 'Días',         reglas: [r.numero({ min: 1, max: 365, entero: true, unidad: 'días', ejemplo: '15' })] },
+};
+
 function fmtFecha(f) {
   return f ? new Date(f + 'T00:00:00').toLocaleDateString('es-CO') : '—';
 }
@@ -34,6 +44,8 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
   const [form, setForm]     = useState(NOVEDAD_VACIA);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
+  const v = useValidacion(ESQUEMA_NOVEDAD, form);
+  const { reiniciar } = v;
 
   useEffect(() => {
     setForm(novedad ? {
@@ -45,12 +57,13 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
       estado:      novedad.estado,
     } : NOVEDAD_VACIA);
     setError('');
-  }, [novedad, open]);
+    reiniciar();
+  }, [novedad, open, reiniciar]);
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
   const guardar = async () => {
-    if (!form.fechaInicio) { setError('La fecha de inicio es requerida.'); return; }
+    if (!v.validarTodo()) return;
     setSaving(true); setError('');
     try {
       const payload = {
@@ -92,14 +105,14 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Fecha inicio *" value={form.fechaInicio} onChange={set('fechaInicio')}
-              size="small" type="date" InputLabelProps={{ shrink: true }} />
+              size="small" type="date" InputLabelProps={{ shrink: true }} {...v.props('fechaInicio')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Fecha fin" value={form.fechaFin} onChange={set('fechaFin')}
-              size="small" type="date" InputLabelProps={{ shrink: true }} />
+              size="small" type="date" InputLabelProps={{ shrink: true }} {...v.props('fechaFin')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Días" value={form.dias} onChange={set('dias')} size="small" type="number" />
+            <TextField fullWidth label="Días" value={form.dias} onChange={set('dias')} size="small" type="number" {...v.props('dias')} />
           </Grid>
           <Grid size={12}>
             <TextField fullWidth label="Descripción" value={form.descripcion} onChange={set('descripcion')}
@@ -107,6 +120,7 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
           </Grid>
         </Grid>
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion={novedad ? 'actualizar la novedad' : 'registrar la novedad'} />
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" startIcon={<SaveIcon />} onClick={guardar} disabled={saving}>

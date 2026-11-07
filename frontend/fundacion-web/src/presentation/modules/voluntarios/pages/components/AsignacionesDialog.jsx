@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
-  DialogTitle, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper,
+  DialogTitle, FormControl, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper,
   Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   TextField, Tooltip, Typography,
 } from '@mui/material';
@@ -14,6 +14,19 @@ import { sedesRepository }        from '@/infrastructure/repositories/sedesRepos
 import { useConfirm }             from '@/shared/components/ConfirmDialog';
 import { COLOR, FORM_VACIO_ASIG, fmtFecha, toInputDate } from './helpers';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r, vacio } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+// Reglas del formulario de asignación
+const ESQUEMA_ASIG = {
+  sedeId:         { etiqueta: 'Sede', reglas: [
+    r.propia((valor, f) => (vacio(valor) && vacio(f.programaId)
+      ? 'Selecciona al menos la sede donde participará el voluntario. Ejemplo: Sede Norte' : '')),
+  ] },
+  horasSemanales: { etiqueta: 'Horas/sem', reglas: [r.numero({ min: 1, max: 60, entero: true, unidad: 'horas', ejemplo: '8' })] },
+  fechaInicio:    { etiqueta: 'Desde',     reglas: [r.fecha({ ejemplo: '2025-03-01' })] },
+};
 
 export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
   const confirm = useConfirm();
@@ -26,18 +39,20 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
   const [guardando,    setGuardando]    = useState(false);
   const [error,        setError]        = useState('');
   const programaIdParaRestaurar         = useRef(null);
+  const v = useValidacion(ESQUEMA_ASIG, form);
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (!open || !voluntario) return;
     setCargando(true);
-    setForm(FORM_VACIO_ASIG); setEditandoId(null); setError('');
+    setForm(FORM_VACIO_ASIG); setEditandoId(null); setError(''); reiniciar();
     voluntariosRepository.listarAsignaciones(voluntario.id)
       .then(({ data }) => setAsignaciones(data))
       .catch((e) => setError(mensajeErrorApi(e, { accion: 'cargar las asignaciones' })))
       .finally(() => setCargando(false));
     sedesRepository.listar({ soloActivas: true }).then(({ data }) => setSedes(data))
       .catch(() => { /* opcional: el catálogo de sedes vacío no bloquea el diálogo */ });
-  }, [open, voluntario]);
+  }, [open, voluntario, reiniciar]);
 
   useEffect(() => {
     if (!form.sedeId) { setProgramas([]); setForm(p => ({ ...p, programaId: '' })); return; }
@@ -56,7 +71,7 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
 
   const iniciarEdicion = (asig) => {
     programaIdParaRestaurar.current = asig.programaId ?? '';
-    setEditandoId(asig.id); setError('');
+    setEditandoId(asig.id); setError(''); reiniciar();
     setForm({
       sedeId:         asig.sedeId ?? '',
       programaId:     asig.programaId ?? '',
@@ -65,10 +80,10 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
     });
   };
 
-  const cancelarEdicion = () => { setEditandoId(null); setForm(FORM_VACIO_ASIG); setError(''); };
+  const cancelarEdicion = () => { setEditandoId(null); setForm(FORM_VACIO_ASIG); setError(''); reiniciar(); };
 
   const guardar = async () => {
-    if (!form.sedeId && !form.programaId) { setError('Selecciona al menos una sede o programa.'); return; }
+    if (!v.validarTodo()) return;
     setGuardando(true); setError('');
     try {
       const payload = {
@@ -85,7 +100,7 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
         const { data } = await voluntariosRepository.agregarAsignacion(voluntario.id, payload);
         setAsignaciones(prev => [data, ...prev]);
       }
-      setForm(FORM_VACIO_ASIG);
+      setForm(FORM_VACIO_ASIG); reiniciar();
       onCambio?.(voluntario.id);
     } catch (e) {
       setError(mensajeErrorApi(e, { accion: editandoId ? 'guardar la asignación' : 'agregar la asignación' }));
@@ -163,12 +178,14 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
         {error && <Alert severity="error" sx={{ mb: 1.5 }}>{error}</Alert>}
         <Grid container spacing={2} alignItems="center">
           <Grid size={{ xs: 12, sm: 4 }}>
-            <FormControl fullWidth size="small">
+            <FormControl fullWidth size="small" error={!!v.err('sedeId')}>
               <InputLabel>Sede</InputLabel>
-              <Select value={form.sedeId} label="Sede" onChange={e => setF('sedeId', e.target.value)}>
+              <Select value={form.sedeId} label="Sede" onBlur={() => v.tocar('sedeId')}
+                onChange={e => setF('sedeId', e.target.value)}>
                 <MenuItem value=""><em>Sin sede</em></MenuItem>
                 {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
               </Select>
+              {v.err('sedeId') && <FormHelperText>{v.err('sedeId')}</FormHelperText>}
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -182,13 +199,20 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
           </Grid>
           <Grid size={{ xs: 6, sm: 2 }}>
             <TextField fullWidth size="small" label="Horas/sem" type="number"
-              value={form.horasSemanales} onChange={e => setF('horasSemanales', e.target.value)} />
+              value={form.horasSemanales} onChange={e => setF('horasSemanales', e.target.value)}
+              {...v.props('horasSemanales')} />
           </Grid>
           <Grid size={{ xs: 6, sm: 2 }}>
             <TextField fullWidth size="small" label="Desde" type="date"
               value={form.fechaInicio} onChange={e => setF('fechaInicio', e.target.value)}
-              InputLabelProps={{ shrink: true }} />
+              InputLabelProps={{ shrink: true }} {...v.props('fechaInicio')} />
           </Grid>
+          {v.resumen.visible && (
+            <Grid size={12}>
+              <ResumenErrores {...v.resumen} accion={editandoId ? 'guardar la asignación' : 'agregar la asignación'}
+                sx={{ mx: 0, mt: 0 }} />
+            </Grid>
+          )}
           <Grid size={12} sx={{ display: 'flex', gap: 1 }}>
             <Button variant="contained"
               startIcon={guardando ? <CircularProgress size={16} color="inherit" /> : editandoId ? <EditIcon /> : <AddIcon />}

@@ -12,7 +12,7 @@ export function TabResumen({ stats, cuentas, movimientos }) {
   return (
     <Grid container spacing={3} sx={{ pt: 1 }}>
       {(stats?.ultimosDosMeses ?? []).length > 0 && (
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle2" fontWeight="bold" mb={2}>Últimos 2 meses</Typography>
@@ -31,7 +31,7 @@ export function TabResumen({ stats, cuentas, movimientos }) {
         </Grid>
       )}
 
-      <Grid item xs={12} md={6}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <Card>
           <CardContent>
             <Typography variant="subtitle2" fontWeight="bold" mb={1.5}>Saldos por cuenta</Typography>
@@ -61,7 +61,7 @@ export function TabResumen({ stats, cuentas, movimientos }) {
         </Card>
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card>
           <CardContent>
             <Typography variant="subtitle2" fontWeight="bold" mb={1.5}>

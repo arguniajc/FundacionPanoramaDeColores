@@ -1,13 +1,35 @@
 ﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Collapse, Dialog, DialogActions, DialogContent,
-  DialogTitle, Divider, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography,
+  DialogTitle, Divider, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, Typography,
 } from '@mui/material';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { COLOR, CATEGORIAS } from './helpers';
 import { CampoUnidadMedida } from '@/shared/components/form/FormControles';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+const esComodatoForm = f => f.tipoTenencia === 'comodato';
+
+// Reglas del formulario: cada una dice qué está mal y cómo llenarlo.
+// `_editando` se agrega al validar: la sede y el stock inicial solo se piden al crear.
+const ESQUEMA = {
+  sedeId:       { etiqueta: 'Sede', reglas: [r.si(f => !f._editando, r.seleccion('Sede Principal'))] },
+  nombre:       { etiqueta: 'Nombre', reglas: [r.obligatorio('Cuaderno cuadriculado 100 hojas'), r.texto({ min: 2, max: 150 })] },
+  categoria:    { etiqueta: 'Categoría', reglas: [r.seleccion('Material escolar')] },
+  unidadMedida: { etiqueta: 'Unidad', reglas: [r.obligatorio('unidad, kg o caja'), r.texto({ max: 30 })] },
+  stockActual:  { etiqueta: 'Stock inicial', reglas: [r.si(f => !f._editando, r.numero({ min: 0, ejemplo: '20' }))] },
+  stockMinimo:  { etiqueta: 'Stock mínimo', reglas: [r.numero({ min: 0, entero: true, ejemplo: '5' })] },
+  comodante:    { etiqueta: 'Comodante', reglas: [r.si(esComodatoForm, r.obligatorio('Alcaldía de Cali')), r.texto({ max: 150 })] },
+  comodatoFechaInicio: { etiqueta: 'Fecha inicio contrato', reglas: [r.si(esComodatoForm, r.fecha({ ejemplo: '2025-01-15' }))] },
+  comodatoFechaFin:    { etiqueta: 'Fecha fin / devolución', reglas: [
+    r.si(esComodatoForm, r.fecha({ ejemplo: '2025-12-31' })),
+    r.si(esComodatoForm, r.fechaDesde('comodatoFechaInicio', 'la fecha de inicio del contrato')),
+  ] },
+};
 
 const TIPOS_TENENCIA = [
   { value: 'propio',        label: 'Propio',              desc: 'Pertenece a la fundación' },
@@ -28,6 +50,8 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
   const [form,      setForm]      = useState(ITEM_VACIO);
   const [guardando, setGuardando] = useState(false);
   const [error,     setError]     = useState('');
+  const v = useValidacion(ESQUEMA, { ...form, _editando: editando });
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (open) {
@@ -44,21 +68,15 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           }
         : { ...ITEM_VACIO, sedeId: sedeSelId ?? '' });
       setError('');
+      reiniciar();
     }
-  }, [open, item, sedeSelId]);
+  }, [open, item, sedeSelId, reiniciar]);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const esComodato = form.tipoTenencia === 'comodato';
 
   const guardar = async () => {
-    if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
-    if (Number(form.stockMinimo) < 0) { setError('El stock mínimo no puede ser negativo.'); return; }
-    if (!editando && Number(form.stockActual) < 0) { setError('El stock inicial no puede ser negativo.'); return; }
-    if (esComodato && !form.comodante.trim()) { setError('El nombre del comodante es obligatorio.'); return; }
-    if (esComodato && form.comodatoFechaInicio && form.comodatoFechaFin &&
-        form.comodatoFechaInicio > form.comodatoFechaFin) {
-      setError('La fecha de inicio del contrato debe ser anterior a la fecha fin.'); return;
-    }
+    if (!v.validarTodo()) return;
     setGuardando(true); setError('');
     try {
       const comodatoPayload = {
@@ -104,17 +122,19 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
         <Grid container spacing={2}>
           {!editando && (
             <Grid size={12}>
-              <FormControl fullWidth size="small">
+              <FormControl fullWidth size="small" error={!!v.err('sedeId')}>
                 <InputLabel>Sede *</InputLabel>
-                <Select value={form.sedeId ?? ''} label="Sede *" onChange={e => set('sedeId', e.target.value)}>
+                <Select value={form.sedeId ?? ''} label="Sede *" onChange={e => set('sedeId', e.target.value)}
+                  onBlur={() => v.tocar('sedeId')}>
                   {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
                 </Select>
+                {v.err('sedeId') && <FormHelperText>{v.err('sedeId')}</FormHelperText>}
               </FormControl>
             </Grid>
           )}
           <Grid size={editando ? 8 : 12}>
             <TextField fullWidth size="small" label="Nombre *" value={form.nombre}
-              onChange={e => set('nombre', e.target.value)} />
+              onChange={e => set('nombre', e.target.value)} {...v.props('nombre')} />
           </Grid>
           {editando && item?.codigo && (
             <Grid size={4}>
@@ -127,15 +147,18 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
             </Grid>
           )}
           <Grid size={6}>
-            <FormControl fullWidth size="small">
+            <FormControl fullWidth size="small" error={!!v.err('categoria')}>
               <InputLabel>Categoría</InputLabel>
-              <Select value={form.categoria} label="Categoría" onChange={e => set('categoria', e.target.value)}>
+              <Select value={form.categoria} label="Categoría" onChange={e => set('categoria', e.target.value)}
+                onBlur={() => v.tocar('categoria')}>
                 {CATEGORIAS.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
               </Select>
+              {v.err('categoria') && <FormHelperText>{v.err('categoria')}</FormHelperText>}
             </FormControl>
           </Grid>
           <Grid size={6}>
-            <CampoUnidadMedida value={form.unidadMedida} onChange={v => set('unidadMedida', v)} label="Unidad" />
+            <CampoUnidadMedida value={form.unidadMedida} onChange={u => set('unidadMedida', u)} label="Unidad" required />
+            {v.err('unidadMedida') && <FormHelperText error>{v.err('unidadMedida')}</FormHelperText>}
           </Grid>
           <Grid size={12}>
             <TextField fullWidth size="small" label="Descripción" multiline rows={2}
@@ -145,14 +168,14 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
             <Grid size={6}>
               <TextField fullWidth size="small" label="Stock inicial" type="number"
                 inputProps={{ min: 0, step: 1 }} value={form.stockActual}
-                onChange={e => set('stockActual', e.target.value)} />
+                onChange={e => set('stockActual', e.target.value)} {...v.props('stockActual')} />
             </Grid>
           )}
           <Grid size={editando ? 12 : 6}>
             <TextField fullWidth size="small" label="Stock mínimo" type="number"
               inputProps={{ min: 0, step: 1 }} value={form.stockMinimo}
               onChange={e => set('stockMinimo', e.target.value)}
-              helperText="Alerta cuando el stock baje de este valor" />
+              {...v.props('stockMinimo', 'Alerta cuando el stock baje de este valor')} />
           </Grid>
 
           {/* Tipo de tenencia */}
@@ -195,7 +218,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
                   <Grid size={12}>
                     <TextField fullWidth size="small" label="Comodante (entidad que presta) *"
                       placeholder="Nombre de la entidad o persona que presta el artículo"
-                      value={form.comodante} onChange={e => set('comodante', e.target.value)} />
+                      value={form.comodante} onChange={e => set('comodante', e.target.value)} {...v.props('comodante')} />
                   </Grid>
                   <Grid size={12}>
                     <TextField fullWidth size="small" label="N° contrato / acta"
@@ -206,13 +229,13 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
                     <TextField fullWidth size="small" label="Fecha inicio contrato" type="date"
                       value={form.comodatoFechaInicio} onChange={e => set('comodatoFechaInicio', e.target.value)}
                       slotProps={{ inputLabel: { shrink: true } }}
-                      helperText="¿Cuándo inicia?" />
+                      {...v.props('comodatoFechaInicio', '¿Cuándo inicia?')} />
                   </Grid>
                   <Grid size={6}>
                     <TextField fullWidth size="small" label="Fecha fin / devolución" type="date"
                       value={form.comodatoFechaFin} onChange={e => set('comodatoFechaFin', e.target.value)}
                       slotProps={{ inputLabel: { shrink: true } }}
-                      helperText="¿Cuándo se devuelve?" />
+                      {...v.props('comodatoFechaFin', '¿Cuándo se devuelve?')} />
                   </Grid>
                 </Grid>
               </Box>
@@ -225,6 +248,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           {error}
         </Alert>
       )}
+      <ResumenErrores {...v.resumen} accion={editando ? 'guardar los cambios' : 'crear el artículo'} />
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}

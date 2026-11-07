@@ -44,7 +44,7 @@ export function DialogComprobante({ mov, onClose, config }) {
               ['Concepto RTE', mov.conceptoRetencion ?? '-'],
             ] : []),
           ].map(([k, v]) => (
-            <Grid item xs={6} key={k}>
+            <Grid size={6} key={k}>
               <Typography variant="caption" color="text.secondary" display="block">{k}</Typography>
               <Typography variant="body2" fontWeight={500}>{v}</Typography>
             </Grid>

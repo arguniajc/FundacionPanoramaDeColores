@@ -7,6 +7,17 @@ import { donantesRepository } from '@/infrastructure/repositories/donantesReposi
 import { CampoDocumento, SelectorUbicacion } from '@/shared/components/form/FormControles';
 import { COLOR_DONANTES } from './helpers';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+// Reglas del formulario: cada una dice qué está mal y cómo llenarlo
+const ESQUEMA = {
+  nombre:    { etiqueta: 'Nombre',          reglas: [r.obligatorio('Fundación Éxito o Ana Gómez'), r.texto({ min: 3, max: 150 })] },
+  documento: { etiqueta: 'Documento / NIT', reglas: [r.documentoSegunTipo('tipoDocumento')] },
+  email:     { etiqueta: 'Email',           reglas: [r.correo()] },
+  telefono:  { etiqueta: 'Teléfono',        reglas: [r.telefono()] },
+};
 
 const VACIO = { nombre: '', tipo: 'persona', tipoDocumento: '', documento: '', email: '', telefono: '', pais: 'Colombia', departamento: '', ciudad: '', notas: '' };
 
@@ -15,6 +26,8 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
   const [form,      setForm]      = useState(VACIO);
   const [guardando, setGuardando] = useState(false);
   const [error,     setError]     = useState('');
+  const v = useValidacion(ESQUEMA, form);
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (open) {
@@ -26,13 +39,14 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
             ciudad: donante.ciudad ?? '', notas: donante.notas ?? '' }
         : VACIO);
       setError('');
+      reiniciar();
     }
-  }, [open, donante]);
+  }, [open, donante, reiniciar]);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const guardar = async () => {
-    if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
+    if (!v.validarTodo()) return;
     setGuardando(true); setError('');
     try {
       const { data } = editando
@@ -56,7 +70,7 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
         <Grid container spacing={2}>
           <Grid size={8}>
             <TextField fullWidth size="small" label="Nombre *" value={form.nombre}
-              onChange={e => set('nombre', e.target.value)} />
+              onChange={e => set('nombre', e.target.value)} {...v.props('nombre')} />
           </Grid>
           <Grid size={4}>
             <TextField select fullWidth size="small" label="Tipo"
@@ -72,6 +86,7 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
               onChangeTipo={v => set('tipoDocumento', v)}
               onChangeNumero={v => set('documento', v)}
               labelNumero="Documento / NIT"
+              validacionNumero={v.props('documento')}
             />
           </Grid>
           <Grid size={12}>
@@ -82,11 +97,11 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
           </Grid>
           <Grid size={6}>
             <TextField fullWidth size="small" label="Email" type="email" value={form.email}
-              onChange={e => set('email', e.target.value)} />
+              onChange={e => set('email', e.target.value)} {...v.props('email')} />
           </Grid>
           <Grid size={6}>
             <TextField fullWidth size="small" label="Teléfono" value={form.telefono}
-              onChange={e => set('telefono', e.target.value)} />
+              onChange={e => set('telefono', e.target.value)} {...v.props('telefono')} />
           </Grid>
           <Grid size={12}>
             <TextField fullWidth size="small" label="Notas" multiline rows={2} value={form.notas}
@@ -94,6 +109,7 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
           </Grid>
         </Grid>
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion={editando ? 'guardar' : 'crear el donante'} />
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}

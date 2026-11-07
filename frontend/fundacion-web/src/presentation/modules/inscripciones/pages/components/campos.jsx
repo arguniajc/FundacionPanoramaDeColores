@@ -1,7 +1,7 @@
 ﻿// Helpers, constantes y componentes de campo compartidos del módulo de inscripciones.
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Alert, Autocomplete, Box, Button, Chip, FormControl, FormControlLabel, Grid,
+  Alert, Autocomplete, Box, Button, Chip, FormControl, FormControlLabel, FormHelperText, Grid,
   InputAdornment, InputLabel, MenuItem, Select, Switch, TextField, Tooltip, Typography,
 } from '@mui/material';
 import { archivosRepository }   from '@/infrastructure/repositories/archivosRepository';
@@ -9,12 +9,12 @@ import { useToast }             from '@/shared/context/ToastContext';
 import { mensajeErrorApi }      from '@/shared/utils/mensajeErrorApi';
 import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
-  TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
-  TALLAS_ROPA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, VALORACIONES,
+  TIPOS_DOCUMENTO, NIVELES_EDUCATIVOS, EPS_LIST,
   GRADOS_COLOMBIA, JORNADAS_ESCOLARES, AUTOIDENTIFICACION, RELACIONES_TUTOR,
   getCiudadesDeUbicacion, getEstadosDePais,
 } from '@/shared/utils/geodata';
 import FirmaPad from '@/shared/components/FirmaPad';
+import { LISTAS_POR_TIPO } from './validacionFormulario';
 
 export const COLOR = 'var(--color-primario)';
 
@@ -91,7 +91,7 @@ function getDocsPorPanelYPais(esTutor, pais) {
 
 const QUIEN_FIRMA_LABEL = { padre: 'Padre', madre: 'Madre', tutor: 'Tutor legal' };
 
-export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = [], disabled = false, sx = {} }) {
+export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = [], disabled = false, sx = {}, errores = {} }) {
   const meta = parseMeta(datos.__firma_meta__);
 
   const campoPadre = campos.find(c => c.tipo === 'datos_padre');
@@ -209,7 +209,7 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
                     sx={{ bgcolor: 'color-mix(in srgb, var(--color-primario) 12%, transparent)', color: COLOR, fontWeight: 700, fontSize: '0.72rem' }} />
                 </Box>
               ) : (
-                <FormControl fullWidth size="small">
+                <FormControl fullWidth size="small" error={!!errores.__firma_quien__}>
                   <InputLabel>¿Quién firma? *</InputLabel>
                   <Select value={meta.quien || ''} label="¿Quién firma? *"
                     onChange={e => handleQuien(e.target.value)}>
@@ -224,6 +224,7 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
                         ]
                     }
                   </Select>
+                  {errores.__firma_quien__ && <FormHelperText>{errores.__firma_quien__}</FormHelperText>}
                 </FormControl>
               )}
             </Grid>
@@ -231,12 +232,14 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
               <TextField fullWidth size="small" label="Nombre completo *"
                 value={nombreMostrar}
                 disabled={nombreDisabled}
+                error={!!errores.__firma_nombre__} helperText={errores.__firma_nombre__}
                 onChange={e => setMeta({ nombre: e.target.value })} />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField fullWidth size="small" label="Número de documento *"
                 value={documentoMostrar}
                 disabled={documentoDisabled}
+                error={!!errores.__firma_documento__} helperText={errores.__firma_documento__}
                 onChange={e => setMeta({ documento: e.target.value.replace(/\D/g, '') })}
                 slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
             </Grid>
@@ -247,6 +250,7 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
             onChange={handleImagen}
             obligatorio
           />
+          {errores.__firma_padre__ && <FormHelperText error>{errores.__firma_padre__}</FormHelperText>}
           {datos.__firma_padre__ && fmtFirmaFecha && (
             <Typography variant="caption" color="text.secondary" display="block" mt={0.8}>
               Firmado el {fmtFirmaFecha}
@@ -258,7 +262,31 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
   );
 }
 
-export function CampoInput({ campo, value, onChange, activo = true, onToggle }) {
+// Tipos con control compuesto (sin helperText propio): el error se muestra debajo del control.
+// El resto son TextField y muestran el error en su propio helperText.
+const TIPOS_COMPUESTOS = new Set([
+  'boolean', 'select', 'document', 'daterange', 'firma', 'documento_id', 'grado_escolar',
+  'datos_padre', 'datos_madre', 'datos_tutor', ...Object.keys(LISTAS_POR_TIPO),
+]);
+
+/**
+ * Control de un campo dinámico. `error` (opcional) es el mensaje a mostrar en el campo;
+ * en los controles compuestos (listas, paneles, archivos…) se muestra debajo.
+ */
+export function CampoInput(props) {
+  const { campo, error } = props;
+  const control = <CampoInputBase {...props} />;
+  if (!TIPOS_COMPUESTOS.has(campo.tipo)) return control;
+  // Siempre dentro del mismo Box para no remontar el control cuando aparece o se va el error
+  return (
+    <Box>
+      {control}
+      {error && <FormHelperText error sx={{ mx: 1.75 }}>{error}</FormHelperText>}
+    </Box>
+  );
+}
+
+function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error = '' }) {
   const [subiendo, setSubiendo] = useState(false);
   const toast = useToast();
 
@@ -274,7 +302,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
 
   if (campo.tipo === 'select') {
     return (
-      <FormControl fullWidth size="small" required={campo.obligatorio}>
+      <FormControl fullWidth size="small" required={campo.obligatorio} error={!!error}>
         <InputLabel>{campo.etiqueta}</InputLabel>
         <Select label={campo.etiqueta} value={value ?? ''} onChange={e => onChange(e.target.value)}>
           {(campo.opciones ?? []).map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
@@ -350,6 +378,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
       <TextField fullWidth size="small"
         label={campo.etiqueta} type="number" required={campo.obligatorio}
         value={value ?? ''} onChange={e => onChange(e.target.value)}
+        error={!!error} helperText={error || undefined}
         slotProps={{ input: { inputProps: { min: 0, step: 1 }, endAdornment: <InputAdornment position="end">cm</InputAdornment> } }}
       />
     );
@@ -360,7 +389,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
       <TextField fullWidth size="small"
         label={campo.etiqueta} type="number" required={campo.obligatorio}
         value={value ?? ''} onChange={e => onChange(e.target.value)}
-        helperText="Auto-calculada del beneficiario"
+        error={!!error} helperText={error || 'Auto-calculada del beneficiario'}
         slotProps={{ input: { endAdornment: <InputAdornment position="end">años</InputAdornment> } }}
       />
     );
@@ -371,7 +400,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
       <TextField fullWidth size="small"
         label={campo.etiqueta} type="date" required={campo.obligatorio}
         value={value ?? ''} onChange={e => onChange(e.target.value)}
-        helperText="Auto-completada del beneficiario"
+        error={!!error} helperText={error || 'Auto-completada del beneficiario'}
         slotProps={{ inputLabel: { shrink: true } }}
       />
     );
@@ -415,19 +444,22 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
   if (campo.tipo === 'telefono') return (
     <TextField fullWidth size="small"
       label={campo.etiqueta} type="tel" required={campo.obligatorio}
-      value={value ?? ''} onChange={e => onChange(e.target.value)} />
+      value={value ?? ''} onChange={e => onChange(e.target.value)}
+      error={!!error} helperText={error || undefined} />
   );
 
   if (campo.tipo === 'email') return (
     <TextField fullWidth size="small"
       label={campo.etiqueta} type="email" required={campo.obligatorio}
-      value={value ?? ''} onChange={e => onChange(e.target.value)} />
+      value={value ?? ''} onChange={e => onChange(e.target.value)}
+      error={!!error} helperText={error || undefined} />
   );
 
   if (campo.tipo === 'peso') return (
     <TextField fullWidth size="small"
       label={campo.etiqueta} type="number" required={campo.obligatorio}
       value={value ?? ''} onChange={e => onChange(e.target.value)}
+      error={!!error} helperText={error || undefined}
       slotProps={{ input: { inputProps: { min: 0, step: 0.1 }, endAdornment: <InputAdornment position="end">kg</InputAdornment> } }}
     />
   );
@@ -468,15 +500,9 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
       campo.tipo === 'nivel_educativo' || campo.tipo === 'talla_ropa'    ||
       campo.tipo === 'talla_pantalon'  || campo.tipo === 'talla_zapatos' ||
       campo.tipo === 'valoracion'      || campo.tipo === 'autoidentificacion') {
-    const listas = {
-      tipo_documento: TIPOS_DOCUMENTO, genero: GENEROS,
-      tipo_sangre: TIPOS_SANGRE, estrato: ESTRATOS, nivel_educativo: NIVELES_EDUCATIVOS,
-      talla_ropa: TALLAS_ROPA, talla_pantalon: TALLAS_PANTALON,
-      talla_zapatos: TALLAS_ZAPATOS, valoracion: VALORACIONES,
-      autoidentificacion: AUTOIDENTIFICACION,
-    };
+    const listas = LISTAS_POR_TIPO;
     return (
-      <FormControl fullWidth size="small" required={campo.obligatorio}>
+      <FormControl fullWidth size="small" required={campo.obligatorio} error={!!error}>
         <InputLabel>{campo.etiqueta + (campo.obligatorio ? ' *' : '')}</InputLabel>
         <Select
           label={campo.etiqueta + (campo.obligatorio ? ' *' : '')}
@@ -502,7 +528,8 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
         renderInput={(params) => (
           <TextField {...params} fullWidth size="small"
             label={campo.etiqueta + (campo.obligatorio ? ' *' : '')}
-            required={campo.obligatorio} />
+            required={campo.obligatorio}
+            error={!!error} helperText={error || undefined} />
         )}
       />
     );
@@ -694,6 +721,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
       required={campo.obligatorio}
       value={value ?? ''}
       onChange={e => onChange(e.target.value)}
+      error={!!error} helperText={error || undefined}
       slotProps={campo.tipo === 'date' ? { inputLabel: { shrink: true } } : undefined}
     />
   );

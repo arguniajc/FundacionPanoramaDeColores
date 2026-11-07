@@ -17,7 +17,7 @@ export function TabCuentas({ cuentas, puedeCrear, puedeEditar, onCrear, onEditar
       )}
       <Grid container spacing={3}>
         {cuentas.map(c => (
-          <Grid item xs={12} sm={6} md={4} key={c.id}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={c.id}>
             <Card variant="outlined">
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -64,7 +64,7 @@ export function TabCuentas({ cuentas, puedeCrear, puedeEditar, onCrear, onEditar
           </Grid>
         ))}
         {cuentas.length === 0 && (
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
               No hay cuentas. Crea una cuenta de caja o bancaria para empezar a registrar movimientos.
             </Typography>

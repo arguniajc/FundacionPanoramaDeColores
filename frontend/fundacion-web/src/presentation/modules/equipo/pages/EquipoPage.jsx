@@ -14,6 +14,9 @@ import apiClient  from '@/infrastructure/http/apiClient';
 import usePermisos from '@/shared/hooks/usePermisos';
 import { useToast } from '@/shared/context/ToastContext';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
 
 const ROLES = [
   { value: 'administrador',       label: 'Administrador' },
@@ -43,6 +46,16 @@ const ROL_COLOR = {
 
 const EMPTY = { email: '', nombre: '', rol: 'trabajador_social' };
 
+// Reglas del formulario de usuario (el correo solo se pide al crear)
+const ESQUEMA = {
+  email:  { etiqueta: 'Correo de Google', reglas: [
+    r.si(f => f.crear, r.obligatorio('ana.gomez@gmail.com')),
+    r.si(f => f.crear, r.correo('ana.gomez@gmail.com')),
+  ] },
+  nombre: { etiqueta: 'Nombre', reglas: [r.texto({ min: 3, max: 150, soloLetras: true, ejemplo: 'Ana Gómez' })] },
+  rol:    { etiqueta: 'Rol',    reglas: [r.seleccion('Trabajador Social')] },
+};
+
 export default function EquipoPage() {
   const { puedo } = usePermisos();
   const confirm = useConfirm();
@@ -54,6 +67,7 @@ export default function EquipoPage() {
   const [saving,   setSaving]   = useState(false);
   const [error,    setError]    = useState('');
   const [errorCarga, setErrorCarga] = useState('');
+  const v = useValidacion(ESQUEMA, { ...form, crear: !editing });
 
   const cargar = useCallback(async () => {
     setErrorCarga('');
@@ -74,6 +88,7 @@ export default function EquipoPage() {
     setEditing(null);
     setForm(EMPTY);
     setError('');
+    v.reiniciar();
     setOpen(true);
   };
 
@@ -81,10 +96,12 @@ export default function EquipoPage() {
     setEditing(u);
     setForm({ email: u.email, nombre: u.nombre ?? '', rol: u.rol });
     setError('');
+    v.reiniciar();
     setOpen(true);
   };
 
   const guardar = async () => {
+    if (!v.validarTodo()) return;
     setSaving(true);
     setError('');
     try {
@@ -230,27 +247,30 @@ export default function EquipoPage() {
               label="Correo de Google" fullWidth size="small"
               value={form.email}
               onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-              helperText="Debe ser el mismo correo de Google con el que inicia sesión"
+              {...v.props('email', 'Debe ser el mismo correo de Google con el que inicia sesión')}
             />
           )}
           <TextField
             label="Nombre (opcional)" fullWidth size="small"
             value={form.nombre}
             onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))}
+            {...v.props('nombre')}
           />
           <TextField
-            select label="Rol" fullWidth size="small"
+            select label="Rol *" fullWidth size="small"
             value={form.rol}
             onChange={e => setForm(p => ({ ...p, rol: e.target.value }))}
+            {...v.props('rol')}
           >
-            {ROLES.map(r => (
-              <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>
+            {ROLES.map(rol => (
+              <MenuItem key={rol.value} value={rol.value}>{rol.label}</MenuItem>
             ))}
           </TextField>
           {error && (
             <Typography variant="caption" color="error">{error}</Typography>
           )}
         </DialogContent>
+        <ResumenErrores {...v.resumen} accion={editing ? 'guardar el usuario' : 'agregar el usuario'} />
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setOpen(false)}>Cancelar</Button>
           <Button variant="contained" onClick={guardar} disabled={saving}>

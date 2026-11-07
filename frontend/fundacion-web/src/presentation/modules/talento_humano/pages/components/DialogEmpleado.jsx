@@ -6,6 +6,9 @@ import {
 import SaveIcon from '@mui/icons-material/Save';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
 
 const TIPOS_DOCUMENTO = ['CC','TI','CE','Pasaporte','NIT','Otro'];
 const TIPOS_CONTRATO  = ['indefinido','fijo','prestacion_servicios','aprendizaje','voluntario','otro'];
@@ -41,6 +44,19 @@ export const CARGOS_COMUNES = [
   'Voluntario(a)', 'Líder Voluntario(a)', 'Practicante', 'Pasante',
 ];
 
+// Reglas del formulario: cada una dice qué está mal y cómo llenarlo
+const ESQUEMA = {
+  nombres:          { etiqueta: 'Nombres',            reglas: [r.obligatorio('María José'), r.texto({ min: 2, max: 100, soloLetras: true, ejemplo: 'María José' })] },
+  apellidos:        { etiqueta: 'Apellidos',          reglas: [r.obligatorio('Rodríguez Pérez'), r.texto({ min: 2, max: 100, soloLetras: true, ejemplo: 'Rodríguez Pérez' })] },
+  numeroDocumento:  { etiqueta: 'Número documento',   reglas: [r.documentoSegunTipo('tipoDocumento')] },
+  email:            { etiqueta: 'Email',              reglas: [r.correo('maria.rodriguez@correo.com')] },
+  telefono:         { etiqueta: 'Teléfono',           reglas: [r.telefono()] },
+  celular:          { etiqueta: 'Celular',            reglas: [r.celular()] },
+  fechaIngreso:     { etiqueta: 'Fecha ingreso',      reglas: [r.fecha({ ejemplo: '2025-02-01' })] },
+  fechaFinContrato: { etiqueta: 'Fecha fin contrato', reglas: [r.fecha({ ejemplo: '2025-12-31' }), r.fechaDesde('fechaIngreso', 'la fecha de ingreso')] },
+  salario:          { etiqueta: 'Salario (COP)',      reglas: [r.monto('1423500')] },
+};
+
 export const EMPLEADO_VACIO = {
   nombres:'', apellidos:'', tipoDocumento:'CC', numeroDocumento:'',
   email:'', telefono:'', celular:'', cargo:'', area:'',
@@ -53,6 +69,8 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
   const [form, setForm]     = useState(EMPLEADO_VACIO);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
+  const v = useValidacion(ESQUEMA, form);
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (empleado) {
@@ -80,12 +98,13 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
       setForm(EMPLEADO_VACIO);
     }
     setError('');
-  }, [empleado, open]);
+    reiniciar();
+  }, [empleado, open, reiniciar]);
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
   const guardar = async () => {
-    if (!form.nombres.trim() || !form.apellidos.trim()) { setError('Nombres y apellidos son requeridos.'); return; }
+    if (!v.validarTodo()) return;
     setSaving(true); setError('');
     try {
       const payload = {
@@ -127,10 +146,10 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
           {/* Datos personales */}
           <Grid size={12}><Typography variant="subtitle2" fontWeight={700} color="text.secondary">Datos personales</Typography></Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Nombres *" value={form.nombres} onChange={set('nombres')} size="small" />
+            <TextField fullWidth label="Nombres *" value={form.nombres} onChange={set('nombres')} size="small" {...v.props('nombres')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Apellidos *" value={form.apellidos} onChange={set('apellidos')} size="small" />
+            <TextField fullWidth label="Apellidos *" value={form.apellidos} onChange={set('apellidos')} size="small" {...v.props('apellidos')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField select fullWidth label="Tipo documento" value={form.tipoDocumento} onChange={set('tipoDocumento')} size="small">
@@ -138,16 +157,16 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
             </TextField>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Número documento" value={form.numeroDocumento} onChange={set('numeroDocumento')} size="small" />
+            <TextField fullWidth label="Número documento" value={form.numeroDocumento} onChange={set('numeroDocumento')} size="small" {...v.props('numeroDocumento')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Email" value={form.email} onChange={set('email')} size="small" type="email" />
+            <TextField fullWidth label="Email" value={form.email} onChange={set('email')} size="small" type="email" {...v.props('email')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Teléfono" value={form.telefono} onChange={set('telefono')} size="small" />
+            <TextField fullWidth label="Teléfono" value={form.telefono} onChange={set('telefono')} size="small" {...v.props('telefono')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Celular" value={form.celular} onChange={set('celular')} size="small" />
+            <TextField fullWidth label="Celular" value={form.celular} onChange={set('celular')} size="small" {...v.props('celular')} />
           </Grid>
 
           {/* Cargo y sede */}
@@ -186,13 +205,13 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
             </TextField>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Fecha ingreso" value={form.fechaIngreso} onChange={set('fechaIngreso')} size="small" type="date" InputLabelProps={{ shrink: true }} />
+            <TextField fullWidth label="Fecha ingreso" value={form.fechaIngreso} onChange={set('fechaIngreso')} size="small" type="date" InputLabelProps={{ shrink: true }} {...v.props('fechaIngreso')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Fecha fin contrato" value={form.fechaFinContrato} onChange={set('fechaFinContrato')} size="small" type="date" InputLabelProps={{ shrink: true }} />
+            <TextField fullWidth label="Fecha fin contrato" value={form.fechaFinContrato} onChange={set('fechaFinContrato')} size="small" type="date" InputLabelProps={{ shrink: true }} {...v.props('fechaFinContrato')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Salario (COP)" value={form.salario} onChange={set('salario')} size="small" type="number" />
+            <TextField fullWidth label="Salario (COP)" value={form.salario} onChange={set('salario')} size="small" type="number" {...v.props('salario')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="EPS" value={form.eps} onChange={set('eps')} size="small" />
@@ -220,6 +239,7 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
           {error}
         </Alert>
       )}
+      <ResumenErrores {...v.resumen} accion={empleado ? 'actualizar el empleado' : 'registrar el empleado'} />
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" startIcon={<SaveIcon />} onClick={guardar} disabled={saving}>

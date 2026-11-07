@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent,
-  DialogTitle, Divider, Grid, MenuItem, Switch, TextField, Typography,
+  DialogTitle, Divider, FormHelperText, Grid, MenuItem, Switch, TextField, Typography,
 } from '@mui/material';
 import AccessTimeIcon   from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -9,6 +9,9 @@ import PlaceIcon        from '@mui/icons-material/Place';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
 
 const COLOR = BRAND_COLOR;
 
@@ -23,6 +26,24 @@ const DIAS = [
 ];
 
 const DIAS_CORTO = { 0:'Dom', 1:'Lun', 2:'Mar', 3:'Mié', 4:'Jue', 5:'Vie', 6:'Sáb' };
+
+// La hora fin debe ser posterior a la hora de inicio del mismo formulario
+const horaDespuesDe = campoInicio => r.propia((v, f) =>
+  (!v || !f[campoInicio] || v > f[campoInicio] ? '' : 'La hora fin debe ser posterior a la hora inicio. Ejemplo: 08:00 – 10:00'));
+
+// Reglas del formulario: cada una dice qué está mal y cómo llenarlo
+const ESQUEMA = {
+  programaId: { etiqueta: 'Programa', reglas: [r.seleccion('Fútbol infantil')] },
+  diasSemana: { etiqueta: 'Días de la semana', reglas: [
+    r.propia(v => (!v?.length ? 'Selecciona al menos un día. Ejemplo: Lunes y Miércoles' : '')),
+  ] },
+  horaInicio: { etiqueta: 'Hora inicio', reglas: [r.obligatorio('08:00')] },
+  horaFin:    { etiqueta: 'Hora fin',    reglas: [r.obligatorio('10:00'), horaDespuesDe('horaInicio')] },
+  fechaInicioVigencia: { etiqueta: 'Fecha inicio de vigencia', reglas: [r.fecha({ ejemplo: '2025-02-03' })] },
+  fechaFinVigencia:    { etiqueta: 'Fecha fin de vigencia',    reglas: [
+    r.fecha({ ejemplo: '2025-11-28' }), r.fechaDesde('fechaInicioVigencia', 'la fecha de inicio de vigencia'),
+  ] },
+};
 
 const EMPTY = {
   programaId: '',
@@ -49,10 +70,13 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
   const [form,   setForm]   = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
+  const v = useValidacion(ESQUEMA, form);
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (!open) return;
     setError('');
+    reiniciar();
     if (editando) {
       setForm({
         programaId:          editando.programaId,
@@ -67,20 +91,12 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
     } else {
       setForm({ ...EMPTY, programaId: programas[0]?.id ?? '' });
     }
-  }, [open, editando, programas]);
+  }, [open, editando, programas, reiniciar]);
 
   const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
 
   const guardar = async () => {
-    if (!form.programaId) { setError('Selecciona un programa.'); return; }
-    if (form.diasSemana.length === 0) { setError('Selecciona al menos un día.'); return; }
-    if (!form.horaInicio || !form.horaFin) { setError('Los horarios son obligatorios.'); return; }
-    if (form.horaInicio >= form.horaFin) { setError('La hora de inicio debe ser anterior a la hora de fin.'); return; }
-    if (form.fechaInicioVigencia && form.fechaFinVigencia &&
-        form.fechaInicioVigencia > form.fechaFinVigencia) {
-      setError('La fecha de inicio debe ser anterior a la fecha de fin.');
-      return;
-    }
+    if (!v.validarTodo()) return;
 
     setSaving(true);
     setError('');
@@ -136,7 +152,8 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
           <Grid size={12}>
             <TextField select fullWidth size="small" label="Programa *"
               value={form.programaId}
-              onChange={e => setForm(p => ({ ...p, programaId: e.target.value }))}>
+              onChange={e => setForm(p => ({ ...p, programaId: e.target.value }))}
+              {...v.props('programaId')}>
               {programas.map(p => (
                 <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>
               ))}
@@ -159,6 +176,7 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
                     onClick={() => {
                       if (editando) return; // en edición solo 1 día
                       setForm(p => ({ ...p, diasSemana: toggleDia(p.diasSemana, d.value) }));
+                      v.tocar('diasSemana');
                     }}
                     sx={{
                       cursor: editando ? 'default' : 'pointer',
@@ -178,6 +196,7 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
                 );
               })}
             </Box>
+            {v.err('diasSemana') && <FormHelperText error>{v.err('diasSemana')}</FormHelperText>}
             {!editando && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                 Puedes seleccionar varios días. Se creará un horario por cada día.
@@ -189,12 +208,12 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
           <Grid size={6}>
             <TextField label="Hora inicio *" type="time" fullWidth size="small"
               value={form.horaInicio} onChange={set('horaInicio')}
-              slotProps={{ inputLabel: { shrink: true } }} />
+              slotProps={{ inputLabel: { shrink: true } }} {...v.props('horaInicio')} />
           </Grid>
           <Grid size={6}>
             <TextField label="Hora fin *" type="time" fullWidth size="small"
               value={form.horaFin} onChange={set('horaFin')}
-              slotProps={{ inputLabel: { shrink: true } }} />
+              slotProps={{ inputLabel: { shrink: true } }} {...v.props('horaFin')} />
           </Grid>
 
           {/* Lugar */}
@@ -217,13 +236,13 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
             <TextField label="Fecha inicio" type="date" fullWidth size="small"
               value={form.fechaInicioVigencia} onChange={set('fechaInicioVigencia')}
               slotProps={{ inputLabel: { shrink: true } }}
-              helperText="¿Cuándo empieza?" />
+              {...v.props('fechaInicioVigencia', '¿Cuándo empieza?')} />
           </Grid>
           <Grid size={6}>
             <TextField label="Fecha fin" type="date" fullWidth size="small"
               value={form.fechaFinVigencia} onChange={set('fechaFinVigencia')}
               slotProps={{ inputLabel: { shrink: true } }}
-              helperText="¿Cuándo termina?" />
+              {...v.props('fechaFinVigencia', '¿Cuándo termina?')} />
           </Grid>
 
           {/* Activo (solo en edición) */}
@@ -300,11 +319,12 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
           {error}
         </Alert>
       )}
+      <ResumenErrores {...v.resumen} accion={editando ? 'guardar el horario' : 'crear el horario'} />
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={saving}>Cancelar</Button>
         <Button variant="contained" onClick={guardar}
-          disabled={saving || form.diasSemana.length === 0}
+          disabled={saving}
           sx={{ bgcolor: COLOR }}>
           {saving
             ? 'Guardando…'

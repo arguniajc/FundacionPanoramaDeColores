@@ -5,7 +5,7 @@ import { Seccion }             from './Seccion';
 import { FirmaRepresentante }  from './FirmaRepresentante';
 import { TIPOS_DOC }           from './helpers';
 
-export function TabRepLegal({ form, set, setForm }) {
+export function TabRepLegal({ form, set, setForm, v }) {
   return (
     <Seccion titulo="Representante Legal">
       <Alert severity="info" sx={{ mb: 2.5 }} icon={false}>
@@ -14,7 +14,8 @@ export function TabRepLegal({ form, set, setForm }) {
       </Alert>
       <Grid container spacing={2.5}>
         <Grid size={12}>
-          <TextField fullWidth size="small" label="Nombre completo" value={form.nombreRepLegal} onChange={set('nombreRepLegal')} />
+          <TextField fullWidth size="small" label="Nombre completo" value={form.nombreRepLegal} onChange={set('nombreRepLegal')}
+            {...v.props('nombreRepLegal')} />
         </Grid>
         <Grid size={{ xs: 12, sm: 5 }}>
           <FormControl fullWidth size="small">
@@ -25,7 +26,8 @@ export function TabRepLegal({ form, set, setForm }) {
           </FormControl>
         </Grid>
         <Grid size={{ xs: 12, sm: 7 }}>
-          <TextField fullWidth size="small" label="Número de documento" value={form.documentoRep} onChange={set('documentoRep')} />
+          <TextField fullWidth size="small" label="Número de documento" value={form.documentoRep} onChange={set('documentoRep')}
+            {...v.props('documentoRep')} />
         </Grid>
         <Grid size={12}>
           <TextField fullWidth size="small" label="Cargo"

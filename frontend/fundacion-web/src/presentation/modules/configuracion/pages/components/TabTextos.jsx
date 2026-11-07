@@ -1,7 +1,7 @@
 import { Box, Grid, TextField } from '@mui/material';
 import { Seccion } from './Seccion';
 
-export function TabTextos({ form, set }) {
+export function TabTextos({ form, set, v }) {
   return (
     <Box>
       <Seccion titulo="Identidad y contacto">
@@ -13,12 +13,14 @@ export function TabTextos({ form, set }) {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth size="small" label="Correo de contacto" type="email"
-              placeholder="contacto@fundacion.org" value={form.emailContacto} onChange={set('emailContacto')} />
+              placeholder="contacto@fundacion.org" value={form.emailContacto} onChange={set('emailContacto')}
+              {...v.props('emailContacto')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth size="small" label="Sitio web"
               placeholder="https://fundacionpanoramadecolores.org"
-              value={form.sitioWeb} onChange={set('sitioWeb')} />
+              value={form.sitioWeb} onChange={set('sitioWeb')}
+              {...v.props('sitioWeb')} />
           </Grid>
         </Grid>
       </Seccion>

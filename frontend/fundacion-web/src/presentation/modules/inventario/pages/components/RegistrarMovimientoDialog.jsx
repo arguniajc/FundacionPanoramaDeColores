@@ -1,12 +1,36 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import {
   Alert, Autocomplete, Box, Button, CircularProgress, Dialog, DialogActions,
-  DialogContent, DialogTitle, FormControl, Grid, InputAdornment, InputLabel,
+  DialogContent, DialogTitle, FormControl, FormHelperText, Grid, InputAdornment, InputLabel,
   MenuItem, Select, TextField, Typography,
 } from '@mui/material';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { COLOR, fmtNum } from './helpers';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+const aNumero = v => Number(String(v).replace(',', '.'));
+
+// Reglas del formulario. `_stock`, `_unidad` y `_sale` se agregan al validar (dependen del artículo y del tipo).
+const ESQUEMA = {
+  tipoMovimientoId: { etiqueta: 'Tipo de movimiento', reglas: [r.seleccion('Entrada por compra o Salida por entrega')] },
+  cantidad: { etiqueta: 'Cantidad', reglas: [
+    r.obligatorio('10'),
+    r.numero({ ejemplo: '10' }),
+    r.propia(v => (aNumero(v) <= 0 ? 'La cantidad debe ser mayor que 0. Ejemplo: 10' : '')),
+    // En las salidas no se puede sacar más de lo que hay en la sede
+    r.propia((v, f) => {
+      if (!f._sale) return '';
+      const stock = Number(f._stock) || 0;
+      if (aNumero(v) <= stock) return '';
+      return stock <= 0
+        ? 'No hay unidades disponibles en esta sede, no se puede registrar una salida.'
+        : `Solo hay ${fmtNum(stock)} ${f._unidad || 'unidades'} disponibles en esta sede. Escribe una cantidad entre 1 y ${fmtNum(stock)}.`;
+    }),
+  ] },
+};
 
 export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegistrado }) {
   const [form,      setForm]      = useState({ tipoMovimientoId: '', cantidad: '', motivo: '', donante: '', donanteObj: null, buscandoDonante: false });
@@ -18,12 +42,17 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
   const tiposFiltrados = tipos.filter(t => !t.codigo.startsWith('TRANSFERENCIA'));
   const tipoSel = tiposFiltrados.find(t => t.id === Number(form.tipoMovimientoId));
   const esDonacionRecibida = tipoSel?.codigo === 'DONACION_RECIBIDA';
+  const v = useValidacion(ESQUEMA, {
+    ...form, _stock: item?.stockActual, _unidad: item?.unidadMedida, _sale: !!tipoSel && tipoSel.afectaStock !== '+',
+  });
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (open) {
       setForm({ tipoMovimientoId: tiposFiltrados[0]?.id ?? '', cantidad: '', motivo: '', donante: '', donanteObj: null, buscandoDonante: false });
       setDonantes([]);
       setError('');
+      reiniciar();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -45,9 +74,8 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
   };
 
   const guardar = async () => {
-    if (!form.tipoMovimientoId) { setError('Seleccione el tipo de movimiento.'); return; }
-    const cant = Number(form.cantidad);
-    if (!cant || cant <= 0) { setError('La cantidad debe ser mayor a cero.'); return; }
+    if (!v.validarTodo()) return;
+    const cant = aNumero(form.cantidad);
     setGuardando(true); setError('');
     try {
       const { data } = await inventarioRepository.registrarMovimiento({
@@ -79,9 +107,10 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
         {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size={12}>
-            <FormControl fullWidth size="small">
+            <FormControl fullWidth size="small" error={!!v.err('tipoMovimientoId')}>
               <InputLabel>Tipo de movimiento *</InputLabel>
               <Select value={form.tipoMovimientoId} label="Tipo de movimiento *"
+                onBlur={() => v.tocar('tipoMovimientoId')}
                 onChange={e => set('tipoMovimientoId', e.target.value)}>
                 {tiposFiltrados.map(t => (
                   <MenuItem key={t.id} value={t.id}>
@@ -92,6 +121,7 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
                   </MenuItem>
                 ))}
               </Select>
+              {v.err('tipoMovimientoId') && <FormHelperText>{v.err('tipoMovimientoId')}</FormHelperText>}
             </FormControl>
           </Grid>
           <Grid size={12}>
@@ -99,6 +129,7 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
               inputProps={{ min: 0.01, step: 1 }} value={form.cantidad}
               onChange={e => set('cantidad', e.target.value)}
               InputProps={{ endAdornment: <InputAdornment position="end">{item.unidadMedida}</InputAdornment> }}
+              {...v.props('cantidad')}
             />
           </Grid>
           {esDonacionRecibida && (
@@ -141,6 +172,7 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
           )}
         </Grid>
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion="registrar el movimiento" />
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}

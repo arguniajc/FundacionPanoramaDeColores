@@ -11,7 +11,7 @@
 import React, { useMemo } from 'react';
 import {
   TextField, FormControl, InputLabel, Select, MenuItem,
-  Grid, InputAdornment, Autocomplete,
+  Grid, InputAdornment, Autocomplete, FormHelperText,
 } from '@mui/material';
 import {
   TIPOS_DOCUMENTO, PAISES, CIUDADES_COLOMBIA,
@@ -46,17 +46,20 @@ export function CampoDocumento({
   labelTipo = 'Tipo documento',
   labelNumero = 'Número documento',
   required = false,
+  // Validación opcional (useValidacion): props({ error, helperText, onBlur }) por campo
+  validacionTipo, validacionNumero,
 }) {
   return (
     <Grid container spacing={2}>
       <Grid size={5}>
-        <FormControl fullWidth size={size}>
+        <FormControl fullWidth size={size} error={!!validacionTipo?.error}>
           <InputLabel>{labelTipo}</InputLabel>
-          <Select value={tipoDocumento} label={labelTipo}
+          <Select value={tipoDocumento} label={labelTipo} onBlur={validacionTipo?.onBlur}
             onChange={e => onChangeTipo(e.target.value)}>
             <MenuItem value=""><em>—</em></MenuItem>
             {TIPOS_DOCUMENTO.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
           </Select>
+          {validacionTipo?.helperText && <FormHelperText>{validacionTipo.helperText}</FormHelperText>}
         </FormControl>
       </Grid>
       <Grid size={7}>
@@ -64,6 +67,7 @@ export function CampoDocumento({
           label={required ? `${labelNumero} *` : labelNumero}
           value={documento}
           onChange={e => onChangeNumero(e.target.value)}
+          {...validacionNumero}
         />
       </Grid>
     </Grid>

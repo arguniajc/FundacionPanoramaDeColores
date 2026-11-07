@@ -16,6 +16,19 @@ import { BRAND_COLOR } from '@/shared/constants/brand';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import { useToast } from '@/shared/context/ToastContext';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r, vacio } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+// Reglas del diálogo de persona del organigrama
+const ESQUEMA_PERSONA = {
+  cargo:         { etiqueta: 'Cargo', reglas: [r.obligatorio('Coordinador Pedagógico'), r.texto({ min: 2, max: 100 })] },
+  nombreExterno: { etiqueta: 'Nombre completo', reglas: [
+    r.propia((valor, f) => (!f.empleadoId && vacio(valor)
+      ? 'Selecciona un empleado del panel o escribe el nombre de la persona externa. Ejemplo: Ana Gómez' : '')),
+    r.si(f => !f.empleadoId, r.nombreCompleto('Ana Gómez')),
+  ] },
+};
 
 const LCOLOR       = '#94A3B8';
 const DEPTH_COLORS = ['#1E1B4B',BRAND_COLOR,'#7C3AED','#2563EB','#0891B2','#059669','#D97706','#DC2626'];
@@ -189,9 +202,12 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
   const [fotoPreview,   setFotoPreview]   = useState('');
   const [saving,        setSaving]        = useState(false);
   const [error,         setError]         = useState('');
+  const v = useValidacion(ESQUEMA_PERSONA, { cargo, empleadoId, nombreExterno });
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (!open) return;
+    reiniciar();
     setCargo(persona?.cargo ?? '');
     setParentId(persona?.parentId ?? persona?.ParentId ?? parentIdInicial ?? '');
     setEmpleadoId(persona?.empleadoId ?? persona?.EmpleadoId ?? '');
@@ -199,7 +215,7 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
     setFotoPreview(persona?.fotoUrl ?? persona?.FotoUrl ?? '');
     setFotoFile(null);
     setError('');
-  }, [open, persona, parentIdInicial]);
+  }, [open, persona, parentIdInicial, reiniciar]);
 
   const handleFoto = (e) => {
     const f = e.target.files?.[0];
@@ -214,8 +230,7 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
     : nombreExterno;
 
   const handleSave = async () => {
-    if (!cargo.trim()) { setError('El cargo es obligatorio.'); return; }
-    if (!empleadoId && !nombreExterno.trim()) { setError('Selecciona un empleado o ingresa un nombre.'); return; }
+    if (!v.validarTodo()) return;
     setSaving(true); setError('');
     try {
       let fotoUrl = persona?.fotoUrl ?? null;
@@ -279,7 +294,7 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
           renderInput={(params) => (
             <TextField {...params} size="small" label="Cargo *"
               placeholder="Ej: Director, Coordinador, Tesorero..."
-              required />
+              required {...v.props('cargo')} />
           )}
           sx={{ mb: 1.5 }}
         />
@@ -328,14 +343,15 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
           <TextField
             fullWidth size="small" label="Nombre completo *"
             value={nombreExterno} onChange={e => setNombreExterno(e.target.value)}
-            helperText="Para personas que no están registradas como empleados"
+            {...v.props('nombreExterno', 'Para personas que no están registradas como empleados')}
           />
         )}
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion={persona ? 'guardar la persona' : 'agregar la persona'} />
       <DialogActions sx={{ px: 3 }}>
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave}
-          disabled={saving || !cargo.trim() || (!empleadoId && !nombreExterno.trim())}>
+          disabled={saving}>
           {saving ? 'Guardando…' : 'Guardar'}
         </Button>
       </DialogActions>

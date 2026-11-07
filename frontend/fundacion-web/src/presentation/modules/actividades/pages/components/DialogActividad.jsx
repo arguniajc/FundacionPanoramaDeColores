@@ -1,13 +1,16 @@
 ﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
-  Grid, IconButton, MenuItem, TextField, Tooltip, Typography,
+  FormHelperText, Grid, IconButton, MenuItem, TextField, Tooltip, Typography,
 } from '@mui/material';
 import AddIcon    from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
 
 const ESTADOS = [
   { value: 'programada',  label: 'Programada'  },
@@ -17,6 +20,31 @@ const ESTADOS = [
 ];
 
 const COLOR = BRAND_COLOR;
+
+const MSG_HORAS = 'la hora fin debe ser posterior a la hora inicio. Ejemplo: 08:00 – 10:00';
+
+// La hora fin (opcional) debe ser posterior a la hora de inicio
+const horaDespuesDe = campoInicio => r.propia((v, f) =>
+  (!v || !f[campoInicio] || v > f[campoInicio] ? '' : `La ${MSG_HORAS}`));
+
+// Cada día adicional debe tener fecha, hora inicio y hora fin, con la fin posterior al inicio
+const diasCompletos = r.propia(dias => {
+  for (const [i, d] of (dias ?? []).entries()) {
+    if (!d.fecha || !d.horaInicio || !d.horaFin)
+      return `El día ${i + 1} está incompleto: llena fecha, hora inicio y hora fin. Ejemplo: 2025-03-15, 08:00 – 10:00`;
+    if (d.horaFin <= d.horaInicio) return `En el día ${i + 1}, ${MSG_HORAS}`;
+  }
+  return '';
+});
+
+// Reglas del formulario: cada una dice qué está mal y cómo llenarlo
+const ESQUEMA = {
+  titulo:          { etiqueta: 'Título',      reglas: [r.obligatorio('Taller de pintura'), r.texto({ min: 3, max: 200 })] },
+  fecha:           { etiqueta: 'Fecha',       reglas: [r.obligatorio('2025-03-15'), r.fecha({ ejemplo: '2025-03-15' })] },
+  horaInicio:      { etiqueta: 'Hora inicio', reglas: [r.obligatorio('08:00')] },
+  horaFin:         { etiqueta: 'Hora fin',    reglas: [horaDespuesDe('horaInicio')] },
+  diasAdicionales: { etiqueta: 'Días adicionales', reglas: [diasCompletos] },
+};
 
 const EMPTY_FORM = {
   titulo: '', descripcion: '', programaId: '', lugar: '',
@@ -39,10 +67,13 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
   const [form,   setForm]   = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
+  const v = useValidacion(ESQUEMA, form);
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (!open) return;
     setError('');
+    reiniciar();
     if (editando) {
       setForm({
         titulo:          editando.titulo,
@@ -58,7 +89,7 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
     } else {
       setForm(EMPTY_FORM);
     }
-  }, [open, editando]);
+  }, [open, editando, reiniciar]);
 
   const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
 
@@ -75,20 +106,7 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
     }));
 
   const guardar = async () => {
-    if (!form.titulo.trim()) { setError('El título es obligatorio.'); return; }
-    if (!form.fecha)          { setError('La fecha es obligatoria.'); return; }
-    if (!form.horaInicio)     { setError('La hora de inicio es obligatoria.'); return; }
-    if (form.horaFin && form.horaFin <= form.horaInicio) {
-      setError('La hora de fin debe ser posterior a la de inicio.'); return;
-    }
-    for (const dia of form.diasAdicionales) {
-      if (!dia.fecha || !dia.horaInicio || !dia.horaFin) {
-        setError('Completa todos los campos de los días adicionales.'); return;
-      }
-      if (dia.horaFin <= dia.horaInicio) {
-        setError('En días adicionales, la hora de fin debe ser posterior a la de inicio.'); return;
-      }
-    }
+    if (!v.validarTodo()) return;
 
     setSaving(true); setError('');
     try {
@@ -122,25 +140,25 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
 
         <TextField label="Título *" fullWidth size="small"
-          value={form.titulo} onChange={set('titulo')} />
+          value={form.titulo} onChange={set('titulo')} {...v.props('titulo')} />
 
         {/* Fecha y rango horario principal */}
         <Grid container spacing={2}>
           <Grid size={4}>
             <TextField label="Fecha *" type="date" fullWidth size="small"
               value={form.fecha} onChange={set('fecha')}
-              slotProps={{ inputLabel: { shrink: true } }} />
+              slotProps={{ inputLabel: { shrink: true } }} {...v.props('fecha')} />
           </Grid>
           <Grid size={4}>
             <TextField label="Hora inicio *" type="time" fullWidth size="small"
               value={form.horaInicio} onChange={set('horaInicio')}
-              slotProps={{ inputLabel: { shrink: true } }} />
+              slotProps={{ inputLabel: { shrink: true } }} {...v.props('horaInicio')} />
           </Grid>
           <Grid size={4}>
             <TextField label="Hora fin" type="time" fullWidth size="small"
               value={form.horaFin} onChange={set('horaFin')}
               slotProps={{ inputLabel: { shrink: true } }}
-              helperText="Mismo día" />
+              {...v.props('horaFin', 'Mismo día')} />
           </Grid>
         </Grid>
 
@@ -201,10 +219,12 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
               </Tooltip>
             </Box>
           ))}
+          {v.err('diasAdicionales') && <FormHelperText error>{v.err('diasAdicionales')}</FormHelperText>}
         </Box>
 
         {error && <Alert severity="error">{error}</Alert>}
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion="guardar la actividad" />
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={saving}

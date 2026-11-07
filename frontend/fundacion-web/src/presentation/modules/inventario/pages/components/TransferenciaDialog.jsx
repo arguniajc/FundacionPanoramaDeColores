@@ -1,12 +1,38 @@
 ﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
-  DialogTitle, FormControl, Grid, InputAdornment, InputLabel, MenuItem, Select,
+  DialogTitle, FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select,
   TextField, Typography,
 } from '@mui/material';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { fmtNum } from './helpers';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+const aNumero = v => Number(String(v).replace(',', '.'));
+
+// Reglas del formulario. `_origen`, `_stock` y `_unidad` se agregan al validar (dependen del artículo).
+const ESQUEMA = {
+  sedeDestinoId: { etiqueta: 'Sede destino', reglas: [
+    r.seleccion('Sede Norte'),
+    r.propia((v, f) => (v && f._origen && v === f._origen ? 'La sede destino debe ser distinta de la sede de origen.' : '')),
+  ] },
+  cantidad: { etiqueta: 'Cantidad', reglas: [
+    r.obligatorio('5'),
+    r.numero({ ejemplo: '5' }),
+    r.propia(v => (aNumero(v) <= 0 ? 'La cantidad debe ser mayor que 0. Ejemplo: 5' : '')),
+    // No se puede transferir más de lo que hay en la sede de origen
+    r.propia((v, f) => {
+      const stock = Number(f._stock) || 0;
+      if (aNumero(v) <= stock) return '';
+      return stock <= 0
+        ? 'No hay unidades disponibles en esta sede para transferir.'
+        : `Solo hay ${fmtNum(stock)} ${f._unidad || 'unidades'} disponibles en esta sede. Escribe una cantidad entre 1 y ${fmtNum(stock)}.`;
+    }),
+  ] },
+};
 
 export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida }) {
   const [form,      setForm]      = useState({ sedeDestinoId: '', cantidad: '', motivo: '' });
@@ -14,18 +40,19 @@ export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida 
   const [error,     setError]     = useState('');
 
   const sedesDestino = sedes.filter(s => s.id !== item?.sedeId);
+  const v = useValidacion(ESQUEMA, { ...form, _origen: item?.sedeId, _stock: item?.stockActual, _unidad: item?.unidadMedida });
+  const { reiniciar } = v;
 
   useEffect(() => {
-    if (open) { setForm({ sedeDestinoId: sedesDestino[0]?.id ?? '', cantidad: '', motivo: '' }); setError(''); }
+    if (open) { setForm({ sedeDestinoId: sedesDestino[0]?.id ?? '', cantidad: '', motivo: '' }); setError(''); reiniciar(); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const guardar = async () => {
-    if (!form.sedeDestinoId) { setError('Seleccione la sede destino.'); return; }
-    const cant = Number(form.cantidad);
-    if (!cant || cant <= 0) { setError('La cantidad debe ser mayor a cero.'); return; }
+    if (!v.validarTodo()) return;
+    const cant = aNumero(form.cantidad);
     setGuardando(true); setError('');
     try {
       const { data } = await inventarioRepository.transferir({
@@ -57,12 +84,14 @@ export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida 
         {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size={12}>
-            <FormControl fullWidth size="small">
+            <FormControl fullWidth size="small" error={!!v.err('sedeDestinoId')}>
               <InputLabel>Sede destino *</InputLabel>
               <Select value={form.sedeDestinoId} label="Sede destino *"
+                onBlur={() => v.tocar('sedeDestinoId')}
                 onChange={e => set('sedeDestinoId', e.target.value)}>
                 {sedesDestino.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
               </Select>
+              {v.err('sedeDestinoId') && <FormHelperText>{v.err('sedeDestinoId')}</FormHelperText>}
             </FormControl>
           </Grid>
           <Grid size={12}>
@@ -70,6 +99,7 @@ export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida 
               inputProps={{ min: 0.01, step: 1 }} value={form.cantidad}
               onChange={e => set('cantidad', e.target.value)}
               InputProps={{ endAdornment: <InputAdornment position="end">{item.unidadMedida}</InputAdornment> }}
+              {...v.props('cantidad')}
             />
           </Grid>
           <Grid size={12}>
@@ -90,6 +120,7 @@ export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida 
           )}
         </Grid>
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion="realizar la transferencia" />
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}

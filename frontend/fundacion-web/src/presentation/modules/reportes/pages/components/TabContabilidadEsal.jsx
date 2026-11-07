@@ -66,7 +66,7 @@ export function TabContabilidadEsal() {
     <Box>
       {/* Selectores de período */}
       <Grid container spacing={2} sx={{ mb: 3 }} alignItems="center">
-        <Grid item xs={6} sm={4} md={3}>
+        <Grid size={{ xs: 6, sm: 4, md: 3 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Mes</InputLabel>
             <Select value={mes} label="Mes" onChange={e => setMes(Number(e.target.value))}>
@@ -74,7 +74,7 @@ export function TabContabilidadEsal() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={6} sm={4} md={3}>
+        <Grid size={{ xs: 6, sm: 4, md: 3 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Año</InputLabel>
             <Select value={anio} label="Año" onChange={e => setAnio(Number(e.target.value))}>
@@ -82,7 +82,7 @@ export function TabContabilidadEsal() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item>
+        <Grid>
           <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
             onClick={exportar} disabled={!reporte}>
             Exportar Excel
@@ -108,7 +108,7 @@ export function TabContabilidadEsal() {
               value: Math.abs(reporte.balance), icon: <BalanceIcon />,
               color: reporte.balance >= 0 ? '#7c3aed' : '#ea580c' },
           ].map(({ label, value, icon, color }) => (
-            <Grid item xs={12} sm={4} key={label}>
+            <Grid size={{ xs: 12, sm: 4 }} key={label}>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderColor: color + '44' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <Box sx={{ color }}>{icon}</Box>

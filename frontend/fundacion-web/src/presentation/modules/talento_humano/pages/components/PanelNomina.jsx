@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
-  DialogContent, DialogTitle, FormControl, IconButton, InputLabel,
+  DialogContent, DialogTitle, FormControl, FormHelperText, IconButton, InputLabel,
   MenuItem, Paper, Select, Snackbar, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
@@ -15,6 +15,9 @@ import { nominaRepository } from '@/infrastructure/repositories/nominaRepository
 import { useConfirm }       from '@/shared/components/ConfirmDialog';
 import { useToast }         from '@/shared/context/ToastContext';
 import { mensajeErrorApi }  from '@/shared/utils/mensajeErrorApi';
+import { r }                from '@/shared/utils/validacion';
+import { useValidacion }    from '@/shared/hooks/useValidacion';
+import ResumenErrores       from '@/shared/components/ResumenErrores';
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -196,6 +199,13 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
   );
 }
 
+// Reglas del formulario de nuevo período
+const ESQUEMA_PERIODO = {
+  mes:  { etiqueta: 'Mes',         reglas: [r.seleccion('Julio')] },
+  anio: { etiqueta: 'Año',         reglas: [r.seleccion(String(new Date().getFullYear()))] },
+  obs:  { etiqueta: 'Observación', reglas: [r.texto({ max: 500 })] },
+};
+
 function NuevoPeriodoDialog({ open, onClose, onCreado }) {
   const mesActual = new Date().getMonth() + 1;
   const anioActual = new Date().getFullYear();
@@ -204,8 +214,13 @@ function NuevoPeriodoDialog({ open, onClose, onCreado }) {
   const [obs,  setObs]  = useState('');
   const [guardando, setGuardando] = useState(false);
   const [err, setErr] = useState('');
+  const v = useValidacion(ESQUEMA_PERIODO, { mes, anio, obs });
+  const { reiniciar } = v;
+
+  useEffect(() => { if (open) reiniciar(); }, [open, reiniciar]);
 
   const handleGuardar = async () => {
+    if (!v.validarTodo()) return;
     setGuardando(true); setErr('');
     try {
       const { data } = await nominaRepository.crearPeriodo({ mes, anio, observacion: obs || null });
@@ -223,24 +238,27 @@ function NuevoPeriodoDialog({ open, onClose, onCreado }) {
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           {err && <Alert severity="error">{err}</Alert>}
-          <FormControl fullWidth size="small">
+          <FormControl fullWidth size="small" error={!!v.err('mes')}>
             <InputLabel>Mes</InputLabel>
-            <Select value={mes} label="Mes" onChange={e => setMes(e.target.value)}>
+            <Select value={mes} label="Mes" onBlur={() => v.tocar('mes')} onChange={e => setMes(e.target.value)}>
               {MESES.map((m, i) => <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>)}
             </Select>
+            {v.err('mes') && <FormHelperText>{v.err('mes')}</FormHelperText>}
           </FormControl>
-          <FormControl fullWidth size="small">
+          <FormControl fullWidth size="small" error={!!v.err('anio')}>
             <InputLabel>Año</InputLabel>
-            <Select value={anio} label="Año" onChange={e => setAnio(e.target.value)}>
+            <Select value={anio} label="Año" onBlur={() => v.tocar('anio')} onChange={e => setAnio(e.target.value)}>
               {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
+            {v.err('anio') && <FormHelperText>{v.err('anio')}</FormHelperText>}
           </FormControl>
           <TextField
             size="small" label="Observación (opcional)" multiline rows={2}
-            value={obs} onChange={e => setObs(e.target.value)}
+            value={obs} onChange={e => setObs(e.target.value)} {...v.props('obs')}
           />
         </Box>
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion="crear el período" />
       <DialogActions>
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" onClick={handleGuardar} disabled={guardando}>

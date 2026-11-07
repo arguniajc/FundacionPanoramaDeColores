@@ -96,19 +96,19 @@ export default function ContabilidadPage() {
       </Paper>
 
       <Grid container spacing={3} mb={3}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <KpiCard label="Saldo total" value={fmt(stats?.saldoTotal)}
             icon={<AccountBalanceWalletIcon fontSize="inherit" />} color={BRAND_COLOR} />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <KpiCard label="Ingresos este mes" value={fmt(stats?.ingresosMes)}
             icon={<TrendingUpIcon fontSize="inherit" />} color="#16a34a" />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <KpiCard label="Egresos este mes" value={fmt(stats?.egresosMes)}
             icon={<TrendingDownIcon fontSize="inherit" />} color="#dc2626" />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <KpiCard
             label="Balance este mes"
             value={fmt(stats?.balanceMes)}

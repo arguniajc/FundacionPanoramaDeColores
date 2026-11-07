@@ -11,20 +11,22 @@ import { beneficiariosRepository } from '@/infrastructure/repositories/beneficia
 import { sedesRepository }         from '@/infrastructure/repositories/sedesRepository';
 import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
 import { mensajeErrorApi }         from '@/shared/utils/mensajeErrorApi';
+import ResumenErrores              from '@/shared/components/ResumenErrores';
 import {
   COLOR, CampoInput, FirmaAutorizacion, SeccionHeader,
-  agruparPorSeccion, calcEdad, parseMeta,
+  agruparPorSeccion, calcEdad,
 } from './campos';
+import {
+  ETIQUETAS_FIRMA, erroresCamposDinamicos, erroresFirma, esPanelResponsable, faltantesPanel,
+} from './validacionFormulario';
 
-function panelTutorCompleto(d, tipo) {
-  const t = s => !!(s?.trim());
-  const base = t(d.nombres) && t(d.apellidos) && t(d.fechaNac) && t(d.pais) &&
-               (d.pais?.trim() !== 'Colombia' || t(d.departamento)) &&
-               t(d.ciudad) && t(d.tipoDoc) && t(d.numDoc) && t(d.celular) &&
-               t(d.direccion) && t(d.barrio) && t(d.eps) &&
-               t(d.escolaridad) && t(d.ocupacion) && t(d.empresa) && t(d.autoidentificacion);
-  return tipo === 'datos_tutor' ? base && t(d.relacion) : base;
-}
+// Nombres de los errores que no son campos del programa, para el resumen.
+const ETIQUETAS_PASO = {
+  beneficiario:    'Beneficiario',
+  programa:        'Programa',
+  __responsable__: 'Responsable mayor de edad',
+  ...ETIQUETAS_FIRMA,
+};
 
 export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [paso,           setPaso]           = useState(0);
@@ -41,6 +43,8 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [observaciones,  setObservaciones]  = useState('');
   const [guardando,      setGuardando]      = useState(false);
   const [error,          setError]          = useState('');
+  const [intentado,      setIntentado]      = useState(false); // ya se intentó avanzar en este paso
+  const [verResumen,     setVerResumen]     = useState(false);
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -87,6 +91,8 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
           auto[c.id] = selBenef.fechaNacimiento;
         if (c.tipo === 'datos_padre' || c.tipo === 'datos_madre') init[c.id] = true;
         if (c.tipo === 'datos_tutor') init[c.id] = false;
+        // Sí/No empieza en No: así un interruptor obligatorio cuenta como respondido sin tocarlo
+        if (c.tipo === 'boolean') auto[c.id] = 'false';
       }
       setDatos(auto);
       setPanelActivo(init);
@@ -140,53 +146,54 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     setPanelActivo(next);
   };
 
-  const pasoValido = () => {
-    if (paso === 0) return !!selBenef;
-    if (paso === 1) return !!selPrograma;
-    if (paso === 2) {
-      if (!datos.__firma_padre__) return false;
-      const _m = parseMeta(datos.__firma_meta__);
-      if (!_m.quien || !_m.nombre?.trim() || !_m.documento?.trim()) return false;
-      const camposOk = campos.every(c => {
-        if (!c.obligatorio) return true;
-        if ((c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor') && panelActivo[c.id] === false) return true;
-        const v = datos[c.id];
-        if (!v) return false;
-        if (c.tipo === 'daterange') {
-          try { const r = JSON.parse(v); return !!(r.desde && r.hasta); } catch { return false; }
-        }
-        if (c.tipo === 'documento_id') {
-          try { const d = JSON.parse(v); return !!(d.tipo && d.numero); } catch { return false; }
-        }
-        if (c.tipo === 'grado_escolar') {
-          try { const ge = JSON.parse(v); return !!ge.grado; } catch { return false; }
-        }
-        if (c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor') {
-          try { const d = JSON.parse(v); return panelTutorCompleto(d, c.tipo); } catch { return false; }
-        }
-        return true;
+  // Errores del paso actual: { clave: mensaje }. Las claves numéricas son los campos del programa.
+  const erroresPaso = () => {
+    if (paso === 0) return selBenef ? {} : {
+      beneficiario: 'Busca y selecciona el beneficiario: escribe al menos 2 letras del nombre y elígelo de la lista. Ejemplo: Ana',
+    };
+    if (paso === 1) return selPrograma ? {} : {
+      programa: 'Selecciona el programa haciendo clic en su tarjeta.',
+    };
+    const errores = { ...erroresCamposDinamicos(campos, datos, panelActivo), ...erroresFirma(datos) };
+    // Al menos un responsable activo, completo y mayor de edad
+    const panelesTutor = campos.filter(c => esPanelResponsable(c.tipo));
+    if (panelesTutor.length > 0) {
+      const algunoAdultoCompleto = panelesTutor.some(c => {
+        if (panelActivo[c.id] === false) return false;
+        try {
+          const pd = JSON.parse(datos[c.id] ?? '{}');
+          const edad = calcEdad(pd.fechaNac);
+          return faltantesPanel(pd, c.tipo).length === 0 && edad !== null && edad >= 18;
+        } catch { return false; }
       });
-      if (!camposOk) return false;
-      // Al menos un responsable activo, completo y mayor de edad
-      const panelesTutor = campos.filter(c =>
-        c.tipo === 'datos_padre' || c.tipo === 'datos_madre' || c.tipo === 'datos_tutor'
-      );
-      if (panelesTutor.length > 0) {
-        const algunoAdultoCompleto = panelesTutor.some(c => {
-          if (panelActivo[c.id] === false) return false;
-          try {
-            const pd = JSON.parse(datos[c.id] ?? '{}');
-            const edad = calcEdad(pd.fechaNac);
-            return panelTutorCompleto(pd, c.tipo) && edad !== null && edad >= 18;
-          } catch { return false; }
-        });
-        if (!algunoAdultoCompleto) return false;
-      }
+      if (!algunoAdultoCompleto)
+        errores.__responsable__ = 'Debe haber al menos un padre, madre o tutor mayor de 18 años con todos sus datos completos. Revisa la fecha de nacimiento (ejemplo: 20/05/1985).';
     }
-    return true;
+    return errores;
+  };
+
+  const errores    = erroresPaso();
+  const hayErrores = Object.keys(errores).length > 0;
+  // Los mensajes se muestran en los campos solo después de intentar avanzar o guardar.
+  const errCampo   = clave => (intentado ? (errores[clave] ?? '') : '');
+  const etiquetaError = clave =>
+    ETIQUETAS_PASO[clave] ?? campos.find(c => String(c.id) === clave)?.etiqueta ?? clave;
+
+  /** Valida el paso actual: si falta algo marca los campos, muestra el resumen y devuelve false. */
+  const validarPaso = () => {
+    if (!hayErrores) { setIntentado(false); setVerResumen(false); return true; }
+    setIntentado(true); setVerResumen(true);
+    return false;
+  };
+
+  const cambiarPaso = (delta) => {
+    if (delta > 0 && !validarPaso()) return;
+    setIntentado(false); setVerResumen(false);
+    setPaso(p => p + delta);
   };
 
   const handleSubmit = async () => {
+    if (guardando || !validarPaso()) return;
     setGuardando(true);
     setError('');
     try {
@@ -248,7 +255,8 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                 </li>
               )}
               renderInput={(params) => (
-                <TextField {...params} label="Buscar por nombre" size="small" />
+                <TextField {...params} label="Buscar por nombre" size="small"
+                  error={!!errCampo('beneficiario')} helperText={errCampo('beneficiario') || undefined} />
               )}
             />
             {selBenef && (
@@ -264,7 +272,10 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
 
         {paso === 1 && (
           <Box>
-            <Typography fontWeight={700} mb={2}>Selecciona el programa</Typography>
+            <Typography fontWeight={700} mb={errCampo('programa') ? 0.5 : 2}>Selecciona el programa</Typography>
+            {errCampo('programa') && (
+              <Typography variant="caption" color="error" display="block" mb={1.5}>{errCampo('programa')}</Typography>
+            )}
             {programas.length === 0 ? (
               <Alert severity="warning">No hay programas activos disponibles.</Alert>
             ) : (
@@ -321,6 +332,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                             onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
                             activo={esPanel ? activo : undefined}
                             onToggle={(c.tipo === 'datos_padre' || c.tipo === 'datos_madre') && tienePadreMadre ? () => handleTogglePanel(c) : undefined}
+                            error={errCampo(String(c.id))}
                           />
                         </Grid>
                       );
@@ -336,11 +348,14 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
             )}
             <FirmaAutorizacion datos={datos} setDatos={setDatos}
               panelActivo={panelActivo} campos={campos}
+              errores={intentado ? errores : {}}
               sx={{ mt: campos.length === 0 ? 0 : 1 }} />
           </Box>
         )}
       </DialogContent>
 
+      <ResumenErrores visible={verResumen && hayErrores} errores={errores} etiqueta={etiquetaError}
+        onClose={() => setVerResumen(false)} accion={paso < 2 ? 'continuar' : 'inscribir'} />
       {error && (
         <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
           {error}
@@ -349,17 +364,16 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
       <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
         <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
         {paso > 0 && (
-          <Button onClick={() => setPaso(p => p - 1)} disabled={guardando}>Atrás</Button>
+          <Button onClick={() => cambiarPaso(-1)} disabled={guardando}>Atrás</Button>
         )}
         <Box flex={1} />
         {paso < 2 ? (
-          <Button variant="contained" onClick={() => setPaso(p => p + 1)}
-            disabled={!pasoValido()} sx={{ bgcolor: COLOR }}>
+          <Button variant="contained" onClick={() => cambiarPaso(1)} sx={{ bgcolor: COLOR }}>
             Siguiente
           </Button>
         ) : (
           <Button variant="contained" onClick={handleSubmit}
-            disabled={guardando || !pasoValido()} sx={{ bgcolor: COLOR }}>
+            disabled={guardando} sx={{ bgcolor: COLOR }}>
             {guardando ? 'Guardando...' : 'Inscribir'}
           </Button>
         )}

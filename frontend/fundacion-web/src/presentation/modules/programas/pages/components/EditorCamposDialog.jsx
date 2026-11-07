@@ -23,6 +23,28 @@ import {
 } from './helpers';
 import { SortableCampoRow }   from './SortableCampoRow';
 import { VistaPreviewDialog } from './VistaPreviewDialog';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+const opcionesDe = texto => texto.split(',').map(o => o.trim()).filter(Boolean);
+
+// Reglas del formulario de campo. `_secciones` son las secciones que ya existen en el programa.
+const ESQUEMA_CAMPO = {
+  seccion:  { etiqueta: 'Sección', reglas: [
+    r.obligatorio('Datos personales'), r.texto({ max: 100 }),
+    r.propia((valor, f) => {
+      const similar = f._secciones.find(s => s.toLowerCase() === valor.trim().toLowerCase() && s !== valor.trim());
+      return similar ? `Ya existe la sección "${similar}" escrita distinto. Selecciónala del listado.` : '';
+    }),
+  ] },
+  etiqueta: { etiqueta: 'Etiqueta / Pregunta', reglas: [r.obligatorio('Talla de camiseta'), r.texto({ min: 2, max: 100 })] },
+  opciones: { etiqueta: 'Opciones', reglas: [
+    r.si(f => f.tipo === 'select', r.obligatorio('Talla S, Talla M, Talla L')),
+    r.si(f => f.tipo === 'select', r.propia(valor => (opcionesDe(valor).length < 2
+      ? 'Escribe al menos 2 opciones separadas por coma. Ejemplo: Talla S, Talla M, Talla L' : ''))),
+  ] },
+};
 
 export function EditorCamposDialog({ programa, onCerrar }) {
   const { campos: camposServidor, cargando, error, cargar, crearCampo, editarCampo, eliminarCampo } =
@@ -71,6 +93,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
   const seccionSimilar      = seccionesExistentes.find(
     s => s.toLowerCase() === seccionDigitada.toLowerCase() && s !== seccionDigitada
   ) ?? null;
+  const v = useValidacion(ESQUEMA_CAMPO, { ...form, _secciones: seccionesExistentes });
 
   const hayPendientes = useMemo(() => {
     if (!loadedRef.current) return false;
@@ -89,6 +112,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
   const abrirNuevo = () => {
     setForm({ ...campoVacio, seccion: seccionesExistentes[seccionesExistentes.length - 1] ?? '' });
     setEditando(null);
+    v.reiniciar();
     setFormAbierto(true);
   };
 
@@ -123,11 +147,12 @@ export function EditorCamposDialog({ programa, onCerrar }) {
       columnas:    c.columnas ?? 6,
     });
     setEditando(c);
+    v.reiniciar();
     setFormAbierto(true);
   };
 
   const handleCampoFormGuardar = () => {
-    if (!form.seccion.trim() || !form.etiqueta.trim()) return;
+    if (!v.validarTodo()) return;
     const seccion = form.seccion.trim();
     const dto = {
       seccion,
@@ -135,9 +160,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
       tipo:        form.tipo,
       obligatorio: form.obligatorio,
       columnas:    form.columnas,
-      opciones:    form.tipo === 'select'
-        ? form.opciones.split(',').map(o => o.trim()).filter(Boolean)
-        : null,
+      opciones:    form.tipo === 'select' ? opcionesDe(form.opciones) : null,
     };
     if (editando) {
       setCamposLocal(prev => prev.map(c => c.id === editando.id ? { ...c, ...dto } : c));
@@ -388,21 +411,21 @@ export function EditorCamposDialog({ programa, onCerrar }) {
                 renderInput={(params) => (
                   <TextField {...params} fullWidth size="small" label="Sección *" required
                     placeholder="Selecciona una existente o escribe una nueva…"
-                    error={seccionSimilar !== null}
-                    helperText={
+                    {...v.props('seccion',
                       seccionSimilar !== null
                         ? `Ya existe "${seccionSimilar}" — selecciónala del listado`
                         : seccionesExistentes.length > 0
                           ? 'Selecciona una existente o escribe el nombre de una nueva'
                           : 'Escribe el nombre de la primera sección'
-                    }
+                    )}
+                    error={seccionSimilar !== null || !!v.err('seccion')}
                   />
                 )}
               />
             </Grid>
             <Grid size={12}>
               <TextField fullWidth size="small" label="Etiqueta / Pregunta *" required
-                value={form.etiqueta} onChange={set('etiqueta')} />
+                value={form.etiqueta} onChange={set('etiqueta')} {...v.props('etiqueta')} />
             </Grid>
             <Grid size={12}>
               <FormControl fullWidth size="small">
@@ -417,9 +440,10 @@ export function EditorCamposDialog({ programa, onCerrar }) {
             </Grid>
             {form.tipo === 'select' && (
               <Grid size={12}>
-                <TextField fullWidth size="small" label="Opciones (separadas por coma)"
+                <TextField fullWidth size="small" label="Opciones (separadas por coma) *"
                   placeholder="Ej: Talla S, Talla M, Talla L"
-                  value={form.opciones} onChange={set('opciones')} />
+                  value={form.opciones} onChange={set('opciones')}
+                  {...v.props('opciones', 'Escribe cada opción separada por una coma')} />
               </Grid>
             )}
             <Grid size={12}>
@@ -444,10 +468,10 @@ export function EditorCamposDialog({ programa, onCerrar }) {
             </Grid>
           </Grid>
         </DialogContent>
+        <ResumenErrores {...v.resumen} accion={editando ? 'actualizar el campo' : 'agregar el campo'} />
         <DialogActions sx={{ px: 2, py: 1.5 }}>
           <Button onClick={() => setFormAbierto(false)}>Cancelar</Button>
           <Button variant="contained" onClick={handleCampoFormGuardar}
-            disabled={!form.etiqueta.trim() || !seccionDigitada || seccionSimilar !== null}
             sx={{ bgcolor: COLOR }}>
             {editando ? 'Actualizar' : 'Agregar'}
           </Button>

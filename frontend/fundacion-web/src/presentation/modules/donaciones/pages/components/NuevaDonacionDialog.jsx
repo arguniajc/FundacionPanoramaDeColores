@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Autocomplete, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent,
-  DialogTitle, FormControl, FormControlLabel, Grid, InputAdornment, InputLabel, MenuItem,
+  DialogTitle, FormControl, FormControlLabel, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem,
   Select, TextField, ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
@@ -15,6 +15,37 @@ import { COLOR_DONACIONES, COLOR_ESPECIE, hoy } from './helpers';
 import { CampoUnidadMedida } from '@/shared/components/form/FormControles';
 import { CATEGORIAS_INVENTARIO } from '@/shared/utils/geodata';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+const enDinero  = form => form.tipo === 'dinero';
+const enEspecie = form => form.tipo === 'especie';
+
+// Reglas del formulario: cada una dice qué está mal y cómo llenarlo.
+// `donante` e `itemSel` viven en estados aparte y se agregan al validar.
+const ESQUEMA = {
+  donante:        { etiqueta: 'Donante',        reglas: [r.seleccion('escribe "Fundación Éxito" y elige de la lista')] },
+  monto:          { etiqueta: 'Monto',          reglas: [r.si(enDinero, r.obligatorio('150000')), r.si(enDinero, r.monto('150000'))] },
+  cuentaContabId: { etiqueta: 'Cuenta destino', reglas: [r.si(f => enDinero(f) && f.registrarContabilidad, r.seleccion('Caja general o la cuenta bancaria'))] },
+  nombreItem:     { etiqueta: 'Nombre del artículo', reglas: [
+    r.si(f => enEspecie(f) && !f.itemSel, r.obligatorio('Cuadernos o Arroz en bolsa de 1 kg')),
+    r.si(f => enEspecie(f) && !f.itemSel, r.texto({ min: 3, max: 150, ejemplo: 'Cuadernos' })),
+  ] },
+  cantidad:       { etiqueta: 'Cantidad', reglas: [
+    r.si(enEspecie, r.obligatorio('20')),
+    r.si(enEspecie, r.numero({ ejemplo: '20' })),
+    r.si(enEspecie, r.propia(v => (v !== '' && Number(v) <= 0 ? 'La cantidad debe ser mayor que 0. Ejemplo: 20' : ''))),
+  ] },
+  stockMinimoInv: { etiqueta: 'Stock mínimo', reglas: [
+    r.si(f => enEspecie(f) && f.ingresarInventario && !f.itemSel, r.numero({ min: 0, entero: true, ejemplo: '5' })),
+  ] },
+  fechaDonacion:  { etiqueta: 'Fecha', reglas: [
+    r.fecha({ ejemplo: '2026-03-15' }),
+    // No futura, comparada con hoy() (el mismo valor que se pone por defecto)
+    r.propia(v => (v && v > hoy() ? 'La fecha no puede ser futura. Revisa el día y el año.' : '')),
+  ] },
+};
 
 const VACIO = {
   tipo: 'dinero', monto: '', nombreItem: '',
@@ -37,11 +68,14 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
   const [itemSel,    setItemSel]    = useState(null);
   const [cuentas,    setCuentas]    = useState([]);
   const [catDonId,   setCatDonId]   = useState(null);
+  const v = useValidacion(ESQUEMA, { ...form, donante, itemSel });
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (!open) return;
     setForm({ ...VACIO, fechaDonacion: hoy() });
     setError('');
+    reiniciar();
     setItemSel(null);
     setOpsItem([]);
     if (donanteInicial) {
@@ -60,7 +94,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
         if (cat) setCatDonId(cat.id);
       })
       .catch(() => { /* opcional: sin la categoría solo se omite el registro contable */ });
-  }, [open, donanteInicial]);
+  }, [open, donanteInicial, reiniciar]);
 
   useEffect(() => {
     if (!form.sedeId) { setProgramas([]); return; }
@@ -91,16 +125,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
   }, []);
 
   const guardar = async () => {
-    if (!donante) { setError('Debe seleccionar un donante.'); return; }
-    if (form.tipo === 'dinero' && (!form.monto || Number(form.monto) <= 0)) {
-      setError('El monto es obligatorio para donaciones en dinero.'); return;
-    }
-    if (form.tipo === 'especie' && (!form.cantidad || Number(form.cantidad) <= 0)) {
-      setError('La cantidad es obligatoria.'); return;
-    }
-    if (form.tipo === 'especie' && !itemSel && !form.nombreItem.trim()) {
-      setError('Debe indicar el artículo o su nombre.'); return;
-    }
+    if (!v.validarTodo()) return;
     setGuardando(true); setError('');
     try {
       const { data } = await donacionesRepository.crear({
@@ -181,7 +206,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
               loading={buscandoD}
               noOptionsText="Escriba para buscar…"
               renderInput={p => (
-                <TextField {...p} size="small" label="Donante *"
+                <TextField {...p} size="small" label="Donante *" {...v.props('donante')}
                   InputProps={{ ...(p.InputProps ?? {}), endAdornment: <>{buscandoD && <CircularProgress size={16} />}{p.InputProps?.endAdornment}</> }}
                 />
               )}
@@ -209,7 +234,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
               <TextField fullWidth size="small" label="Monto *" type="number"
                 value={form.monto} onChange={e => set('monto', e.target.value)}
                 InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
-                helperText="El número de recibo se genera automáticamente" />
+                {...v.props('monto', 'El número de recibo se genera automáticamente')} />
             </Grid>
             <Grid size={12}>
               <FormControlLabel
@@ -227,10 +252,11 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
             </Grid>
             {form.registrarContabilidad && (
               <Grid size={12}>
-                <FormControl fullWidth size="small" required>
+                <FormControl fullWidth size="small" required error={!!v.err('cuentaContabId')}>
                   <InputLabel>Cuenta destino *</InputLabel>
                   <Select value={form.cuentaContabId} label="Cuenta destino *"
-                    onChange={e => set('cuentaContabId', e.target.value)}>
+                    onChange={e => set('cuentaContabId', e.target.value)}
+                    onBlur={() => v.tocar('cuentaContabId')}>
                     <MenuItem value=""><em>Seleccione una cuenta…</em></MenuItem>
                     {cuentas.map(c => (
                       <MenuItem key={c.id} value={c.id}>
@@ -238,6 +264,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
                       </MenuItem>
                     ))}
                   </Select>
+                  {v.err('cuentaContabId') && <FormHelperText>{v.err('cuentaContabId')}</FormHelperText>}
                 </FormControl>
               </Grid>
             )}
@@ -270,12 +297,12 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
               <Grid size={12}>
                 <TextField fullWidth size="small" label="Nombre del artículo *"
                   value={form.nombreItem} onChange={e => set('nombreItem', e.target.value)}
-                  placeholder="Ej: Ropa, alimentos, útiles escolares…" />
+                  placeholder="Ej: Ropa, alimentos, útiles escolares…" {...v.props('nombreItem')} />
               </Grid>
             )}
             <Grid size={6}>
               <TextField fullWidth size="small" label="Cantidad *" type="number"
-                value={form.cantidad} onChange={e => set('cantidad', e.target.value)} />
+                value={form.cantidad} onChange={e => set('cantidad', e.target.value)} {...v.props('cantidad')} />
             </Grid>
             <Grid size={6}>
               <CampoUnidadMedida value={form.unidadMedida} onChange={v => set('unidadMedida', v)} />
@@ -309,7 +336,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
                   value={form.stockMinimoInv}
                   onChange={e => set('stockMinimoInv', e.target.value)}
                   inputProps={{ min: 0, step: 1 }}
-                  helperText="Alerta de stock bajo (opcional)" />
+                  {...v.props('stockMinimoInv', 'Alerta de stock bajo (opcional)')} />
               </Grid>
             </>}
           </>}
@@ -337,7 +364,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
           <Grid size={5}>
             <TextField fullWidth size="small" label="Fecha" type="date"
               value={form.fechaDonacion} onChange={e => set('fechaDonacion', e.target.value)}
-              InputLabelProps={{ shrink: true }} />
+              InputLabelProps={{ shrink: true }} {...v.props('fechaDonacion')} />
           </Grid>
           <Grid size={7}>
             <TextField fullWidth size="small" label="Descripción" value={form.descripcion}
@@ -345,6 +372,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
           </Grid>
         </Grid>
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion="registrar la donación" />
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}

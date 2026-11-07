@@ -15,6 +15,45 @@ import { TabPaginaWeb }   from './components/TabPaginaWeb';
 import { TabSmtp }        from './components/TabSmtp';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r, vacio } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+// Reglas propias de esta pantalla
+const url = (ejemplo = 'https://fundacionpanoramadecolores.org') => r.propia(v =>
+  (vacio(v) || /^https?:\/\/[^\s.]+\.\S+$/i.test(String(v).trim())
+    ? '' : `Debe ser una dirección web completa que empiece por http:// o https://. Ejemplo: ${ejemplo}`));
+const whatsapp = r.propia(v =>
+  (vacio(v) || /^\d{10,13}$/.test(String(v).replace(/\s/g, ''))
+    ? '' : 'Escribe solo números con el indicativo del país, sin + ni espacios. Ejemplo: 573226012056'));
+// Teléfono público: se acepta el indicativo +57 al inicio (ej. +57 322 602 2056)
+const telefonoPublico = r.propia(v => r.telefono()(vacio(v) ? v : String(v).trim().replace(/^\+57/, '')));
+// SMTP: solo se exige el servidor cuando se está configurando el correo
+const configurandoSmtp = f => [f.smtpHost, f.smtpUsuario, f.smtpClave, f.smtpDeNombre, f.smtpDeEmail].some(x => !vacio(x));
+
+// Reglas de toda la configuración (se guarda todo con un solo botón). `tab` indica la pestaña del campo.
+// Los campos de la Página Web se aplanan con el prefijo `web…` (ver datosValidacion).
+const ESQUEMA = {
+  nit:             { tab: 0, etiqueta: 'Fundación · NIT',      reglas: [r.nit()] },
+  telefono:        { tab: 0, etiqueta: 'Fundación · Teléfono', reglas: [r.telefono()] },
+  nombreRepLegal:  { tab: 1, etiqueta: 'Representante · Nombre completo', reglas: [r.nombreCompleto('María Pérez Gómez')] },
+  documentoRep:    { tab: 1, etiqueta: 'Representante · Número de documento', reglas: [r.documentoSegunTipo('tipoDocRep')] },
+  emailContacto:   { tab: 3, etiqueta: 'Textos · Correo de contacto', reglas: [r.correo('contacto@fundacionpanoramadecolores.org')] },
+  sitioWeb:        { tab: 3, etiqueta: 'Textos · Sitio web',          reglas: [url()] },
+  webDonWhatsapp:  { tab: 4, etiqueta: 'Página Web · WhatsApp para donaciones', reglas: [whatsapp] },
+  webDonEmail:     { tab: 4, etiqueta: 'Página Web · Email para donaciones',    reglas: [r.correo()] },
+  webConTelefono:  { tab: 4, etiqueta: 'Página Web · Teléfono de contacto',     reglas: [telefonoPublico] },
+  webConEmail:     { tab: 4, etiqueta: 'Página Web · Email de contacto',        reglas: [r.correo()] },
+  webConInstagram: { tab: 4, etiqueta: 'Página Web · URL Instagram', reglas: [url('https://www.instagram.com/fundacionpanoramadecolores/')] },
+  webConTiktok:    { tab: 4, etiqueta: 'Página Web · URL TikTok',    reglas: [url('https://www.tiktok.com/@fundapanoramadecolores')] },
+  webConWhatsapp:  { tab: 4, etiqueta: 'Página Web · WhatsApp',      reglas: [whatsapp] },
+  smtpHost:        { tab: 5, etiqueta: 'Correo · Servidor SMTP', reglas: [r.si(configurandoSmtp, r.obligatorio('smtp.gmail.com'))] },
+  smtpPuerto:      { tab: 5, etiqueta: 'Correo · Puerto', reglas: [
+    r.si(configurandoSmtp, r.obligatorio('587')), r.numero({ min: 1, max: 65535, entero: true, ejemplo: '587' }),
+  ] },
+  smtpUsuario:     { tab: 5, etiqueta: 'Correo · Usuario / Email de envío', reglas: [r.si(configurandoSmtp, r.obligatorio('fundacion@gmail.com')), r.texto({ max: 200 })] }, // algunos proveedores usan un usuario que no es correo (p. ej. 'apikey')
+  smtpDeEmail:     { tab: 5, etiqueta: 'Correo · Email del remitente',      reglas: [r.correo('donaciones@fundacion.org')] },
+};
 
 export default function ConfiguracionPage() {
   const { actualizarConfig } = useConfiguracion();
@@ -27,6 +66,19 @@ export default function ConfiguracionPage() {
   const [error,      setError]     = useState('');
   const [toast,      setToast]     = useState('');
   const [avisoRep,   setAvisoRep]  = useState(false);
+
+  // Datos a validar: el formulario general más los campos de contacto de la Página Web
+  const datosValidacion = {
+    ...form,
+    webDonWhatsapp:  webForm.donaciones?.whatsapp,
+    webDonEmail:     webForm.donaciones?.email,
+    webConTelefono:  webForm.contacto?.telefono,
+    webConEmail:     webForm.contacto?.email,
+    webConInstagram: webForm.contacto?.instagram,
+    webConTiktok:    webForm.contacto?.tiktok,
+    webConWhatsapp:  webForm.contacto?.whatsapp,
+  };
+  const v = useValidacion(ESQUEMA, datosValidacion);
 
   useEffect(() => {
     configuracionRepository.obtener()
@@ -90,6 +142,12 @@ export default function ConfiguracionPage() {
   );
 
   const handleGuardar = async () => {
+    if (!v.validarTodo()) {
+      // Lleva a la pestaña del primer dato mal llenado para que se vea el campo marcado
+      const primero = Object.keys(v.errores)[0];
+      if (primero) setTab(ESQUEMA[primero].tab);
+      return;
+    }
     setGuardando(true); setError('');
     try {
       const { data } = await configuracionRepository.guardar({
@@ -173,14 +231,15 @@ export default function ConfiguracionPage() {
             </Tabs>
           </Box>
 
-          {tab === 0 && <TabFundacion   form={form} set={set} />}
-          {tab === 1 && <TabRepLegal    form={form} set={set} setForm={setForm} />}
+          {tab === 0 && <TabFundacion   form={form} set={set} v={v} />}
+          {tab === 1 && <TabRepLegal    form={form} set={set} setForm={setForm} v={v} />}
           {tab === 2 && <TabApariencia  form={form} setForm={setForm} />}
-          {tab === 3 && <TabTextos      form={form} set={set} />}
-          {tab === 4 && <TabPaginaWeb   webForm={webForm} setWebForm={setWebForm} />}
-          {tab === 5 && <TabSmtp        form={form} set={set} />}
+          {tab === 3 && <TabTextos      form={form} set={set} v={v} />}
+          {tab === 4 && <TabPaginaWeb   webForm={webForm} setWebForm={setWebForm} v={v} />}
+          {tab === 5 && <TabSmtp        form={form} set={set} v={v} />}
 
           <Divider sx={{ my: 3 }} />
+          <ResumenErrores {...v.resumen} accion="guardar la configuración" sx={{ mx: 0, mt: 0, mb: 2 }} />
           <Box display="flex" justifyContent="flex-end">
             <Button variant="contained" startIcon={<SaveIcon />} onClick={handleGuardar} disabled={guardando}
               sx={{ bgcolor: COLOR, px: 3, '&:hover': { bgcolor: COLOR, opacity: 0.9 } }}>

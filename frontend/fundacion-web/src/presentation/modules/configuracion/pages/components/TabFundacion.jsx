@@ -1,7 +1,7 @@
 import { Grid, TextField } from '@mui/material';
 import { Seccion } from './Seccion';
 
-export function TabFundacion({ form, set }) {
+export function TabFundacion({ form, set, v }) {
   return (
     <Seccion titulo="Datos de la Fundación">
       <Grid container spacing={2.5}>
@@ -10,10 +10,12 @@ export function TabFundacion({ form, set }) {
             value={form.nombreFundacion} onChange={set('nombreFundacion')} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField fullWidth size="small" label="NIT" value={form.nit} onChange={set('nit')} />
+          <TextField fullWidth size="small" label="NIT" value={form.nit} onChange={set('nit')}
+            {...v.props('nit', 'Solo números y, si aplica, guion y dígito de verificación. Ej: 900123456-7')} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField fullWidth size="small" label="Teléfono" value={form.telefono} onChange={set('telefono')} />
+          <TextField fullWidth size="small" label="Teléfono" value={form.telefono} onChange={set('telefono')}
+            {...v.props('telefono')} />
         </Grid>
         <Grid size={12}>
           <TextField fullWidth size="small" label="Dirección" value={form.direccion} onChange={set('direccion')} />

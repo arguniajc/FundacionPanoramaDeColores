@@ -104,7 +104,7 @@ export function TabReporteContador({
                   { label: 'Total Egresos',  value: reporte.totalEgresos,  color: 'error'   },
                   { label: 'Balance',        value: reporte.balance,       color: reporte.balance >= 0 ? 'primary' : 'error' },
                 ].map(({ label, value, color }) => (
-                  <Grid item xs={12} sm={4} key={label}>
+                  <Grid size={{ xs: 12, sm: 4 }} key={label}>
                     <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: `${color}.50`, borderRadius: 1 }}>
                       <Typography variant="caption" color="text.secondary">{label}</Typography>
                       <Typography variant="h6" fontWeight="bold" color={`${color}.main`}>
@@ -118,7 +118,7 @@ export function TabReporteContador({
           </Card>
 
           <Grid container spacing={2} mb={2}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Card>
                 <CardContent>
                   <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Por Cuenta PUC</Typography>
@@ -155,7 +155,7 @@ export function TabReporteContador({
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Card>
                 <CardContent>
                   <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Por Programa</Typography>

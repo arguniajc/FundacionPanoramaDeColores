@@ -1,8 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useConfirm } from '@/shared/components/ConfirmDialog';
 import {
-  Box, Typography, Grid, Button, TextField, Dialog, DialogTitle, DialogContent,
-  DialogActions, MenuItem, IconButton, Tooltip,
+  Box, Typography, Grid, Button, TextField, IconButton, Tooltip,
   Chip, Avatar, Divider, CircularProgress, Snackbar, Alert, InputAdornment,
 } from '@mui/material';
 import AddIcon             from '@mui/icons-material/Add';
@@ -18,7 +17,7 @@ import EmailIcon           from '@mui/icons-material/Email';
 import PhoneIcon           from '@mui/icons-material/Phone';
 import LocationOnIcon      from '@mui/icons-material/LocationOn';
 import { donantesRepository } from '@/infrastructure/repositories/donantesRepository';
-import { CampoDocumento, SelectorUbicacion } from '@/shared/components/form/FormControles';
+import { DonanteDialog } from '@/presentation/modules/donaciones/pages/components/DonanteDialog';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const COLOR = 'var(--color-secundario)';
@@ -162,106 +161,6 @@ function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) {
   );
 }
 
-// ── Dialog: Nuevo / Editar donante ────────────────────────────────────────────
-const VACIO = { nombre: '', tipo: 'persona', tipoDocumento: '', documento: '', email: '', telefono: '', pais: 'Colombia', departamento: '', ciudad: '', notas: '' };
-
-function DonanteDialog({ open, donante, onClose, onGuardado }) {
-  const editando = !!donante;
-  const [form,      setForm]      = useState(VACIO);
-  const [guardando, setGuardando] = useState(false);
-  const [error,     setError]     = useState('');
-
-  useEffect(() => {
-    if (open) {
-      setForm(donante
-        ? { nombre: donante.nombre, tipo: donante.tipo,
-            tipoDocumento: donante.tipoDocumento ?? '', documento: donante.documento ?? '',
-            email: donante.email ?? '', telefono: donante.telefono ?? '',
-            pais: donante.pais ?? 'Colombia', departamento: donante.departamento ?? '',
-            ciudad: donante.ciudad ?? '', notas: donante.notas ?? '' }
-        : VACIO);
-      setError('');
-    }
-  }, [open, donante]);
-
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
-
-  const guardar = async () => {
-    if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); return; }
-    setGuardando(true); setError('');
-    try {
-      const payload = { ...form, nombre: form.nombre.trim() };
-      const { data } = editando
-        ? await donantesRepository.editar(donante.id, payload)
-        : await donantesRepository.crear(payload);
-      onGuardado(data, editando);
-    } catch (e) {
-      setError(mensajeErrorApi(e, { accion: 'guardar el donante', conflicto: 'Ya existe un donante con ese documento.' }));
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 800, color: COLOR }}>
-        {editando ? 'Editar donante' : 'Nuevo donante'}
-      </DialogTitle>
-      <DialogContent dividers>
-        {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
-        <Grid container spacing={2}>
-          <Grid size={8}>
-            <TextField fullWidth size="small" label="Nombre *" value={form.nombre}
-              onChange={e => set('nombre', e.target.value)} />
-          </Grid>
-          <Grid size={4}>
-            <TextField select fullWidth size="small" label="Tipo"
-              value={form.tipo} onChange={e => set('tipo', e.target.value)}>
-              <MenuItem value="persona">Persona</MenuItem>
-              <MenuItem value="empresa">Empresa</MenuItem>
-            </TextField>
-          </Grid>
-          <Grid size={12}>
-            <CampoDocumento
-              tipoDocumento={form.tipoDocumento}
-              documento={form.documento}
-              onChangeTipo={v => set('tipoDocumento', v)}
-              onChangeNumero={v => set('documento', v)}
-              labelNumero="Documento / NIT"
-            />
-          </Grid>
-          <Grid size={12}>
-            <SelectorUbicacion
-              pais={form.pais} departamento={form.departamento} ciudad={form.ciudad}
-              onChange={set}
-            />
-          </Grid>
-          <Grid size={6}>
-            <TextField fullWidth size="small" label="Email" type="email" value={form.email}
-              onChange={e => set('email', e.target.value)} />
-          </Grid>
-          <Grid size={6}>
-            <TextField fullWidth size="small" label="Teléfono" value={form.telefono}
-              onChange={e => set('telefono', e.target.value)} />
-          </Grid>
-          <Grid size={12}>
-            <TextField fullWidth size="small" label="Notas" multiline rows={2} value={form.notas}
-              onChange={e => set('notas', e.target.value)} />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
-        <Button variant="contained" onClick={guardar} disabled={guardando}
-          sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: '#1e7a38' } }}>
-          {guardando ? <CircularProgress size={20} color="inherit" /> : editando ? 'Guardar' : 'Crear donante'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-// ── Página principal ──────────────────────────────────────────────────────────
 export default function DonantesPage() {
   const confirm = useConfirm();
   const [donantes,  setDonantes]  = useState([]);

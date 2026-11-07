@@ -14,10 +14,12 @@ import { generarPdfInscripcion }   from '@/shared/utils/generarPdfInscripcion';
 import { sedesRepository }         from '@/infrastructure/repositories/sedesRepository';
 import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
 import { mensajeErrorApi }         from '@/shared/utils/mensajeErrorApi';
+import ResumenErrores              from '@/shared/components/ResumenErrores';
 import {
   COLOR, CampoInput, FirmaAutorizacion, SeccionHeader,
   agruparPorSeccion, calcEdad, chipEstado, fmtFechaCorta,
 } from './campos';
+import { erroresCamposDinamicos } from './validacionFormulario';
 
 export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [campos,        setCampos]        = useState([]);
@@ -31,6 +33,8 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [error,         setError]         = useState('');
   const [beneficiario,  setBeneficiario]  = useState(null);
   const [programa,      setPrograma]      = useState(null);
+  const [intentado,     setIntentado]     = useState(false); // ya se intentó guardar: mostrar errores en los campos
+  const [verResumen,    setVerResumen]    = useState(false);
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -72,7 +76,15 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       .finally(() => setCargando(false));
   }, [inscripcion.id]);
 
+  // Errores de los campos del programa (obligatorios y formato), con el mismo criterio que al inscribir
+  const errores    = editando ? erroresCamposDinamicos(campos, datos, panelActivo) : {};
+  const hayErrores = Object.keys(errores).length > 0;
+  const errCampo   = id => (intentado ? (errores[id] ?? '') : '');
+
+  const cerrarEdicion = () => { setEditando(false); setError(''); setIntentado(false); setVerResumen(false); };
+
   const handleGuardar = async () => {
+    if (hayErrores) { setIntentado(true); setVerResumen(true); return; }
     setGuardando(true);
     setError('');
     try {
@@ -81,7 +93,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         observaciones: observaciones.trim() || null,
       });
       onActualizada(result.data);
-      setEditando(false);
+      cerrarEdicion();
     } catch (err) {
       setError(mensajeErrorApi(err, { accion: 'guardar los cambios de la inscripción' }));
     } finally {
@@ -340,6 +352,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                         onChange={v => setDatos(prev => ({ ...prev, [c.id]: v }))}
                         activo={esPanel ? activo : undefined}
                         onToggle={(c.tipo === 'datos_padre' || c.tipo === 'datos_madre') && tienePadreMadre ? () => handleTogglePanelEdit(c) : undefined}
+                        error={errCampo(c.id)}
                       />
                     </Grid>
                   );
@@ -462,6 +475,9 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         )}
       </DialogContent>
 
+      <ResumenErrores visible={editando && verResumen && hayErrores} errores={errores}
+        etiqueta={id => campos.find(c => String(c.id) === id)?.etiqueta ?? id}
+        onClose={() => setVerResumen(false)} accion="guardar los cambios" />
       {error && (
         <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
           {error}
@@ -472,7 +488,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         <Box flex={1} />
         {editando ? (
           <>
-            <Button onClick={() => { setEditando(false); setError(''); }} disabled={guardando}>
+            <Button onClick={cerrarEdicion} disabled={guardando}>
               Cancelar
             </Button>
             <Button variant="contained" onClick={handleGuardar}

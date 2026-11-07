@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent,
-  DialogTitle, Divider, Grid, IconButton, MenuItem, Paper,
+  DialogTitle, Divider, FormHelperText, Grid, IconButton, MenuItem, Paper,
   TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from '@mui/material';
 import AccessTimeIcon    from '@mui/icons-material/AccessTime';
@@ -14,6 +14,9 @@ import RepeatIcon        from '@mui/icons-material/Repeat';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
 
 const COLOR = BRAND_COLOR;
 
@@ -27,6 +30,45 @@ const DIAS = [
   { value: 0, label: 'Domingo'   },
 ];
 const DIAS_CORTO = { 0:'Dom', 1:'Lun', 2:'Mar', 3:'Mié', 4:'Jue', 5:'Vie', 6:'Sáb' };
+
+const MSG_HORAS = 'la hora fin debe ser posterior a la hora inicio. Ejemplo: 08:00 – 10:00';
+
+// La hora fin debe ser posterior a la hora de inicio del mismo formulario
+const horaDespuesDe = campoInicio => r.propia((v, f) =>
+  (!v || !f[campoInicio] || v > f[campoInicio] ? '' : `La ${MSG_HORAS}`));
+
+// Cada día adicional debe tener fecha, hora inicio y hora fin, con la fin posterior al inicio
+const diasCompletos = r.propia(dias => {
+  for (const [i, d] of (dias ?? []).entries()) {
+    if (!d.fecha || !d.horaInicio || !d.horaFin)
+      return `El día ${i + 1} está incompleto: llena fecha, hora inicio y hora fin. Ejemplo: 2025-03-15, 08:00 – 10:00`;
+    if (d.horaFin <= d.horaInicio) return `En el día ${i + 1}, ${MSG_HORAS}`;
+  }
+  return '';
+});
+
+// Reglas del evento único
+const ESQUEMA_UNICO = {
+  titulo:          { etiqueta: 'Título',      reglas: [r.obligatorio('Taller de pintura'), r.texto({ min: 3, max: 200 })] },
+  fecha:           { etiqueta: 'Fecha',       reglas: [r.obligatorio('2025-03-15'), r.fecha({ ejemplo: '2025-03-15' })] },
+  horaInicio:      { etiqueta: 'Hora inicio', reglas: [r.obligatorio('08:00')] },
+  horaFin:         { etiqueta: 'Hora fin',    reglas: [horaDespuesDe('horaInicio')] },
+  diasAdicionales: { etiqueta: 'Días adicionales', reglas: [diasCompletos] },
+};
+
+// Reglas de las sesiones recurrentes
+const ESQUEMA_RECURRENTE = {
+  programaId: { etiqueta: 'Programa', reglas: [r.seleccion('Fútbol infantil')] },
+  diasSemana: { etiqueta: 'Días de la semana', reglas: [
+    r.propia(v => (!v?.length ? 'Selecciona al menos un día. Ejemplo: Lunes y Miércoles' : '')),
+  ] },
+  horaInicio: { etiqueta: 'Hora inicio', reglas: [r.obligatorio('08:00')] },
+  horaFin:    { etiqueta: 'Hora fin',    reglas: [r.obligatorio('10:00'), horaDespuesDe('horaInicio')] },
+  fechaInicioVigencia: { etiqueta: 'Fecha inicio de vigencia', reglas: [r.fecha({ ejemplo: '2025-02-03' })] },
+  fechaFinVigencia:    { etiqueta: 'Fecha fin de vigencia',    reglas: [
+    r.fecha({ ejemplo: '2025-11-28' }), r.fechaDesde('fechaInicioVigencia', 'la fecha de inicio de vigencia'),
+  ] },
+};
 
 function toggleDia(dias, v) {
   const ord = x => x === 0 ? 7 : x;
@@ -52,10 +94,15 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
   const [recur,  setRecur]  = useState(EMPTY_RECURRENTE);
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
+  const vU = useValidacion(ESQUEMA_UNICO, unico);
+  const vR = useValidacion(ESQUEMA_RECURRENTE, recur);
+  const v  = tipo === 'unico' ? vU : vR;   // validación del tipo elegido
+  const reiniciarU = vU.reiniciar, reiniciarR = vR.reiniciar;
 
   useEffect(() => {
     if (!open) return;
     setError('');
+    reiniciarU(); reiniciarR();
     setTipo('unico');
     setUnico({
       ...EMPTY_UNICO,
@@ -64,30 +111,17 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
       horaInicio:  fechaInicialSugerida?.length > 10 ? fechaInicialSugerida.slice(11, 16) : '08:00',
     });
     setRecur({ ...EMPTY_RECURRENTE, programaId: programas[0]?.id ?? '' });
-  }, [open, programas, fechaInicialSugerida]);
+  }, [open, programas, fechaInicialSugerida, reiniciarU, reiniciarR]);
 
   const setU = k => e => setUnico(p => ({ ...p, [k]: e.target.value }));
   const setR = k => e => setRecur(p => ({ ...p, [k]: e.target.value }));
 
   const guardar = async () => {
+    if (!v.validarTodo()) return;
     setError('');
     setSaving(true);
     try {
       if (tipo === 'unico') {
-        if (!unico.titulo.trim()) { setError('El título es obligatorio.'); return; }
-        if (!unico.fecha)          { setError('La fecha es obligatoria.'); return; }
-        if (!unico.horaInicio)     { setError('La hora de inicio es obligatoria.'); return; }
-        if (unico.horaFin && unico.horaFin <= unico.horaInicio) {
-          setError('La hora de fin debe ser posterior a la de inicio.'); return;
-        }
-        for (const dia of unico.diasAdicionales) {
-          if (!dia.fecha || !dia.horaInicio || !dia.horaFin) {
-            setError('Completa todos los campos de los días adicionales.'); return;
-          }
-          if (dia.horaFin <= dia.horaInicio) {
-            setError('En días adicionales, la hora de fin debe ser posterior a la de inicio.'); return;
-          }
-        }
         await actividadesRepository.crear({
           titulo:          unico.titulo.trim(),
           descripcion:     unico.descripcion.trim() || null,
@@ -102,15 +136,6 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
           })),
         });
       } else {
-        if (!recur.programaId)         { setError('Selecciona un programa.'); return; }
-        if (recur.diasSemana.length === 0) { setError('Selecciona al menos un día.'); return; }
-        if (!recur.horaInicio || !recur.horaFin) { setError('El rango horario es obligatorio.'); return; }
-        if (recur.horaInicio >= recur.horaFin)   { setError('La hora de inicio debe ser anterior a la de fin.'); return; }
-        if (recur.fechaInicioVigencia && recur.fechaFinVigencia &&
-            recur.fechaInicioVigencia > recur.fechaFinVigencia) {
-          setError('La fecha de inicio debe ser anterior a la fecha de fin.');
-          return;
-        }
         for (const dia of recur.diasSemana) {
           await actividadesRepository.crearHorario({
             programaId:          recur.programaId,
@@ -168,7 +193,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
           <Grid container spacing={2}>
             <Grid size={12}>
               <TextField fullWidth size="small" label="Título *"
-                value={unico.titulo} onChange={setU('titulo')} />
+                value={unico.titulo} onChange={setU('titulo')} {...vU.props('titulo')} />
             </Grid>
             <Grid size={12}>
               <TextField select fullWidth size="small" label="Programa (opcional)"
@@ -180,18 +205,18 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
             <Grid size={4}>
               <TextField label="Fecha *" type="date" fullWidth size="small"
                 value={unico.fecha} onChange={setU('fecha')}
-                slotProps={{ inputLabel: { shrink: true } }} />
+                slotProps={{ inputLabel: { shrink: true } }} {...vU.props('fecha')} />
             </Grid>
             <Grid size={4}>
               <TextField label="Hora inicio *" type="time" fullWidth size="small"
                 value={unico.horaInicio} onChange={setU('horaInicio')}
-                slotProps={{ inputLabel: { shrink: true } }} />
+                slotProps={{ inputLabel: { shrink: true } }} {...vU.props('horaInicio')} />
             </Grid>
             <Grid size={4}>
               <TextField label="Hora fin" type="time" fullWidth size="small"
                 value={unico.horaFin} onChange={setU('horaFin')}
                 slotProps={{ inputLabel: { shrink: true } }}
-                helperText="Mismo día" />
+                {...vU.props('horaFin', 'Mismo día')} />
             </Grid>
             <Grid size={12}>
               <TextField fullWidth size="small" label="Lugar"
@@ -244,6 +269,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
                   </Tooltip>
                 </Box>
               ))}
+              {vU.err('diasAdicionales') && <FormHelperText error>{vU.err('diasAdicionales')}</FormHelperText>}
             </Grid>
           </Grid>
         )}
@@ -253,7 +279,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
           <Grid container spacing={2.5}>
             <Grid size={12}>
               <TextField select fullWidth size="small" label="Programa *"
-                value={recur.programaId} onChange={setR('programaId')}>
+                value={recur.programaId} onChange={setR('programaId')} {...vR.props('programaId')}>
                 {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
               </TextField>
             </Grid>
@@ -268,7 +294,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
                   const sel = recur.diasSemana.includes(d.value);
                   return (
                     <Chip key={d.value} label={d.label}
-                      onClick={() => setRecur(p => ({ ...p, diasSemana: toggleDia(p.diasSemana, d.value) }))}
+                      onClick={() => { setRecur(p => ({ ...p, diasSemana: toggleDia(p.diasSemana, d.value) })); vR.tocar('diasSemana'); }}
                       sx={{
                         cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem',
                         bgcolor: sel ? COLOR : 'transparent',
@@ -281,6 +307,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
                   );
                 })}
               </Box>
+              {vR.err('diasSemana') && <FormHelperText error>{vR.err('diasSemana')}</FormHelperText>}
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                 Selecciona uno o varios días. Se crea un horario por cada día seleccionado.
               </Typography>
@@ -289,12 +316,12 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
             <Grid size={6}>
               <TextField label="Hora inicio *" type="time" fullWidth size="small"
                 value={recur.horaInicio} onChange={setR('horaInicio')}
-                slotProps={{ inputLabel: { shrink: true } }} />
+                slotProps={{ inputLabel: { shrink: true } }} {...vR.props('horaInicio')} />
             </Grid>
             <Grid size={6}>
               <TextField label="Hora fin *" type="time" fullWidth size="small"
                 value={recur.horaFin} onChange={setR('horaFin')}
-                slotProps={{ inputLabel: { shrink: true } }} />
+                slotProps={{ inputLabel: { shrink: true } }} {...vR.props('horaFin')} />
             </Grid>
 
             <Grid size={12}>
@@ -315,13 +342,13 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
               <TextField label="Fecha inicio" type="date" fullWidth size="small"
                 value={recur.fechaInicioVigencia} onChange={setR('fechaInicioVigencia')}
                 slotProps={{ inputLabel: { shrink: true } }}
-                helperText="¿Cuándo empieza?" />
+                {...vR.props('fechaInicioVigencia', '¿Cuándo empieza?')} />
             </Grid>
             <Grid size={6}>
               <TextField label="Fecha fin" type="date" fullWidth size="small"
                 value={recur.fechaFinVigencia} onChange={setR('fechaFinVigencia')}
                 slotProps={{ inputLabel: { shrink: true } }}
-                helperText="¿Cuándo termina?" />
+                {...vR.props('fechaFinVigencia', '¿Cuándo termina?')} />
             </Grid>
 
             {/* Preview */}
@@ -383,6 +410,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
           {error}
         </Alert>
       )}
+      <ResumenErrores {...v.resumen} accion={tipo === 'unico' ? 'crear el evento' : 'crear el horario'} />
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={saving}>Cancelar</Button>

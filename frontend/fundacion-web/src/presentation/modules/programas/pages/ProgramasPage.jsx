@@ -1,7 +1,7 @@
 ﻿import { useRef, useState } from 'react';
 import {
   Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
-  Divider, FormControl, FormControlLabel, Grid, IconButton, InputLabel,
+  Divider, FormControl, FormControlLabel, FormHelperText, Grid, IconButton, InputLabel,
   MenuItem, Select, Snackbar, Switch, TextField, Tooltip, Typography,
   useMediaQuery, useTheme,
 } from '@mui/material';
@@ -21,8 +21,26 @@ import {
   leerArchivoComoDataUrl,
   redimensionarImagen,
 } from '@/presentation/modules/configuracion/pages/components/helpers';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
 
 const TIPOS_DOC = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI', 'PEP', 'PPT', 'Otro'];
+
+// Reglas del formulario de proyecto: cada una dice qué está mal y cómo llenarlo
+const conTercero = f => f.tieneTercero;
+const ESQUEMA = {
+  sedeId:              { etiqueta: 'Sede',                     reglas: [r.seleccion('Sede Principal')] },
+  nombre:              { etiqueta: 'Nombre del programa',      reglas: [r.obligatorio('Escuela de fútbol'), r.texto({ min: 3, max: 150 })] },
+  descripcion:         { etiqueta: 'Descripción',              reglas: [r.texto({ max: 500 })] },
+  cupoMaximo:          { etiqueta: 'Cupo máximo',              reglas: [r.numero({ min: 1, entero: true, unidad: 'cupos', ejemplo: '30' })] },
+  nombreTercero:       { etiqueta: 'Nombre de la entidad ejecutora', reglas: [
+    r.si(conTercero, r.obligatorio('Club Deportivo AJAZZ F.C.')), r.si(conTercero, r.texto({ min: 3, max: 200 })),
+  ] },
+  terceroRepNombre:    { etiqueta: 'Nombre del representante', reglas: [r.si(conTercero, r.nombreCompleto('Juan Carlos Pérez Gómez'))] },
+  terceroRepDocumento: { etiqueta: 'Número de documento',      reglas: [r.si(conTercero, r.documentoSegunTipo('terceroRepTipoDoc'))] },
+  terceroRepCargo:     { etiqueta: 'Cargo',                    reglas: [r.si(conTercero, r.texto({ max: 100 }))] },
+};
 
 const FORM_VACIO = {
   sedeId: '', nombre: '', descripcion: '', cupoMaximo: '',
@@ -45,15 +63,19 @@ export default function ProgramasPage() {
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const fileRef  = useRef(null);
+  const v = useValidacion(ESQUEMA, formPrograma ?? FORM_VACIO);
 
   const todosLosProgramas = sedes.flatMap(s =>
     (s.programas ?? []).map(p => ({ ...p, nombreSede: s.nombre }))
   );
 
-  const abrirNuevoPrograma = () =>
+  const abrirNuevoPrograma = () => {
+    v.reiniciar();
     setFormPrograma({ ...FORM_VACIO, sedeId: sedes[0]?.id ?? '' });
+  };
 
-  const abrirEditarPrograma = (p) =>
+  const abrirEditarPrograma = (p) => {
+    v.reiniciar();
     setFormPrograma({
       id: p.id, sedeId: p.sedeId,
       nombre: p.nombre, descripcion: p.descripcion ?? '',
@@ -65,9 +87,10 @@ export default function ProgramasPage() {
       terceroRepCargo:     p.terceroRepCargo     ?? '',
       terceroRepFirma:     p.terceroRepFirma     ?? '',
     });
+  };
 
   const handleGuardarPrograma = async () => {
-    if (!formPrograma.nombre.trim() || !formPrograma.sedeId) return;
+    if (!v.validarTodo()) return;
     setGuardandoProg(true);
     setErrForm('');
     setError('');
@@ -304,28 +327,32 @@ export default function ProgramasPage() {
           <DialogContent dividers>
             <Grid container spacing={2.5} mt={0}>
               <Grid size={12}>
-                <FormControl fullWidth size="small">
+                <FormControl fullWidth size="small" error={!!v.err('sedeId')}>
                   <InputLabel>Sede *</InputLabel>
-                  <Select label="Sede *" value={formPrograma.sedeId}
+                  <Select label="Sede *" value={formPrograma.sedeId} onBlur={() => v.tocar('sedeId')}
                     onChange={e => setFormPrograma(p => ({ ...p, sedeId: e.target.value }))}>
                     {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
                   </Select>
+                  {v.err('sedeId') && <FormHelperText>{v.err('sedeId')}</FormHelperText>}
                 </FormControl>
               </Grid>
               <Grid size={12}>
                 <TextField fullWidth size="small" label="Nombre del programa *"
                   value={formPrograma.nombre}
-                  onChange={e => setFormPrograma(p => ({ ...p, nombre: e.target.value }))} />
+                  onChange={e => setFormPrograma(p => ({ ...p, nombre: e.target.value }))}
+                  {...v.props('nombre')} />
               </Grid>
               <Grid size={12}>
                 <TextField fullWidth size="small" label="Descripción (opcional)" multiline rows={2}
                   value={formPrograma.descripcion}
-                  onChange={e => setFormPrograma(p => ({ ...p, descripcion: e.target.value }))} />
+                  onChange={e => setFormPrograma(p => ({ ...p, descripcion: e.target.value }))}
+                  {...v.props('descripcion')} />
               </Grid>
               <Grid size={12}>
                 <TextField fullWidth size="small" label="Cupo máximo (opcional)" type="number"
                   value={formPrograma.cupoMaximo}
-                  onChange={e => setFormPrograma(p => ({ ...p, cupoMaximo: e.target.value }))} />
+                  onChange={e => setFormPrograma(p => ({ ...p, cupoMaximo: e.target.value }))}
+                  {...v.props('cupoMaximo')} />
               </Grid>
               <Grid size={12}>
                 <FormControlLabel
@@ -343,10 +370,11 @@ export default function ProgramasPage() {
               {formPrograma.tieneTercero && (
                 <>
                   <Grid size={12}>
-                    <TextField fullWidth size="small" label="Nombre de la entidad ejecutora"
+                    <TextField fullWidth size="small" label="Nombre de la entidad ejecutora *"
                       placeholder="Ej: Fundación XYZ, Club Deportivo AJAZZ F.C.…"
                       value={formPrograma.nombreTercero}
-                      onChange={e => setFormPrograma(p => ({ ...p, nombreTercero: e.target.value }))} />
+                      onChange={e => setFormPrograma(p => ({ ...p, nombreTercero: e.target.value }))}
+                      {...v.props('nombreTercero')} />
                   </Grid>
 
                   {/* Separador visual */}
@@ -364,7 +392,8 @@ export default function ProgramasPage() {
                     <TextField fullWidth size="small" label="Nombre completo del representante"
                       placeholder="Ej: Juan Carlos Pérez Gómez"
                       value={formPrograma.terceroRepNombre}
-                      onChange={e => setFormPrograma(p => ({ ...p, terceroRepNombre: e.target.value }))} />
+                      onChange={e => setFormPrograma(p => ({ ...p, terceroRepNombre: e.target.value }))}
+                      {...v.props('terceroRepNombre')} />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 5 }}>
                     <FormControl fullWidth size="small">
@@ -378,13 +407,15 @@ export default function ProgramasPage() {
                   <Grid size={{ xs: 12, sm: 7 }}>
                     <TextField fullWidth size="small" label="Número de documento"
                       value={formPrograma.terceroRepDocumento}
-                      onChange={e => setFormPrograma(p => ({ ...p, terceroRepDocumento: e.target.value }))} />
+                      onChange={e => setFormPrograma(p => ({ ...p, terceroRepDocumento: e.target.value }))}
+                      {...v.props('terceroRepDocumento')} />
                   </Grid>
                   <Grid size={12}>
                     <TextField fullWidth size="small" label="Cargo"
                       placeholder="Ej: Presidente, Director Técnico…"
                       value={formPrograma.terceroRepCargo}
-                      onChange={e => setFormPrograma(p => ({ ...p, terceroRepCargo: e.target.value }))} />
+                      onChange={e => setFormPrograma(p => ({ ...p, terceroRepCargo: e.target.value }))}
+                      {...v.props('terceroRepCargo')} />
                   </Grid>
 
                   {/* Firma de la entidad */}
@@ -419,6 +450,7 @@ export default function ProgramasPage() {
               )}
             </Grid>
           </DialogContent>
+          <ResumenErrores {...v.resumen} accion={formPrograma.id ? 'guardar' : 'crear el proyecto'} />
           {errForm && (
             <Alert severity="error" onClose={() => setErrForm('')} sx={{ mx: 2, mt: 1.5, mb: 0 }}>
               {error || errForm}
@@ -427,7 +459,7 @@ export default function ProgramasPage() {
           <DialogActions sx={{ px: 2, py: 1.5 }}>
             <Button onClick={() => setFormPrograma(null)} disabled={guardandoProg}>Cancelar</Button>
             <Button variant="contained" onClick={handleGuardarPrograma}
-              disabled={guardandoProg || !formPrograma.nombre.trim() || !formPrograma.sedeId}
+              disabled={guardandoProg}
               sx={{ bgcolor: COLOR }}>
               {guardandoProg ? 'Guardando...' : 'Guardar'}
             </Button>

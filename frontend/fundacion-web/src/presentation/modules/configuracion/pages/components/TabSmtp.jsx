@@ -9,7 +9,7 @@ import { configuracionRepository } from '@/infrastructure/repositories/configura
 import { COLOR } from './helpers';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
-export function TabSmtp({ form, set }) {
+export function TabSmtp({ form, set, v }) {
   const [probando,   setProbando]   = useState(false);
   const [resultadoPrueba, setResultadoPrueba] = useState(null); // { ok, msg }
 
@@ -45,17 +45,20 @@ export function TabSmtp({ form, set }) {
           <Grid size={{ xs: 12, sm: 8 }}>
             <TextField fullWidth size="small" label="Servidor SMTP"
               placeholder="smtp.gmail.com"
-              value={form.smtpHost ?? ''} onChange={set('smtpHost')} />
+              value={form.smtpHost ?? ''} onChange={set('smtpHost')}
+              {...v.props('smtpHost')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth size="small" label="Puerto" type="number"
               value={form.smtpPuerto ?? 587} onChange={set('smtpPuerto')}
-              inputProps={{ min: 1, max: 65535 }} />
+              inputProps={{ min: 1, max: 65535 }}
+              {...v.props('smtpPuerto', 'Gmail: 587')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth size="small" label="Usuario / Email de envío"
               placeholder="fundacion@gmail.com"
-              value={form.smtpUsuario ?? ''} onChange={set('smtpUsuario')} />
+              value={form.smtpUsuario ?? ''} onChange={set('smtpUsuario')}
+              {...v.props('smtpUsuario')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth size="small" label="Contraseña de aplicación"
@@ -71,7 +74,8 @@ export function TabSmtp({ form, set }) {
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth size="small" label="Email del remitente (visible para el donante)"
               placeholder="donaciones@fundacion.org"
-              value={form.smtpDeEmail ?? ''} onChange={set('smtpDeEmail')} />
+              value={form.smtpDeEmail ?? ''} onChange={set('smtpDeEmail')}
+              {...v.props('smtpDeEmail')} />
           </Grid>
           <Grid size={12}>
             <FormControlLabel

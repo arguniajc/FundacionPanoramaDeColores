@@ -1,14 +1,26 @@
 import { useState, useEffect } from 'react';
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle,
-  FormControl, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
+  FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
 } from '@mui/material';
+import { r } from '@/shared/utils/validacion';
+import { useValidacion } from '@/shared/hooks/useValidacion';
+import ResumenErrores from '@/shared/components/ResumenErrores';
+
+// Reglas del formulario: cada una dice qué está mal y cómo llenarlo
+const ESQUEMA = {
+  categoriaId:        { etiqueta: 'Categoría PUC',        reglas: [r.seleccion('5105 — Gastos de personal')] },
+  montoPresupuestado: { etiqueta: 'Monto presupuestado', reglas: [r.obligatorio('12000000'), r.monto('12000000')] },
+};
 
 export function DialogPresupuesto({ open, modo, data, categorias, programas, presAnio, guardando, onClose, onGuardar }) {
   const [form, setForm] = useState({ anio: presAnio, categoriaId: '', programaId: '', montoPresupuestado: '' });
+  const v = useValidacion(ESQUEMA, form);
+  const { reiniciar } = v;
 
   useEffect(() => {
     if (!open) return;
+    reiniciar();
     if (modo === 'editar' && data) {
       setForm({
         anio: data.anio,
@@ -19,28 +31,40 @@ export function DialogPresupuesto({ open, modo, data, categorias, programas, pre
     } else {
       setForm({ anio: presAnio, categoriaId: '', programaId: '', montoPresupuestado: '' });
     }
-  }, [open, modo, data, presAnio]);
+  }, [open, modo, data, presAnio, reiniciar]);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const guardar = () => {
+    if (!v.validarTodo()) return;
+    onGuardar({
+      anio: parseInt(form.anio),
+      categoriaId: parseInt(form.categoriaId),
+      programaId: form.programaId || null,
+      montoPresupuestado: parseFloat(form.montoPresupuestado),
+    });
+  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{modo === 'crear' ? 'Agregar línea presupuestal' : 'Editar presupuesto'}</DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <FormControl fullWidth size="small">
+          <Grid size={12}>
+            <FormControl fullWidth size="small" error={!!v.err('categoriaId')}>
               <InputLabel>Categoría PUC *</InputLabel>
-              <Select value={form.categoriaId} label="Categoría PUC *" onChange={set('categoriaId')}>
+              <Select value={form.categoriaId} label="Categoría PUC *" onChange={set('categoriaId')}
+                onBlur={() => v.tocar('categoriaId')}>
                 {categorias.map(c => (
                   <MenuItem key={c.id} value={String(c.id)}>
                     {c.codigoPuc} — {c.nombre} ({c.tipo})
                   </MenuItem>
                 ))}
               </Select>
+              {v.err('categoriaId') && <FormHelperText>{v.err('categoriaId')}</FormHelperText>}
             </FormControl>
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <FormControl fullWidth size="small">
               <InputLabel>Programa (opcional)</InputLabel>
               <Select value={form.programaId} label="Programa (opcional)" onChange={set('programaId')}>
@@ -49,23 +73,18 @@ export function DialogPresupuesto({ open, modo, data, categorias, programas, pre
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField fullWidth label="Monto presupuestado *" type="number" size="small"
               value={form.montoPresupuestado} onChange={set('montoPresupuestado')}
+              {...v.props('montoPresupuestado')}
               InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
           </Grid>
         </Grid>
       </DialogContent>
+      <ResumenErrores {...v.resumen} accion={modo === 'crear' ? 'agregar la línea presupuestal' : 'guardar el presupuesto'} />
       <DialogActions>
         <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained"
-          disabled={!form.categoriaId || !form.montoPresupuestado || guardando}
-          onClick={() => onGuardar({
-            anio: parseInt(form.anio),
-            categoriaId: parseInt(form.categoriaId),
-            programaId: form.programaId || null,
-            montoPresupuestado: parseFloat(form.montoPresupuestado),
-          })}>
+        <Button variant="contained" disabled={guardando} onClick={guardar}>
           {guardando ? 'Guardando…' : (modo === 'crear' ? 'Agregar' : 'Guardar')}
         </Button>
       </DialogActions>

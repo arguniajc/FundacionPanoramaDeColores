@@ -35,7 +35,7 @@ public class PermisosController(PermisosService svc) : ControllerBase
     public async Task<IActionResult> ActualizarRol(string rol, [FromBody] ActualizarPermisosDto dto, CancellationToken ct)
     {
         if (rol == "administrador")
-            return BadRequest(new { error = "Los permisos del administrador no son editables." });
+            return BadRequest(new { mensaje = "Los permisos del administrador no son editables." });
 
         await svc.GuardarPermisosRolAsync(rol, dto.Permisos, ct);
         var actualizados = await svc.ObtenerPorRolAsync(rol, ct);

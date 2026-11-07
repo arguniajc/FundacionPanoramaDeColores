@@ -22,7 +22,7 @@ public class EquipoController(UsuariosService svc) : ControllerBase
     {
         var result = await svc.CrearAsync(dto, ct);
         return result.IsFailure
-            ? BadRequest(new { error = result.Error })
+            ? BadRequest(new { mensaje = result.Error })
             : Ok(result.Value);
     }
 
@@ -32,7 +32,7 @@ public class EquipoController(UsuariosService svc) : ControllerBase
     {
         var result = await svc.ActualizarAsync(id, dto, ct);
         return result.IsFailure
-            ? NotFound(new { error = result.Error })
+            ? NotFound(new { mensaje = result.Error })
             : Ok(result.Value);
     }
 
@@ -42,7 +42,7 @@ public class EquipoController(UsuariosService svc) : ControllerBase
     {
         var result = await svc.EliminarAsync(id, ct);
         return result.IsFailure
-            ? NotFound(new { error = result.Error })
+            ? NotFound(new { mensaje = result.Error })
             : NoContent();
     }
 }

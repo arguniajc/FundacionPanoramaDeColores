@@ -76,7 +76,7 @@ public class ConfiguracionController(ConfiguracionService svc, IMemoryCache cach
     {
         var result = await svc.GuardarAsync(dto, ct);
         if (result.IsFailure)
-            return BadRequest(new { error = result.Error });
+            return BadRequest(new { mensaje = result.Error });
 
         cache.Remove(CACHE_KEY);
         return Ok(result.Value);

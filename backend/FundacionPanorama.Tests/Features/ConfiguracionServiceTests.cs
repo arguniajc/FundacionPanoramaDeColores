@@ -12,11 +12,35 @@ public class ConfiguracionServiceTests
 
     public ConfiguracionServiceTests() => _sut = new(_repo.Object);
 
+    // Fábricas con argumentos por nombre: agregar campos al DTO no rompe los tests
+    private static ConfiguracionDto Config(string? nombre = null, string? colorPrimario = null,
+        string? colorSidebar = null, DateTime? updatedAt = null) => new(
+        NombreFundacion: nombre, Nit: null, Direccion: null, Telefono: null,
+        NombreRepLegal: null, TipoDocRep: null, DocumentoRep: null, CargoRep: null, FirmaRep: null,
+        ColorPrimario: colorPrimario, ColorSidebar: colorSidebar, ColorSecundario: null,
+        ColorGradiente: null, ColorOscuroFondo: null, ColorOscuroPaper: null,
+        ColorOscuroSidebar: null, ColorAccento: null, FontFamily: null, Tagline: null,
+        Mision: null, Vision: null, EmailContacto: null, SitioWeb: null,
+        MensajeBienvenida: null, FooterTexto: null, WebContenido: null,
+        SmtpHost: null, SmtpPuerto: null, SmtpUsuario: null, SmtpClaveGuardada: false,
+        SmtpDeNombre: null, SmtpDeEmail: null, SmtpSsl: false, UpdatedAt: updatedAt);
+
+    private static GuardarConfiguracionDto Guardar(string? nombre = null, string? colorPrimario = null,
+        string? colorSidebar = null) => new(
+        NombreFundacion: nombre, Nit: null, Direccion: null, Telefono: null,
+        NombreRepLegal: null, TipoDocRep: null, DocumentoRep: null, CargoRep: null, FirmaRep: null,
+        ColorPrimario: colorPrimario, ColorSidebar: colorSidebar, ColorSecundario: null,
+        ColorGradiente: null, ColorOscuroFondo: null, ColorOscuroPaper: null,
+        ColorOscuroSidebar: null, ColorAccento: null, FontFamily: null, Tagline: null,
+        Mision: null, Vision: null, EmailContacto: null, SitioWeb: null,
+        MensajeBienvenida: null, FooterTexto: null, WebContenido: null,
+        SmtpHost: null, SmtpPuerto: null, SmtpUsuario: null, SmtpClave: null,
+        SmtpDeNombre: null, SmtpDeEmail: null, SmtpSsl: false);
+
     [Fact]
     public async Task ObtenerAsync_Delega_Al_Repositorio()
     {
-        var dto = new ConfiguracionDto("Fundación", null, null, null, null, null, null, null,
-            null, "#6200ea", "#150830", null, null, null, null, null, null, null, null, null);
+        var dto = Config("Fundación", "#6200ea", "#150830");
         _repo.Setup(r => r.ObtenerAsync(default)).ReturnsAsync(dto);
 
         var result = await _sut.ObtenerAsync();
@@ -38,10 +62,8 @@ public class ConfiguracionServiceTests
     [Fact]
     public async Task GuardarAsync_Retorna_Success_Con_Config_Guardada()
     {
-        var guardarDto = new GuardarConfiguracionDto("Fundación", null, null, null, null, null,
-            null, null, null, "#6200ea", "#150830", null, null, null, null, null, null, null, null);
-        var savedDto   = new ConfiguracionDto("Fundación", null, null, null, null, null, null,
-            null, null, "#6200ea", "#150830", null, null, null, null, null, null, null, null, DateTime.UtcNow);
+        var guardarDto = Guardar("Fundación", "#6200ea", "#150830");
+        var savedDto   = Config("Fundación", "#6200ea", "#150830", DateTime.UtcNow);
         _repo.Setup(r => r.GuardarAsync(guardarDto, default)).ReturnsAsync(savedDto);
 
         var result = await _sut.GuardarAsync(guardarDto);
@@ -51,16 +73,12 @@ public class ConfiguracionServiceTests
     }
 
     [Fact]
-    public async Task GuardarAsync_Retorna_Failure_Cuando_Repositorio_Lanza_Excepcion()
+    public async Task GuardarAsync_Propaga_Excepcion_Del_Repositorio()
     {
-        var guardarDto = new GuardarConfiguracionDto(null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null);
+        var guardarDto = Guardar();
         _repo.Setup(r => r.GuardarAsync(guardarDto, default))
              .ThrowsAsync(new InvalidOperationException("BD no disponible"));
 
-        var result = await _sut.GuardarAsync(guardarDto);
-
-        Assert.False(result.IsSuccess);
-        Assert.Contains("BD no disponible", result.Error);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.GuardarAsync(guardarDto));
     }
 }

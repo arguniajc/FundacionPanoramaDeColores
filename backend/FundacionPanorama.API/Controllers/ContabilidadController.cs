@@ -214,7 +214,7 @@ public class ContabilidadController(
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { mensaje = ex.Message });
         }
     }
 
@@ -263,7 +263,7 @@ public class ContabilidadController(
         [FromBody] ExtraerFacturaRequestDto dto,
         CancellationToken ct)
     {
-        try
+        // Errores inesperados van al manejador global (log con código, sin detalle al cliente)
         {
             var ocrApiKey = configuration["OcrSpace:ApiKey"] ?? "helloworld";
             var client    = httpFactory.CreateClient();
@@ -284,7 +284,7 @@ public class ContabilidadController(
             var ocrJson = await ocrResp.Content.ReadAsStringAsync(cts.Token);
 
             if (!ocrResp.IsSuccessStatusCode)
-                return BadRequest(new { error = "Error en servicio OCR", detalle = ocrJson });
+                return BadRequest(new { mensaje = "Error en servicio OCR", detalle = ocrJson });
 
             using var doc = JsonDocument.Parse(ocrJson);
             var root      = doc.RootElement;
@@ -292,7 +292,7 @@ public class ContabilidadController(
             if (root.TryGetProperty("IsErroredOnProcessing", out var errored) && errored.GetBoolean())
             {
                 var msg = root.TryGetProperty("ErrorMessage", out var em) ? em.GetString() : "Error OCR";
-                return BadRequest(new { error = "No se pudo procesar la imagen", detalle = msg });
+                return BadRequest(new { mensaje = "No se pudo procesar la imagen", detalle = msg });
             }
 
             var parsedText = root
@@ -308,10 +308,6 @@ public class ContabilidadController(
                     Advertencia: "No se extrajo texto. Toma la foto con mejor luz y enfoque."));
 
             return Ok(ParseTextoFactura(parsedText));
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { error = "Error procesando la imagen.", detalle = ex.Message });
         }
     }
 

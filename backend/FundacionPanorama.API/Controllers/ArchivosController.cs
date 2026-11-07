@@ -50,15 +50,10 @@ public class ArchivosController : ControllerBase
         if (archivo.Length > maxBytes)
             return BadRequest(new { mensaje = esPdf ? "El PDF no puede superar 10 MB." : "La imagen no puede superar 5 MB." });
 
-        try
-        {
-            var url = await _storage.SubirAsync(archivo, carpeta);
-            return Ok(new { url });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { mensaje = $"Error al subir el archivo: {ex.Message}" });
-        }
+        // Un fallo de Supabase Storage llega al manejador global: queda en el log
+        // con código y el cliente recibe un mensaje sin detalles internos.
+        var url = await _storage.SubirAsync(archivo, carpeta);
+        return Ok(new { url });
     }
 
     // GET api/archivos/log-descargas?pagina=1&porPagina=20

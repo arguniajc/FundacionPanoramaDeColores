@@ -14,14 +14,9 @@ public class ConfiguracionService(IConfiguracionRepository repo)
 
     public async Task<Result<ConfiguracionDto>> GuardarAsync(GuardarConfiguracionDto dto, CancellationToken ct = default)
     {
-        try
-        {
-            var result = await repo.GuardarAsync(dto, ct);
-            return Result.Success(result);
-        }
-        catch (Exception ex)
-        {
-            return Result.Failure<ConfiguracionDto>($"Error al guardar configuración: {ex.Message}");
-        }
+        // Los errores de BD se propagan al manejador global, que los registra en
+        // el log con un código y responde al cliente sin detalles técnicos.
+        var result = await repo.GuardarAsync(dto, ct);
+        return Result.Success(result);
     }
 }

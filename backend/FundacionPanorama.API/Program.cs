@@ -171,12 +171,13 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
     ctx.Response.ContentType = "application/json";
     var ex       = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
     var exLogger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+    // Código corto para cruzar el mensaje que ve el usuario con el log de Render.
+    // El detalle técnico de la excepción solo va al log, nunca al cliente.
+    var codigo   = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
     if (ex is not null)
-        exLogger.LogError(ex, "❌ Excepción no manejada en {Method} {Path}",
-            ctx.Request.Method, ctx.Request.Path);
-    var msg   = ex?.Message              ?? "Error interno del servidor.";
-    var inner = ex?.InnerException?.Message ?? "";
-    await ctx.Response.WriteAsJsonAsync(new { error = msg, inner });
+        exLogger.LogError(ex, "❌ Excepción no manejada [{Codigo}] en {Method} {Path}",
+            codigo, ctx.Request.Method, ctx.Request.Path);
+    await ctx.Response.WriteAsJsonAsync(new { mensaje = "Error interno del servidor.", codigo });
 }));
 
 // Permite que Google Sign-In funcione con postMessage

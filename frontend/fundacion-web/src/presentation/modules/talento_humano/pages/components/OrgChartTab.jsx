@@ -19,6 +19,7 @@ import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r, vacio } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
+import { useArchivoUrl } from '@/shared/utils/archivos';
 
 // Reglas del diálogo de persona del organigrama
 const ESQUEMA_PERSONA = {
@@ -66,6 +67,7 @@ function HBranch({ children }) {
 
 const PersonCard = memo(function PersonCard({ persona, depth, canEdit, onEdit, onDelete, draggingId, onDragStart, onDragEnd, onDropOnto }) {
   const nombre = persona.empleadoNombre ?? persona.nombreExterno ?? '—';
+  const fotoPersona = useArchivoUrl(persona.fotoUrl);
   const color  = depthColor(depth);
   const isDragging   = draggingId === persona.id;
   const isDropTarget = draggingId && draggingId !== persona.id;
@@ -104,7 +106,7 @@ const PersonCard = memo(function PersonCard({ persona, depth, canEdit, onEdit, o
       {/* Foto — 70% de la altura de la card */}
       <Box sx={{ width: '100%', height: 120, overflow: 'hidden', bgcolor: color + '18', position: 'relative' }}>
         {persona.fotoUrl ? (
-          <Box component="img" src={persona.fotoUrl} alt={nombre}
+          <Box component="img" src={fotoPersona || undefined} alt={nombre}
             sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : (
           <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -147,6 +147,17 @@ var app = builder.Build();
     var migLogger  = app.Services.GetRequiredService<ILogger<Program>>();
     var migConnStr = app.Configuration.GetConnectionString("DefaultConnection")!;
     await DbMigrations.RunAsync(migConnStr, migLogger);
+
+    // Bucket privado para fotos y documentos personales (se crea si no existe)
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<SupabaseStorageService>().AsegurarBucketPrivadoAsync();
+    }
+    catch (Exception ex)
+    {
+        migLogger.LogError(ex, "❌ No se pudo verificar/crear el bucket privado de Storage.");
+    }
 }
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())

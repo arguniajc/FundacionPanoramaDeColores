@@ -16,6 +16,7 @@ import { mensajeErrorApi }              from '@/shared/utils/mensajeErrorApi';
 import { fmt }                          from './helpers';
 import { ModalSubirArchivoBeneficiario } from './ModalSubirArchivoBeneficiario';
 import { ConfirmarEliminar }             from './ConfirmarEliminar';
+import { abrirArchivo } from '@/shared/utils/archivos';
 
 export function TabPorBeneficiario({ onToast }) {
   const [beneficiario, setBeneficiario] = useState(null);
@@ -118,12 +119,12 @@ export function TabPorBeneficiario({ onToast }) {
                         </TableCell>
                         <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                           <Tooltip title="Ver / Imprimir">
-                            <IconButton size="small" onClick={() => window.open(a.url, '_blank', 'noopener,noreferrer')}>
+                            <IconButton size="small" onClick={() => abrirArchivo(a.url)}>
                               <VisibilityIcon fontSize="small" sx={{ color: 'var(--color-secundario)' }} />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Descargar">
-                            <IconButton size="small" component="a" href={a.url} target="_blank" rel="noopener noreferrer">
+                            <IconButton size="small" onClick={() => abrirArchivo(a.url)}>
                               <DownloadIcon fontSize="small" sx={{ color: 'var(--color-primario)' }} />
                             </IconButton>
                           </Tooltip>

@@ -16,6 +16,7 @@ import UploadFileIcon    from '@mui/icons-material/UploadFile';
 import CamaraFoto        from './CamaraFoto';
 import apiClient         from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { resolverArchivo } from '@/shared/utils/archivos';
 
 const ACCEPT_IMG = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 const ACCEPT_PDF = 'application/pdf';
@@ -158,7 +159,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
         }).catch(() => {});
       }
       const anchor    = document.createElement('a');
-      anchor.href     = value;
+      anchor.href     = await resolverArchivo(value);
       anchor.download = `documento-${beneficiarioId ?? 'beneficiario'}.pdf`;
       anchor.target   = '_blank';
       document.body.appendChild(anchor);

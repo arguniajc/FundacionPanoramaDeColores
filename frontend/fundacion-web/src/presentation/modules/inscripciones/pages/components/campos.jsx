@@ -15,6 +15,7 @@ import {
 } from '@/shared/utils/geodata';
 import FirmaPad from '@/shared/components/FirmaPad';
 import { LISTAS_POR_TIPO } from './validacionFormulario';
+import { abrirArchivo } from '@/shared/utils/archivos';
 
 export const COLOR = 'var(--color-primario)';
 
@@ -334,7 +335,7 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
         {value ? (
           <Box display="flex" alignItems="center" gap={1}>
             <Chip label="✓ Entregado" color="success" size="small" />
-            <Button size="small" onClick={() => window.open(value, '_blank', 'noopener,noreferrer')}>Ver PDF</Button>
+            <Button size="small" onClick={() => abrirArchivo(value)}>Ver PDF</Button>
             <Button size="small" color="error" onClick={() => onChange('')}>Quitar</Button>
           </Box>
         ) : (

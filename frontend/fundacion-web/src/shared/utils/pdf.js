@@ -1,8 +1,9 @@
 import { BRAND_COLOR } from '../constants/brand';
+import { resolverArchivo } from './archivos';
 
 // Genera la hoja de vida del beneficiario como HTML y la abre en una nueva
 // pestaña para impresión. Usa window.open para evitar depender de jsPDF.
-export function abrirHojaDeVida(ins, edad) {
+export async function abrirHojaDeVida(ins, edad) {
   const fechaInsc = ins.createdAt
     ? new Date(ins.createdAt).toLocaleDateString('es-CO', {
         year: 'numeric', month: 'long', day: 'numeric',
@@ -50,6 +51,8 @@ export function abrirHojaDeVida(ins, edad) {
 
   const ventana = window.open('', '_blank');
   if (!ventana) return;
+  // foto privada → enlace temporal (la pestaña ya está abierta para que el navegador no la bloquee)
+  const fotoUrl = await resolverArchivo(ins.fotoMenorUrl).catch(() => null);
 
   ventana.document.write(`<!DOCTYPE html>
 <html lang="es">
@@ -99,8 +102,8 @@ export function abrirHojaDeVida(ins, edad) {
 
 <!-- ── PORTADA ──────────────────────────────────────────────────────────── -->
 <div class="portada">
-  ${ins.fotoMenorUrl
-    ? `<img src="${ins.fotoMenorUrl}" class="avatar" alt="${ins.nombreMenor}">`
+  ${fotoUrl
+    ? `<img src="${fotoUrl}" class="avatar" alt="${ins.nombreMenor}">`
     : `<div class="avatar-placeholder">${(ins.nombreMenor || '??').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}</div>`}
   <div>
     <div style="font-size:.8rem;opacity:.75;margin-bottom:.2rem">Fundación Panorama de Colores · ${new Date().getFullYear()}</div>

@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { resolverArchivo } from './archivos';
 
 // Carga una imagen desde URL y devuelve un JPEG con fondo morado, aro blanco y foto circular recortada.
 // Usar JPEG (sin transparencia) garantiza que jsPDF renderice correctamente sobre cualquier fondo.
@@ -111,7 +112,7 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
 
   // Cargar y recortar la foto del beneficiario en círculo antes de generar el PDF
   const fotoDataUrl = beneficiario.fotoMenorUrl
-    ? await cargarImagenCircular(beneficiario.fotoMenorUrl)
+    ? await cargarImagenCircular(await resolverArchivo(beneficiario.fotoMenorUrl).catch(() => null))
     : null;
 
   // Metadatos del firmante

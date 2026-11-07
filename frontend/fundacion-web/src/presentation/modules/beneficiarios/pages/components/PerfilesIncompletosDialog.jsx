@@ -11,6 +11,7 @@ import CheckCircleIcon   from '@mui/icons-material/CheckCircle';
 import CloseIcon         from '@mui/icons-material/Close';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { useArchivoUrl } from '@/shared/utils/archivos';
 
 const CAMPO_COLOR = {
   'Foto del menor':  { bg: '#fce4ec', txt: '#c62828' },
@@ -25,7 +26,8 @@ const CAMPO_COLOR = {
   'Grado escolar':   { bg: '#e3f2fd', txt: '#1565c0' },
 };
 
-function AvatarBeneficiario({ nombre, fotoUrl }) {
+function AvatarBeneficiario({ nombre, fotoUrl: valorFoto }) {
+  const fotoUrl = useArchivoUrl(valorFoto); // privado → enlace temporal
   const inicial = (nombre || '?').charAt(0).toUpperCase();
   return (
     <Avatar src={fotoUrl || undefined}

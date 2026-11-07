@@ -10,11 +10,14 @@ import HistoryIcon  from '@mui/icons-material/History';
 import SaveIcon     from '@mui/icons-material/Save';
 import SearchIcon   from '@mui/icons-material/Search';
 import SecurityIcon from '@mui/icons-material/Security';
+import CloudIcon    from '@mui/icons-material/Cloud';
 import apiClient    from '@/infrastructure/http/apiClient';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import { exportarExcel } from '@/shared/utils/exportarExcel';
 import { useToast } from '@/shared/context/ToastContext';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { useAuth } from '@/application/auth/AuthContext';
+import TabAlmacenamiento from './TabAlmacenamiento';
 
 // ── Permisos ──────────────────────────────────────────────────────────────────
 
@@ -319,6 +322,7 @@ function TabAuditoria() {
 
 export default function SeguridadPage() {
   const [mainTab, setMainTab] = useState(0);
+  const { esAdmin } = useAuth();
   const [rol,     setRol]     = useState(ROLES[0].value);
   const [saving,  setSaving]  = useState(false);
   const [guardado,setGuardado]= useState(false);
@@ -410,6 +414,10 @@ export default function SeguridadPage() {
           sx={{ minHeight: 42, py: 0, fontWeight: 600 }} />
         <Tab label="Auditoría" icon={<HistoryIcon fontSize="small" />} iconPosition="start"
           sx={{ minHeight: 42, py: 0, fontWeight: 600 }} />
+        {esAdmin && (
+          <Tab label="Almacenamiento" icon={<CloudIcon fontSize="small" />} iconPosition="start"
+            sx={{ minHeight: 42, py: 0, fontWeight: 600 }} />
+        )}
       </Tabs>
 
       {/* ── Tab Permisos ──────────────────────────────────────────────────────── */}
@@ -486,6 +494,7 @@ export default function SeguridadPage() {
 
       {/* ── Tab Auditoría ─────────────────────────────────────────────────────── */}
       {mainTab === 1 && <TabAuditoria />}
+      {mainTab === 2 && esAdmin && <TabAlmacenamiento />}
     </Box>
   );
 }

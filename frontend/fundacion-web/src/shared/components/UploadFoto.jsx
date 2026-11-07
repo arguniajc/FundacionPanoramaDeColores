@@ -10,6 +10,7 @@ import CameraAltIcon    from '@mui/icons-material/CameraAlt';
 import CamaraFoto       from './CamaraFoto';
 import apiClient        from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { useArchivoUrl } from '@/shared/utils/archivos';
 
 const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 
@@ -20,6 +21,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
   const inputRef = useRef(null);
 
   const [subiendo,      setSubiendo]      = useState(false);
+  const vista = useArchivoUrl(value); // privado → enlace temporal para la vista previa
   const [errorMsg,      setErrorMsg]      = useState('');
   const [anchorEl,      setAnchorEl]      = useState(null);
   const [camaraAbierta, setCamaraAbierta] = useState(false);
@@ -64,7 +66,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
         <Box sx={{ position: 'relative', display: 'inline-block' }}>
           <Box
             component="img"
-            src={value}
+            src={vista || undefined}
             alt={label}
             onClick={abrirMenu}
             sx={{

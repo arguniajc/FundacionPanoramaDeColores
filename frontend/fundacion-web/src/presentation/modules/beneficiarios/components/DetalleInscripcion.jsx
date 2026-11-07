@@ -41,6 +41,7 @@ import apiClient                from '@/infrastructure/http/apiClient';
 import { calcularEdad }         from '@/shared/utils/fecha';
 import { abrirHojaDeVida }      from '@/shared/utils/pdf';
 import HistorialBeneficiario    from './HistorialBeneficiario';
+import { useArchivoUrl, resolverArchivo } from '@/shared/utils/archivos';
 
 const COLOR_PRIMARIO = 'var(--color-primario)';
 const COLOR_HOVER    = 'var(--color-gradiente)';
@@ -165,6 +166,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const edad     = calcularEdad(ins.fechaNacimiento);
+  const fotoUrl  = useArchivoUrl(ins.fotoMenorUrl); // privado → enlace temporal
   const imc      = calcularImc(ins.pesoKg, ins.tallaCm, ins.fechaNacimiento);
 
   const [descargando,   setDescargando]   = useState(false);
@@ -184,7 +186,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
       }).catch(() => { /* auditoría opcional: no debe impedir la descarga */ });
       const nombre = ins.nombreMenor?.replace(/\s+/g, '_') ?? 'beneficiario';
       const anchor = document.createElement('a');
-      anchor.href     = ins.fotoDocumentoUrl;
+      anchor.href     = await resolverArchivo(ins.fotoDocumentoUrl);
       anchor.download = `documento_${nombre}.pdf`;
       anchor.target   = '_blank';
       document.body.appendChild(anchor);
@@ -229,7 +231,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
         }}
       >
         <Avatar
-          src={ins.fotoMenorUrl || undefined}
+          src={fotoUrl || undefined}
           sx={{
             bgcolor: 'rgba(255,255,255,0.2)',
             width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 },

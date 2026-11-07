@@ -20,6 +20,7 @@ import {
   agruparPorSeccion, calcEdad, chipEstado, fmtFechaCorta,
 } from './campos';
 import { erroresCamposDinamicos } from './validacionFormulario';
+import { abrirArchivo, useArchivoUrl } from '@/shared/utils/archivos';
 
 export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [campos,        setCampos]        = useState([]);
@@ -32,6 +33,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [generandoPdf,  setGenerandoPdf]  = useState(false);
   const [error,         setError]         = useState('');
   const [beneficiario,  setBeneficiario]  = useState(null);
+  const fotoBeneficiario = useArchivoUrl(beneficiario?.fotoMenorUrl);
   const [programa,      setPrograma]      = useState(null);
   const [intentado,     setIntentado]     = useState(false); // ya se intentó guardar: mostrar errores en los campos
   const [verResumen,    setVerResumen]    = useState(false);
@@ -167,7 +169,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         <Box display="flex" alignItems="center" gap={1}>
           <Chip label="✓ Entregado" color="success" size="small" />
           <Button size="small" sx={{ color: COLOR, p: 0, minWidth: 0, textDecoration: 'underline' }}
-            onClick={() => window.open(v, '_blank', 'noopener,noreferrer')}>Ver PDF</Button>
+            onClick={() => abrirArchivo(v)}>Ver PDF</Button>
         </Box>
       );
       return <Chip label="Pendiente" color="warning" size="small" variant="outlined" />;
@@ -258,7 +260,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             </Box>
             <Box sx={{ display: 'flex', gap: 2, mb: 1.5, alignItems: 'flex-start' }}>
               {beneficiario.fotoMenorUrl ? (
-                <Box component="img" src={beneficiario.fotoMenorUrl} alt="Foto beneficiario"
+                <Box component="img" src={fotoBeneficiario || undefined} alt="Foto beneficiario"
                   sx={{ width: 72, height: 88, objectFit: 'contain', borderRadius: 1.5,
                         border: `2px solid ${COLOR}`, flexShrink: 0, bgcolor: '#f3f0ff' }} />
               ) : (

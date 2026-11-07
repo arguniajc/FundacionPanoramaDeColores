@@ -14,6 +14,7 @@ import { mensajeErrorApi }              from '@/shared/utils/mensajeErrorApi';
 import { CATEGORIAS, fmt }              from './helpers';
 import { ModalSubirInstitucional }      from './ModalSubirInstitucional';
 import { ConfirmarEliminar }            from './ConfirmarEliminar';
+import { abrirArchivo } from '@/shared/utils/archivos';
 
 export function TabInstitucionales({ onToast }) {
   const [categoriaFiltro, setCategoriaFiltro] = useState('');
@@ -121,12 +122,12 @@ export function TabInstitucionales({ onToast }) {
                     </TableCell>
                     <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                       <Tooltip title="Ver / Imprimir">
-                        <IconButton size="small" onClick={() => window.open(doc.url, '_blank', 'noopener,noreferrer')}>
+                        <IconButton size="small" onClick={() => abrirArchivo(doc.url)}>
                           <VisibilityIcon fontSize="small" sx={{ color: 'var(--color-secundario)' }} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Descargar">
-                        <IconButton size="small" component="a" href={doc.url} target="_blank" rel="noopener noreferrer">
+                        <IconButton size="small" onClick={() => abrirArchivo(doc.url)}>
                           <DownloadIcon fontSize="small" sx={{ color: 'var(--color-primario)' }} />
                         </IconButton>
                       </Tooltip>

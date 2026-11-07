@@ -14,6 +14,9 @@ import NavigateNextIcon   from '@mui/icons-material/NavigateNext';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import apiClient          from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import {
+  CAMPOS_POR_PASO, DOCS_NUMERICOS, validarPaso, primerPasoConErrores, describirError,
+} from '@/domain/beneficiarios/validacionBeneficiario';
 import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, PAISES } from '@/shared/constants/beneficiarios';
 import UploadFoto      from '@/shared/components/UploadFoto';
 import UploadDocumento from '@/shared/components/UploadDocumento';
@@ -100,6 +103,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
   const [docExiste,     setDocExiste]     = useState(false);
   const [verificandoDoc,setVerificandoDoc]= useState(false);
   const [confirmCerrar, setConfirmCerrar] = useState(false);
+  const [resumenPaso,   setResumenPaso]   = useState(false);
 
   const { esColombia, departamentos, ciudades, deptoHabilitado, ciudadHabilitada } =
     useGeografia(form.paisNacimiento, form.departamentoNacimiento);
@@ -165,49 +169,27 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
   const isDirty = JSON.stringify(form) !== JSON.stringify(FORM_VACIO);
   const handleCerrar = () => { if (isDirty) setConfirmCerrar(true); else { limpiarDraft(); onCerrar(); } };
 
-  // ── Validación por paso ────────────────────────────────────────────────────────
-  const erroresPor = [
-    () => {
-      const e = [];
-      if (!form.primerNombre.trim())    e.push('primerNombre');
-      if (!form.primerApellido.trim())  e.push('primerApellido');
-      if (!form.fechaNacimiento)        e.push('fechaNacimiento');
-      if (docExiste)                    e.push('numeroDocumento');
-      if (!form.genero)                 e.push('genero');
-      if (!form.departamentoNacimiento) e.push('departamentoNacimiento');
-      if (!form.ciudadNacimiento)       e.push('ciudadNacimiento');
-      if (!form.barrio.trim())         e.push('barrio');
-      if (form.numPersonasVive === '')  e.push('numPersonasVive');
-      if (form.numHermanos === '')      e.push('numHermanos');
-      return e;
-    },
-    () => {
-      const e = [];
-      if (!form.tallaCamisa)            e.push('tallaCamisa');
-      if (!form.tallaPantalon.trim())   e.push('tallaPantalon');
-      if (!form.tallaZapatos.trim())    e.push('tallaZapatos');
-      if (form.pesoKg === '')          e.push('pesoKg');
-      if (form.tallaCm === '')         e.push('tallaCm');
-      return e;
-    },
-    () => (!form.eps.trim() ? ['eps'] : []),
-    () => {
-      if (!esNino) return [];
-      const e = [];
-      if (!form.nombreAcudiente.trim()) e.push('nombreAcudiente');
-      if (!form.parentesco)             e.push('parentesco');
-      if (!form.whatsapp.trim())        e.push('whatsapp');
-      if (form.viveConNino === '')      e.push('viveConNino');
-      if (!form.direccion.trim())       e.push('direccion');
-      return e;
-    },
-    () => (!form.autorizacion ? ['autorizacion'] : []),
-  ];
-
-  const errsPaso       = erroresPor[paso]();
-  const puedeAvanzar   = errsPaso.length === 0 && !verificandoDoc;
+  // ── Validación por paso (reglas centralizadas en validacionBeneficiario) ───────
+  const erroresDelPaso = p => {
+    const e = validarPaso(p, form);
+    if (p === 0 && docExiste) e.numeroDocumento = 'Este documento ya está registrado. Búscalo en la lista en vez de inscribirlo de nuevo.';
+    return e;
+  };
+  const errsPaso = erroresDelPaso(paso);
   const t = touched; // alias corto
-  const err = (campo, cond) => t[campo] && cond ? 'Campo obligatorio' : '';
+  // El mensaje del campo aparece cuando el usuario ya pasó por él o intentó avanzar
+  const err = campo => (t[campo] ? (errsPaso[campo] ?? '') : '');
+
+  const marcarPaso = p => setTouched(prev => ({
+    ...prev, ...Object.fromEntries(CAMPOS_POR_PASO[p].map(c => [c, true])),
+  }));
+
+  // No deja pasar al siguiente paso hasta que los datos estén bien
+  const intentarAvanzar = () => {
+    if (Object.keys(errsPaso).length > 0) { marcarPaso(paso); setResumenPaso(true); return; }
+    setResumenPaso(false);
+    setPaso(p => p + 1);
+  };
 
   // ── Renders por paso ───────────────────────────────────────────────────────────
   const renderPaso0 = () => (
@@ -242,45 +224,57 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
       <Grid size={{ xs: 12, sm: 6 }}>
         <TextField fullWidth label="Primer nombre *" size="small" required
           value={form.primerNombre} onChange={capitalizar('primerNombre')} onBlur={touch('primerNombre')}
-          error={!!err('primerNombre', !form.primerNombre.trim())}
-          helperText={err('primerNombre', !form.primerNombre.trim())} />
+          error={!!err('primerNombre')}
+          helperText={err('primerNombre')} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
         <TextField fullWidth label="Segundo nombre" size="small"
-          value={form.segundoNombre} onChange={capitalizar('segundoNombre')} />
+          value={form.segundoNombre} onChange={capitalizar('segundoNombre')} onBlur={touch('segundoNombre')}
+          error={!!err('segundoNombre')}
+          helperText={err('segundoNombre')} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
         <TextField fullWidth label="Primer apellido *" size="small" required
           value={form.primerApellido} onChange={capitalizar('primerApellido')} onBlur={touch('primerApellido')}
-          error={!!err('primerApellido', !form.primerApellido.trim())}
-          helperText={err('primerApellido', !form.primerApellido.trim())} />
+          error={!!err('primerApellido')}
+          helperText={err('primerApellido')} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
         <TextField fullWidth label="Segundo apellido" size="small"
-          value={form.segundoApellido} onChange={capitalizar('segundoApellido')} />
+          value={form.segundoApellido} onChange={capitalizar('segundoApellido')} onBlur={touch('segundoApellido')}
+          error={!!err('segundoApellido')}
+          helperText={err('segundoApellido')} />
       </Grid>
       <Grid size={{ xs: 12, sm: 4 }}>
         <TextField fullWidth label="Fecha de nacimiento *" size="small" type="date" required
           value={form.fechaNacimiento} onChange={handleFechaNacimiento}
-          error={!!(t.fechaNacimiento && !form.fechaNacimiento)}
-          helperText={t.fechaNacimiento && !form.fechaNacimiento ? 'Campo obligatorio' : ''}
+          error={!!err('fechaNacimiento')}
+          helperText={err('fechaNacimiento')}
           slotProps={{ inputLabel: { shrink: true } }} />
       </Grid>
       <Grid size={{ xs: 12, sm: 4 }}>
-        <FormControl fullWidth size="small">
+        <FormControl fullWidth size="small" error={!!err('tipoDocumento')}>
           <InputLabel>Tipo de documento</InputLabel>
-          <Select label="Tipo de documento" value={form.tipoDocumento} onChange={set('tipoDocumento')}>
+          <Select label="Tipo de documento" value={form.tipoDocumento}
+            onChange={e => { setForm(p => ({ ...p, tipoDocumento: e.target.value })); touch('tipoDocumento')(); }}>
             {TIPOS_DOC.map(tp => <MenuItem key={tp} value={tp}>{tp}</MenuItem>)}
           </Select>
+          <ErrMsg msg={err('tipoDocumento')} />
         </FormControl>
       </Grid>
       <Grid size={{ xs: 12, sm: 4 }}>
         <TextField fullWidth label="Número de documento *" size="small" required
           value={form.numeroDocumento}
-          onChange={e => { soloDigitos('numeroDocumento')(e); setDocExiste(false); }}
+          onChange={e => {
+            // RC/TI/CC/NUIP solo números; pasaporte, CE, PPT y RAMV admiten letras
+            const v = DOCS_NUMERICOS.includes(form.tipoDocumento)
+              ? e.target.value.replace(/\D/g, '')
+              : e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            setV('numeroDocumento', v); setDocExiste(false);
+          }}
           onBlur={verificarDocumento}
-          error={docExiste || !!(t.numeroDocumento && !form.numeroDocumento.trim())}
-          helperText={docExiste ? 'Este documento ya está registrado' : err('numeroDocumento', !form.numeroDocumento.trim())}
+          error={!!err('numeroDocumento')}
+          helperText={err('numeroDocumento')}
           slotProps={{
             input: {
               endAdornment: verificandoDoc
@@ -302,13 +296,13 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
         </Grid>
       )}
       <Grid size={{ xs: 12, sm: 4 }}>
-        <FormControl fullWidth size="small" required error={!!(t.genero && !form.genero)}>
+        <FormControl fullWidth size="small" required error={!!err('genero')}>
           <InputLabel>Género *</InputLabel>
           <Select label="Género *" value={form.genero} onChange={set('genero')} onBlur={touch('genero')}>
             <MenuItem value=""><em>Selecciona</em></MenuItem>
             {GENEROS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
           </Select>
-          <ErrMsg msg={err('genero', !form.genero)} />
+          <ErrMsg msg={err('genero')} />
         </FormControl>
       </Grid>
       <Grid size={{ xs: 12, sm: 4 }}>
@@ -324,16 +318,16 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
             onChange={(_, v) => { setForm(p => ({ ...p, departamentoNacimiento: v || '', ciudadNacimiento: '' })); setTouched(p => ({ ...p, departamentoNacimiento: true })); }}
             renderInput={params => (
               <TextField {...params} label="Departamento *" size="small"
-                error={!!(t.departamentoNacimiento && !form.departamentoNacimiento)}
-                helperText={err('departamentoNacimiento', !form.departamentoNacimiento)} />
+                error={!!err('departamentoNacimiento')}
+                helperText={err('departamentoNacimiento')} />
             )}
           />
         ) : (
           <TextField fullWidth label="Departamento / Estado *" size="small"
             value={form.departamentoNacimiento} disabled={!deptoHabilitado}
             onChange={capitalizar('departamentoNacimiento')} onBlur={touch('departamentoNacimiento')}
-            error={!!(t.departamentoNacimiento && !form.departamentoNacimiento)}
-            helperText={err('departamentoNacimiento', !form.departamentoNacimiento)} />
+            error={!!err('departamentoNacimiento')}
+            helperText={err('departamentoNacimiento')} />
         )}
       </Grid>
       <Grid size={{ xs: 12, sm: 4 }}>
@@ -342,37 +336,37 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
             onChange={(_, v) => { setV('ciudadNacimiento', v || ''); setTouched(p => ({ ...p, ciudadNacimiento: true })); }}
             renderInput={params => (
               <TextField {...params} label="Ciudad / Municipio *" size="small"
-                error={!!(t.ciudadNacimiento && !form.ciudadNacimiento)}
-                helperText={err('ciudadNacimiento', !form.ciudadNacimiento)} />
+                error={!!err('ciudadNacimiento')}
+                helperText={err('ciudadNacimiento')} />
             )}
           />
         ) : (
           <TextField fullWidth label="Ciudad *" size="small"
             value={form.ciudadNacimiento} disabled={!ciudadHabilitada}
             onChange={capitalizar('ciudadNacimiento')} onBlur={touch('ciudadNacimiento')}
-            error={!!(t.ciudadNacimiento && !form.ciudadNacimiento)}
-            helperText={err('ciudadNacimiento', !form.ciudadNacimiento)} />
+            error={!!err('ciudadNacimiento')}
+            helperText={err('ciudadNacimiento')} />
         )}
       </Grid>
       <Grid size={{ xs: 12, sm: 4 }}>
         <TextField fullWidth label="Barrio *" size="small" required
           value={form.barrio} onChange={capitalizar('barrio')} onBlur={touch('barrio')}
-          error={!!(t.barrio && !form.barrio.trim())}
-          helperText={t.barrio && !form.barrio.trim() ? 'Campo obligatorio' : nr('barrio')}
+          error={!!err('barrio')}
+          helperText={err('barrio') || nr('barrio')}
           slotProps={{ htmlInput: form.barrio === 'No registra' ? { readOnly: true } : undefined }} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
         <TextField fullWidth label="N.º personas con quienes vive *" size="small" type="number" required
           value={form.numPersonasVive} onChange={set('numPersonasVive')} onBlur={touch('numPersonasVive')}
-          error={!!(t.numPersonasVive && form.numPersonasVive === '')}
-          helperText={err('numPersonasVive', form.numPersonasVive === '')}
+          error={!!err('numPersonasVive')}
+          helperText={err('numPersonasVive')}
           slotProps={{ htmlInput: { min: 1, max: 20 } }} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
         <TextField fullWidth label={esNino ? 'N.º de hermanos *' : 'N.º de hijos *'} size="small" type="number" required
           value={form.numHermanos} onChange={set('numHermanos')} onBlur={touch('numHermanos')}
-          error={!!(t.numHermanos && form.numHermanos === '')}
-          helperText={err('numHermanos', form.numHermanos === '')}
+          error={!!err('numHermanos')}
+          helperText={err('numHermanos')}
           slotProps={{ htmlInput: { min: 0, max: 20 } }} />
       </Grid>
     </Grid>
@@ -382,13 +376,13 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
     <Grid container spacing={2.5}>
       <SeccionTitulo>Tallas</SeccionTitulo>
       <Grid size={{ xs: 12, sm: 4 }}>
-        <FormControl fullWidth size="small" required error={!!(t.tallaCamisa && !form.tallaCamisa)}>
+        <FormControl fullWidth size="small" required error={!!err('tallaCamisa')}>
           <InputLabel>Talla camisa *</InputLabel>
           <Select label="Talla camisa *" value={form.tallaCamisa} onChange={set('tallaCamisa')} onBlur={touch('tallaCamisa')}>
             <MenuItem value=""><em>Selecciona</em></MenuItem>
             {TALLAS_CAMISA.map(tp => <MenuItem key={tp} value={tp}>{tp}</MenuItem>)}
           </Select>
-          <ErrMsg msg={err('tallaCamisa', !form.tallaCamisa)} />
+          <ErrMsg msg={err('tallaCamisa')} />
         </FormControl>
       </Grid>
       <Grid size={{ xs: 12, sm: 4 }}>
@@ -399,8 +393,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
           renderInput={params => (
             <TextField {...params} fullWidth label="Talla pantalón *" size="small" required
               onBlur={touch('tallaPantalon')}
-              error={!!(t.tallaPantalon && !form.tallaPantalon.trim())}
-              helperText={err('tallaPantalon', !form.tallaPantalon.trim())} />
+              error={!!err('tallaPantalon')}
+              helperText={err('tallaPantalon')} />
           )} />
       </Grid>
       <Grid size={{ xs: 12, sm: 4 }}>
@@ -411,23 +405,23 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
           renderInput={params => (
             <TextField {...params} fullWidth label="Talla zapatos *" size="small" required
               onBlur={touch('tallaZapatos')}
-              error={!!(t.tallaZapatos && !form.tallaZapatos.trim())}
-              helperText={err('tallaZapatos', !form.tallaZapatos.trim())} />
+              error={!!err('tallaZapatos')}
+              helperText={err('tallaZapatos')} />
           )} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
         <TextField fullWidth label="Peso *" size="small" type="number" required
           value={form.pesoKg} onChange={set('pesoKg')} onBlur={touch('pesoKg')}
-          error={!!(t.pesoKg && form.pesoKg === '')}
-          helperText={err('pesoKg', form.pesoKg === '')}
+          error={!!err('pesoKg')}
+          helperText={err('pesoKg')}
           slotProps={{ htmlInput: { min: 1, max: 200, step: 0.1 },
             input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> } }} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
         <TextField fullWidth label="Talla (altura) *" size="small" type="number" required
           value={form.tallaCm} onChange={set('tallaCm')} onBlur={touch('tallaCm')}
-          error={!!(t.tallaCm && form.tallaCm === '')}
-          helperText={err('tallaCm', form.tallaCm === '')}
+          error={!!err('tallaCm')}
+          helperText={err('tallaCm')}
           slotProps={{ htmlInput: { min: 30, max: 250 },
             input: { endAdornment: <InputAdornment position="end">cm</InputAdornment> } }} />
       </Grid>
@@ -452,8 +446,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
           renderInput={params => (
             <TextField {...params} fullWidth label="EPS *" size="small" required
               onBlur={touch('eps')}
-              error={!!(t.eps && !form.eps.trim())}
-              helperText={t.eps && !form.eps.trim() ? 'Campo obligatorio' : nr('eps')}
+              error={!!err('eps')}
+              helperText={err('eps') || nr('eps')}
               inputProps={{ ...params.inputProps, ...(form.eps === 'No registra' ? { readOnly: true } : {}) }} />
           )} />
       </Grid>
@@ -469,7 +463,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
       {form.tieneAlergia === 'si' && (
         <Grid size={12}>
           <TextField fullWidth label="Descripción de la alergia *" size="small"
-            value={form.descripcionAlergia} onChange={capitalizar('descripcionAlergia')} />
+            value={form.descripcionAlergia} onChange={capitalizar('descripcionAlergia')} onBlur={touch('descripcionAlergia')}
+            error={!!err('descripcionAlergia')} helperText={err('descripcionAlergia')} />
         </Grid>
       )}
       <Grid size={12}>
@@ -489,7 +484,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
       {form.tieneDiscapacidad && (
         <Grid size={12}>
           <TextField fullWidth label="Descripción de la discapacidad / condición *" size="small"
-            value={form.descripcionDiscapacidad} onChange={capitalizar('descripcionDiscapacidad')} />
+            value={form.descripcionDiscapacidad} onChange={capitalizar('descripcionDiscapacidad')} onBlur={touch('descripcionDiscapacidad')}
+            error={!!err('descripcionDiscapacidad')} helperText={err('descripcionDiscapacidad')} />
         </Grid>
       )}
     </Grid>
@@ -502,43 +498,43 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField fullWidth label="Nombre del acudiente *" size="small" required
             value={form.nombreAcudiente} onChange={capitalizar('nombreAcudiente')} onBlur={touch('nombreAcudiente')}
-            error={!!(t.nombreAcudiente && !form.nombreAcudiente.trim())}
-            helperText={err('nombreAcudiente', !form.nombreAcudiente.trim())} />
+            error={!!err('nombreAcudiente')}
+            helperText={err('nombreAcudiente')} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <FormControl fullWidth size="small" required error={!!(t.parentesco && !form.parentesco)}>
+          <FormControl fullWidth size="small" required error={!!err('parentesco')}>
             <InputLabel>Parentesco *</InputLabel>
             <Select label="Parentesco *" value={form.parentesco} onChange={set('parentesco')} onBlur={touch('parentesco')}>
               <MenuItem value=""><em>Selecciona</em></MenuItem>
               {PARENTESCOS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
             </Select>
-            <ErrMsg msg={err('parentesco', !form.parentesco)} />
+            <ErrMsg msg={err('parentesco')} />
           </FormControl>
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField fullWidth label="WhatsApp *" size="small" required
             value={form.whatsapp} onChange={soloDigitos('whatsapp')} onBlur={touch('whatsapp')}
-            error={!!(t.whatsapp && !form.whatsapp.trim())}
-            helperText={err('whatsapp', !form.whatsapp.trim())}
+            error={!!err('whatsapp')}
+            helperText={err('whatsapp')}
             placeholder="Ej: 3001234567"
             slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <FormControl fullWidth size="small" required error={!!(t.viveConNino && form.viveConNino === '')}>
+          <FormControl fullWidth size="small" required error={!!err('viveConNino')}>
             <InputLabel>¿Vive con el niño? *</InputLabel>
             <Select label="¿Vive con el niño? *" value={form.viveConNino} onChange={set('viveConNino')} onBlur={touch('viveConNino')}>
               <MenuItem value=""><em>Selecciona</em></MenuItem>
               <MenuItem value="si">Sí</MenuItem>
               <MenuItem value="no">No</MenuItem>
             </Select>
-            <ErrMsg msg={err('viveConNino', form.viveConNino === '')} />
+            <ErrMsg msg={err('viveConNino')} />
           </FormControl>
         </Grid>
         <Grid size={12}>
           <TextField fullWidth label="Dirección *" size="small" required
             value={form.direccion} onChange={capitalizar('direccion')} onBlur={touch('direccion')}
-            error={!!(t.direccion && !form.direccion.trim())}
-            helperText={t.direccion && !form.direccion.trim() ? 'Campo obligatorio' : nr('direccion')}
+            error={!!err('direccion')}
+            helperText={err('direccion') || nr('direccion')}
             slotProps={{ htmlInput: form.direccion === 'No registra' ? { readOnly: true } : undefined }} />
         </Grid>
       </>)}
@@ -595,8 +591,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
             ? 'Autorizo la inscripción del menor a los programas de la Fundación Panorama de Colores y el uso de sus datos con fines institucionales.'
             : 'Autorizo mi inscripción a los programas de la Fundación Panorama de Colores y el uso de mis datos con fines institucionales.'}
         />
-        {t.autorizacion && !form.autorizacion && (
-          <Typography sx={{ color: 'error.main', fontSize: '0.75rem', ml: 1.5 }}>Debe aceptar la autorización</Typography>
+        {err('autorizacion') && (
+          <Typography sx={{ color: 'error.main', fontSize: '0.75rem', ml: 1.5 }}>{err('autorizacion')}</Typography>
         )}
       </Grid>
 
@@ -621,6 +617,12 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
   const pasoRenders = [renderPaso0, renderPaso1, renderPaso2, renderPaso3, renderPaso4];
 
   const handleGuardar = async () => {
+    const pasoConError = primerPasoConErrores(form);
+    if (pasoConError !== -1 || docExiste) {
+      const destino = pasoConError === -1 ? 0 : pasoConError;
+      marcarPaso(destino); setPaso(destino); setResumenPaso(true);
+      return;
+    }
     setGuardando(true); setError('');
     try {
       await apiClient.post('/api/beneficiarios', {
@@ -713,13 +715,25 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
           {pasoRenders[paso]()}
         </DialogContent>
 
+        {resumenPaso && Object.keys(errsPaso).length > 0 && (
+          <Alert severity="warning" onClose={() => setResumenPaso(false)} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+            <Typography fontWeight={700} fontSize="0.85rem" mb={0.5}>
+              Corrige estos datos para continuar:
+            </Typography>
+            <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: '0.8rem' }}>
+              {Object.entries(errsPaso).map(([campo, msg]) => (
+                <li key={campo}>{describirError(campo, msg)}</li>
+              ))}
+            </Box>
+          </Alert>
+        )}
         {error && (
           <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
             {error}
           </Alert>
         )}
         <DialogActions sx={{ px: 3, py: 2, gap: 1, justifyContent: 'space-between' }}>
-          <Button onClick={() => setPaso(p => p - 1)} disabled={paso === 0}
+          <Button onClick={() => { setResumenPaso(false); setPaso(p => p - 1); }} disabled={paso === 0}
             startIcon={<NavigateBeforeIcon />} variant="outlined">
             Anterior
           </Button>
@@ -728,14 +742,14 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
               Cancelar
             </Button>
             {paso < PASOS.length - 1 ? (
-              <Button variant="contained" onClick={() => setPaso(p => p + 1)} disabled={!puedeAvanzar}
+              <Button variant="contained" onClick={intentarAvanzar} disabled={verificandoDoc}
                 endIcon={<NavigateNextIcon />}
                 sx={{ bgcolor: 'var(--color-primario)', fontWeight: 700 }}>
                 Siguiente
               </Button>
             ) : (
               <Button variant="contained" onClick={handleGuardar}
-                disabled={!form.autorizacion || guardando}
+                disabled={guardando}
                 startIcon={guardando ? <CircularProgress size={16} color="inherit" /> : <PersonAddIcon />}
                 sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, fontWeight: 700, minWidth: 160 }}>
                 {guardando ? 'Registrando…' : 'Inscribir beneficiario'}

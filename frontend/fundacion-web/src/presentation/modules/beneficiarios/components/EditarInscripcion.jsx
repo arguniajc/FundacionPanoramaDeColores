@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import apiClient       from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { DOCS_NUMERICOS, validarFormulario, describirError } from '@/domain/beneficiarios/validacionBeneficiario';
 import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, PAISES } from '@/shared/constants/beneficiarios';
 
 const GENEROS = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];
@@ -141,7 +142,11 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
   const isDirty   = JSON.stringify(form) !== initialRef.current;
 
   const touch = campo => () => setTouched(prev => ({ ...prev, [campo]: true }));
-  const err   = (campo, cond) => touched[campo] && cond ? 'Campo obligatorio' : '';
+  // Reglas centralizadas (las mismas del registro): mensaje con ejemplo por campo
+  const errores    = validarFormulario(form);
+  const err        = campo => (touched[campo] ? (errores[campo] ?? '') : '');
+  const validacion = campo => ({ error: !!err(campo), helperText: err(campo) || undefined, onBlur: touch(campo) });
+  const [resumen, setResumen] = useState(false);
   const soloDigitos = campo => e =>
     setForm(prev => ({ ...prev, [campo]: e.target.value.replace(/\D/g, '') }));
 
@@ -188,6 +193,12 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
   const setV = (campo, valor) => setForm(prev => ({ ...prev, [campo]: valor }));
 
   const handleGuardar = async () => {
+    if (Object.keys(errores).length > 0) {
+      setTouched(prev => ({ ...prev, ...Object.fromEntries(Object.keys(errores).map(c => [c, true])) }));
+      setResumen(true);
+      return;
+    }
+    setResumen(false);
     setGuardando(true); setError('');
     try {
       await apiClient.put(`/api/beneficiarios/${inscripcion.id}`, {
@@ -284,41 +295,46 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Primer nombre *" size="small" required
               value={form.primerNombre} onChange={capitalizar('primerNombre')} onBlur={touch('primerNombre')}
-              error={!!(touched.primerNombre && !form.primerNombre?.trim())}
-              helperText={err('primerNombre', !form.primerNombre?.trim())} />
+              error={!!err('primerNombre')}
+              helperText={err('primerNombre')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Segundo nombre" size="small"
+            <TextField {...validacion('segundoNombre')} fullWidth label="Segundo nombre" size="small"
               value={form.segundoNombre} onChange={capitalizar('segundoNombre')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Primer apellido *" size="small" required
               value={form.primerApellido} onChange={capitalizar('primerApellido')} onBlur={touch('primerApellido')}
-              error={!!(touched.primerApellido && !form.primerApellido?.trim())}
-              helperText={err('primerApellido', !form.primerApellido?.trim())} />
+              error={!!err('primerApellido')}
+              helperText={err('primerApellido')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Segundo apellido" size="small"
+            <TextField {...validacion('segundoApellido')} fullWidth label="Segundo apellido" size="small"
               value={form.segundoApellido} onChange={capitalizar('segundoApellido')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Fecha de nacimiento" size="small" type="date"
+            <TextField {...validacion('fechaNacimiento')} fullWidth label="Fecha de nacimiento" size="small" type="date"
               value={form.fechaNacimiento} onChange={handleFechaNacimiento}
               slotProps={{ inputLabel: { shrink: true } }} required />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <FormControl fullWidth size="small">
+            <FormControl fullWidth size="small" error={!!err('tipoDocumento')}>
               <InputLabel>Tipo de documento</InputLabel>
-              <Select label="Tipo de documento" value={form.tipoDocumento} onChange={set('tipoDocumento')}>
+              <Select label="Tipo de documento" value={form.tipoDocumento} onBlur={touch('tipoDocumento')}
+                onChange={e => { setV('tipoDocumento', e.target.value); touch('tipoDocumento')(); }}>
                 {TIPOS_DOC.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </Select>
+              <ErrMsg msg={err('tipoDocumento')} />
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Número de documento *" size="small" required
-              value={form.numeroDocumento} onChange={set('numeroDocumento')} onBlur={touch('numeroDocumento')}
-              error={!!(touched.numeroDocumento && !form.numeroDocumento?.trim())}
-              helperText={err('numeroDocumento', !form.numeroDocumento?.trim())} />
+              value={form.numeroDocumento}
+              onChange={e => setV('numeroDocumento', DOCS_NUMERICOS.includes(form.tipoDocumento)
+                ? e.target.value.replace(/\D/g, '')
+                : e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase())} onBlur={touch('numeroDocumento')}
+              error={!!err('numeroDocumento')}
+              helperText={err('numeroDocumento')} />
           </Grid>
           {categoria && (
             <Grid size={12}>
@@ -339,13 +355,13 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
             </Grid>
           )}
           <Grid size={{ xs: 12, sm: 4 }}>
-            <FormControl fullWidth size="small" required error={!!(touched.genero && !form.genero)}>
+            <FormControl fullWidth size="small" required error={!!err('genero')}>
               <InputLabel>Género *</InputLabel>
               <Select label="Género *" value={form.genero} onChange={set('genero')} onBlur={touch('genero')}>
                 <MenuItem value=""><em>Selecciona</em></MenuItem>
                 {GENEROS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
               </Select>
-              <ErrMsg msg={err('genero', !form.genero)} />
+              <ErrMsg msg={err('genero')} />
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -392,24 +408,25 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField fullWidth label="Barrio *" size="small" required
               value={form.barrio} onChange={capitalizar('barrio')} onBlur={touch('barrio')}
-              error={!!(touched.barrio && !form.barrio?.trim())}
+              error={!!err('barrio')}
               slotProps={{ htmlInput: form.barrio === 'No registra' ? { readOnly: true } : undefined }}
-              helperText={touched.barrio && !form.barrio?.trim() ? 'Campo obligatorio' : nr('barrio')} />
+              helperText={err('barrio') || nr('barrio')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 8 }}>
             <TextField fullWidth label={esNino ? 'Dirección *' : 'Dirección'} size="small"
               required={esNino}
-              value={form.direccion} onChange={capitalizar('direccion')}
+              value={form.direccion} onChange={capitalizar('direccion')} onBlur={touch('direccion')}
+              error={!!err('direccion')}
               slotProps={{ htmlInput: form.direccion === 'No registra' ? { readOnly: true } : undefined }}
-              helperText={nr('direccion')} />
+              helperText={err('direccion') || nr('direccion')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="N.º personas con quienes vive *" size="small" type="number" required
+            <TextField {...validacion('numPersonasVive')} fullWidth label="N.º personas con quienes vive *" size="small" type="number" required
               value={form.numPersonasVive} onChange={set('numPersonasVive')}
               slotProps={{ htmlInput: { min: 1, max: 20 } }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label={esNino ? 'N.º de hermanos *' : 'N.º de hijos *'} size="small" type="number" required
+            <TextField {...validacion('numHermanos')} fullWidth label={esNino ? 'N.º de hermanos *' : 'N.º de hijos *'} size="small" type="number" required
               value={form.numHermanos} onChange={set('numHermanos')}
               slotProps={{ htmlInput: { min: 0, max: 20 } }} />
           </Grid>
@@ -418,12 +435,13 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           <SeccionTitulo>Tallas</SeccionTitulo>
 
           <Grid size={{ xs: 12, sm: 4 }}>
-            <FormControl fullWidth size="small" required>
+            <FormControl fullWidth size="small" required error={!!err('tallaCamisa')}>
               <InputLabel>Talla camisa *</InputLabel>
               <Select label="Talla camisa *" value={form.tallaCamisa} onChange={set('tallaCamisa')}>
                 <MenuItem value=""><em>Selecciona</em></MenuItem>
                 {TALLAS_CAMISA.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </Select>
+              <ErrMsg msg={err('tallaCamisa')} />
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -432,7 +450,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
               onChange={(_, v) => setV('tallaPantalon', v ?? '')}
               onInputChange={(_, v) => setV('tallaPantalon', v)}
               renderInput={params => (
-                <TextField {...params} fullWidth label="Talla pantalón *" size="small" required />
+                <TextField {...validacion('tallaPantalon')} {...params} fullWidth label="Talla pantalón *" size="small" required />
               )} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -441,17 +459,17 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
               onChange={(_, v) => setV('tallaZapatos', v ?? '')}
               onInputChange={(_, v) => setV('tallaZapatos', v)}
               renderInput={params => (
-                <TextField {...params} fullWidth label="Talla zapatos *" size="small" required />
+                <TextField {...validacion('tallaZapatos')} {...params} fullWidth label="Talla zapatos *" size="small" required />
               )} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Peso *" size="small" type="number" required
+            <TextField {...validacion('pesoKg')} fullWidth label="Peso *" size="small" type="number" required
               value={form.pesoKg} onChange={set('pesoKg')}
               slotProps={{ htmlInput: { min: 1, max: 200, step: 0.1 },
                 input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> } }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Talla (altura) *" size="small" type="number" required
+            <TextField {...validacion('tallaCm')} fullWidth label="Talla (altura) *" size="small" type="number" required
               value={form.tallaCm} onChange={set('tallaCm')}
               slotProps={{ htmlInput: { min: 30, max: 250 },
                 input: { endAdornment: <InputAdornment position="end">cm</InputAdornment> } }} />
@@ -473,8 +491,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
               }}
               slotProps={{ popper: { placement: 'bottom-start', modifiers: [{ name: 'flip', enabled: false }] } }}
               renderInput={params => (
-                <TextField {...params} fullWidth label="EPS *" size="small" required
-                  helperText={nr('eps')}
+                <TextField {...validacion('eps')} {...params} fullWidth label="EPS *" size="small" required
+                  helperText={err('eps') || nr('eps')}
                   inputProps={{ ...params.inputProps, ...(form.eps === 'No registra' ? { readOnly: true } : {}) }} />
               )} />
           </Grid>
@@ -489,7 +507,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           {form.tieneAlergia === 'si' && (
             <Grid size={12}>
-              <TextField fullWidth label="Descripción de la alergia" size="small"
+              <TextField {...validacion('descripcionAlergia')} fullWidth label="Descripción de la alergia" size="small"
                 value={form.descripcionAlergia} onChange={capitalizar('descripcionAlergia')} required />
             </Grid>
           )}
@@ -511,7 +529,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           {form.tieneDiscapacidad && (
             <Grid size={12}>
-              <TextField fullWidth label="Descripción de la discapacidad / condición" size="small"
+              <TextField {...validacion('descripcionDiscapacidad')} fullWidth label="Descripción de la discapacidad / condición" size="small"
                 value={form.descripcionDiscapacidad} onChange={capitalizar('descripcionDiscapacidad')} />
             </Grid>
           )}
@@ -557,32 +575,34 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           <SeccionTitulo>Acudiente</SeccionTitulo>
 
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Nombre del acudiente *" size="small" required
+            <TextField {...validacion('nombreAcudiente')} fullWidth label="Nombre del acudiente *" size="small" required
               value={form.nombreAcudiente} onChange={capitalizar('nombreAcudiente')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <FormControl fullWidth size="small" required>
+            <FormControl fullWidth size="small" required error={!!err('parentesco')}>
               <InputLabel>Parentesco *</InputLabel>
               <Select label="Parentesco *" value={form.parentesco} onChange={set('parentesco')}>
                 <MenuItem value=""><em>Selecciona</em></MenuItem>
                 {PARENTESCOS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
               </Select>
+              <ErrMsg msg={err('parentesco')} />
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="WhatsApp *" size="small" required
               value={form.whatsapp} onChange={soloDigitos('whatsapp')} onBlur={touch('whatsapp')}
-              error={!!(touched.whatsapp && !form.whatsapp?.trim())}
-              helperText={err('whatsapp', !form.whatsapp?.trim())} />
+              error={!!err('whatsapp')}
+              helperText={err('whatsapp')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <FormControl fullWidth size="small" required>
+            <FormControl fullWidth size="small" required error={!!err('viveConNino')}>
               <InputLabel>¿Vive con el niño? *</InputLabel>
               <Select label="¿Vive con el niño? *" value={form.viveConNino} onChange={set('viveConNino')}>
                 <MenuItem value=""><em>Selecciona</em></MenuItem>
                 <MenuItem value="si">Sí</MenuItem>
                 <MenuItem value="no">No</MenuItem>
               </Select>
+              <ErrMsg msg={err('viveConNino')} />
             </FormControl>
           </Grid>
           </>)}
@@ -626,6 +646,18 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
         </Grid>
       </DialogContent>
 
+      {resumen && Object.keys(errores).length > 0 && (
+        <Alert severity="warning" onClose={() => setResumen(false)} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+          <Typography fontWeight={700} fontSize="0.85rem" mb={0.5}>
+            Corrige estos datos para guardar:
+          </Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: '0.8rem', maxHeight: 160, overflowY: 'auto' }}>
+            {Object.entries(errores).map(([campo, msg]) => (
+              <li key={campo}>{describirError(campo, msg)}</li>
+            ))}
+          </Box>
+        </Alert>
+      )}
       {error && (
         <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
           {error}
@@ -636,32 +668,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
         <Button
           variant="contained"
           onClick={handleGuardar}
-          disabled={
-            guardando ||
-            !form.primerNombre || !form.primerApellido ||
-            !form.fechaNacimiento ||
-            !form.numeroDocumento?.trim() ||
-            !form.genero ||
-            !form.paisNacimiento ||
-            !form.departamentoNacimiento ||
-            !form.ciudadNacimiento ||
-            !form.barrio?.trim() ||
-            form.numPersonasVive === '' ||
-            form.numHermanos === '' ||
-            !form.eps?.trim() ||
-            !form.tallaCamisa ||
-            !form.tallaPantalon?.trim() ||
-            !form.tallaZapatos?.trim() ||
-            form.pesoKg === '' ||
-            form.tallaCm === '' ||
-            (esNino && (
-              !form.nombreAcudiente?.trim() ||
-              !form.parentesco ||
-              !form.whatsapp?.trim() ||
-              !form.viveConNino ||
-              !form.direccion?.trim()
-            ))
-          }
+          disabled={guardando}
           sx={{ bgcolor: 'var(--color-primario)' }}
         >
           {guardando ? 'Guardando...' : 'Guardar cambios'}

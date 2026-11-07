@@ -1,3 +1,4 @@
+using FundacionPanorama.Infrastructure.Persistence;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using FundacionPanorama.API.Data;
@@ -7,7 +8,6 @@ using FundacionPanorama.Application.Features.Contabilidad.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
@@ -19,9 +19,9 @@ public class ContabilidadController(
     ContabilidadService svc,
     IHttpClientFactory httpFactory,
     IConfiguration configuration,
-    AppDbContext db) : BaseController
+    DbConnectionFactory db) : BaseController
 {
-    private NpgsqlConnection AbrirConexion() => new(db.Database.GetConnectionString());
+    private NpgsqlConnection AbrirConexion() => db.Create();
     // ── Categorías ─────────────────────────────────────────────────────────────
 
     [HttpGet("categorias")]

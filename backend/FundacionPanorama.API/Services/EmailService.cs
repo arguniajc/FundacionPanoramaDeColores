@@ -1,8 +1,8 @@
+using FundacionPanorama.Infrastructure.Persistence;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.Application.Features.Configuracion.Interfaces;
 using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.EntityFrameworkCore;
 using MimeKit;
 using Npgsql;
 
@@ -12,7 +12,7 @@ namespace FundacionPanorama.API.Services;
 /// Servicio centralizado de correo. Todos los envíos del sistema pasan por aquí.
 /// Usa EnviarAsync como núcleo; los demás métodos construyen el contenido y lo delegan.
 /// </summary>
-public class EmailService(IConfiguracionRepository repo, AppDbContext db)
+public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db)
 {
     // ── NÚCLEO: único punto de envío SMTP ────────────────────────────────────
 
@@ -157,7 +157,7 @@ public class EmailService(IConfiguracionRepository repo, AppDbContext db)
         var emails = new List<string>();
         try
         {
-            await using var conn = new NpgsqlConnection(db.Database.GetConnectionString());
+            await using var conn = db.Create();
             await conn.OpenAsync(ct);
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = """

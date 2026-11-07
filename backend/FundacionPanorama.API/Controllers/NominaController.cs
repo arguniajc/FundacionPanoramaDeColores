@@ -1,10 +1,10 @@
+using FundacionPanorama.Infrastructure.Persistence;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Filters;
 using FundacionPanorama.Application.Features.Nomina;
 using FundacionPanorama.Application.Features.Nomina.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
@@ -12,9 +12,9 @@ namespace FundacionPanorama.API.Controllers;
 [ApiController]
 [Route("api/nomina")]
 [Authorize]
-public class NominaController(NominaService svc, AppDbContext db) : BaseController
+public class NominaController(NominaService svc, DbConnectionFactory db) : BaseController
 {
-    private NpgsqlConnection AbrirConexion() => new(db.Database.GetConnectionString());
+    private NpgsqlConnection AbrirConexion() => db.Create();
 
     // ── Períodos ──────────────────────────────────────────────────────────────
 

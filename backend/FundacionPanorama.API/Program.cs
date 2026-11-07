@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Scalar.AspNetCore;
@@ -50,8 +49,6 @@ var connStr = ConVerificacionTls(Requerido("ConnectionStrings:DefaultConnection"
 var jwtKey  = Requerido("Jwt:Key");
 Requerido("Supabase:ServiceKey");
 
-// ── Base de datos (PostgreSQL via EF Core) ──────────────────────────────────
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connStr));
 
 // ── Autenticación JWT ────────────────────────────────────────────────────────
 

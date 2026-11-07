@@ -1,7 +1,7 @@
+using FundacionPanorama.Infrastructure.Persistence;
 using FundacionPanorama.API.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
@@ -10,9 +10,9 @@ namespace FundacionPanorama.API.Controllers;
 [Route("api/health")]
 public class HealthController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly DbConnectionFactory _db;
 
-    public HealthController(AppDbContext db) => _db = db;
+    public HealthController(DbConnectionFactory db) => _db = db;
 
     // GET api/health — público para el health check de Render y cron-job.org.
     // No toca la BD: con credenciales inválidas, un ping cada pocos segundos
@@ -25,7 +25,10 @@ public class HealthController : ControllerBase
     [HttpGet("db")]
     public async Task<IActionResult> Db()
     {
-        var total = await _db.Beneficiarios.CountAsync();
+        await using var conn = _db.Create();
+        await conn.OpenAsync();
+        await using var cmd = new NpgsqlCommand("SELECT COUNT(*) FROM beneficiarios", conn);
+        var total = Convert.ToInt32(await cmd.ExecuteScalarAsync());
         return Ok(new { status = "ok", timestamp = DateTime.UtcNow, db = "connected", registros = total });
     }
 
@@ -34,7 +37,7 @@ public class HealthController : ControllerBase
     [HttpGet("tables")]
     public async Task<IActionResult> Tables()
     {
-        await using var conn = new NpgsqlConnection(_db.Database.GetConnectionString());
+        await using var conn = _db.Create();
         await conn.OpenAsync();
 
         // Tablas existentes

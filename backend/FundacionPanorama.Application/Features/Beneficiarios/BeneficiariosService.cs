@@ -191,7 +191,7 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
         if (cntIns > 0 || cntMov > 0)
         {
             var partes = new List<string>();
-            if (cntIns > 0) partes.Add($"{cntIns} inscripción{(cntIns > 1 ? "es" : "")} a programa{(cntIns > 1 ? "s" : "")}");
+            if (cntIns > 0) partes.Add($"{cntIns} {(cntIns > 1 ? "inscripciones" : "inscripción")} a programa{(cntIns > 1 ? "s" : "")}");
             if (cntMov > 0) partes.Add($"{cntMov} movimiento{(cntMov > 1 ? "s" : "")} de inventario");
             return ResultadoBeneficiario<bool>.Conflicto($"No se puede eliminar: el beneficiario tiene {string.Join(" y ", partes)} vinculados.");
         }

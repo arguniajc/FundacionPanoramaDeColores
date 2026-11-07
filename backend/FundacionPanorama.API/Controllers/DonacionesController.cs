@@ -1,6 +1,6 @@
+using FundacionPanorama.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Filters;
@@ -12,10 +12,10 @@ namespace FundacionPanorama.API.Controllers;
 [ApiController]
 [Route("api/donaciones")]
 [Authorize]
-public class DonacionesController(DonacionesService svc, AppDbContext db) : BaseController
+public class DonacionesController(DonacionesService svc, DbConnectionFactory db) : BaseController
 {
     // Conexión solo para la auditoría (BaseController.RegistrarAuditAsync)
-    private NpgsqlConnection AbrirConexion() => new(db.Database.GetConnectionString());
+    private NpgsqlConnection AbrirConexion() => db.Create();
 
     [HttpGet]
     public async Task<IActionResult> Listar(

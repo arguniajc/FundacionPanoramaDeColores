@@ -21,4 +21,12 @@ public abstract class BaseController : ControllerBase
         string accion,
         string? detalle = null)
         => AuditoriaSql.RegistrarAsync(conn, tx, entidadTipo, entidadId, entidadNombre, accion, EmailUsuario, detalle);
+
+    // Auditoría después de una operación ya terminada: abre su propia conexión
+    protected async Task AuditarAsync(string entidadTipo, string entidadId, string? entidadNombre, string accion, string? detalle = null)
+    {
+        await using var conn = HttpContext.RequestServices.GetRequiredService<DbConnectionFactory>().Create();
+        try { await conn.OpenAsync(); } catch { return; /* auditoría no fatal */ }
+        await AuditoriaSql.RegistrarAsync(conn, null, entidadTipo, entidadId, entidadNombre, accion, EmailUsuario, detalle);
+    }
 }

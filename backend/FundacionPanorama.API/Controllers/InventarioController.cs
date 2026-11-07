@@ -1,6 +1,6 @@
+using FundacionPanorama.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Filters;
@@ -12,10 +12,10 @@ namespace FundacionPanorama.API.Controllers;
 [ApiController]
 [Route("api/inventario")]
 [Authorize]
-public class InventarioController(InventarioService svc, AppDbContext db) : BaseController
+public class InventarioController(InventarioService svc, DbConnectionFactory db) : BaseController
 {
     // Solo para la auditoría (BaseController.RegistrarAuditAsync)
-    private NpgsqlConnection AbrirConexion() => new(db.Database.GetConnectionString());
+    private NpgsqlConnection AbrirConexion() => db.Create();
 
     private async Task AuditarAsync(string entidadTipo, string entidadId, string? entidadNombre, string accion)
     {

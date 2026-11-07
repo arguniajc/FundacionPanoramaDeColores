@@ -49,6 +49,9 @@ public class DonacionesService(IDonacionesRepository repo)
 
     // ── Recibo HTML (correo) ─────────────────────────────────────────────────
 
+    // Todo dato escrito por usuarios se escapa: el recibo se envía por correo como HTML
+    private static string H(string? texto) => System.Net.WebUtility.HtmlEncode(texto ?? "");
+
     public static string GenerarHtmlRecibo(DonacionDto don, ConfiguracionDto? cfg)
     {
         var nombre    = cfg?.NombreFundacion ?? "Fundación Panorama de Colores";
@@ -61,15 +64,15 @@ public class DonacionesService(IDonacionesRepository repo)
 
         var detalle = don.Tipo == "dinero"
             ? $"<tr><td style='padding:4px 0;color:#6b7280;font-size:13px'>Valor donado</td><td style='padding:4px 0;font-weight:700;color:#059669;font-size:15px'>{FormatMoney(don.Monto)}</td></tr>"
-            : $"<tr><td style='padding:4px 0;color:#6b7280;font-size:13px'>Artículo</td><td style='padding:4px 0;font-size:13px'>{don.Cantidad} {don.UnidadMedida} — {don.NombreItem}</td></tr>";
+            : $"<tr><td style='padding:4px 0;color:#6b7280;font-size:13px'>Artículo</td><td style='padding:4px 0;font-size:13px'>{don.Cantidad} {H(don.UnidadMedida)} — {H(don.NombreItem)}</td></tr>";
 
         var programa = !string.IsNullOrWhiteSpace(don.NombrePrograma)
-            ? $"<tr><td style='padding:4px 0;color:#6b7280;font-size:13px'>Programa</td><td style='padding:4px 0;font-size:13px'>{don.NombrePrograma}</td></tr>" : "";
+            ? $"<tr><td style='padding:4px 0;color:#6b7280;font-size:13px'>Programa</td><td style='padding:4px 0;font-size:13px'>{H(don.NombrePrograma)}</td></tr>" : "";
         var sede = !string.IsNullOrWhiteSpace(don.NombreSede)
-            ? $"<tr><td style='padding:4px 0;color:#6b7280;font-size:13px'>Sede</td><td style='padding:4px 0;font-size:13px'>{don.NombreSede}</td></tr>" : "";
+            ? $"<tr><td style='padding:4px 0;color:#6b7280;font-size:13px'>Sede</td><td style='padding:4px 0;font-size:13px'>{H(don.NombreSede)}</td></tr>" : "";
 
         var docRow = don.TipoDocDonante != null && don.DocumentoDonante != null
-            ? $"<p style='margin:2px 0 0;font-size:12px;color:#6b7280'>{don.TipoDocDonante.ToUpper()}: {don.DocumentoDonante}</p>" : "";
+            ? $"<p style='margin:2px 0 0;font-size:12px;color:#6b7280'>{H(don.TipoDocDonante.ToUpper())}: {H(don.DocumentoDonante)}</p>" : "";
 
         return $"""
             <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">

@@ -53,6 +53,9 @@ public static class DependencyInjection
         services.AddInventario();
         services.AddDonacionesDonantesInscripciones();
         services.AddBeneficiarios();
+        services.AddSedes();
+        services.AddVoluntarios();
+        services.AddDocumentosAuditoriaAlertas();
 
         return services;
     }

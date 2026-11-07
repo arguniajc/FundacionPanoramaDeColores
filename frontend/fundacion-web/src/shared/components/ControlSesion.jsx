@@ -63,10 +63,15 @@ export default function ControlSesion() {
     renovar();
   };
 
+  // La cuenta de inactividad empieza al iniciar sesión (solo cuando cambia el usuario:
+  // si se reiniciara al abrirse el aviso, el aviso se cerraba solo y nunca se cerraba la sesión)
+  useEffect(() => {
+    if (user) ultimaActividad.current = Date.now();
+  }, [user]);
+
   // Registrar actividad (mientras el aviso está abierto solo cuenta el botón)
   useEffect(() => {
     if (!user) return;
-    ultimaActividad.current = Date.now();
     const marcar = () => { if (!avisoAbierto) ultimaActividad.current = Date.now(); };
     EVENTOS.forEach(e => window.addEventListener(e, marcar, { passive: true }));
     return () => EVENTOS.forEach(e => window.removeEventListener(e, marcar));

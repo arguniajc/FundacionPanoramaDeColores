@@ -1,0 +1,55 @@
+name: E2E — Panel (Playwright)
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'frontend/fundacion-web/**'
+      - '.github/workflows/e2e.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'frontend/fundacion-web/**'
+      - '.github/workflows/e2e.yml'
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright (chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend/fundacion-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/fundacion-web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Instalar Chromium de Playwright
+        run: npx playwright install --with-deps chromium
+
+      # La app se compila contra una API falsa (http://api.test) y las pruebas
+      # simulan todas sus respuestas: no se necesitan secretos ni backend.
+      - name: E2E
+        run: npm run e2e
+
+      - name: Subir reporte HTML
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/fundacion-web/playwright-report/
+            frontend/fundacion-web/test-results/
+          retention-days: 14

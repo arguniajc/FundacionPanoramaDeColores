@@ -27,3 +27,8 @@ desktop.ini
 # Temp / scripts
 patch_*.py
 __pycache__/
+
+# Pruebas e2e (Playwright)
+playwright-report/
+test-results/
+frontend/**/dist-e2e/

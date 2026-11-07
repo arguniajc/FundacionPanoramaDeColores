@@ -110,16 +110,34 @@ builder.Services.AddRequestTimeouts(options =>
     });
 
 // ── B1: Rate limiting — máx 10 intentos/min por IP en el endpoint de login ──
+// Cada IP tiene su propio cupo (antes era un único cupo compartido por todos los usuarios).
+// Render está detrás de Cloudflare: la IP real del cliente llega en estas cabeceras.
+static string IpCliente(HttpContext ctx)
+{
+    var h = ctx.Request.Headers;
+    var ip = h["CF-Connecting-IP"].FirstOrDefault()
+          ?? h["True-Client-IP"].FirstOrDefault()
+          ?? h["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim();
+    return string.IsNullOrWhiteSpace(ip) ? ctx.Connection.RemoteIpAddress?.ToString() ?? "desconocida" : ip;
+}
+
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddFixedWindowLimiter("auth", limiter =>
-    {
-        limiter.Window               = TimeSpan.FromMinutes(1);
-        limiter.PermitLimit          = 10;
-        limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        limiter.QueueLimit           = 0;
-    });
+    options.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(IpCliente(ctx), _ =>
+        new FixedWindowRateLimiterOptions
+        {
+            Window               = TimeSpan.FromMinutes(1),
+            PermitLimit          = 10,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit           = 0,
+        }));
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { mensaje = "Demasiados intentos de inicio de sesión. Espera un minuto e intenta de nuevo." }, ct);
+    };
 });
 
 var app = builder.Build();

@@ -20,6 +20,15 @@ jobs:
       - name: Restore
         run: dotnet restore backend/FundacionPanorama.slnx
 
+      # Falla si algún paquete NuGet (directo o transitivo) tiene vulnerabilidades conocidas
+      - name: Paquetes vulnerables (NuGet)
+        run: |
+          dotnet list backend/FundacionPanorama.slnx package --vulnerable --include-transitive | tee vulnerables.txt
+          if grep -qiE "has the following vulnerable packages|tiene los paquetes vulnerables" vulnerables.txt; then
+            echo "::error::Hay paquetes NuGet con vulnerabilidades conocidas (ver arriba)"
+            exit 1
+          fi
+
       - name: Build (Release)
         run: dotnet build backend/FundacionPanorama.slnx --no-restore -c Release
 
@@ -40,6 +49,15 @@ jobs:
 
       - name: Install
         run: npm ci
+        working-directory: frontend/fundacion-web
+
+      # Falla si una dependencia de producción tiene vulnerabilidades altas o críticas
+      - name: Paquetes vulnerables (npm)
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: frontend/fundacion-web
+
+      - name: Lint
+        run: npx eslint src
         working-directory: frontend/fundacion-web
 
       - name: Test

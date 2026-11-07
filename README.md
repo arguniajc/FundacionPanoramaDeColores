@@ -55,9 +55,11 @@ cd backend
 # Crear archivo de configuración local (NO se commitea — está en .gitignore)
 # backend/FundacionPanorama.API/appsettings.Development.json
 # {
-#   "ConnectionStrings": { "DefaultConnection": "Host=localhost;Database=fundacion;Username=...;Password=..." },
-#   "Jwt": { "Key": "...", "Issuer": "...", "Audience": "..." }
+#   "ConnectionStrings": { "DefaultConnection": "Host=...;Database=...;Username=...;Password=..." },
+#   "Jwt":      { "Key": "<texto aleatorio largo>" },
+#   "Supabase": { "ServiceKey": "sb_secret_..." }
 # }
+# ⚠️ Si apunta a la BD de PRODUCCIÓN, al arrancar la API se ejecutan las migraciones sobre ella.
 
 dotnet restore FundacionPanorama.slnx
 dotnet run --project FundacionPanorama.API
@@ -76,6 +78,60 @@ cd frontend/fundacion-web
 npm install
 npm run dev
 # Panel disponible en http://localhost:5173
+```
+
+### Variables de entorno en producción (Render)
+
+Los secretos **no** están en `appsettings.json`: la API se niega a arrancar si falta alguno y dice cuál.
+
+| Variable | Uso |
+|---|---|
+| `ConnectionStrings__DefaultConnection` | Cadena de conexión a Supabase (pooler). La API exige TLS verificado (`VerifyFull`) contra la CA de Supabase incluida en `Certificados/`. |
+| `Jwt__Key` | Clave de firma de las sesiones (texto aleatorio largo). Cambiarla cierra todas las sesiones. |
+| `Supabase__ServiceKey` | Clave secreta `sb_secret_...` del Storage. |
+| `OcrSpace__ApiKey` | (Opcional) clave de OCR.space para leer facturas. |
+
+---
+
+## Arquitectura del backend
+
+```
+FundacionPanorama.API             Controllers (solo HTTP: rutas, permisos, códigos), Program.cs, DbMigrations
+FundacionPanorama.Application     Features/<Módulo>/ → <Módulo>Service (reglas), DTOs/, Interfaces/
+FundacionPanorama.Infrastructure  Persistence/Repositories (todo el SQL, Npgsql vía DbConnectionFactory), Registro/
+FundacionPanorama.Domain          Tipos compartidos (Result, PagedResult…)
+FundacionPanorama.Tests           xUnit + Moq
+```
+
+- Todos los módulos siguen **Controller → Service → Repository**. Sin ORM: SQL explícito con Npgsql.
+- **Permisos**: cada endpoint de escritura lleva `[RequierePermiso("modulo", "accion")]` según el catálogo de *Seguridad*; las lecturas exigen sesión.
+- **Auditoría**: `AuditoriaSql.RegistrarAsync` (dentro de una transacción usa *savepoint*, así un fallo de auditoría no deshace la operación) o `BaseController.AuditarAsync`.
+- **Errores**: una excepción no controlada responde `{ mensaje, codigo }` sin detalles internos; con el código se busca el detalle en el log de Render.
+- **Archivos**: fotos y documentos personales van a un bucket **privado** (en la BD: `privado://carpeta/archivo`) y se ven con enlaces firmados de 1 hora (`POST /api/archivos/firmar`). Solo la carpeta `web` (imágenes de la página) es pública. Los archivos antiguos se migran desde *Seguridad → Almacenamiento*.
+
+## Convenciones del panel (frontend)
+
+- **Errores de la API**: `mensajeErrorApi(err, { accion })` (o `err.mensajeUsuario`) da un mensaje claro en español. Nunca un `catch` silencioso al crear, editar o eliminar.
+- **Validación de formularios**: reglas en `shared/utils/validacion.js` con `useValidacion` y `ResumenErrores`; beneficiarios en `domain/beneficiarios/validacionBeneficiario.js`. Cada mensaje dice qué está mal y da un ejemplo; los botones no se deshabilitan sin explicación.
+- **Archivos privados**: `useArchivoUrl`, `resolverArchivo` y `abrirArchivo` (`shared/utils/archivos.js`).
+- **Fechas**: `fechaLocalISO()` y `parsearFechaISO()` (`shared/utils/fecha.js`). No usar `toISOString()` para fechas: es UTC y después de las 7 p. m. da el día siguiente.
+- **Avisos desde código que no es un componente**: `notificar(mensaje, 'error')` (`shared/utils/notificar.js`).
+
+---
+
+## Tests
+
+```powershell
+# Backend (xUnit): reglas, servicios, permisos, almacenamiento
+dotnet test backend/FundacionPanorama.Tests/FundacionPanorama.Tests.csproj -c Release
+
+# Frontend, unitarios (Vitest): validación, mensajes de error, fechas, archivos
+cd frontend/fundacion-web
+npm test
+
+# Frontend, punta a punta (Playwright, con la API simulada: no toca la BD)
+npx playwright install chromium   # solo la primera vez
+npm run e2e
 ```
 
 ---
@@ -112,9 +168,12 @@ Los scripts SQL numerados antiguos están en `database/historico/` solo como ref
 
 | Workflow | Disparo | Descripción |
 |---|---|---|
-| `ci-build.yml` | Push / PR a master | Compila backend (.NET) y frontend (Vite) |
+| `ci-build.yml` | Push / PR a master | Backend: paquetes vulnerables, build y tests. Frontend: `npm audit`, lint, tests y build |
+| `e2e.yml` | Push / PR a master | Tests de punta a punta (Playwright) |
 | `keep-alive.yml` | Cada 14 minutos | Ping al backend para evitar suspensión en Render.com |
 | `bump-sw-cache.yml` | Push en css/, js/, images/ | Auto-versiona el service worker de la landing |
+
+Dependabot (`.github/dependabot.yml`) abre cada semana PRs con actualizaciones de NuGet y npm. `xlsx` se instala desde el CDN oficial de SheetJS, que ya no publica en npm.
 
 ---
 
@@ -122,8 +181,9 @@ Los scripts SQL numerados antiguos están en `database/historico/` solo como ref
 
 | Capa | Tecnología |
 |---|---|
-| Backend | .NET 10, ASP.NET Core, Entity Framework Core, PostgreSQL |
-| Frontend | React 19, Vite, Material UI v9, React Router v7 |
+| Backend | .NET 10, ASP.NET Core, Npgsql (SQL explícito, sin ORM), PostgreSQL |
+| Frontend | React 19, Vite 8, Material UI v9, React Router v7 |
+| Tests | xUnit + Moq (backend), Vitest (unitarios), Playwright (punta a punta) |
 | Base de datos | PostgreSQL (Supabase) |
 | Hosting web | GitHub Pages |
 | Hosting API | Render.com (Docker) |

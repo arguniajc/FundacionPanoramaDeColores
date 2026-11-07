@@ -96,7 +96,7 @@ public class CrearBeneficiarioDto
     [StringLength(500)]
     public string?   DescripcionAlergia { get; set; }
     [StringLength(1000)]
-    public string    ObservacionesSalud { get; set; } = string.Empty;
+    public string?   ObservacionesSalud { get; set; }
     public bool      TieneDiscapacidad  { get; set; }
     [StringLength(500)]
     public string?   DescripcionDiscapacidad { get; set; }

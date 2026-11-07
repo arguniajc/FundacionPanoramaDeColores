@@ -13,6 +13,7 @@ import CheckCircleIcon    from '@mui/icons-material/CheckCircle';
 import NavigateNextIcon   from '@mui/icons-material/NavigateNext';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import apiClient          from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, PAISES } from '@/shared/constants/beneficiarios';
 import UploadFoto      from '@/shared/components/UploadFoto';
 import UploadDocumento from '@/shared/components/UploadDocumento';
@@ -664,10 +665,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
       limpiarDraft();
       onCreado();
     } catch (err) {
-      const msg = err.response?.status === 409
-        ? 'Ese número de documento ya está inscrito.'
-        : 'Error al guardar. Intenta de nuevo.';
-      setError(msg);
+      setError(mensajeErrorApi(err, { conflicto: 'Ese número de documento ya está inscrito.', accion: 'inscribir el beneficiario' }));
     } finally {
       setGuardando(false);
     }
@@ -697,7 +695,6 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
               Se restauró un borrador guardado anteriormente.
             </Alert>
           )}
-          {error && <Alert severity="error" sx={{ mb: 2.5 }}>{error}</Alert>}
 
           <Stepper activeStep={paso} alternativeLabel sx={{ mb: 3 }}>
             {PASOS.map((label, i) => (
@@ -716,6 +713,11 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
           {pasoRenders[paso]()}
         </DialogContent>
 
+        {error && (
+          <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+            {error}
+          </Alert>
+        )}
         <DialogActions sx={{ px: 3, py: 2, gap: 1, justifyContent: 'space-between' }}>
           <Button onClick={() => setPaso(p => p - 1)} disabled={paso === 0}
             startIcon={<NavigateBeforeIcon />} variant="outlined">

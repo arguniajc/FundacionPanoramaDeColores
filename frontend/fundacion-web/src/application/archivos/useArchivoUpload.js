@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import { archivosRepository } from '@/infrastructure/repositories/archivosRepository';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function useArchivoUpload() {
   const [subiendo,  setSubiendo]  = useState(false);
@@ -16,8 +17,7 @@ export function useArchivoUpload() {
       const { data } = await archivosRepository.subir(archivo, carpeta);
       return data.url;
     } catch (err) {
-      const msg = err.response?.data?.mensaje ?? 'Error al subir el archivo.';
-      setErrorMsg(msg);
+      setErrorMsg(mensajeErrorApi(err, { accion: 'subir el archivo' }));
       return null;
     } finally {
       setSubiendo(false);

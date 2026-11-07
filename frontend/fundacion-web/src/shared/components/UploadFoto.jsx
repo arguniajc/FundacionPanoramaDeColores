@@ -9,6 +9,7 @@ import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import CameraAltIcon    from '@mui/icons-material/CameraAlt';
 import CamaraFoto       from './CamaraFoto';
 import apiClient        from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 
@@ -37,7 +38,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
       });
       onChange(data.url);
     } catch (err) {
-      setErrorMsg(err.response?.data?.mensaje ?? 'Error al subir la imagen.');
+      setErrorMsg(mensajeErrorApi(err, { accion: 'subir la imagen' }));
     } finally {
       setSubiendo(false);
     }

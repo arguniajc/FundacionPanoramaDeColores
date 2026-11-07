@@ -15,6 +15,7 @@ import DownloadIcon      from '@mui/icons-material/Download';
 import UploadFileIcon    from '@mui/icons-material/UploadFile';
 import CamaraFoto        from './CamaraFoto';
 import apiClient         from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const ACCEPT_IMG = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
 const ACCEPT_PDF = 'application/pdf';
@@ -137,7 +138,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
         onChangeRef.current(data.url);
         setPdfListo(true);
       } catch (err) {
-        setErrorMsg(err.response?.data?.mensaje ?? 'Error al generar el PDF.');
+        setErrorMsg(mensajeErrorApi(err, { accion: 'generar el PDF' }));
       } finally {
         setGenerando(false);
         generandoRef.current = false;
@@ -184,7 +185,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
       });
       onChange(data.url);
     } catch (err) {
-      setErrorMsg(err.response?.data?.mensaje ?? 'Error al subir el PDF.');
+      setErrorMsg(mensajeErrorApi(err, { accion: 'subir el PDF' }));
     } finally {
       setSubiendo(false);
     }

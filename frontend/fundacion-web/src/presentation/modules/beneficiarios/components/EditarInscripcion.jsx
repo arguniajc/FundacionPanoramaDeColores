@@ -6,6 +6,7 @@ import {
   InputAdornment, Autocomplete, Checkbox, FormControlLabel, Chip,
 } from '@mui/material';
 import apiClient       from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { TIPOS_DOC, PARENTESCOS, TALLAS_CAMISA, TALLAS_PANTALON, TALLAS_ZAPATOS, EPS_LIST, PAISES } from '@/shared/constants/beneficiarios';
 
 const GENEROS = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];
@@ -230,16 +231,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
       });
       onGuardado();
     } catch (err) {
-      let msg = 'Error al guardar. Intenta de nuevo.';
-      if (err.response?.status === 409) {
-        msg = 'Ese número de documento ya está registrado.';
-      } else if (err.response?.status === 400 && err.response.data?.errors) {
-        const detalles = Object.entries(err.response.data.errors)
-          .map(([campo, msgs]) => `${campo}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-          .join(' | ');
-        msg = `Error de validación — ${detalles}`;
-      }
-      setError(msg);
+      setError(mensajeErrorApi(err, { conflicto: 'Ese número de documento ya está registrado.', accion: 'guardar los cambios' }));
     } finally {
       setGuardando(false);
     }
@@ -253,7 +245,6 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
       </DialogTitle>
 
       <DialogContent dividers sx={{ px: { xs: 2, sm: 3 }, py: 3 }}>
-        {error && <Alert severity="error" sx={{ mb: 2.5 }}>{error}</Alert>}
 
         <Grid container spacing={2.5} mt={0}>
 
@@ -635,6 +626,11 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
         </Grid>
       </DialogContent>
 
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+          {error}
+        </Alert>
+      )}
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={handleCerrar} disabled={guardando}>Cancelar</Button>
         <Button

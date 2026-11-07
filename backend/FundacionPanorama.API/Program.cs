@@ -33,7 +33,20 @@ string Requerido(string clave) =>
         : throw new InvalidOperationException(
             $"Falta la configuración '{clave}'. Defínela como variable de entorno '{clave.Replace(":", "__")}'.");
 
-var connStr = Requerido("ConnectionStrings:DefaultConnection");
+// Con SSL Mode=Require Npgsql cifra pero NO verifica que el servidor sea quien dice ser.
+// Para Supabase se exige VerifyFull contra su CA raíz (incluida en Certificados/).
+static string ConVerificacionTls(string cadena)
+{
+    var csb  = new NpgsqlConnectionStringBuilder(cadena);
+    var host = csb.Host ?? "";
+    if (!(host.EndsWith(".supabase.com") || host.EndsWith(".supabase.co")) || !string.IsNullOrEmpty(csb.RootCertificate))
+        return cadena;
+    csb.SslMode         = SslMode.VerifyFull;
+    csb.RootCertificate = Path.Combine(AppContext.BaseDirectory, "Certificados", "supabase-prod-ca-2021.crt");
+    return csb.ConnectionString;
+}
+
+var connStr = ConVerificacionTls(Requerido("ConnectionStrings:DefaultConnection"));
 var jwtKey  = Requerido("Jwt:Key");
 Requerido("Supabase:ServiceKey");
 
@@ -145,8 +158,7 @@ var app = builder.Build();
 // ── Auto-migración via Npgsql directo (sin EF Core) ──────────────────────────
 {
     var migLogger  = app.Services.GetRequiredService<ILogger<Program>>();
-    var migConnStr = app.Configuration.GetConnectionString("DefaultConnection")!;
-    await DbMigrations.RunAsync(migConnStr, migLogger);
+    await DbMigrations.RunAsync(connStr, migLogger);
 
     // Bucket privado para fotos y documentos personales (se crea si no existe)
     try

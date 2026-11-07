@@ -8,9 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="Google.Apis.Auth" Version="1.73.0" />
-    <PackageReference Include="MailKit" Version="4.11.0" />
+    <PackageReference Include="MailKit" Version="4.18.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -28,4 +28,8 @@
     <ProjectReference Include="..\FundacionPanorama.Infrastructure\FundacionPanorama.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- CA raíz de Supabase: permite verificar el certificado TLS de la BD (SSL Mode=VerifyFull) -->
+    <None Include="Certificados/supabase-prod-ca-2021.crt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

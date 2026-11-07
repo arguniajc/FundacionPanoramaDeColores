@@ -33,7 +33,7 @@ async function cargarImagenCircular(url) {
         ctx.drawImage(img, sx, sy, side, side, 0, 0, px, px);
         ctx.restore();
         resolve(canvas.toDataURL('image/jpeg', 0.95));
-      } catch { resolve(null); }
+      } catch { resolve(null); } // opcional: si la foto no se puede procesar, el PDF sale sin ella
     };
     img.onerror = () => resolve(null);
     img.src = url;
@@ -116,7 +116,7 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
 
   // Metadatos del firmante
   let firmaMeta = {};
-  try { firmaMeta = JSON.parse(datos.__firma_meta__ || '{}'); } catch {}
+  try { firmaMeta = JSON.parse(datos.__firma_meta__ || '{}'); } catch { /* metadatos ilegibles: se omiten en el PDF */ }
   const firmaQuienLabel = firmaMeta.quien ? (QUIEN_PDF_LABEL[firmaMeta.quien] ?? firmaMeta.quien) : null;
   const firmaFechaHora  = firmaMeta.fechaHora
     ? new Date(firmaMeta.fechaHora).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
@@ -352,7 +352,7 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
           // Panel deshabilitado (switch apagado) → sin datos → omitir del PDF
           if (!v) { i++; continue; }
           let d = {};
-          try { if (v) d = JSON.parse(v); } catch {}
+          try { if (v) d = JSON.parse(v); } catch { /* datos ilegibles: se muestran como '—' */ }
           const nd = (val) => val || '—';
           const titulo = c1.tipo === 'datos_padre' ? 'DATOS DEL PADRE / ACUDIENTE'
             : c1.tipo === 'datos_madre' ? 'DATOS DE LA MADRE'
@@ -424,7 +424,7 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
           doc.setDrawColor(...BORDER);
           doc.rect(ML, y, CW, IMG_H, 'S');
           if (v && v.startsWith('data:image')) {
-            try { doc.addImage(v, 'PNG', ML + 5, y + 2, 65, IMG_H - 4); } catch {}
+            try { doc.addImage(v, 'PNG', ML + 5, y + 2, 65, IMG_H - 4); } catch { /* imagen inválida: se deja el recuadro vacío */ }
             doc.setFontSize(7);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(...GRAY);
@@ -493,13 +493,13 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
     doc.setDrawColor(...BORDER);
 
     if (firmaPadre) {
-      try { doc.addImage(firmaPadre, 'PNG', ML + 4, y + 1, 50, sigH - 2); } catch {}
+      try { doc.addImage(firmaPadre, 'PNG', ML + 4, y + 1, 50, sigH - 2); } catch { /* firma inválida: se deja el espacio vacío */ }
       doc.setFontSize(6);
       doc.setTextColor(...GRAY);
       doc.text('✓ Firma digital capturada', ML + 4, y + sigH + 2);
     }
     if (repAutorizado && repFirma && sigH > 0) {
-      try { doc.addImage(repFirma, 'PNG', ML + col + 4, y + 1, 50, sigH - 2); } catch {}
+      try { doc.addImage(repFirma, 'PNG', ML + col + 4, y + 1, 50, sigH - 2); } catch { /* firma inválida: se deja el espacio vacío */ }
       doc.setFontSize(6);
       doc.setTextColor(...GRAY);
       doc.text('✓ Firma digital capturada', ML + col + 4, y + sigH + 2);
@@ -535,7 +535,7 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
     }
     // Col 3 — Tercero (entidad ejecutora)
     if (terceroRepFirma && sigH > 0) {
-      try { doc.addImage(terceroRepFirma, 'PNG', ML + col * 2 + 4, y + 1, 50, sigH - 2); } catch {}
+      try { doc.addImage(terceroRepFirma, 'PNG', ML + col * 2 + 4, y + 1, 50, sigH - 2); } catch { /* firma inválida: se deja el espacio vacío */ }
       doc.setFontSize(6);
       doc.setTextColor(...GRAY);
       doc.text('✓ Firma digital capturada', ML + col * 2 + 4, y + sigH + 2);
@@ -570,13 +570,13 @@ export async function generarPdfInscripcion({ inscripcion, beneficiario, campos,
     doc.setDrawColor(...BORDER);
 
     if (firmaPadre) {
-      try { doc.addImage(firmaPadre, 'PNG', ML + 8, y + 1, 60, sigH - 2); } catch {}
+      try { doc.addImage(firmaPadre, 'PNG', ML + 8, y + 1, 60, sigH - 2); } catch { /* firma inválida: se deja el espacio vacío */ }
       doc.setFontSize(6);
       doc.setTextColor(...GRAY);
       doc.text('✓ Firma digital capturada', ML + 8, y + sigH + 2);
     }
     if (repAutorizado && repFirma && sigH > 0) {
-      try { doc.addImage(repFirma, 'PNG', mid + 8, y + 1, 60, sigH - 2); } catch {}
+      try { doc.addImage(repFirma, 'PNG', mid + 8, y + 1, 60, sigH - 2); } catch { /* firma inválida: se deja el espacio vacío */ }
       doc.setFontSize(6);
       doc.setTextColor(...GRAY);
       doc.text('✓ Firma digital capturada', mid + 8, y + sigH + 2);

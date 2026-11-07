@@ -33,7 +33,7 @@ const FORM_VACIO = {
 
 export default function ProgramasPage() {
   const {
-    sedes, cargando, error, toast, setToast,
+    sedes, cargando, error, setError, toast, setToast,
     guardarPrograma, togglePrograma, eliminarPrograma,
     autorizarRepPrograma, revocarRepPrograma,
   } = useSedes();
@@ -70,6 +70,7 @@ export default function ProgramasPage() {
     if (!formPrograma.nombre.trim() || !formPrograma.sedeId) return;
     setGuardandoProg(true);
     setErrForm('');
+    setError('');
     const dto = {
       sedeId:              formPrograma.sedeId,
       nombre:              formPrograma.nombre.trim(),
@@ -85,6 +86,7 @@ export default function ProgramasPage() {
     };
     const ok = await guardarPrograma(dto, formPrograma.id);
     if (ok) { setFormPrograma(null); }
+    // El detalle (validación, conflicto, conexión…) llega en `error` desde useSedes.
     else     { setErrForm('No se pudo guardar el programa.'); }
     setGuardandoProg(false);
   };
@@ -96,7 +98,10 @@ export default function ProgramasPage() {
       const raw      = await leerArchivoComoDataUrl(file);
       const resizada = await redimensionarImagen(raw, 600);
       setFormPrograma(p => ({ ...p, terceroRepFirma: resizada }));
-    } catch {}
+    } catch {
+      setError('');
+      setErrForm('No se pudo leer la imagen de la firma. Usa un archivo JPG, PNG o WEBP válido.');
+    }
     e.target.value = '';
   };
 
@@ -297,7 +302,6 @@ export default function ProgramasPage() {
             {formPrograma.id ? 'Editar proyecto' : 'Nuevo proyecto'}
           </DialogTitle>
           <DialogContent dividers>
-            {errForm && <Alert severity="error" sx={{ mb: 2.5 }}>{errForm}</Alert>}
             <Grid container spacing={2.5} mt={0}>
               <Grid size={12}>
                 <FormControl fullWidth size="small">
@@ -415,6 +419,11 @@ export default function ProgramasPage() {
               )}
             </Grid>
           </DialogContent>
+          {errForm && (
+            <Alert severity="error" onClose={() => setErrForm('')} sx={{ mx: 2, mt: 1.5, mb: 0 }}>
+              {error || errForm}
+            </Alert>
+          )}
           <DialogActions sx={{ px: 2, py: 1.5 }}>
             <Button onClick={() => setFormPrograma(null)} disabled={guardandoProg}>Cancelar</Button>
             <Button variant="contained" onClick={handleGuardarPrograma}

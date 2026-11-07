@@ -22,6 +22,7 @@ import { useAuth }              from '@/application/auth/AuthContext';
 import { useConfirm }           from '@/shared/components/ConfirmDialog';
 import { COLOR_DONACIONES, COLOR_ESPECIE, fmtMoney, fmtFecha } from './helpers';
 import { BRAND_COLOR } from '@/shared/constants/brand';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { StatCard } from './StatCard';
 import { NuevaDonacionDialog }      from './NuevaDonacionDialog';
 import { ReciboDonacionDialog }     from './ReciboDonacionDialog';
@@ -50,10 +51,10 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
   const err = msg => setSnack({ open: true, msg, sev: 'error' });
 
   const recargarStats = () =>
-    donacionesRepository.stats().then(({ data }) => setStats(data)).catch(() => {});
+    donacionesRepository.stats().then(({ data }) => setStats(data)).catch(() => { /* opcional: las tarjetas de resumen no bloquean la lista */ });
 
   useEffect(() => {
-    sedesRepository.listar({ soloActivas: true }).then(({ data }) => setSedes(data)).catch(() => {});
+    sedesRepository.listar({ soloActivas: true }).then(({ data }) => setSedes(data)).catch(() => { /* opcional: sin sedes solo se pierde el filtro */ });
     recargarStats();
   }, []);
 
@@ -71,17 +72,17 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
       if (filtHasta)  params.hasta  = filtHasta;
       const { data } = await donacionesRepository.listar(params);
       setDonaciones(data);
-    } catch { err('No se pudieron cargar las donaciones.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'cargar las donaciones' })); }
     finally { setCargando(false); }
   }, [filtTipo, filtSedeId, filtDesde, filtHasta]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const handleGuardada = (data) => {
+  const handleGuardada = (data, aviso) => {
     setDonaciones(prev => [data, ...prev]);
     setDialOpen(false);
     onClearDonanteInicial();
-    ok('Donación registrada.');
+    if (aviso) err(aviso); else ok('Donación registrada.');
     recargarStats();
   };
 
@@ -97,7 +98,7 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
       setDonaciones(prev => prev.filter(d => d.id !== don.id));
       ok('Donación eliminada.');
       recargarStats();
-    } catch { err('No se pudo eliminar.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'eliminar la donación' })); }
   };
 
   const handleAnular = async (don) => {
@@ -106,7 +107,7 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
       await donacionesRepository.anular(don.id);
       setDonaciones(prev => prev.map(d => d.id === don.id ? { ...d, reciboEstado: 'anulado' } : d));
       ok('Recibo anulado.');
-    } catch { err('No se pudo anular el recibo.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'anular el recibo' })); }
   };
 
   const hayFiltros = filtTipo || filtSedeId || filtDesde || filtHasta;
@@ -339,7 +340,7 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
         sedes={sedes}
       />
 
-      <Snackbar open={snack.open} autoHideDuration={3500}
+      <Snackbar open={snack.open} autoHideDuration={snack.sev === 'error' ? 8000 : 3500}
         onClose={() => setSnack(p => ({ ...p, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert severity={snack.sev} variant="filled"

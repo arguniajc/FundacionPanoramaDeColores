@@ -6,6 +6,7 @@ import {
 import AddIcon        from '@mui/icons-material/Add';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import apiClient from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { DialogSede }     from './components/DialogSede';
 import { DialogPrograma } from './components/DialogPrograma';
 import { TarjetaSede }    from './components/TarjetaSede';
@@ -26,8 +27,8 @@ export default function SedesPage() {
     try {
       const { data } = await apiClient.get('/api/sedes');
       setSedes(data);
-    } catch {
-      setError('No se pudieron cargar las sedes.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'cargar las sedes' }));
     } finally {
       setCargando(false);
     }
@@ -49,18 +50,19 @@ export default function SedesPage() {
     try {
       const { data } = await apiClient.patch(`/api/sedes/${sede.id}/toggle`);
       setSedes(prev => prev.map(s => s.id === data.id ? data : s));
-    } catch { setError('Error al cambiar estado de la sede.'); }
+    } catch (err) { setError(mensajeErrorApi(err, { accion: 'cambiar el estado de la sede' })); }
   };
 
   const handleEliminarSede = async () => {
     if (!confirmEliminar) return;
     setEliminando(true);
+    setError('');
     try {
       await apiClient.delete(`/api/sedes/${confirmEliminar.item.id}`);
       setSedes(prev => prev.filter(s => s.id !== confirmEliminar.item.id));
       setConfirmEliminar(null);
       setToast('Sede eliminada');
-    } catch { setError('No se pudo eliminar la sede. Puede que tenga programas activos.'); }
+    } catch (err) { setError(mensajeErrorApi(err, { accion: 'eliminar la sede', conflicto: 'No se pudo eliminar la sede. Puede que tenga programas activos.' })); }
     finally { setEliminando(false); }
   };
 
@@ -84,12 +86,13 @@ export default function SedesPage() {
         if (s.id !== data.sedeId) return s;
         return { ...s, programas: s.programas.map(p => p.id === data.id ? data : p) };
       }));
-    } catch { setError('Error al cambiar estado del programa.'); }
+    } catch (err) { setError(mensajeErrorApi(err, { accion: 'cambiar el estado del programa' })); }
   };
 
   const handleEliminarPrograma = async () => {
     if (!confirmEliminar) return;
     setEliminando(true);
+    setError('');
     try {
       await apiClient.delete(`/api/sedes/programas/${confirmEliminar.item.id}`);
       setSedes(prev => prev.map(s => ({
@@ -98,7 +101,7 @@ export default function SedesPage() {
       })));
       setConfirmEliminar(null);
       setToast('Programa eliminado');
-    } catch { setError('No se pudo eliminar el programa.'); }
+    } catch (err) { setError(mensajeErrorApi(err, { accion: 'eliminar el programa', conflicto: 'No se pudo eliminar el programa. Puede que tenga registros asociados.' })); }
     finally { setEliminando(false); }
   };
 
@@ -180,6 +183,7 @@ export default function SedesPage() {
             Se eliminará <strong>{confirmEliminar?.item?.nombre}</strong>. Esta acción no se puede deshacer.
             {confirmEliminar?.tipo === 'sede' && ' Se eliminarán también todos sus programas.'}
           </Typography>
+          {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setConfirmEliminar(null)} variant="outlined">Cancelar</Button>

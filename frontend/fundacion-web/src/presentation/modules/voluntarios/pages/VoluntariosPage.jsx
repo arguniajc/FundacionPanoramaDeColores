@@ -17,6 +17,7 @@ import { StatCard }            from './components/StatCard';
 import { VoluntarioCard }      from './components/VoluntarioCard';
 import { VoluntarioDialog }    from './components/VoluntarioDialog';
 import { AsignacionesDialog }  from './components/AsignacionesDialog';
+import { mensajeErrorApi }     from '@/shared/utils/mensajeErrorApi';
 
 export default function VoluntariosPage() {
   const confirm = useConfirm();
@@ -32,14 +33,15 @@ export default function VoluntariosPage() {
   const err = msg => setSnack({ open: true, msg, sev: 'error' });
 
   const recargarStats = () =>
-    voluntariosRepository.stats().then(({ data }) => setStats(data)).catch(() => {});
+    voluntariosRepository.stats().then(({ data }) => setStats(data))
+      .catch(() => { /* opcional: las tarjetas de resumen no bloquean el listado */ });
 
   const cargar = useCallback(async (q) => {
     setCargando(true);
     try {
       const { data } = await voluntariosRepository.listar(q ? { buscar: q } : {});
       setVoluntarios(data);
-    } catch { err('No se pudieron cargar los voluntarios.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'cargar los voluntarios' })); }
     finally { setCargando(false); }
   }, []);
 
@@ -62,7 +64,7 @@ export default function VoluntariosPage() {
     try {
       const { data } = await voluntariosRepository.obtener(id);
       setVoluntarios(prev => prev.map(v => v.id === id ? data : v));
-    } catch {}
+    } catch { /* opcional: refresco en segundo plano; la tarjeta se actualiza al recargar */ }
     recargarStats();
   }, []);
 
@@ -73,7 +75,7 @@ export default function VoluntariosPage() {
       setVoluntarios(prev => prev.filter(x => x.id !== v.id));
       ok('Voluntario eliminado.');
       recargarStats();
-    } catch { err('No se pudo eliminar.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'eliminar el voluntario' })); }
   };
 
   return (

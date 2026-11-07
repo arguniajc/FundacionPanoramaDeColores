@@ -10,6 +10,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import { beneficiariosRepository } from '@/infrastructure/repositories/beneficiariosRepository';
 import { sedesRepository }         from '@/infrastructure/repositories/sedesRepository';
 import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
+import { mensajeErrorApi }         from '@/shared/utils/mensajeErrorApi';
 import {
   COLOR, CampoInput, FirmaAutorizacion, SeccionHeader,
   agruparPorSeccion, calcEdad, parseMeta,
@@ -52,7 +53,10 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
       try {
         const { data } = await beneficiariosRepository.listar({ buscar: busqueda, porPagina: 20, pagina: 1, estado: 'activos' });
         setBeneficiarios(data.data ?? []);
-      } catch { setBeneficiarios([]); }
+      } catch (err) {
+        setBeneficiarios([]);
+        setError(mensajeErrorApi(err, { accion: 'buscar beneficiarios' }));
+      }
       finally { setBuscando(false); }
     }, 300);
     return () => clearTimeout(t);
@@ -64,7 +68,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         (s.programas ?? []).filter(p => p.activo).map(p => ({ ...p, nombreSede: s.nombre }))
       );
       setProgramas(progs);
-    }).catch(() => {});
+    }).catch(err => setError(mensajeErrorApi(err, { accion: 'cargar los programas' })));
   }, []);
 
   useEffect(() => {
@@ -86,7 +90,8 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
       }
       setDatos(auto);
       setPanelActivo(init);
-    }).catch(() => {}).finally(() => setCargandoCampos(false));
+    }).catch(err => setError(mensajeErrorApi(err, { accion: 'cargar el formulario del programa' })))
+      .finally(() => setCargandoCampos(false));
   }, [selPrograma, selBenef]);
 
   // Tutor visible SOLO en estos casos:
@@ -192,8 +197,11 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         observaciones:  observaciones.trim() || null,
       });
       onCreada(result.data);
-    } catch {
-      setError('No se pudo guardar la inscripción.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, {
+        accion: 'guardar la inscripción',
+        conflicto: 'El beneficiario ya está inscrito en este programa.',
+      }));
     } finally {
       setGuardando(false);
     }
@@ -214,8 +222,6 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
             <Step key={label}><StepLabel>{label}</StepLabel></Step>
           ))}
         </Stepper>
-
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         {paso === 0 && (
           <Box>
@@ -335,6 +341,11 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         )}
       </DialogContent>
 
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+          {error}
+        </Alert>
+      )}
       <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
         <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
         {paso > 0 && (

@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { COLOR, fmtNum } from './helpers';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegistrado }) {
   const [form,      setForm]      = useState({ tipoMovimientoId: '', cantidad: '', motivo: '', donante: '', donanteObj: null, buscandoDonante: false });
@@ -37,7 +38,7 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
       try {
         const { data } = await inventarioRepository.buscarDonantes(texto);
         setDonantes(data);
-      } catch {} finally {
+      } catch { /* opcional: el donante también se puede escribir a mano */ } finally {
         set('buscandoDonante', false);
       }
     }, 280);
@@ -59,7 +60,7 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
       });
       onRegistrado(item.id, data.nuevoStock);
     } catch (e) {
-      setError(e?.response?.data?.mensaje || 'Error al registrar el movimiento.');
+      setError(mensajeErrorApi(e, { accion: 'registrar el movimiento' }));
     } finally {
       setGuardando(false);
     }
@@ -75,7 +76,7 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
           <strong>{item.nombre}</strong> · Stock: <strong>{fmtNum(item.stockActual)} {item.unidadMedida}</strong>
           {item.nombreSede && <> · <strong>{item.nombreSede}</strong></>}
         </Typography>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size={12}>
             <FormControl fullWidth size="small">

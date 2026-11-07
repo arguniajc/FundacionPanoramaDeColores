@@ -13,9 +13,10 @@ import { donacionesRepository }    from '@/infrastructure/repositories/donacione
 import { fmtMoney, fmtFecha } from './helpers';
 import { CertificadoDonacionDialog } from './CertificadoDonacionDialog';
 import { BRAND_COLOR } from '@/shared/constants/brand';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 function generarPDF(don, config, firma) {
-  import('jspdf').then(({ default: jsPDF }) => {
+  return import('jspdf').then(({ default: jsPDF }) => {
     const doc = new jsPDF({ unit: 'mm', format: 'a5' });
     const W = doc.internal.pageSize.getWidth();
     let y = 18;
@@ -200,12 +201,14 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
         nombreRepLegal: data.nombreRepLegal ?? null,
         cargoRep:       data.cargoRep       ?? null,
       }))
-      .catch(() => {});
+      .catch(() => { /* opcional: sin la firma el recibo se genera con la línea en blanco */ });
   }, [open]);
 
   const handleDescargar = () => {
     setGenerando(true);
-    generarPDF(donacion, config, firma);
+    generarPDF(donacion, config, firma)
+      .catch(() => setEmailSnack('No se pudo generar el PDF del recibo. Intenta de nuevo.'));
+    // auditoría: si el registro de la descarga falla, no afecta al usuario
     donacionesRepository.logEmision(donacion.id, { accion: 'descarga' }).catch(() => {});
     setTimeout(() => setGenerando(false), 800);
   };
@@ -216,7 +219,7 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
       await donacionesRepository.enviarRecibo(donacion.id);
       setEmailSnack('Recibo enviado por correo correctamente.');
     } catch (e) {
-      setEmailSnack(e?.response?.data?.mensaje || 'No se pudo enviar el correo.');
+      setEmailSnack(mensajeErrorApi(e, { accion: 'enviar el recibo por correo' }));
     } finally {
       setEnviando(false);
     }
@@ -364,7 +367,7 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
             size="small"
             color={emailSnack.includes('correo correctamente') ? 'success' : 'error'}
             onDelete={() => setEmailSnack('')}
-            sx={{ fontSize: '0.75rem' }}
+            sx={{ fontSize: '0.75rem', height: 'auto', py: 0.5, '& .MuiChip-label': { whiteSpace: 'normal' } }}
           />
         </Box>
       )}

@@ -80,12 +80,13 @@ function cargarCache() {
     if (!parsed.ts) return parsed;
     return Date.now() - parsed.ts < CACHE_TTL ? parsed.data : null;
   } catch {
+    // caché corrupta o localStorage bloqueado: se usan los valores por defecto
     return null;
   }
 }
 
 function guardarCache(data) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch { /* noop */ }
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch { /* opcional: si localStorage está lleno o bloqueado solo se pierde la caché */ }
 }
 
 const ConfiguracionCtx = createContext({ ...DEFAULTS, actualizarConfig: () => {} });
@@ -137,7 +138,7 @@ export function ConfiguracionProvider({ children }) {
     }
     configuracionRepository.obtenerPublica()
       .then(({ data }) => actualizar(data))
-      .catch(() => { /* usar defaults/cache */ });
+      .catch(() => { /* opcional: la apariencia pública cae en defaults/caché sin interrumpir al usuario */ });
   }, [actualizar]);
 
   return (

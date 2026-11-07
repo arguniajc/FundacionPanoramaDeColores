@@ -51,6 +51,8 @@ import { ImportarBeneficiariosDialog } from './components/ImportarBeneficiariosD
 import { PerfilesIncompletosDialog }    from './components/PerfilesIncompletosDialog';
 import { useBeneficiariosPage } from './useBeneficiariosPage';
 import apiClient from '@/infrastructure/http/apiClient';
+import { useToast } from '@/shared/context/ToastContext';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 // Fuera del componente — no se recrea en cada render
 const HOVER_SX_NINOS = {
@@ -213,6 +215,7 @@ export default function BeneficiariosPage() {
   } = useBeneficiariosPage({ tipo: 'niño' });
 
   const [pendientesOpen, setPendientesOpen] = useState(false);
+  const notificar = useToast();
 
   // Debounce search: el TextField usa inputSearch, buscar se actualiza 350ms después
   const [inputSearch, setInputSearch] = useState('');
@@ -235,7 +238,9 @@ export default function BeneficiariosPage() {
     try {
       const { data } = await apiClient.get(`/api/beneficiarios/${id}`);
       setEditando(data);
-    } catch { /* silencioso */ }
+    } catch (err) {
+      notificar(mensajeErrorApi(err, { accion: 'abrir el beneficiario para editarlo' }), 'error');
+    }
   };
 
   return (

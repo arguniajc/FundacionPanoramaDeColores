@@ -5,6 +5,8 @@ import {
   InputAdornment, InputLabel, MenuItem, Select, Switch, TextField, Tooltip, Typography,
 } from '@mui/material';
 import { archivosRepository }   from '@/infrastructure/repositories/archivosRepository';
+import { useToast }             from '@/shared/context/ToastContext';
+import { mensajeErrorApi }      from '@/shared/utils/mensajeErrorApi';
 import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
@@ -258,6 +260,7 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
 
 export function CampoInput({ campo, value, onChange, activo = true, onToggle }) {
   const [subiendo, setSubiendo] = useState(false);
+  const toast = useToast();
 
   if (campo.tipo === 'boolean') {
     return (
@@ -288,8 +291,9 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
       try {
         const { data } = await archivosRepository.subir(file, 'inscripciones');
         onChange(data.url);
-      } catch {
+      } catch (err) {
         onChange('');
+        toast(mensajeErrorApi(err, { accion: 'subir el documento' }), 'error');
       } finally {
         setSubiendo(false);
       }
@@ -321,7 +325,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
 
   if (campo.tipo === 'daterange') {
     let rng = { desde: '', hasta: '' };
-    try { if (value) rng = JSON.parse(value); } catch {}
+    try { if (value) rng = JSON.parse(value); } catch { /* valor guardado ilegible: se muestra vacío */ }
     const setRng = (k, v) => onChange(JSON.stringify({ ...rng, [k]: v }));
     return (
       <Box>
@@ -386,7 +390,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
 
   if (campo.tipo === 'documento_id') {
     let doc = { tipo: '', numero: '' };
-    try { if (value) doc = JSON.parse(value); } catch {}
+    try { if (value) doc = JSON.parse(value); } catch { /* valor guardado ilegible: se muestra vacío */ }
     const setDoc = (k, v) => onChange(JSON.stringify({ ...doc, [k]: v }));
     return (
       <Box>
@@ -430,7 +434,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
 
   if (campo.tipo === 'grado_escolar') {
     let ge = { grado: '', jornada: '' };
-    try { if (value) ge = JSON.parse(value); } catch {}
+    try { if (value) ge = JSON.parse(value); } catch { /* valor guardado ilegible: se muestra vacío */ }
     const setGE = (k, v) => onChange(JSON.stringify({ ...ge, [k]: v }));
     return (
       <Box>
@@ -506,7 +510,7 @@ export function CampoInput({ campo, value, onChange, activo = true, onToggle }) 
 
   if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre' || campo.tipo === 'datos_tutor') {
     let d = {};
-    try { if (value) d = JSON.parse(value); } catch {}
+    try { if (value) d = JSON.parse(value); } catch { /* valor guardado ilegible: se muestra vacío */ }
     const setD = (k, v) => onChange(JSON.stringify({ ...d, [k]: v }));
     const SC      = '#7B3FC4';
     const esTutor = campo.tipo === 'datos_tutor';

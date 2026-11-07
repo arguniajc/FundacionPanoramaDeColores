@@ -9,6 +9,7 @@ import {
   PieChart, Pie, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import apiClient from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 
@@ -24,7 +25,7 @@ export function TabActividades() {
     setData(null);
     apiClient.get('/api/reportes/actividades', { params: { anio } })
       .then(r => setData(r.data))
-      .catch(() => setError('Error al cargar reporte de actividades'));
+      .catch(err => setError(mensajeErrorApi(err, { accion: 'cargar el reporte de actividades' })));
   }, [anio]);
 
   if (error) return <Alert severity="error">{error}</Alert>;

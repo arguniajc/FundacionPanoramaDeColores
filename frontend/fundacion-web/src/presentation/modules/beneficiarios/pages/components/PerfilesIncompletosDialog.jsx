@@ -10,6 +10,7 @@ import EditIcon          from '@mui/icons-material/Edit';
 import CheckCircleIcon   from '@mui/icons-material/CheckCircle';
 import CloseIcon         from '@mui/icons-material/Close';
 import apiClient from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const CAMPO_COLOR = {
   'Foto del menor':  { bg: '#fce4ec', txt: '#c62828' },
@@ -38,14 +39,14 @@ function AvatarBeneficiario({ nombre, fotoUrl }) {
 export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'niño' }) {
   const [datos,    setDatos]    = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [error,    setError]    = useState(false);
+  const [error,    setError]    = useState('');
 
   // Se consulta al abrir el modal (no al montar la página)
   const cargar = () => {
-    setCargando(true); setError(false);
+    setCargando(true); setError('');
     apiClient.get('/api/beneficiarios/incompletos', { params: { tipo } })
       .then(({ data }) => setDatos(data))
-      .catch(() => setError(true))
+      .catch(err => setError(mensajeErrorApi(err, { accion: 'cargar los perfiles pendientes' })))
       .finally(() => setCargando(false));
   };
 
@@ -80,7 +81,7 @@ export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'ni�
         )}
 
         {!cargando && error && (
-          <Alert severity="error" sx={{ my: 2 }}>No se pudieron cargar los perfiles pendientes.</Alert>
+          <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>
         )}
 
         {!cargando && !error && datos.length === 0 && (

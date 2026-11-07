@@ -6,6 +6,7 @@ import {
 import { voluntariosRepository } from '@/infrastructure/repositories/voluntariosRepository';
 import { CampoFecha, CampoDocumento, SelectorUbicacion } from '@/shared/components/form/FormControles';
 import { COLOR, VACIO_VOL, toInputDate } from './helpers';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
   const editando = !!voluntario;
@@ -57,7 +58,7 @@ export function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
         : await voluntariosRepository.crear(payload);
       onGuardado(data, editando);
     } catch (e) {
-      setError(e?.response?.data?.mensaje || 'Error al guardar.');
+      setError(mensajeErrorApi(e, { accion: 'guardar el voluntario' }));
     } finally {
       setGuardando(false);
     }
@@ -69,7 +70,6 @@ export function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
         {editando ? 'Editar voluntario' : 'Nuevo voluntario'}
       </DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size={12}>
             <TextField fullWidth size="small" label="Nombre completo *" value={form.nombre}
@@ -113,6 +113,11 @@ export function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
           </Grid>
         </Grid>
       </DialogContent>
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+          {error}
+        </Alert>
+      )}
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}

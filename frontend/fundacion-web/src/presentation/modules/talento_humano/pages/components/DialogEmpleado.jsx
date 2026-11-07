@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import apiClient from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const TIPOS_DOCUMENTO = ['CC','TI','CE','Pasaporte','NIT','Otro'];
 const TIPOS_CONTRATO  = ['indefinido','fijo','prestacion_servicios','aprendizaje','voluntario','otro'];
@@ -112,7 +113,7 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
       }
       onSaved();
     } catch (e) {
-      setError(e.response?.data?.error ?? 'Error al guardar.');
+      setError(mensajeErrorApi(e, { accion: empleado ? 'actualizar el empleado' : 'registrar el empleado' }));
     } finally {
       setSaving(false);
     }
@@ -122,7 +123,6 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle fontWeight={700}>{empleado ? 'Editar empleado' : 'Nuevo empleado'}</DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           {/* Datos personales */}
           <Grid size={12}><Typography variant="subtitle2" fontWeight={700} color="text.secondary">Datos personales</Typography></Grid>
@@ -215,6 +215,11 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
           </Grid>
         </Grid>
       </DialogContent>
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+          {error}
+        </Alert>
+      )}
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" startIcon={<SaveIcon />} onClick={guardar} disabled={saving}>

@@ -10,6 +10,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon   from '@mui/icons-material/Save';
 import { useConfirm } from '@/shared/components/ConfirmDialog';
 import apiClient from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const TIPOS_NOVEDAD   = ['vacaciones','incapacidad','permiso_remunerado','permiso_no_remunerado','comision','otro'];
 const ESTADOS_NOVEDAD = ['pendiente','aprobada','rechazada'];
@@ -67,7 +68,7 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
       }
       onSaved();
     } catch (e) {
-      setError(e.response?.data?.error ?? 'Error al guardar.');
+      setError(mensajeErrorApi(e, { accion: novedad ? 'actualizar la novedad' : 'registrar la novedad' }));
     } finally {
       setSaving(false);
     }
@@ -123,12 +124,16 @@ export function PanelNovedades({ empleado, puedo }) {
   const [loading,   setLoading]     = useState(true);
   const [dialog,    setDialog]      = useState(false);
   const [editNov,   setEditNov]     = useState(null);
+  const [error,     setError]       = useState('');
 
   const cargar = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const { data } = await apiClient.get(`/api/talento-humano/${empleado.id}/novedades`);
       setNovedades(data);
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'cargar las novedades' }));
     } finally {
       setLoading(false);
     }
@@ -138,7 +143,12 @@ export function PanelNovedades({ empleado, puedo }) {
 
   const eliminar = async (id) => {
     if (!await confirm('¿Eliminar esta novedad?')) return;
-    await apiClient.delete(`/api/talento-humano/novedades/${id}`);
+    try {
+      await apiClient.delete(`/api/talento-humano/novedades/${id}`);
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'eliminar la novedad' }));
+      return;
+    }
     cargar();
   };
 
@@ -154,6 +164,8 @@ export function PanelNovedades({ empleado, puedo }) {
           </Button>
         )}
       </Box>
+
+      {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 1.5 }}>{error}</Alert>}
 
       {loading ? (
         <Skeleton height={120} />

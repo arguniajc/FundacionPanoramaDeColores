@@ -13,6 +13,8 @@ import ExpandMoreIcon   from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon   from '@mui/icons-material/ExpandLess';
 import { nominaRepository } from '@/infrastructure/repositories/nominaRepository';
 import { useConfirm }       from '@/shared/components/ConfirmDialog';
+import { useToast }         from '@/shared/context/ToastContext';
+import { mensajeErrorApi }  from '@/shared/utils/mensajeErrorApi';
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -66,6 +68,7 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
   const [liquidaciones, setLiquidaciones] = useState([]);
   const [cargandoLiq, setCargandoLiq] = useState(false);
   const confirm = useConfirm();
+  const toast   = useToast();
 
   const cargarLiq = useCallback(async () => {
     if (!expandido) return;
@@ -73,17 +76,23 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
     try {
       const { data } = await nominaRepository.listarLiquidaciones(periodo.id);
       setLiquidaciones(data);
+    } catch (e) {
+      toast(mensajeErrorApi(e, { accion: 'cargar las liquidaciones' }), 'error');
     } finally {
       setCargandoLiq(false);
     }
-  }, [expandido, periodo.id]);
+  }, [expandido, periodo.id, toast]);
 
   useEffect(() => { cargarLiq(); }, [cargarLiq]);
 
   const handleEliminarLiq = async (liq) => {
     if (!await confirm(`¿Eliminar liquidación de ${liq.empleadoNombre}?`)) return;
-    await nominaRepository.eliminarLiquidacion(liq.id);
-    setLiquidaciones(prev => prev.filter(l => l.id !== liq.id));
+    try {
+      await nominaRepository.eliminarLiquidacion(liq.id);
+      setLiquidaciones(prev => prev.filter(l => l.id !== liq.id));
+    } catch (e) {
+      toast(mensajeErrorApi(e, { accion: 'eliminar la liquidación' }), 'error');
+    }
   };
 
   const handleAutoLiquidar = async () => {
@@ -202,7 +211,7 @@ function NuevoPeriodoDialog({ open, onClose, onCreado }) {
       const { data } = await nominaRepository.crearPeriodo({ mes, anio, observacion: obs || null });
       onCreado(data);
     } catch (e) {
-      setErr(e?.response?.data?.title ?? 'Error al crear el período');
+      setErr(mensajeErrorApi(e, { accion: 'crear el período' }));
     } finally {
       setGuardando(false);
     }
@@ -258,6 +267,8 @@ export function PanelNomina({ puedo }) {
     try {
       const { data } = await nominaRepository.listarPeriodos(anioFiltro);
       setPeriodos(data);
+    } catch (e) {
+      err(mensajeErrorApi(e, { accion: 'cargar los períodos de nómina' }));
     } finally {
       setCargando(false);
     }
@@ -277,7 +288,7 @@ export function PanelNomina({ puedo }) {
       await nominaRepository.cerrarPeriodo(periodo.id);
       cargar();
       ok('Período cerrado.');
-    } catch { err('No se pudo cerrar el período.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'cerrar el período' })); }
   };
 
   const handleEliminar = async (periodo) => {
@@ -286,7 +297,7 @@ export function PanelNomina({ puedo }) {
       await nominaRepository.eliminarPeriodo(periodo.id);
       setPeriodos(prev => prev.filter(p => p.id !== periodo.id));
       ok('Período eliminado.');
-    } catch { err('No se pudo eliminar.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'eliminar el período' })); }
   };
 
   const handleAutoLiquidar = async (periodoId) => {
@@ -295,7 +306,7 @@ export function PanelNomina({ puedo }) {
       cargar();
       ok(`${data.length} liquidaciones procesadas.`);
       return data;
-    } catch { err('Error al auto-liquidar.'); return null; }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'auto-liquidar la nómina' })); return null; }
   };
 
   return (
@@ -351,7 +362,7 @@ export function PanelNomina({ puedo }) {
 
       <Snackbar
         open={snack.open}
-        autoHideDuration={3500}
+        autoHideDuration={snack.sev === 'error' ? 8000 : 3500}
         onClose={() => setSnack(p => ({ ...p, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >

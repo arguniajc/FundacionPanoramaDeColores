@@ -1,5 +1,6 @@
 ﻿import { useState, useCallback } from 'react';
 import { sedesRepository } from '@/infrastructure/repositories/sedesRepository';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function useProgramaCampos(programaId) {
   const [campos,   setCampos]   = useState([]);
@@ -16,8 +17,8 @@ export function useProgramaCampos(programaId) {
     try {
       const { data } = await sedesRepository.listarCampos(programaId);
       setCampos(data);
-    } catch {
-      setError('No se pudieron cargar los campos.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'cargar los campos' }));
     } finally {
       setCargando(false);
     }

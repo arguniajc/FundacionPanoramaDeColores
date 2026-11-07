@@ -17,6 +17,7 @@ import {
   arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useProgramaCampos } from '@/application/programas/useProgramaCampos';
+import { mensajeErrorApi }   from '@/shared/utils/mensajeErrorApi';
 import {
   COLOR, TIPOS_CAMPO, camposDeSeccion, seccionesOrdenadas, toDto,
 } from './helpers';
@@ -36,6 +37,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
   const [editando,    setEditando]    = useState(null);
   const [guardando,   setGuardando]   = useState(false);
   const [toast,       setToast]       = useState('');
+  const [errGuardar,  setErrGuardar]  = useState('');
   const [preview,     setPreview]     = useState(false);
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -209,6 +211,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
 
   const handleGuardarTodo = async () => {
     setGuardando(true);
+    setErrGuardar('');
     try {
       const origById     = new Map(camposOrig.map(c => [c.id, c]));
       const localRealIds = new Set(camposLocal.filter(c => !c._isNew).map(c => c.id));
@@ -234,8 +237,8 @@ export function EditorCamposDialog({ programa, onCerrar }) {
       setCamposLocal(nuevosLocal);
       setCamposOrig(nuevosLocal.map(c => ({ ...c })));
       setToast('Cambios guardados correctamente');
-    } catch {
-      setToast('Error al guardar los cambios');
+    } catch (err) {
+      setErrGuardar(mensajeErrorApi(err, { accion: 'guardar los campos del formulario' }));
     } finally {
       setGuardando(false);
     }
@@ -346,6 +349,11 @@ export function EditorCamposDialog({ programa, onCerrar }) {
           </Tooltip>
         </DialogContent>
 
+        {errGuardar && (
+          <Alert severity="error" onClose={() => setErrGuardar('')} sx={{ mx: 2, mt: 1.5, mb: 0 }}>
+            {errGuardar}
+          </Alert>
+        )}
         <DialogActions sx={{ px: 2, py: 1.5, gap: 1 }}>
           <Button variant="outlined" startIcon={<VisibilityIcon />}
             onClick={() => setPreview(true)}

@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import {
-  Box, Button, Chip, CircularProgress, Collapse,
+  Alert, Box, Button, Chip, CircularProgress, Collapse,
   Tooltip, Typography,
 } from '@mui/material';
 import ExpandMoreIcon  from '@mui/icons-material/ExpandMore';
@@ -30,16 +30,13 @@ function fmtFecha(iso) {
 export default function HistorialBeneficiario({ beneficiarioId }) {
   const [open, setOpen] = useState(false);
 
-  const { data: items, cargando, ejecutar: cargar } = useAsyncData(
+  const { data: items, cargando, error, ejecutar: cargar } = useAsyncData(
     async () => {
-      try {
-        const { data } = await beneficiariosRepository.historial(beneficiarioId);
-        return data;
-      } catch {
-        return [];
-      }
+      const { data } = await beneficiariosRepository.historial(beneficiarioId);
+      return data;
     },
-    { inicial: null } // null = "aún no cargado"; evita re-fetch cada vez que se abre
+    // null = "aún no cargado"; evita re-fetch cada vez que se abre (si falla, se reintenta al reabrir)
+    { inicial: null, errorMsg: 'No se pudo cargar el historial de cambios.' }
   );
 
   useEffect(() => {
@@ -73,6 +70,10 @@ export default function HistorialBeneficiario({ beneficiarioId }) {
             <Box display="flex" justifyContent="center" py={2}>
               <CircularProgress size={22} sx={{ color: COLOR }} />
             </Box>
+          )}
+
+          {!cargando && error && (
+            <Alert severity="error" sx={{ py: 0 }}>{error}</Alert>
           )}
 
           {!cargando && items?.length === 0 && (

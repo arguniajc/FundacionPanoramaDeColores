@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { sedesRepository } from '@/infrastructure/repositories/sedesRepository';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function useSedes() {
   const [toast, setToast] = useState('');
@@ -31,7 +32,8 @@ export function useSedes() {
       });
       setToast('Sede guardada correctamente');
       return true;
-    } catch {
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'guardar la sede' }));
       return false;
     }
   };
@@ -40,7 +42,7 @@ export function useSedes() {
     try {
       const { data } = await sedesRepository.toggle(sede.id);
       setSedes(prev => prev.map(s => s.id === data.id ? data : s));
-    } catch { setError('Error al cambiar estado de la sede.'); }
+    } catch (err) { setError(mensajeErrorApi(err, { accion: 'cambiar el estado de la sede' })); }
   };
 
   const eliminarSede = async (id) => {
@@ -49,8 +51,8 @@ export function useSedes() {
       setSedes(prev => prev.filter(s => s.id !== id));
       setToast('Sede eliminada');
       return true;
-    } catch {
-      setError('No se pudo eliminar la sede. Puede que tenga programas activos.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'eliminar la sede', conflicto: 'No se pudo eliminar la sede. Puede que tenga programas activos.' }));
       return false;
     }
   };
@@ -72,7 +74,8 @@ export function useSedes() {
       }));
       setToast('Programa guardado correctamente');
       return true;
-    } catch {
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'guardar el programa' }));
       return false;
     }
   };
@@ -84,7 +87,7 @@ export function useSedes() {
         if (s.id !== data.sedeId) return s;
         return { ...s, programas: s.programas.map(p => p.id === data.id ? data : p) };
       }));
-    } catch { setError('Error al cambiar estado del programa.'); }
+    } catch (err) { setError(mensajeErrorApi(err, { accion: 'cambiar el estado del programa' })); }
   };
 
   const eliminarPrograma = async (id) => {
@@ -96,8 +99,8 @@ export function useSedes() {
       })));
       setToast('Programa eliminado');
       return true;
-    } catch {
-      setError('No se pudo eliminar el programa.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'eliminar el programa' }));
       return false;
     }
   };
@@ -116,8 +119,7 @@ export function useSedes() {
       setToast('Representante legal autorizado en este proyecto');
       return true;
     } catch (err) {
-      const msg = err?.response?.data?.mensaje ?? 'Error al autorizar.';
-      setError(msg);
+      setError(mensajeErrorApi(err, { accion: 'autorizar al representante legal' }));
       return false;
     }
   };
@@ -128,8 +130,8 @@ export function useSedes() {
       actualizarPrograma(data);
       setToast('Autorización revocada');
       return true;
-    } catch {
-      setError('Error al revocar la autorización.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'revocar la autorización' }));
       return false;
     }
   };

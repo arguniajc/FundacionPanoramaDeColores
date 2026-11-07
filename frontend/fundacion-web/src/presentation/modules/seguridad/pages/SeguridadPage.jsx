@@ -13,6 +13,8 @@ import SecurityIcon from '@mui/icons-material/Security';
 import apiClient    from '@/infrastructure/http/apiClient';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import { exportarExcel } from '@/shared/utils/exportarExcel';
+import { useToast } from '@/shared/context/ToastContext';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 // ── Permisos ──────────────────────────────────────────────────────────────────
 
@@ -108,6 +110,7 @@ const ACCIONES_FILTRO = [
 const TAMANO_PAGINA = 50;
 
 function TabAuditoria() {
+  const toast = useToast();
   const [tipos,        setTipos]        = useState([]);
   const [filtTipo,     setFiltTipo]     = useState('');
   const [filtAccion,   setFiltAccion]   = useState('');
@@ -120,7 +123,8 @@ function TabAuditoria() {
   const [cargando,     setCargando]     = useState(false);
 
   useEffect(() => {
-    apiClient.get('/api/auditoria/tipos').then(r => setTipos(r.data)).catch(() => {});
+    apiClient.get('/api/auditoria/tipos').then(r => setTipos(r.data))
+      .catch(() => { /* opcional: sin catálogo de tipos el filtro queda vacío */ });
   }, []);
 
   useEffect(() => {
@@ -139,8 +143,10 @@ function TabAuditoria() {
       if (filtHasta)   params.hasta   = filtHasta;
       const { data } = await apiClient.get('/api/auditoria', { params });
       setResult(data);
-    } catch {} finally { setCargando(false); }
-  }, [filtTipo, filtAccion, filtUsuario, filtDesde, filtHasta]);
+    } catch (e) {
+      toast(mensajeErrorApi(e, { accion: 'cargar la auditoría' }), 'error');
+    } finally { setCargando(false); }
+  }, [filtTipo, filtAccion, filtUsuario, filtDesde, filtHasta, toast]);
 
   useEffect(() => { setPagina(1); cargar(1); }, [cargar]);
 
@@ -373,7 +379,7 @@ export default function SeguridadPage() {
       await apiClient.put(`/api/permisos/${rol}`, { permisos: matrixToDto(matrix) });
       setGuardado(true);
     } catch (e) {
-      setError(e.response?.data?.error ?? 'Error al guardar.');
+      setError(mensajeErrorApi(e, { accion: 'guardar los permisos' }));
     } finally {
       setSaving(false);
     }

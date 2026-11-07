@@ -6,6 +6,7 @@ import {
 import { donantesRepository } from '@/infrastructure/repositories/donantesRepository';
 import { CampoDocumento, SelectorUbicacion } from '@/shared/components/form/FormControles';
 import { COLOR_DONANTES } from './helpers';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const VACIO = { nombre: '', tipo: 'persona', tipoDocumento: '', documento: '', email: '', telefono: '', pais: 'Colombia', departamento: '', ciudad: '', notas: '' };
 
@@ -38,8 +39,8 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
         ? await donantesRepository.editar(donante.id, { ...form, nombre: form.nombre.trim() })
         : await donantesRepository.crear({ ...form, nombre: form.nombre.trim() });
       onGuardado(data, editando);
-    } catch {
-      setError('Error al guardar.');
+    } catch (e) {
+      setError(mensajeErrorApi(e, { accion: 'guardar el donante', conflicto: 'Ya existe un donante con ese documento.' }));
     } finally {
       setGuardando(false);
     }
@@ -51,7 +52,7 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
         {editando ? 'Editar donante' : 'Nuevo donante'}
       </DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size={8}>
             <TextField fullWidth size="small" label="Nombre *" value={form.nombre}

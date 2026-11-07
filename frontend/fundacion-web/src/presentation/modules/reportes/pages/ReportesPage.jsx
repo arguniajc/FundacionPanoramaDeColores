@@ -13,6 +13,7 @@ import { TabInventario }         from './components/TabInventario';
 import { TabActividades }        from './components/TabActividades';
 import { TabDonaciones }         from './components/TabDonaciones';
 import { TabContabilidadEsal }   from './components/TabContabilidadEsal';
+import { useToast }              from '@/shared/context/ToastContext';
 
 const TABS = [
   { label: 'Beneficiarios',     icon: <PeopleIcon />,            component: <TabBeneficiarios /> },
@@ -27,6 +28,7 @@ export default function ReportesPage() {
   const [tab,        setTab]        = useState(0);
   const [exportando, setExportando] = useState(false);
   const contentRef = useRef(null);
+  const toast      = useToast();
 
   const exportarPDF = async () => {
     if (!contentRef.current) return;
@@ -71,6 +73,7 @@ export default function ReportesPage() {
       pdf.save(`reporte_${TABS[tab].label.toLowerCase()}_${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (err) {
       console.error('Error exportando PDF:', err);
+      toast('No se pudo generar el PDF del reporte. Espera a que carguen las gráficas e intenta de nuevo.', 'error');
     } finally {
       setExportando(false);
     }

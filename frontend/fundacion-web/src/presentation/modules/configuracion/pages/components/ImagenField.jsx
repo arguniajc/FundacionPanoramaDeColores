@@ -5,6 +5,7 @@ import CloseIcon             from '@mui/icons-material/Close';
 import UploadFileIcon        from '@mui/icons-material/UploadFile';
 import apiClient from '@/infrastructure/http/apiClient';
 import { COLOR } from './helpers';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function ImagenField({ label, value, onChange }) {
   const inputRef             = useRef(null);
@@ -23,8 +24,8 @@ export function ImagenField({ label, value, onChange }) {
       fd.append('archivo', file);
       const { data } = await apiClient.post('/api/archivos/upload?carpeta=web', fd);
       onChange({ target: { value: data.url } });
-    } catch {
-      setErrImg('No se pudo subir la imagen. Intenta de nuevo.');
+    } catch (e) {
+      setErrImg(mensajeErrorApi(e, { accion: 'subir la imagen' }));
     } finally {
       setSubiendo(false);
     }

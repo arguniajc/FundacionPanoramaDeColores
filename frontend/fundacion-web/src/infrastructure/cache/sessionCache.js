@@ -20,6 +20,7 @@ export function leerCache(key) {
     const { data, total, ts } = JSON.parse(raw);
     return Date.now() - ts < TTL_MS ? { data, total } : null;
   } catch {
+    // caché corrupta o sessionStorage no disponible: se consulta al servidor
     return null;
   }
 }

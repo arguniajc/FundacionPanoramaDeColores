@@ -1,7 +1,7 @@
 ﻿import { useEffect } from 'react';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import {
-  Box, CircularProgress, Dialog, DialogContent, DialogTitle,
+  Alert, Box, CircularProgress, Dialog, DialogContent, DialogTitle,
   IconButton, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Typography,
 } from '@mui/material';
@@ -10,7 +10,7 @@ import { inventarioRepository } from '@/infrastructure/repositories/inventarioRe
 import { COLOR, fmtNum, fmtFecha } from './helpers';
 
 export function HistorialDialog({ open, item, onClose }) {
-  const { data: movs, cargando, ejecutar: cargar } = useAsyncData(
+  const { data: movs, cargando, error, ejecutar: cargar } = useAsyncData(
     async (itemId) => (await inventarioRepository.listarMovimientos({ itemId })).data,
     { inicial: [], errorMsg: 'No se pudieron cargar los movimientos.' }
   );
@@ -33,6 +33,8 @@ export function HistorialDialog({ open, item, onClose }) {
       <DialogContent dividers sx={{ p: 0 }}>
         {cargando ? (
           <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
+        ) : error ? (
+          <Box sx={{ p: 2 }}><Alert severity="error">{error}</Alert></Box>
         ) : movs.length === 0 ? (
           <Box sx={{ p: 4, textAlign: 'center' }}>
             <Typography color="text.secondary">Sin movimientos registrados.</Typography>

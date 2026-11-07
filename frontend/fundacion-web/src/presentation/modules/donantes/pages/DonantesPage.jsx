@@ -19,6 +19,7 @@ import PhoneIcon           from '@mui/icons-material/Phone';
 import LocationOnIcon      from '@mui/icons-material/LocationOn';
 import { donantesRepository } from '@/infrastructure/repositories/donantesRepository';
 import { CampoDocumento, SelectorUbicacion } from '@/shared/components/form/FormControles';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const COLOR = 'var(--color-secundario)';
 
@@ -195,7 +196,7 @@ function DonanteDialog({ open, donante, onClose, onGuardado }) {
         : await donantesRepository.crear(payload);
       onGuardado(data, editando);
     } catch (e) {
-      setError(e?.response?.data?.mensaje || 'Error al guardar.');
+      setError(mensajeErrorApi(e, { accion: 'guardar el donante', conflicto: 'Ya existe un donante con ese documento.' }));
     } finally {
       setGuardando(false);
     }
@@ -207,7 +208,7 @@ function DonanteDialog({ open, donante, onClose, onGuardado }) {
         {editando ? 'Editar donante' : 'Nuevo donante'}
       </DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size={8}>
             <TextField fullWidth size="small" label="Nombre *" value={form.nombre}
@@ -280,7 +281,7 @@ export default function DonantesPage() {
     try {
       const { data } = await donantesRepository.listar(q ? { buscar: q } : {});
       setDonantes(data);
-    } catch { err('No se pudieron cargar los donantes.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'cargar los donantes' })); }
     finally { setCargando(false); }
   }, []);
 
@@ -304,7 +305,7 @@ export default function DonantesPage() {
       await donantesRepository.eliminar(donante.id);
       setDonantes(prev => prev.filter(d => d.id !== donante.id));
       ok('Donante eliminado.');
-    } catch { err('No se pudo eliminar.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'eliminar el donante' })); }
   };
 
   // stats derivados
@@ -400,7 +401,7 @@ export default function DonantesPage() {
         onGuardado={handleGuardado}
       />
 
-      <Snackbar open={snack.open} autoHideDuration={3500}
+      <Snackbar open={snack.open} autoHideDuration={snack.sev === 'error' ? 8000 : 3500}
         onClose={() => setSnack(p => ({ ...p, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert severity={snack.sev} variant="filled" onClose={() => setSnack(p => ({ ...p, open: false }))}>

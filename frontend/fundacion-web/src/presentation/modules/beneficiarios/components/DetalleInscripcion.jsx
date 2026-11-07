@@ -181,7 +181,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
         beneficiarioId: ins.id,
         tipoArchivo:    'documento',
         urlArchivo:     ins.fotoDocumentoUrl,
-      }).catch(() => {});
+      }).catch(() => { /* auditoría opcional: no debe impedir la descarga */ });
       const nombre = ins.nombreMenor?.replace(/\s+/g, '_') ?? 'beneficiario';
       const anchor = document.createElement('a');
       anchor.href     = ins.fotoDocumentoUrl;

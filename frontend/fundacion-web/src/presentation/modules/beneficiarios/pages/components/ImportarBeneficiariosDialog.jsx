@@ -10,6 +10,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon       from '@mui/icons-material/Error';
 import * as XLSX from 'xlsx';
 import apiClient from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 
 const COLOR = BRAND_COLOR;
@@ -167,7 +168,9 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
 
   const handleGenerarPlantilla = () => {
     setGenerandoPlantilla(true);
-    generarPlantilla().finally(() => setGenerandoPlantilla(false));
+    generarPlantilla()
+      .catch(() => setError('No se pudo generar la plantilla. Revisa tu conexión e intenta de nuevo.'))
+      .finally(() => setGenerandoPlantilla(false));
   };
 
   const reset = () => {
@@ -229,7 +232,7 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
       setResultado(data);
       if (data.insertados > 0) onImportado?.();
     } catch (e) {
-      setError(e?.response?.data?.mensaje || 'Error al importar.');
+      setError(mensajeErrorApi(e, { accion: 'importar los beneficiarios' }));
     } finally {
       setCargando(false);
     }
@@ -244,8 +247,6 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
         Importar beneficiarios desde Excel
       </DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
         {/* Plantilla */}
         <Box sx={{ mb: 2, display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 1.5, bgcolor: '#f5f0ff', borderRadius: 2, border: '1px solid #e2d9f3' }}>
           <Box flex={1}>
@@ -400,6 +401,11 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
 
         {cargando && <LinearProgress sx={{ mt: 2 }} />}
       </DialogContent>
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+          {error}
+        </Alert>
+      )}
 
       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
         <Button onClick={handleClose} disabled={cargando}>

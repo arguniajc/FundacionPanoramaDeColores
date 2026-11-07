@@ -14,6 +14,7 @@ import { TabTextos }      from './components/TabTextos';
 import { TabPaginaWeb }   from './components/TabPaginaWeb';
 import { TabSmtp }        from './components/TabSmtp';
 import { BRAND_COLOR } from '@/shared/constants/brand';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export default function ConfiguracionPage() {
   const { actualizarConfig } = useConfiguracion();
@@ -72,10 +73,10 @@ export default function ConfiguracionPage() {
         if (data.webContenido) {
           try {
             setWebForm(mergeDeep(DEFAULT_WEB, JSON.parse(data.webContenido)));
-          } catch { /* usar defaults */ }
+          } catch { /* opcional: si el JSON guardado está dañado se usan los textos por defecto */ }
         }
       })
-      .catch(() => setError('No se pudo cargar la configuración.'))
+      .catch((e) => setError(mensajeErrorApi(e, { accion: 'cargar la configuración' })))
       .finally(() => setCargando(false));
   }, []);
 
@@ -131,8 +132,8 @@ export default function ConfiguracionPage() {
       setFormPrev({ ...form });
       if (repCambiado) setAvisoRep(true);
       setToast('Configuración guardada correctamente');
-    } catch {
-      setError('No se pudo guardar la configuración.');
+    } catch (e) {
+      setError(mensajeErrorApi(e, { accion: 'guardar la configuración' }));
     } finally {
       setGuardando(false);
     }

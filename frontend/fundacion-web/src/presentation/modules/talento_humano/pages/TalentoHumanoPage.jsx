@@ -20,6 +20,7 @@ import AccountTreeIcon   from '@mui/icons-material/AccountTree';
 import PaymentsIcon      from '@mui/icons-material/Payments';
 import apiClient         from '@/infrastructure/http/apiClient';
 import { useAuth }       from '@/application/auth/AuthContext';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { DialogEmpleado } from './components/DialogEmpleado';
 import { PanelEmpleado }  from './components/PanelEmpleado';
 import { PanelNovedades } from './components/PanelNovedades';
@@ -85,8 +86,8 @@ export default function TalentoHumanoPage() {
       setEmpleados(empRes.data);
       setStats(statsRes.data);
       setSedes(sedesRes.data ?? []);
-    } catch {
-      setError('Error al cargar datos.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'cargar el personal' }));
     } finally {
       setCargando(false);
     }
@@ -96,15 +97,24 @@ export default function TalentoHumanoPage() {
 
   const eliminar = async (id) => {
     if (!await confirm('¿Eliminar este empleado? Esta acción no se puede deshacer.')) return;
-    await apiClient.delete(`/api/talento-humano/${id}`);
+    try {
+      await apiClient.delete(`/api/talento-humano/${id}`);
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'eliminar el empleado' }));
+      return;
+    }
     if (panelEmpleado?.id === id) setPanelEmpleado(null);
     cargar();
   };
 
   const abrirPanel = async (emp) => {
-    const { data } = await apiClient.get(`/api/talento-humano/${emp.id}`);
-    setPanelEmpleado(data);
-    setTabPanel(0);
+    try {
+      const { data } = await apiClient.get(`/api/talento-humano/${emp.id}`);
+      setPanelEmpleado(data);
+      setTabPanel(0);
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'cargar el detalle del empleado' }));
+    }
   };
 
   const filtrados = empleados.filter(e => {

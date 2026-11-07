@@ -8,6 +8,7 @@ import {
   PieChart, Pie, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import apiClient from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 
@@ -23,7 +24,7 @@ export function TabDonaciones() {
     setData(null);
     apiClient.get('/api/reportes/donaciones', { params: { anio } })
       .then(r => setData(r.data))
-      .catch(() => setError('Error al cargar reporte de donaciones'));
+      .catch(err => setError(mensajeErrorApi(err, { accion: 'cargar el reporte de donaciones' })));
   }, [anio]);
 
   if (error) return <Alert severity="error">{error}</Alert>;

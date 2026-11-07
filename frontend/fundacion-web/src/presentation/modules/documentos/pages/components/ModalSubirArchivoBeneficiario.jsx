@@ -7,6 +7,7 @@ import CloseIcon          from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import UploadFileIcon     from '@mui/icons-material/UploadFile';
 import apiClient         from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { HEADER_GRADIENT } from './helpers';
 
 export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido, onToast }) {
@@ -32,7 +33,7 @@ export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido
       onToast('Documento subido correctamente', 'success');
       onCerrar();
     } catch (e) {
-      setError(e.response?.data?.mensaje ?? 'Error al subir el archivo.');
+      setError(mensajeErrorApi(e, { accion: 'subir el documento' }));
     } finally {
       setSubiendo(false);
     }

@@ -1,6 +1,6 @@
 ﻿import { useEffect } from 'react';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Alert, Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from '@/application/auth/AuthContext';
 import apiClient   from '@/infrastructure/http/apiClient';
 import { OrgChartTab } from '@/presentation/modules/talento_humano/pages/components/OrgChartTab';
@@ -10,7 +10,7 @@ const COLOR = BRAND_COLOR;
 
 export default function OrganigramaPage() {
   const { puedo }  = useAuth();
-  const { data: empleados, cargando, ejecutar: cargar } = useAsyncData(
+  const { data: empleados, cargando, error, ejecutar: cargar } = useAsyncData(
     async () => {
       const { data } = await apiClient.get('/api/talento-humano', { params: { porPagina: 200 } });
       return data.data ?? data ?? [];
@@ -31,6 +31,8 @@ export default function OrganigramaPage() {
           </Typography>
         </Box>
       </Box>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {cargando
         ? <Box sx={{ py: 8, textAlign: 'center' }}><CircularProgress /></Box>

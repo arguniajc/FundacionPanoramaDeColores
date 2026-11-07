@@ -7,6 +7,7 @@ import AddIcon    from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
 import { BRAND_COLOR } from '@/shared/constants/brand';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const ESTADOS = [
   { value: 'programada',  label: 'Programada'  },
@@ -109,7 +110,7 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
       await onGuardado();
       onClose();
     } catch (e) {
-      setError(e.response?.data?.error ?? 'Error al guardar.');
+      setError(mensajeErrorApi(e, { accion: 'guardar la actividad' }));
     } finally {
       setSaving(false);
     }

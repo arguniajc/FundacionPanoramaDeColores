@@ -8,6 +8,7 @@ import {
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useAuth }   from '@/application/auth/AuthContext';
 import apiClient     from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export default function LoginPage() {
   const { user, login } = useAuth();
@@ -34,9 +35,12 @@ export default function LoginPage() {
       );
       navigate('/sede', { replace: true });
     } catch (err) {
-      const msg = err.response?.status === 403
+      const status = err.response?.status;
+      const msg = status === 403
         ? 'Tu correo no tiene permisos para acceder al panel.'
-        : 'Error al iniciar sesión. Intenta de nuevo.';
+        : status === 401
+          ? 'No se pudo validar tu cuenta de Google. Intenta iniciar sesión de nuevo.'
+          : mensajeErrorApi(err, { accion: 'iniciar sesión' });
       setError(msg);
     } finally {
       setCargando(false);

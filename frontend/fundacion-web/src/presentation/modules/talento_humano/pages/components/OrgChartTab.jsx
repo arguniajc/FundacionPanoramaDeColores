@@ -14,6 +14,8 @@ import apiClient        from '@/infrastructure/http/apiClient';
 import { CARGOS_COMUNES } from './DialogEmpleado';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
+import { useToast } from '@/shared/context/ToastContext';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const LCOLOR       = '#94A3B8';
 const DEPTH_COLORS = ['#1E1B4B',BRAND_COLOR,'#7C3AED','#2563EB','#0891B2','#059669','#D97706','#DC2626'];
@@ -233,7 +235,7 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
         fotoUrl,
       });
     } catch (e) {
-      setError(e.response?.data?.error ?? e.response?.data?.mensaje ?? e.message ?? 'Error al guardar.');
+      setError(mensajeErrorApi(e, { accion: persona ? 'actualizar la persona' : 'agregar la persona al organigrama' }));
     } finally {
       setSaving(false);
     }
@@ -355,9 +357,10 @@ function buildTree(personas) {
 
 export function OrgChartTab({ puedoEditar, empleados }) {
   const confirm = useConfirm();
-  const { data: personas, cargando, ejecutar: cargar } = useAsyncData(
+  const toast   = useToast();
+  const { data: personas, cargando, error, ejecutar: cargar } = useAsyncData(
     async () => (await apiClient.get('/api/organigrama')).data,
-    { inicial: [], errorMsg: '' }
+    { inicial: [], errorMsg: 'No se pudo cargar el organigrama.' }
   );
   const [dlg,        setDlg]        = useState({ open: false, persona: null, parentIdInicial: null });
   const [draggingId, setDraggingId] = useState(null);
@@ -369,7 +372,12 @@ export function OrgChartTab({ puedoEditar, empleados }) {
 
   const handleDelete = async (id) => {
     if (!await confirm('¿Quitar esta persona del organigrama?')) return;
-    await apiClient.delete(`/api/organigrama/${id}`);
+    try {
+      await apiClient.delete(`/api/organigrama/${id}`);
+    } catch (e) {
+      toast(mensajeErrorApi(e, { accion: 'quitar la persona del organigrama' }), 'error');
+      return;
+    }
     cargar();
   };
 
@@ -409,11 +417,15 @@ export function OrgChartTab({ puedoEditar, empleados }) {
     if (isDescendant(targetId, sourceId)) return;
     const p = pMap[sourceId];
     if (!p) return;
-    await apiClient.put(`/api/organigrama/${sourceId}`, {
-      orden: p.orden, empleadoId: p.empleadoId ?? null,
-      nombreExterno: p.nombreExterno ?? null, fotoUrl: p.fotoUrl ?? null,
-      parentId: targetId,
-    });
+    try {
+      await apiClient.put(`/api/organigrama/${sourceId}`, {
+        orden: p.orden, empleadoId: p.empleadoId ?? null,
+        nombreExterno: p.nombreExterno ?? null, fotoUrl: p.fotoUrl ?? null,
+        parentId: targetId,
+      });
+    } catch (e) {
+      toast(mensajeErrorApi(e, { accion: 'mover la persona en el organigrama' }), 'error');
+    }
     setDraggingId(null);
     cargar();
   };
@@ -424,11 +436,15 @@ export function OrgChartTab({ puedoEditar, empleados }) {
     if (!sourceId) return;
     const p = personas.find(x => x.id === sourceId);
     if (!p) return;
-    await apiClient.put(`/api/organigrama/${sourceId}`, {
-      orden: p.orden, empleadoId: p.empleadoId ?? null,
-      nombreExterno: p.nombreExterno ?? null, fotoUrl: p.fotoUrl ?? null,
-      parentId: null,
-    });
+    try {
+      await apiClient.put(`/api/organigrama/${sourceId}`, {
+        orden: p.orden, empleadoId: p.empleadoId ?? null,
+        nombreExterno: p.nombreExterno ?? null, fotoUrl: p.fotoUrl ?? null,
+        parentId: null,
+      });
+    } catch (e) {
+      toast(mensajeErrorApi(e, { accion: 'mover la persona en el organigrama' }), 'error');
+    }
     setDraggingId(null);
     cargar();
   };
@@ -456,6 +472,8 @@ export function OrgChartTab({ puedoEditar, empleados }) {
           </Button>
         )}
       </Box>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Zona "soltar aquí para hacer raíz" */}
       {puedoEditar && (

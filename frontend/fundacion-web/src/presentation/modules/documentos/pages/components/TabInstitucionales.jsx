@@ -10,6 +10,7 @@ import DownloadIcon   from '@mui/icons-material/Download';
 import SearchIcon     from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useDocumentosInstitucionales } from '@/application/documentos/useDocumentosInstitucionales';
+import { mensajeErrorApi }              from '@/shared/utils/mensajeErrorApi';
 import { CATEGORIAS, fmt }              from './helpers';
 import { ModalSubirInstitucional }      from './ModalSubirInstitucional';
 import { ConfirmarEliminar }            from './ConfirmarEliminar';
@@ -36,8 +37,12 @@ export function TabInstitucionales({ onToast }) {
   }, [documentos, categoriaFiltro, buscar]);
 
   const handleEliminar = async (id) => {
-    await eliminar(id);
-    onToast('Documento eliminado', 'success');
+    try {
+      await eliminar(id);
+      onToast('Documento eliminado', 'success');
+    } catch (err) {
+      onToast(mensajeErrorApi(err, { accion: 'eliminar el documento' }), 'error');
+    }
   };
 
   return (

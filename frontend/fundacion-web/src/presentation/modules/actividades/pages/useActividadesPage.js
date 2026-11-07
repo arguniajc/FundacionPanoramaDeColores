@@ -4,6 +4,8 @@ import { actividadesRepository }  from '@/infrastructure/repositories/actividade
 import { sedesRepository }        from '@/infrastructure/repositories/sedesRepository';
 import usePermisos                from '@/shared/hooks/usePermisos';
 import { BRAND_COLOR }            from '@/shared/constants/brand';
+import { useToast }               from '@/shared/context/ToastContext';
+import { mensajeErrorApi }        from '@/shared/utils/mensajeErrorApi';
 
 const COLOR = BRAND_COLOR;
 
@@ -54,6 +56,7 @@ function expandirHorarios(horarios, start, end) {
 export function useActividadesPage() {
   const { puedo } = usePermisos();
   const confirm   = useConfirm();
+  const toast     = useToast();
 
   const [tab,             setTab]             = useState(0);
   const [actividades,     setActividades]     = useState([]);
@@ -79,15 +82,15 @@ export function useActividadesPage() {
           id: p.id, nombre: `${s.nombre} — ${p.nombre}`,
         }))));
       })
-      .catch(() => {});
+      .catch(() => { /* opcional: sin catálogo de programas el calendario sigue funcionando */ });
   }, []);
 
   const cargarHorarios = useCallback(async () => {
     try {
       const { data } = await actividadesRepository.listarHorarios();
       setHorarios(data);
-    } catch { /* silencioso */ }
-  }, []);
+    } catch (e) { toast(mensajeErrorApi(e, { accion: 'cargar los horarios' }), 'error'); }
+  }, [toast]);
 
   useEffect(() => { cargarHorarios(); }, [cargarHorarios]);
 
@@ -99,8 +102,8 @@ export function useActividadesPage() {
         anio: fecha.getFullYear(),
       });
       setActividades(data);
-    } catch { /* silencioso */ }
-  }, []);
+    } catch (e) { toast(mensajeErrorApi(e, { accion: 'cargar las actividades' }), 'error'); }
+  }, [toast]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -136,7 +139,8 @@ export function useActividadesPage() {
 
   const eliminar = async (id) => {
     if (!await confirm('¿Eliminar esta actividad?')) return;
-    try { await actividadesRepository.eliminar(id); cargar(); } catch { /* silencioso */ }
+    try { await actividadesRepository.eliminar(id); cargar(); }
+    catch (e) { toast(mensajeErrorApi(e, { accion: 'eliminar la actividad' }), 'error'); }
   };
 
   const cancelar = async (a) => {
@@ -152,7 +156,7 @@ export function useActividadesPage() {
         })),
       });
       cargar();
-    } catch { /* silencioso */ }
+    } catch (e) { toast(mensajeErrorApi(e, { accion: 'cancelar la actividad' }), 'error'); }
   };
 
   return {

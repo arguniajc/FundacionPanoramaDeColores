@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authRepository } from '@/infrastructure/repositories/authRepository';
 import { useAuth } from './AuthContext';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function useLogin() {
   const { login }  = useAuth();
@@ -29,7 +30,9 @@ export function useLogin() {
       setError(
         err.response?.status === 403
           ? 'Tu correo no tiene permisos para acceder al panel.'
-          : 'Error al iniciar sesión. Intenta de nuevo.'
+          : err.response?.status === 401
+            ? 'No se pudo validar tu cuenta de Google. Intenta iniciar sesión de nuevo.'
+            : mensajeErrorApi(err, { accion: 'iniciar sesión' })
       );
     } finally {
       setCargando(false);

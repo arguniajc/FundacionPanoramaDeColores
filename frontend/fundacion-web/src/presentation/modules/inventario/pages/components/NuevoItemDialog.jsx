@@ -7,6 +7,7 @@ import HandshakeIcon from '@mui/icons-material/Handshake';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { COLOR, CATEGORIAS } from './helpers';
 import { CampoUnidadMedida } from '@/shared/components/form/FormControles';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const TIPOS_TENENCIA = [
   { value: 'propio',        label: 'Propio',              desc: 'Pertenece a la fundación' },
@@ -88,7 +89,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
       }
       onGuardado(result, editando);
     } catch (e) {
-      setError(e?.response?.data?.mensaje || 'Error al guardar el artículo.');
+      setError(mensajeErrorApi(e, { accion: 'guardar el artículo' }));
     } finally {
       setGuardando(false);
     }
@@ -100,7 +101,6 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
         {editando ? 'Editar artículo' : 'Nuevo artículo'}
       </DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           {!editando && (
             <Grid size={12}>
@@ -220,6 +220,11 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           </Grid>
         </Grid>
       </DialogContent>
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+          {error}
+        </Alert>
+      )}
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}

@@ -9,6 +9,7 @@ import { useConfiguracion }        from '@/shared/context/ConfiguracionContext';
 import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
 import { fmtMoney, fmtFecha } from './helpers';
 import { BRAND_COLOR } from '@/shared/constants/brand';
+import { useToast } from '@/shared/context/ToastContext';
 
 // Convierte un número entero a letras en español (hasta 999.999.999)
 function numeroALetras(num) {
@@ -42,7 +43,7 @@ function numeroALetras(num) {
 }
 
 function generarCertificadoPDF(don, config, firma) {
-  import('jspdf').then(({ default: jsPDF }) => {
+  return import('jspdf').then(({ default: jsPDF }) => {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const W = doc.internal.pageSize.getWidth();
     const H = doc.internal.pageSize.getHeight();
@@ -147,7 +148,7 @@ function generarCertificadoPDF(don, config, firma) {
     // Firma
     const xFirma = W / 2 - 35;
     if (firma.firmaRep) {
-      try { doc.addImage(firma.firmaRep, 'PNG', xFirma, y, 70, 20); } catch { /* noop */ }
+      try { doc.addImage(firma.firmaRep, 'PNG', xFirma, y, 70, 20); } catch { /* opcional: si la imagen de la firma falla, se deja solo la línea */ }
     }
     y += 22;
     doc.setDrawColor(180, 180, 180);
@@ -181,6 +182,7 @@ function generarCertificadoPDF(don, config, firma) {
 
 export function CertificadoDonacionDialog({ open, donacion, onClose }) {
   const config = useConfiguracion();
+  const toast  = useToast();
   const [generando, setGenerando] = useState(false);
   const [firma,     setFirma]     = useState({ firmaRep: null, nombreRepLegal: null, cargoRep: null });
 
@@ -192,12 +194,13 @@ export function CertificadoDonacionDialog({ open, donacion, onClose }) {
         nombreRepLegal: data.nombreRepLegal ?? null,
         cargoRep:       data.cargoRep       ?? null,
       }))
-      .catch(() => {});
+      .catch(() => { /* opcional: sin la firma el certificado se genera con la línea en blanco */ });
   }, [open]);
 
   const handleDescargar = () => {
     setGenerando(true);
-    generarCertificadoPDF(donacion, config, firma);
+    generarCertificadoPDF(donacion, config, firma)
+      .catch(() => toast('No se pudo generar el certificado PDF. Intenta de nuevo.', 'error'));
     setTimeout(() => setGenerando(false), 800);
   };
 

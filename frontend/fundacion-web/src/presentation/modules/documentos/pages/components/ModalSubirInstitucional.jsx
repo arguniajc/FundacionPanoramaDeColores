@@ -8,6 +8,7 @@ import CloseIcon          from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import UploadFileIcon     from '@mui/icons-material/UploadFile';
 import apiClient              from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi }        from '@/shared/utils/mensajeErrorApi';
 import { CATEGORIAS, HEADER_GRADIENT, sinExtension } from './helpers';
 
 export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
@@ -35,6 +36,7 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
     if (archivos.length === 0) { setError('Selecciona al menos un PDF.'); return; }
     setSubiendo(true); setError('');
     let ok = 0;
+    const fallos = [];
     for (let i = 0; i < archivos.length; i++) {
       const file = archivos[i];
       try {
@@ -46,15 +48,23 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
         );
         await onSubido({ titulo: sinExtension(file.name), categoria, url: up.url, nombreOriginal: file.name });
         ok++;
-      } catch {
-        setError(`Error al subir "${file.name}". Los demás se subieron correctamente.`);
+      } catch (err) {
+        fallos.push(`"${file.name}": ${mensajeErrorApi(err, { accion: 'subir el documento' })}`);
       }
       setProgreso(Math.round(((i + 1) / archivos.length) * 100));
     }
     setSubiendo(false);
+    const msgFallos = fallos.length
+      ? `No se pudo subir ${fallos.join(' · ')}`
+      : '';
     if (ok > 0) {
-      onToast(`${ok} documento${ok > 1 ? 's' : ''} subido${ok > 1 ? 's' : ''} correctamente`, 'success');
+      if (msgFallos)
+        onToast(`Se subieron ${ok} documento${ok > 1 ? 's' : ''}. ${msgFallos}`, 'error');
+      else
+        onToast(`${ok} documento${ok > 1 ? 's' : ''} subido${ok > 1 ? 's' : ''} correctamente`, 'success');
       onCerrar();
+    } else if (msgFallos) {
+      setError(msgFallos);
     }
   };
 

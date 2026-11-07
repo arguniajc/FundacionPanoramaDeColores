@@ -12,6 +12,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import Alert      from '@mui/material/Alert';
 import apiClient  from '@/infrastructure/http/apiClient';
 import usePermisos from '@/shared/hooks/usePermisos';
+import { useToast } from '@/shared/context/ToastContext';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const ROLES = [
   { value: 'administrador',       label: 'Administrador' },
@@ -44,6 +46,7 @@ const EMPTY = { email: '', nombre: '', rol: 'trabajador_social' };
 export default function EquipoPage() {
   const { puedo } = usePermisos();
   const confirm = useConfirm();
+  const toast = useToast();
   const [usuarios, setUsuarios] = useState([]);
   const [open,     setOpen]     = useState(false);
   const [editing,  setEditing]  = useState(null); // null=crear, obj=editar
@@ -61,7 +64,7 @@ export default function EquipoPage() {
       const status = e.response?.status;
       if (status === 403) setErrorCarga('Sin permiso para ver el equipo (403). Cierra sesión y vuelve a entrar.');
       else if (status === 401) setErrorCarga('Sesión expirada (401). Cierra sesión y vuelve a entrar.');
-      else setErrorCarga(`Error al cargar usuarios: ${status ?? e.message}`);
+      else setErrorCarga(mensajeErrorApi(e, { accion: 'cargar los usuarios' }));
     }
   }, []);
 
@@ -101,7 +104,10 @@ export default function EquipoPage() {
       setOpen(false);
       cargar();
     } catch (e) {
-      setError(e.response?.data?.error ?? 'Error al guardar.');
+      setError(mensajeErrorApi(e, {
+        accion: editing ? 'guardar el usuario' : 'agregar el usuario',
+        conflicto: 'Ya existe un usuario con ese correo.',
+      }));
     } finally {
       setSaving(false);
     }
@@ -113,7 +119,9 @@ export default function EquipoPage() {
         nombre: u.nombre, rol: u.rol, activo: !u.activo,
       });
       cargar();
-    } catch { /* silencioso */ }
+    } catch (e) {
+      toast(mensajeErrorApi(e, { accion: u.activo ? 'desactivar el usuario' : 'activar el usuario' }), 'error');
+    }
   };
 
   const eliminar = async (u) => {
@@ -121,7 +129,9 @@ export default function EquipoPage() {
     try {
       await apiClient.delete(`/api/equipo/${u.id}`);
       cargar();
-    } catch { /* silencioso */ }
+    } catch (e) {
+      toast(mensajeErrorApi(e, { accion: 'desactivar el usuario' }), 'error');
+    }
   };
 
   return (

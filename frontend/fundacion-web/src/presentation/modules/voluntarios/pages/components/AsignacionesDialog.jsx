@@ -13,6 +13,7 @@ import { voluntariosRepository } from '@/infrastructure/repositories/voluntarios
 import { sedesRepository }        from '@/infrastructure/repositories/sedesRepository';
 import { useConfirm }             from '@/shared/components/ConfirmDialog';
 import { COLOR, FORM_VACIO_ASIG, fmtFecha, toInputDate } from './helpers';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
   const confirm = useConfirm();
@@ -32,9 +33,10 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
     setForm(FORM_VACIO_ASIG); setEditandoId(null); setError('');
     voluntariosRepository.listarAsignaciones(voluntario.id)
       .then(({ data }) => setAsignaciones(data))
-      .catch(() => {})
+      .catch((e) => setError(mensajeErrorApi(e, { accion: 'cargar las asignaciones' })))
       .finally(() => setCargando(false));
-    sedesRepository.listar({ soloActivas: true }).then(({ data }) => setSedes(data)).catch(() => {});
+    sedesRepository.listar({ soloActivas: true }).then(({ data }) => setSedes(data))
+      .catch(() => { /* opcional: el catálogo de sedes vacío no bloquea el diálogo */ });
   }, [open, voluntario]);
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
         setProgramas(data);
         if (restoreId) setForm(p => ({ ...p, programaId: restoreId }));
       })
-      .catch(() => setProgramas([]));
+      .catch(() => setProgramas([])); // opcional: sin programas se puede asignar solo la sede
   }, [form.sedeId]);
 
   const setF = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -86,7 +88,7 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
       setForm(FORM_VACIO_ASIG);
       onCambio?.(voluntario.id);
     } catch (e) {
-      setError(e?.response?.data?.mensaje || (editandoId ? 'Error al guardar.' : 'Error al agregar.'));
+      setError(mensajeErrorApi(e, { accion: editandoId ? 'guardar la asignación' : 'agregar la asignación' }));
     } finally {
       setGuardando(false);
     }
@@ -99,7 +101,7 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
       setAsignaciones(prev => prev.filter(a => a.id !== asig.id));
       if (editandoId === asig.id) cancelarEdicion();
       onCambio?.(voluntario.id);
-    } catch {}
+    } catch (e) { setError(mensajeErrorApi(e, { accion: 'eliminar la asignación' })); }
   };
 
   return (

@@ -8,6 +8,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlaceIcon        from '@mui/icons-material/Place';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
 import { BRAND_COLOR } from '@/shared/constants/brand';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const COLOR = BRAND_COLOR;
 
@@ -113,7 +114,7 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
       onGuardado();
       onClose();
     } catch (e) {
-      setError(e.response?.data?.error ?? 'Error al guardar.');
+      setError(mensajeErrorApi(e, { accion: editando ? 'guardar el horario' : 'crear el horario' }));
     } finally {
       setSaving(false);
     }
@@ -129,8 +130,6 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
       </DialogTitle>
 
       <DialogContent sx={{ pt: '8px !important' }}>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
         <Grid container spacing={2.5}>
 
           {/* Programa */}
@@ -295,6 +294,12 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
           </>
         )}
       </DialogContent>
+
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+          {error}
+        </Alert>
+      )}
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={saving}>Cancelar</Button>

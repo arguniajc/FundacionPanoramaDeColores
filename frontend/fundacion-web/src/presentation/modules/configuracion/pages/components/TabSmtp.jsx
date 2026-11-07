@@ -7,6 +7,7 @@ import EmailIcon  from '@mui/icons-material/Email';
 import CheckIcon  from '@mui/icons-material/Check';
 import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
 import { COLOR } from './helpers';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function TabSmtp({ form, set }) {
   const [probando,   setProbando]   = useState(false);
@@ -19,7 +20,7 @@ export function TabSmtp({ form, set }) {
       const { data } = await configuracionRepository.probarSmtp();
       setResultadoPrueba({ ok: true, msg: data.mensaje });
     } catch (e) {
-      setResultadoPrueba({ ok: false, msg: e?.response?.data?.mensaje || 'Error al conectar con el servidor SMTP.' });
+      setResultadoPrueba({ ok: false, msg: mensajeErrorApi(e, { accion: 'probar la conexión con el servidor SMTP' }) });
     } finally {
       setProbando(false);
     }

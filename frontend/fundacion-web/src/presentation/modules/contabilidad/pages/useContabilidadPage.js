@@ -3,12 +3,15 @@ import apiClient from '@/infrastructure/http/apiClient';
 import { useAuth } from '@/application/auth/AuthContext';
 import { useConfirm } from '@/shared/components/ConfirmDialog';
 import { useConfiguracion } from '@/shared/context/ConfiguracionContext';
+import { useToast } from '@/shared/context/ToastContext';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { generarComprobantePDF } from './components/generarComprobantePDF';
 
 export function useContabilidadPage() {
   const { puedo }  = useAuth();
   const confirm    = useConfirm();
   const config     = useConfiguracion();
+  const toast      = useToast();
   const inputOcrRef = useRef(null);
 
   const puedeCrear  = puedo('contabilidad', 'crear');
@@ -68,6 +71,7 @@ export function useContabilidadPage() {
           apiClient.get('/api/contabilidad/movimientos', {
             params: { mes: now.getMonth() + 1, anio: now.getFullYear() },
           }),
+          // opcional: sin sedes solo se pierde el selector de programa
           apiClient.get('/api/sedes').catch(() => ({ data: [] })),
         ]);
         setStats(st);
@@ -78,8 +82,8 @@ export function useContabilidadPage() {
           (s.programas ?? []).map(p => ({ id: p.id, nombre: p.nombre }))
         );
         setProgramas(progs);
-      } catch {
-        setError('No se pudo cargar el módulo de contabilidad.');
+      } catch (err) {
+        setError(mensajeErrorApi(err, { accion: 'cargar el módulo de contabilidad' }));
       } finally {
         setCargando(false);
       }
@@ -95,23 +99,39 @@ export function useContabilidadPage() {
     if (filtroMes)    params.mes      = filtroMes;
     if (filtroAnio)   params.anio     = filtroAnio;
     if (filtroCuenta) params.cuentaId = filtroCuenta;
-    const { data } = await apiClient.get('/api/contabilidad/movimientos', { params });
-    setMovimientos(data);
-  }, [filtroTipo, filtroMes, filtroAnio, filtroCuenta]);
+    try {
+      const { data } = await apiClient.get('/api/contabilidad/movimientos', { params });
+      setMovimientos(data);
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'cargar los movimientos' }), 'error');
+    }
+  }, [filtroTipo, filtroMes, filtroAnio, filtroCuenta, toast]);
 
   const cargarPresupuesto = useCallback(async () => {
-    const { data } = await apiClient.get('/api/contabilidad/presupuesto', { params: { anio: presAnio } });
-    setPresupuesto(data);
-  }, [presAnio]);
+    try {
+      const { data } = await apiClient.get('/api/contabilidad/presupuesto', { params: { anio: presAnio } });
+      setPresupuesto(data);
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'cargar el presupuesto' }), 'error');
+    }
+  }, [presAnio, toast]);
 
   const cargarStats = async () => {
-    const { data } = await apiClient.get('/api/contabilidad/stats');
-    setStats(data);
+    try {
+      const { data } = await apiClient.get('/api/contabilidad/stats');
+      setStats(data);
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'actualizar el resumen' }), 'error');
+    }
   };
 
   const cargarCuentas = async () => {
-    const { data } = await apiClient.get('/api/contabilidad/cuentas');
-    setCuentas(data);
+    try {
+      const { data } = await apiClient.get('/api/contabilidad/cuentas');
+      setCuentas(data);
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'actualizar las cuentas' }), 'error');
+    }
   };
 
   const cargarCajaMenor = useCallback(async () => {
@@ -126,10 +146,12 @@ export function useContabilidadPage() {
       ]);
       setLibroAuxiliar(libroRes.data);
       setArqueos(arqueosRes.data);
-    } catch { /* silencioso */ } finally {
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'cargar la caja menor' }), 'error');
+    } finally {
       setCargandoCaja(false);
     }
-  }, [cajaCuentaId, cajaMes, cajaAnio]);
+  }, [cajaCuentaId, cajaMes, cajaAnio, toast]);
 
   useEffect(() => {
     if (tab === 5 && !cajaCuentaId) {
@@ -143,17 +165,24 @@ export function useContabilidadPage() {
   }, [cajaCuentaId]);
 
   const generarReporte = async () => {
-    const { data } = await apiClient.get('/api/contabilidad/reporte', {
-      params: { mes: repMes, anio: repAnio },
-    });
-    setReporte(data);
+    try {
+      const { data } = await apiClient.get('/api/contabilidad/reporte', {
+        params: { mes: repMes, anio: repAnio },
+      });
+      setReporte(data);
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'generar el reporte' }), 'error');
+    }
   };
 
   const cargarResumenAnual = async (anio) => {
     try {
       const { data } = await apiClient.get('/api/contabilidad/resumen-anual', { params: { anio } });
       setResumenAnual(data);
-    } catch { setResumenAnual(null); }
+    } catch (err) {
+      setResumenAnual(null);
+      toast(mensajeErrorApi(err, { accion: 'cargar el resumen anual' }), 'error');
+    }
   };
 
   // ── Movimientos CRUD ──────────────────────────────────────────────────────
@@ -165,19 +194,31 @@ export function useContabilidadPage() {
       await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
       if (tab === 5) await cargarCajaMenor();
       setDlgMov(d => ({ ...d, open: false }));
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'guardar el movimiento' }), 'error');
     } finally { setGuardando(false); }
   };
 
   const eliminarMovimiento = async (id) => {
     if (!await confirm('¿Eliminar este movimiento? El saldo de la cuenta se ajustará automáticamente.')) return;
-    await apiClient.delete(`/api/contabilidad/movimientos/${id}`);
+    try {
+      await apiClient.delete(`/api/contabilidad/movimientos/${id}`);
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'eliminar el movimiento' }), 'error');
+      return;
+    }
     await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
     if (tab === 5) await cargarCajaMenor();
   };
 
   const anularMovimiento = async (id) => {
     if (!await confirm('¿Anular este movimiento? El saldo de la cuenta se revertirá y el movimiento quedará en el historial como Anulado.')) return;
-    await apiClient.patch(`/api/contabilidad/movimientos/${id}/anular`);
+    try {
+      await apiClient.patch(`/api/contabilidad/movimientos/${id}/anular`);
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'anular el movimiento' }), 'error');
+      return;
+    }
     await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
     if (tab === 5) await cargarCajaMenor();
   };
@@ -190,6 +231,8 @@ export function useContabilidadPage() {
       else await apiClient.put(`/api/contabilidad/cuentas/${dlgCuenta.data.id}`, form);
       await Promise.all([cargarCuentas(), cargarStats()]);
       setDlgCuenta(d => ({ ...d, open: false }));
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'guardar la cuenta' }), 'error');
     } finally { setGuardando(false); }
   };
 
@@ -198,8 +241,8 @@ export function useContabilidadPage() {
     try {
       await apiClient.delete(`/api/contabilidad/cuentas/${id}`);
       await Promise.all([cargarCuentas(), cargarStats()]);
-    } catch {
-      alert('No se pudo eliminar: la cuenta tiene movimientos asociados.');
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'eliminar la cuenta', conflicto: 'No se pudo eliminar: la cuenta tiene movimientos asociados.' }), 'error');
     }
   };
 
@@ -211,12 +254,19 @@ export function useContabilidadPage() {
       else await apiClient.put(`/api/contabilidad/presupuesto/${dlgPres.data.id}`, form);
       await cargarPresupuesto();
       setDlgPres(d => ({ ...d, open: false }));
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'guardar la línea presupuestal' }), 'error');
     } finally { setGuardando(false); }
   };
 
   const eliminarPresupuesto = async (id) => {
     if (!await confirm('¿Eliminar esta línea presupuestal?')) return;
-    await apiClient.delete(`/api/contabilidad/presupuesto/${id}`);
+    try {
+      await apiClient.delete(`/api/contabilidad/presupuesto/${id}`);
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'eliminar la línea presupuestal' }), 'error');
+      return;
+    }
     await cargarPresupuesto();
   };
 
@@ -227,12 +277,19 @@ export function useContabilidadPage() {
       await apiClient.post('/api/contabilidad/caja-menor/arqueos', form);
       await cargarCajaMenor();
       setDlgArqueo({ open: false });
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'registrar el arqueo' }), 'error');
     } finally { setGuardando(false); }
   };
 
   const eliminarArqueo = async (id) => {
     if (!await confirm('¿Eliminar este arqueo?')) return;
-    await apiClient.delete(`/api/contabilidad/caja-menor/arqueos/${id}`);
+    try {
+      await apiClient.delete(`/api/contabilidad/caja-menor/arqueos/${id}`);
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'eliminar el arqueo' }), 'error');
+      return;
+    }
     await cargarCajaMenor();
   };
 
@@ -242,6 +299,8 @@ export function useContabilidadPage() {
       await apiClient.post('/api/contabilidad/caja-menor/reposicion', form);
       await Promise.all([cargarStats(), cargarCuentas(), cargarCajaMenor()]);
       setDlgReposicion({ open: false });
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'registrar la reposición' }), 'error');
     } finally { setGuardando(false); }
   };
 
@@ -294,10 +353,8 @@ export function useContabilidadPage() {
       });
     } catch (err) {
       const d = err?.response?.data;
-      const msg = d?.detalle
-        ? `${d.error ?? 'Error'}: ${d.detalle}`
-        : d?.error ?? `Error ${err?.response?.status ?? 'de red'}: ${err?.message ?? 'No se pudo procesar la imagen.'}`;
-      setOcrAdvertencia(msg);
+      const msg = mensajeErrorApi(err, { accion: 'leer la factura' });
+      setOcrAdvertencia(typeof d?.detalle === 'string' ? `${msg}: ${d.detalle}` : msg);
     } finally { setOcrCargando(false); }
   };
 

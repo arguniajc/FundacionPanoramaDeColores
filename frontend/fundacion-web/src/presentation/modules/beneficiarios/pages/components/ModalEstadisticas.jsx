@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Box, CircularProgress, Dialog, DialogContent, DialogTitle,
+  Alert, Box, CircularProgress, Dialog, DialogContent, DialogTitle,
   Divider, IconButton, LinearProgress, Paper, Typography,
   useMediaQuery, useTheme,
 } from '@mui/material';
@@ -91,12 +91,12 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
 
   const [tipoFiltro, setTipoFiltro] = useState(tipoInicial);
 
-  const { data: stats, cargando, ejecutar: cargar } = useAsyncData(
+  const { data: stats, cargando, error, ejecutar: cargar } = useAsyncData(
     async (filtro) => {
       const params = filtro !== 'todos' ? `?tipo=${filtro}` : '';
       return (await apiClient.get(`/api/beneficiarios/stats${params}`)).data;
     },
-    { errorMsg: 'Error al cargar estadísticas.' }
+    { errorMsg: 'No se pudieron cargar las estadísticas.' }
   );
 
   useEffect(() => {
@@ -133,6 +133,7 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
         <Typography color="text.secondary">Calculando estadísticas…</Typography>
       </Box>
     );
+    if (error) return <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>;
     if (!stats) return (
       <Box sx={{ py: 6, textAlign: 'center' }}>
         <Typography color="text.secondary">No hay estadísticas disponibles.</Typography>

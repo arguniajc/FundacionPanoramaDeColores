@@ -15,6 +15,7 @@ import { useConfirm }            from '@/shared/components/ConfirmDialog';
 import { DialogHorario }         from './DialogHorario';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const COLOR = BRAND_COLOR;
 
@@ -47,7 +48,7 @@ export function TabHorarios({ programas, puedo, onCambio }) {
     try {
       await actividadesRepository.eliminarHorario(h.id);
       cargar();
-    } catch { setError('No se pudo eliminar.'); }
+    } catch (e) { setError(mensajeErrorApi(e, { accion: 'eliminar el horario' })); }
   };
 
   const toggleActivo = async (h) => {
@@ -58,7 +59,7 @@ export function TabHorarios({ programas, puedo, onCambio }) {
         lugar: h.lugar, activo: !h.activo,
       });
       cargar();
-    } catch { setError('No se pudo actualizar el estado.'); }
+    } catch (e) { setError(mensajeErrorApi(e, { accion: 'cambiar el estado del horario' })); }
   };
 
   // Agrupar por programa

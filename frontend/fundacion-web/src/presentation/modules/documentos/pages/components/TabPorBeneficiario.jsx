@@ -12,6 +12,7 @@ import PersonIcon         from '@mui/icons-material/Person';
 import VisibilityIcon     from '@mui/icons-material/Visibility';
 import apiClient                        from '@/infrastructure/http/apiClient';
 import { useDocumentosBeneficiario }    from '@/application/documentos/useDocumentosBeneficiario';
+import { mensajeErrorApi }              from '@/shared/utils/mensajeErrorApi';
 import { fmt }                          from './helpers';
 import { ModalSubirArchivoBeneficiario } from './ModalSubirArchivoBeneficiario';
 import { ConfirmarEliminar }             from './ConfirmarEliminar';
@@ -31,7 +32,10 @@ export function TabPorBeneficiario({ onToast }) {
     try {
       const { data } = await apiClient.get('/api/beneficiarios', { params: { buscar: q, porPagina: 10 } });
       setOpciones(data.data ?? []);
-    } catch { /* ignorar */ }
+    } catch (err) {
+      setOpciones([]);
+      onToast(mensajeErrorApi(err, { accion: 'buscar beneficiarios' }), 'error');
+    }
     finally { setBuscando(false); }
   };
 
@@ -42,8 +46,12 @@ export function TabPorBeneficiario({ onToast }) {
   };
 
   const handleEliminar = async (id) => {
-    await eliminar(id, beneficiario?.id);
-    onToast('Documento eliminado', 'success');
+    try {
+      await eliminar(id, beneficiario?.id);
+      onToast('Documento eliminado', 'success');
+    } catch (err) {
+      onToast(mensajeErrorApi(err, { accion: 'eliminar el documento' }), 'error');
+    }
   };
 
   return (

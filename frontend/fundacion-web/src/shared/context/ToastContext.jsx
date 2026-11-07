@@ -17,7 +17,7 @@ export function ToastProvider({ children }) {
       {children}
       <Snackbar
         open={toast.open}
-        autoHideDuration={3500}
+        autoHideDuration={toast.severity === 'error' ? 8000 : 3500}
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >

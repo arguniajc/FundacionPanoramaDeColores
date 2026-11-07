@@ -33,8 +33,9 @@ export function useAsyncData(fn, { inicial = null, errorMsg = 'Error al cargar.'
       const resultado = await fnRef.current(...args);
       setData(resultado);
       return resultado;
-    } catch {
-      setError(errorMsgRef.current);
+    } catch (err) {
+      // Mensaje del contexto + causa concreta (sin conexión, permisos, servidor…)
+      setError([errorMsgRef.current, err?.mensajeUsuario].filter(Boolean).join(' '));
     } finally {
       setCargando(false);
     }

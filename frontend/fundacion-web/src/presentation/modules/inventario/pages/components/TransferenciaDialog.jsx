@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { fmtNum } from './helpers';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida }) {
   const [form,      setForm]      = useState({ sedeDestinoId: '', cantidad: '', motivo: '' });
@@ -35,7 +36,7 @@ export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida 
       });
       onTransferida(data);
     } catch (e) {
-      setError(e?.response?.data?.mensaje || 'Error al realizar la transferencia.');
+      setError(mensajeErrorApi(e, { accion: 'realizar la transferencia' }));
     } finally {
       setGuardando(false);
     }
@@ -53,7 +54,7 @@ export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida 
           <strong>{item.nombre}</strong> · Stock: <strong>{fmtNum(item.stockActual)} {item.unidadMedida}</strong>
           {item.nombreSede && <> · Origen: <strong>{item.nombreSede}</strong></>}
         </Typography>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size={12}>
             <FormControl fullWidth size="small">

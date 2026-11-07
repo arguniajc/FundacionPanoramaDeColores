@@ -2,7 +2,7 @@
 import {
   Box, Button, CircularProgress, Divider, FormControl, Grid, InputLabel,
   MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Typography,
+  TableHead, TableRow, Typography, Alert,
 } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { exportarExcel } from '@/shared/utils/exportarExcel';
@@ -25,7 +25,7 @@ export function TabContabilidadEsal() {
   const [anio,      setAnio]      = useState(hoy.getFullYear());
   const anios = Array.from({ length: 5 }, (_, i) => hoy.getFullYear() - i);
 
-  const { data: reporte, cargando, ejecutar: cargar } = useAsyncData(
+  const { data: reporte, cargando, error, ejecutar: cargar } = useAsyncData(
     async (m, a) => (await contabilidadRepository.reporte(m, a)).data,
     { errorMsg: 'No se pudo cargar el reporte.' }
   );
@@ -89,6 +89,8 @@ export function TabContabilidadEsal() {
           </Button>
         </Grid>
       </Grid>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {cargando && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>

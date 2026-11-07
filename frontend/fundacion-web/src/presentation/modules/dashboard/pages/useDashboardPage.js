@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth }                    from '@/application/auth/AuthContext';
 import { useThemeMode }               from '@/shared/theme/ThemeContext';
 import { useAsyncData }               from '@/shared/hooks/useAsyncData';
+import { useToast }                   from '@/shared/context/ToastContext';
 import { beneficiariosRepository }    from '@/infrastructure/repositories/beneficiariosRepository';
 import { talentoHumanoRepository }    from '@/infrastructure/repositories/talentoHumanoRepository';
 import { inventarioRepository }       from '@/infrastructure/repositories/inventarioRepository';
@@ -12,6 +13,7 @@ const COLORES_RANGO = ['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 export function useDashboardPage() {
   const { user } = useAuth();
   const { mode } = useThemeMode();
+  const toast    = useToast();
 
   const hora   = new Date().getHours();
   const saludo = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches';
@@ -19,12 +21,13 @@ export function useDashboardPage() {
   const [alertas,         setAlertas]         = useState(null);
   const [deptoExpandido,  setDeptoExpandido]  = useState(null);
 
-  const { data: stats, cargando, ejecutar: cargarStats } = useAsyncData(
+  const { data: stats, cargando, error: errorStats, ejecutar: cargarStats } = useAsyncData(
     async () => (await beneficiariosRepository.statsNinos()).data,
-    { errorMsg: '' }
+    { errorMsg: 'No se pudieron cargar las estadísticas del panel.' }
   );
 
   useEffect(() => { cargarStats(); }, [cargarStats]);
+  useEffect(() => { if (errorStats) toast(errorStats, 'error'); }, [errorStats, toast]);
 
   useEffect(() => {
     Promise.all([
@@ -39,7 +42,7 @@ export function useDashboardPage() {
       const comodatosVencer     = Array.isArray(com.data) ? com.data.length : 0;
       if (contratosVencer > 0 || novedadesPendientes > 0 || stockBajo > 0 || sinStock > 0 || comodatosVencer > 0)
         setAlertas({ contratosVencer, novedadesPendientes, stockBajo, sinStock, comodatosVencer });
-    }).catch(() => {});
+    }).catch(() => { /* opcional: el banner de alertas simplemente no se muestra */ });
   }, []);
 
   const chartData = stats?.porRango?.map((r, i) => ({

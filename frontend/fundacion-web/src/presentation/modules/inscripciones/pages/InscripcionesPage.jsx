@@ -10,12 +10,15 @@ import DeleteIcon     from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { sedesRepository }    from '@/infrastructure/repositories/sedesRepository';
 import { useInscripciones }   from '@/application/inscripciones/useInscripciones';
+import { useToast }           from '@/shared/context/ToastContext';
+import { mensajeErrorApi }    from '@/shared/utils/mensajeErrorApi';
 import { COLOR, ESTADOS, chipEstado } from './components/campos';
 import { VerFormularioDialog }        from './components/VerFormularioDialog';
 import { NuevaInscripcionDialog }     from './components/NuevaInscripcionDialog';
 
 export default function InscripcionesPage() {
   const { inscripciones, cargando, error, cargar, actualizar, cambiarEstado, eliminar } = useInscripciones();
+  const toastGlobal = useToast();
 
   const [filtroProg,     setFiltroProg]     = useState('');
   const [filtroEstado,   setFiltroEstado]   = useState('');
@@ -31,7 +34,7 @@ export default function InscripcionesPage() {
       setProgramas(data.flatMap(s =>
         (s.programas ?? []).map(p => ({ ...p, nombreSede: s.nombre }))
       ));
-    }).catch(() => {});
+    }).catch(() => { /* opcional: sin catálogo el filtro de programa queda vacío, el listado sigue funcionando */ });
   }, []);
 
   const recargar = useCallback(() => {
@@ -54,7 +57,7 @@ export default function InscripcionesPage() {
     try {
       await cambiarEstado(id, estado);
       setToast('Estado actualizado');
-    } catch { setToast('Error al cambiar estado'); }
+    } catch (err) { toastGlobal(mensajeErrorApi(err, { accion: 'cambiar el estado de la inscripción' }), 'error'); }
     finally  { setCambiandoId(null); }
   };
 
@@ -62,7 +65,7 @@ export default function InscripcionesPage() {
     try {
       await eliminar(id);
       setToast('Inscripción eliminada');
-    } catch { setToast('Error al eliminar'); }
+    } catch (err) { toastGlobal(mensajeErrorApi(err, { accion: 'eliminar la inscripción' }), 'error'); }
   };
 
   return (
@@ -223,7 +226,8 @@ export default function InscripcionesPage() {
           inscripcion={verInscripcion}
           onCerrar={() => setVerInscripcion(null)}
           onActualizada={(updated) => {
-            actualizar(verInscripcion.id, { datos: updated.datos, observaciones: updated.observaciones });
+            actualizar(verInscripcion.id, { datos: updated.datos, observaciones: updated.observaciones })
+              .catch(err => toastGlobal(mensajeErrorApi(err, { accion: 'actualizar la inscripción' }), 'error'));
             setVerInscripcion(updated);
             setToast('Formulario actualizado');
           }}

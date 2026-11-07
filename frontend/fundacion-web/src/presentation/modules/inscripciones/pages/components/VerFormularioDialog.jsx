@@ -13,6 +13,7 @@ import { beneficiariosRepository } from '@/infrastructure/repositories/beneficia
 import { generarPdfInscripcion }   from '@/shared/utils/generarPdfInscripcion';
 import { sedesRepository }         from '@/infrastructure/repositories/sedesRepository';
 import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
+import { mensajeErrorApi }         from '@/shared/utils/mensajeErrorApi';
 import {
   COLOR, CampoInput, FirmaAutorizacion, SeccionHeader,
   agruparPorSeccion, calcEdad, chipEstado, fmtFechaCorta,
@@ -53,7 +54,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         setBeneficiario(benefRes.data);
         setPrograma(progRes.data);
         let datosActuales = {};
-        try { datosActuales = JSON.parse(inscripcion.datos || '{}'); } catch {}
+        try { datosActuales = JSON.parse(inscripcion.datos || '{}'); } catch { /* datos ilegibles: se usan paneles por defecto */ }
         const padresMadreIds = camposRes.data
           .filter(c => c.tipo === 'datos_padre' || c.tipo === 'datos_madre')
           .map(c => c.id);
@@ -67,7 +68,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         }
         setPanelActivo(initPanel);
       })
-      .catch(() => {})
+      .catch(err => setError(mensajeErrorApi(err, { accion: 'cargar el formulario de la inscripción' })))
       .finally(() => setCargando(false));
   }, [inscripcion.id]);
 
@@ -81,8 +82,8 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       });
       onActualizada(result.data);
       setEditando(false);
-    } catch {
-      setError('No se pudo guardar los cambios.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'guardar los cambios de la inscripción' }));
     } finally {
       setGuardando(false);
     }
@@ -125,8 +126,10 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         a.href = url; a.download = nombre; a.click();
       }
       setTimeout(() => URL.revokeObjectURL(url), 30000);
-    } catch {
-      setError('No se pudo generar el PDF.');
+    } catch (err) {
+      setError(err?.isAxiosError
+        ? mensajeErrorApi(err, { accion: 'generar el PDF de la inscripción' })
+        : 'No se pudo generar el PDF. Intenta de nuevo.');
     } finally {
       setGenerandoPdf(false);
     }
@@ -316,8 +319,6 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
           </Box>
         )}
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
         {cargando ? (
           <Box display="flex" justifyContent="center" py={4}>
             <CircularProgress sx={{ color: COLOR }} />
@@ -461,6 +462,11 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         )}
       </DialogContent>
 
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+          {error}
+        </Alert>
+      )}
       <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
         <Button onClick={onCerrar} disabled={guardando}>Cerrar</Button>
         <Box flex={1} />

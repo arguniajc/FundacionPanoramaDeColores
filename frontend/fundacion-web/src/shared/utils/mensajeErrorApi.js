@@ -37,8 +37,10 @@ export function mensajeErrorApi(err, { conflicto, accion = 'guardar' } = {}) {
     case 429: return 'Demasiadas solicitudes seguidas. Espera un momento e intenta de nuevo.';
   }
 
-  if (status >= 500)
-    return `Error del servidor al ${accion}. Intenta de nuevo en unos minutos; si persiste, avisa al administrador.`;
+  if (status >= 500) {
+    const codigo = typeof data?.codigo === 'string' ? ` (código ${data.codigo})` : '';
+    return `Error del servidor al ${accion}. Intenta de nuevo en unos minutos; si persiste, avisa al administrador${codigo}.`;
+  }
 
   return mensajeBackend ?? `No se pudo ${accion}. Intenta de nuevo.`;
 }

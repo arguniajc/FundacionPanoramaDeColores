@@ -4,6 +4,7 @@ import {
   Grid, TextField, useMediaQuery, useTheme,
 } from '@mui/material';
 import apiClient from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { CampoCiudad } from '@/shared/components/form/FormControles';
 
 export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
@@ -33,8 +34,8 @@ export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
         ? await apiClient.put(`/api/sedes/${inicial.id}`, form)
         : await apiClient.post('/api/sedes', form);
       onGuardado(resp.data);
-    } catch {
-      setError('Error al guardar. Intenta de nuevo.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'guardar la sede', conflicto: 'Ya existe una sede con ese nombre.' }));
     } finally {
       setGuardando(false);
     }

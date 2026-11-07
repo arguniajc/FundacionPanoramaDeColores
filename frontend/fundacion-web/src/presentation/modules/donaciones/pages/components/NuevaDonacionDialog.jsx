@@ -14,6 +14,7 @@ import { contabilidadRepository }  from '@/infrastructure/repositories/contabili
 import { COLOR_DONACIONES, COLOR_ESPECIE, hoy } from './helpers';
 import { CampoUnidadMedida } from '@/shared/components/form/FormControles';
 import { CATEGORIAS_INVENTARIO } from '@/shared/utils/geodata';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const VACIO = {
   tipo: 'dinero', monto: '', nombreItem: '',
@@ -52,20 +53,20 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
     }
     contabilidadRepository.listarCuentas()
       .then(({ data }) => setCuentas(data.filter(c => c.activo)))
-      .catch(() => {});
+      .catch(() => { /* opcional: sin cuentas solo se omite el registro contable */ });
     contabilidadRepository.listarCategorias('ingreso')
       .then(({ data }) => {
         const cat = data.find(c => c.codigoPuc === '4120');
         if (cat) setCatDonId(cat.id);
       })
-      .catch(() => {});
+      .catch(() => { /* opcional: sin la categoría solo se omite el registro contable */ });
   }, [open, donanteInicial]);
 
   useEffect(() => {
     if (!form.sedeId) { setProgramas([]); return; }
     sedesRepository.listarProgramas(form.sedeId)
       .then(({ data }) => setProgramas(data))
-      .catch(() => setProgramas([]));
+      .catch(() => setProgramas([])); // opcional: el programa no es obligatorio
   }, [form.sedeId]);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -77,7 +78,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
     try {
       const { data } = await donantesRepository.listar({ buscar: q });
       setOpsDonante(data.map(d => ({ id: d.id, nombre: d.nombre })));
-    } catch {} finally { setBuscandoD(false); }
+    } catch { /* opcional: el autocompletar vacío no bloquea el formulario */ } finally { setBuscandoD(false); }
   }, []);
 
   const buscarItems = useCallback(async (q) => {
@@ -86,7 +87,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
     try {
       const { data } = await inventarioRepository.listarItems({ buscar: q });
       setOpsItem(data);
-    } catch {} finally { setBuscandoI(false); }
+    } catch { /* opcional: el artículo se puede escribir a mano */ } finally { setBuscandoI(false); }
   }, []);
 
   const guardar = async () => {
@@ -115,6 +116,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
         descripcion:  form.descripcion.trim() || null,
         fechaDonacion: form.fechaDonacion || hoy(),
       });
+      let aviso = null;
       if (form.tipo === 'dinero' && form.registrarContabilidad && form.cuentaContabId && catDonId) {
         try {
           await contabilidadRepository.crearMovimiento({
@@ -130,7 +132,10 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
             numeroSoporte:     data.reciboNumero ?? null,
             descripcion:       form.descripcion.trim() || null,
           });
-        } catch { /* silencioso — contabilidad se puede registrar manualmente */ }
+        } catch (e) {
+          // la donación ya quedó guardada: se avisa para registrar la contabilidad manualmente
+          aviso = `La donación se registró, pero no se pudo registrar el ingreso en contabilidad. ${mensajeErrorApi(e, { accion: 'registrar el ingreso' })} Regístralo manualmente.`;
+        }
       }
       if (form.tipo === 'especie' && form.ingresarInventario) {
         try {
@@ -146,11 +151,14 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
             nombreDonante: donante?.nombre ?? null,
             donacionId:   data.id,
           });
-        } catch { /* silencioso — el inventario se puede agregar manualmente */ }
+        } catch (e) {
+          // la donación ya quedó guardada: se avisa para ingresar el inventario manualmente
+          aviso = `La donación se registró, pero no se pudo ingresar al inventario. ${mensajeErrorApi(e, { accion: 'ingresar el artículo' })} Agrégalo manualmente.`;
+        }
       }
-      onGuardada(data);
+      onGuardada(data, aviso);
     } catch (e) {
-      setError(e?.response?.data?.mensaje || 'Error al guardar.');
+      setError(mensajeErrorApi(e, { accion: 'registrar la donación' }));
     } finally {
       setGuardando(false);
     }
@@ -160,7 +168,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 800, color: COLOR_DONACIONES }}>Nueva donación</DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size={12}>
             <Autocomplete

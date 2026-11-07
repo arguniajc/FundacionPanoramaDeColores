@@ -16,6 +16,7 @@ import { COLOR_DONANTES, fmtMoney } from './helpers';
 import { StatCard } from './StatCard';
 import { DonanteCard }   from './DonanteCard';
 import { DonanteDialog } from './DonanteDialog';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function TabDonantes({ onNuevaDonacion }) {
   const { puedo } = useAuth();
@@ -34,7 +35,7 @@ export function TabDonantes({ onNuevaDonacion }) {
     try {
       const { data } = await donantesRepository.listar(q ? { buscar: q } : {});
       setDonantes(data);
-    } catch { err('No se pudieron cargar los donantes.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'cargar los donantes' })); }
     finally { setCargando(false); }
   }, []);
 
@@ -58,7 +59,7 @@ export function TabDonantes({ onNuevaDonacion }) {
       await donantesRepository.eliminar(donante.id);
       setDonantes(prev => prev.filter(d => d.id !== donante.id));
       ok('Donante eliminado.');
-    } catch { err('No se pudo eliminar.'); }
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'eliminar el donante' })); }
   };
 
   const totalDinero      = donantes.reduce((s, d) => s + Number(d.totalDinero || 0), 0);
@@ -166,7 +167,7 @@ export function TabDonantes({ onNuevaDonacion }) {
         onGuardado={handleGuardado}
       />
 
-      <Snackbar open={snack.open} autoHideDuration={3500}
+      <Snackbar open={snack.open} autoHideDuration={snack.sev === 'error' ? 8000 : 3500}
         onClose={() => setSnack(p => ({ ...p, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert severity={snack.sev} variant="filled"

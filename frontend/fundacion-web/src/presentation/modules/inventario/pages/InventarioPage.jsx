@@ -23,6 +23,7 @@ import { NuevoItemDialog }        from './components/NuevoItemDialog';
 import { RegistrarMovimientoDialog } from './components/RegistrarMovimientoDialog';
 import { TransferenciaDialog }    from './components/TransferenciaDialog';
 import { HistorialDialog }        from './components/HistorialDialog';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export default function InventarioPage() {
   const confirm = useConfirm();
@@ -52,15 +53,16 @@ export default function InventarioPage() {
         setSedes(lista);
         if (lista.length > 0) setSedeSel(lista[0].id);
       })
-      .catch(() => err('No se pudieron cargar las sedes.'));
+      .catch(e => err(mensajeErrorApi(e, { accion: 'cargar las sedes' })));
 
     inventarioRepository.listarTipos()
       .then(r => setTipos(r.data))
-      .catch(() => {});
+      // sin los tipos no se pueden registrar movimientos: se avisa
+      .catch(e => err(mensajeErrorApi(e, { accion: 'cargar los tipos de movimiento' })));
 
     inventarioRepository.comodatosProximos(30)
       .then(r => setComodatosAlerta(r.data))
-      .catch(() => {});
+      .catch(() => { /* opcional: la alerta de comodatos no bloquea la pantalla */ });
   }, []);
 
   const cargarItems = useCallback(async (params) => {
@@ -72,8 +74,8 @@ export default function InventarioPage() {
       ]);
       setItems(itemsRes.data);
       setStats(statsRes.data);
-    } catch {
-      err('No se pudieron cargar los artículos.');
+    } catch (e) {
+      err(mensajeErrorApi(e, { accion: 'cargar los artículos' }));
     } finally {
       setCargando(false);
     }
@@ -95,7 +97,7 @@ export default function InventarioPage() {
     try {
       const { data } = await inventarioRepository.stats(sedeSel ? { sedeId: sedeSel } : {});
       setStats(data);
-    } catch {}
+    } catch { /* opcional: las tarjetas de resumen se actualizan en la próxima carga */ }
   };
 
   const handleGuardado = (itemData, editando) => {
@@ -129,8 +131,8 @@ export default function InventarioPage() {
       setItems(prev => prev.filter(i => i.id !== item.id));
       recargarStats();
       ok('Artículo eliminado.');
-    } catch {
-      err('No se pudo eliminar el artículo.');
+    } catch (e) {
+      err(mensajeErrorApi(e, { accion: 'eliminar el artículo' }));
     }
   };
 
@@ -333,7 +335,7 @@ export default function InventarioPage() {
         onClose={() => setDialHistorial({ open: false, item: null })}
       />
 
-      <Snackbar open={snack.open} autoHideDuration={3500}
+      <Snackbar open={snack.open} autoHideDuration={snack.sev === 'error' ? 8000 : 3500}
         onClose={() => setSnack(p => ({ ...p, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert severity={snack.sev} variant="filled" onClose={() => setSnack(p => ({ ...p, open: false }))}>

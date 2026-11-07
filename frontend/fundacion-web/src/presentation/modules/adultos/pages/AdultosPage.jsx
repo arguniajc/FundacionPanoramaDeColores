@@ -51,6 +51,8 @@ import { ImportarBeneficiariosDialog } from '@/presentation/modules/beneficiario
 import { PerfilesIncompletosDialog }    from '@/presentation/modules/beneficiarios/pages/components/PerfilesIncompletosDialog';
 import { useBeneficiariosPage } from '@/presentation/modules/beneficiarios/pages/useBeneficiariosPage';
 import apiClient from '@/infrastructure/http/apiClient';
+import { useToast } from '@/shared/context/ToastContext';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const HOVER_SX_ADULTOS = {
   bgcolor: '#e8f5e9 !important',
@@ -201,6 +203,7 @@ export default function AdultosPage() {
   } = useBeneficiariosPage({ tipo: 'adulto' });
 
   const [pendientesOpen, setPendientesOpen] = useState(false);
+  const notificar = useToast();
 
   const [inputSearch, setInputSearch] = useState('');
   useEffect(() => {
@@ -221,7 +224,9 @@ export default function AdultosPage() {
     try {
       const { data } = await apiClient.get(`/api/beneficiarios/${id}`);
       setEditando(data);
-    } catch { /* silencioso */ }
+    } catch (err) {
+      notificar(mensajeErrorApi(err, { accion: 'abrir el beneficiario para editarlo' }), 'error');
+    }
   };
 
   return (

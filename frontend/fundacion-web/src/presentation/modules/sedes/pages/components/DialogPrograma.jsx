@@ -4,6 +4,7 @@ import {
   Grid, TextField, useMediaQuery, useTheme,
 } from '@mui/material';
 import apiClient from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial }) {
   const [form,     setForm]     = useState({ nombre: '', descripcion: '', cupoMaximo: '' });
@@ -37,8 +38,8 @@ export function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial 
         ? await apiClient.put(`/api/sedes/programas/${inicial.id}`, payload)
         : await apiClient.post('/api/sedes/programas', payload);
       onGuardado(resp.data);
-    } catch {
-      setError('Error al guardar. Intenta de nuevo.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'guardar el programa', conflicto: 'Ya existe un programa con ese nombre en la sede.' }));
     } finally {
       setGuardando(false);
     }

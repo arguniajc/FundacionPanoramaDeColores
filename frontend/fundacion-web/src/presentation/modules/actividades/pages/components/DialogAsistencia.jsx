@@ -5,17 +5,23 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
+import { useToast } from '@/shared/context/ToastContext';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function DialogAsistencia({ open, actividad, onClose, onGuardado }) {
   const [asistentes,  setAsistentes]  = useState([]);
   const [saving,      setSaving]      = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     if (!open || !actividad) return;
     actividadesRepository.asistencia(actividad.id)
       .then(({ data }) => setAsistentes(data))
-      .catch(() => setAsistentes([]));
-  }, [open, actividad]);
+      .catch((e) => {
+        setAsistentes([]);
+        toast(mensajeErrorApi(e, { accion: 'cargar la lista de asistencia' }), 'error');
+      });
+  }, [open, actividad, toast]);
 
   const toggle = (beneficiarioId) => {
     setAsistentes(prev => prev.map(a =>
@@ -31,7 +37,9 @@ export function DialogAsistencia({ open, actividad, onClose, onGuardado }) {
       });
       onGuardado();
       onClose();
-    } catch { /* silencioso */ } finally {
+    } catch (e) {
+      toast(mensajeErrorApi(e, { accion: 'guardar la asistencia' }), 'error');
+    } finally {
       setSaving(false);
     }
   };

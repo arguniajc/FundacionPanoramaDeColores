@@ -13,6 +13,7 @@ import PlaceIcon         from '@mui/icons-material/Place';
 import RepeatIcon        from '@mui/icons-material/Repeat';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
 import { BRAND_COLOR } from '@/shared/constants/brand';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const COLOR = BRAND_COLOR;
 
@@ -125,7 +126,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
       onGuardado();
       onClose();
     } catch (e) {
-      setError(e.response?.data?.error ?? 'Error al guardar.');
+      setError(mensajeErrorApi(e, { accion: 'guardar la actividad' }));
     } finally {
       setSaving(false);
     }
@@ -140,8 +141,6 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
       </DialogTitle>
 
       <DialogContent sx={{ pt: '8px !important' }}>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
         {/* ── Toggle tipo ── */}
         <ToggleButtonGroup
           value={tipo} exclusive
@@ -378,6 +377,12 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
           </Grid>
         )}
       </DialogContent>
+
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
+          {error}
+        </Alert>
+      )}
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={saving}>Cancelar</Button>

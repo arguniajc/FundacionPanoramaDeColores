@@ -9,6 +9,7 @@ import {
   PieChart, Pie, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import apiClient from '@/infrastructure/http/apiClient';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { COLORES, GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 
@@ -18,7 +19,7 @@ export function TabProgramas() {
   useEffect(() => {
     apiClient.get('/api/reportes/programas')
       .then(r => setData(r.data))
-      .catch(() => setError('Error al cargar reporte de programas'));
+      .catch(err => setError(mensajeErrorApi(err, { accion: 'cargar el reporte de programas' })));
   }, []);
 
   if (error) return <Alert severity="error">{error}</Alert>;

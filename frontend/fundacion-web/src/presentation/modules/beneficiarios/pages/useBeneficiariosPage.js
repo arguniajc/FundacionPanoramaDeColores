@@ -4,11 +4,14 @@ import { useAuth } from '@/application/auth/AuthContext';
 import { cacheKey, leerCache, escribirCache, limpiarCache } from '@/infrastructure/cache/sessionCache';
 import { calcularEdad } from '@/shared/utils/fecha';
 import { exportarExcel } from '@/shared/utils/exportarExcel';
+import { useToast } from '@/shared/context/ToastContext';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const POR_PAGINA = 15;
 
 export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
   const { esAdmin } = useAuth();
+  const notificar   = useToast();
 
   const [inscripciones,  setInscripciones]  = useState([]);
   const [total,          setTotal]          = useState(0);
@@ -47,7 +50,7 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
       const { data } = await apiClient.get('/api/beneficiarios/stats', { params: { tipo } });
       setStatsDetalle(data);
       setStats({ activos: data.activos ?? 0, baja: data.baja ?? 0, total: data.total ?? 0 });
-    } catch { /* silencioso */ }
+    } catch { /* opcional: solo alimenta los contadores de las pestañas; la lista tiene su propio error */ }
     finally { setCargandoStats(false); }
   }, [tipo]);
 
@@ -78,7 +81,7 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
         setInscripciones(data.data);
         setTotal(data.total);
         escribirCache(key, data.data, data.total);
-      } catch { /* mantener caché si falla la red */ }
+      } catch { /* refresco en segundo plano: se mantiene la caché ya mostrada si falla la red */ }
       finally { setActualizando(false); }
       return;
     }
@@ -89,8 +92,8 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
       setInscripciones(data.data);
       setTotal(data.total);
       escribirCache(key, data.data, data.total);
-    } catch {
-      setError('No se pudieron cargar los beneficiarios.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'cargar los beneficiarios' }));
     } finally { setCargando(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagina, buscar, estado, fGenero, fEdadMin, fEdadMax, fEps, fAlergia]);
@@ -107,7 +110,10 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
       setIdBaja(null); setMotivoBaja('');
       setToast('Beneficiario dado de baja correctamente');
       limpiarCache(); cargar(true); cargarStatsDetalle();
-    } catch { setError('No se pudo dar de baja al beneficiario.'); }
+    } catch (err) {
+      // El diálogo de baja sigue abierto y tapa el Alert de la página: se avisa con toast
+      notificar(mensajeErrorApi(err, { accion: 'dar de baja al beneficiario' }), 'error');
+    }
     finally  { setProcesandoBaja(false); }
   };
 
@@ -116,7 +122,7 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
       await apiClient.patch(`/api/beneficiarios/${id}/reactivar`);
       setToast('Beneficiario reactivado correctamente');
       limpiarCache(); cargar(true); cargarStatsDetalle();
-    } catch { setError('No se pudo reactivar el beneficiario.'); }
+    } catch (err) { setError(mensajeErrorApi(err, { accion: 'reactivar el beneficiario' })); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargar, cargarStatsDetalle]);
 
@@ -129,7 +135,7 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
       setToast('Beneficiario eliminado permanentemente.');
       limpiarCache(); cargar(true); cargarStatsDetalle();
     } catch (e) {
-      setErrorEliminar(e?.response?.data?.mensaje || 'No se pudo eliminar el beneficiario.');
+      setErrorEliminar(mensajeErrorApi(e, { accion: 'eliminar el beneficiario' }));
     } finally {
       setEliminando(false);
     }
@@ -184,7 +190,12 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
         cols: [30,15,14,18,10,20,10,11,10,10,30,30,30,14,18,30,12,16],
       }]);
       setToast(`${todos.length} registros exportados`);
-    } catch { setToast('Error al generar el Excel. Intenta de nuevo.'); }
+    } catch (err) {
+      setToast('');
+      notificar(err?.isAxiosError
+        ? mensajeErrorApi(err, { accion: 'exportar los beneficiarios' })
+        : 'No se pudo generar el archivo Excel. Intenta de nuevo.', 'error');
+    }
     finally  { setExportando(false); }
   };
 

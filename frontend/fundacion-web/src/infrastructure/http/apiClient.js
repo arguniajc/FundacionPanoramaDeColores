@@ -2,6 +2,7 @@
 import { getToken, clearSession } from '../storage/authStorage';
 import logger from '@/shared/utils/logger';
 import { LOGIN_URL } from '@/shared/constants/routes';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
@@ -16,7 +17,10 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// ── Response: log + manejar 401 ──────────────────────────────────────────────
+// ── Response: log + mensaje para el usuario + manejar 401 ────────────────────
+// Cada error rechazado lleva `error.mensajeUsuario`: un texto claro en español
+// listo para mostrar. Para un mensaje más específico (p. ej. el verbo de la
+// acción o el texto de un duplicado) usar mensajeErrorApi(err, opciones).
 apiClient.interceptors.response.use(
   (response) => {
     logger.api.response(response.config.method, response.config.url, response.status, response.data);
@@ -31,6 +35,7 @@ apiClient.interceptors.response.use(
       response?.data,
       error.message
     );
+    error.mensajeUsuario = mensajeErrorApi(error, { accion: 'completar la operación' });
     if (response?.status === 401) {
       const enLogin = window.location.hash.includes('/acceso');
       if (!enLogin) {

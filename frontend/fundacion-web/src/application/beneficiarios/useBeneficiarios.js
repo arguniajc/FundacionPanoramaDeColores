@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { beneficiariosRepository } from '@/infrastructure/repositories/beneficiariosRepository';
 import { cacheKey, leerCache, escribirCache } from '@/infrastructure/cache/sessionCache';
+import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const POR_PAGINA = 15;
 
@@ -31,7 +32,7 @@ export function useBeneficiarios({ pagina, buscar, estado }) {
         setItems(data.data);
         setTotal(data.total);
         escribirCache(key, data.data, data.total);
-      } catch { /* mantener caché si falla la red */ }
+      } catch { /* refresco en segundo plano: se mantiene la caché ya mostrada si falla la red */ }
       finally { setActualizando(false); }
       return;
     }
@@ -46,8 +47,8 @@ export function useBeneficiarios({ pagina, buscar, estado }) {
       setItems(data.data);
       setTotal(data.total);
       escribirCache(key, data.data, data.total);
-    } catch {
-      setError('No se pudieron cargar los beneficiarios.');
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'cargar los beneficiarios' }));
     } finally {
       setCargando(false);
     }

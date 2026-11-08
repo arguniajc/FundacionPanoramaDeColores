@@ -6,13 +6,14 @@ import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin        from '@fullcalendar/list';
 import esLocale          from '@fullcalendar/core/locales/es';
 import {
-  Box, Button, Chip, Divider, IconButton, ListItemIcon, ListItemText,
+  Box, Button, Chip, CircularProgress, Divider, IconButton, ListItemIcon, ListItemText,
   Menu, MenuItem, Stack, Tab, Tabs, Tooltip, Typography, useMediaQuery,
 } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import AddIcon           from '@mui/icons-material/Add';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import DeleteIcon        from '@mui/icons-material/Delete';
+import DownloadIcon      from '@mui/icons-material/Download';
 import EditIcon          from '@mui/icons-material/Edit';
 import PeopleIcon        from '@mui/icons-material/People';
 import ScheduleIcon      from '@mui/icons-material/Schedule';
@@ -47,6 +48,7 @@ export default function ActividadesPage() {
     setRangoCalendario, setMesCalendario, mesCalendario,
     ctxMenu, abrirCtxMenu, cerrarCtxMenu,
     abrirNueva, abrirEditar, eliminar, cancelar,
+    exportar, exportando,
     cargar, cargarHorarios,
     eventos,
   } = useActividadesPage();
@@ -63,13 +65,26 @@ export default function ActividadesPage() {
           </Typography>
           <Typography sx={{ fontWeight: 800, color: 'primary.main' }} variant="h5">Actividades</Typography>
         </Box>
-        {puedo('actividades', 'crear') && (
-          <Button variant="contained" startIcon={<AddIcon />}
-            onClick={() => abrirNueva()}
-            sx={{ bgcolor: COLOR, flexShrink: 0 }}>
-            Nueva actividad
-          </Button>
-        )}
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          {tab === 0 && puedo('actividades', 'ver') && (
+            <Tooltip title="Exporta todas las actividades del mes que muestra el calendario">
+              <span>
+                <Button variant="outlined" onClick={exportar} disabled={exportando}
+                  startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
+                  sx={{ flexShrink: 0, fontWeight: 700 }}>
+                  {exportando ? 'Exportando…' : 'Exportar Excel'}
+                </Button>
+              </span>
+            </Tooltip>
+          )}
+          {puedo('actividades', 'crear') && (
+            <Button variant="contained" startIcon={<AddIcon />}
+              onClick={() => abrirNueva()}
+              sx={{ bgcolor: COLOR, flexShrink: 0 }}>
+              Nueva actividad
+            </Button>
+          )}
+        </Box>
       </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>

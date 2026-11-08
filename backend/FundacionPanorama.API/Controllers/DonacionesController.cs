@@ -17,6 +17,8 @@ public class DonacionesController(DonacionesService svc, DbConnectionFactory db)
     // Conexión solo para la auditoría (BaseController.RegistrarAuditAsync)
     private NpgsqlConnection AbrirConexion() => db.Create();
 
+    // GET api/donaciones?pagina=1&porPagina=20&buscar=...&donanteId=&tipo=&sedeId=&programaId=&desde=&hasta=
+    // Respuesta: { data, total, pagina, porPagina } (porPagina máximo 100)
     [HttpGet]
     [RequierePermiso("donaciones", "ver")]
     public async Task<IActionResult> Listar(
@@ -25,8 +27,12 @@ public class DonacionesController(DonacionesService svc, DbConnectionFactory db)
         [FromQuery] Guid?     sedeId     = null,
         [FromQuery] Guid?     programaId = null,
         [FromQuery] DateTime? desde      = null,
-        [FromQuery] DateTime? hasta      = null)
-        => Ok(await svc.ListarAsync(donanteId, tipo, sedeId, programaId, desde, hasta));
+        [FromQuery] DateTime? hasta      = null,
+        [FromQuery] string?   buscar     = null,
+        [FromQuery] int       pagina     = 1,
+        [FromQuery] int       porPagina  = 20,
+        CancellationToken ct = default)
+        => Ok(await svc.ListarAsync(donanteId, tipo, sedeId, programaId, desde, hasta, buscar, pagina, porPagina, ct));
 
     [HttpGet("{id:guid}")]
     [RequierePermiso("donaciones", "ver")]

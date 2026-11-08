@@ -14,7 +14,8 @@ public interface IContabilidadRepository
     Task<bool>                         EliminarCuentaAsync(Guid id, CancellationToken ct);
 
     // Movimientos
-    Task<IReadOnlyList<MovimientoDto>> ListarMovimientosAsync(string? tipo, Guid? cuentaId, Guid? programaId, int? mes, int? anio, CancellationToken ct);
+    /// <summary>Página de movimientos (más recientes primero), total y sumas con los mismos filtros.</summary>
+    Task<ListaMovimientosDto>          ListarMovimientosAsync(FiltroMovimientos filtro, int pagina, int porPagina, CancellationToken ct);
     Task<MovimientoDto?>               ObtenerMovimientoAsync(Guid id, CancellationToken ct);
     Task<MovimientoDto>                CrearMovimientoAsync(CrearMovimientoDto dto, CancellationToken ct);
     Task<MovimientoDto?>               ActualizarMovimientoAsync(Guid id, ActualizarMovimientoDto dto, CancellationToken ct);

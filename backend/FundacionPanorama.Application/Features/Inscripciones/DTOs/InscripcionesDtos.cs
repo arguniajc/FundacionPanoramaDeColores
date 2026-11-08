@@ -42,3 +42,19 @@ public enum ErrorCrearInscripcion
 }
 
 public record CrearInscripcionResultado(InscripcionDto? Inscripcion, ErrorCrearInscripcion Error);
+
+/// <summary>Filtros del listado de inscripciones. Buscar compara nombre/documento del beneficiario y nombre del programa.</summary>
+public record FiltroInscripciones(Guid? ProgramaId, Guid? BeneficiarioId, string? Estado, string? Buscar);
+
+/// <summary>Resultado de cambiar el estado (no se serializa: el controller lo traduce a HTTP).</summary>
+public enum ErrorCambiarEstadoInscripcion
+{
+    Ninguno,
+    NoEncontrada,
+    /// <summary>Al reactivar: el beneficiario ya tiene otra inscripción activa en el mismo programa.</summary>
+    YaInscritoActivo,
+    /// <summary>Al reactivar: el programa ya tiene cupo_maximo inscripciones activas.</summary>
+    CupoLleno,
+}
+
+public record CambiarEstadoInscripcionResultado(InscripcionDto? Inscripcion, ErrorCambiarEstadoInscripcion Error);

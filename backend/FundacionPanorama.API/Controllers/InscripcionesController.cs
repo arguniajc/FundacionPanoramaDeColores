@@ -12,13 +12,19 @@ namespace FundacionPanorama.API.Controllers;
 [Authorize]
 public class InscripcionesController(InscripcionesService svc) : ControllerBase
 {
+    // GET api/inscripciones?pagina=1&porPagina=20&buscar=...&programaId=&beneficiarioId=&estado=
+    // Respuesta: { data, total, pagina, porPagina } (porPagina máximo 100)
     [HttpGet]
     [RequierePermiso("inscripciones", "ver")]
     public async Task<IActionResult> Listar(
         [FromQuery] Guid?   programaId     = null,
         [FromQuery] Guid?   beneficiarioId = null,
-        [FromQuery] string? estado         = null)
-        => Ok(await svc.ListarAsync(programaId, beneficiarioId, estado));
+        [FromQuery] string? estado         = null,
+        [FromQuery] string? buscar         = null,
+        [FromQuery] int     pagina         = 1,
+        [FromQuery] int     porPagina      = 20,
+        CancellationToken ct = default)
+        => Ok(await svc.ListarAsync(programaId, beneficiarioId, estado, buscar, pagina, porPagina, ct));
 
     [HttpGet("{id:guid}")]
     [RequierePermiso("inscripciones", "ver")]
@@ -63,8 +69,14 @@ public class InscripcionesController(InscripcionesService svc) : ControllerBase
     {
         if (!InscripcionesService.EsEstadoValido(dto.Estado)) return BadRequest(new { mensaje = "Estado no válido." });
 
-        var insc = await svc.CambiarEstadoAsync(id, dto.Estado);
-        return insc is null ? NotFound() : Ok(insc);
+        var res = await svc.CambiarEstadoAsync(id, dto.Estado);
+        return res.Error switch
+        {
+            ErrorCambiarEstadoInscripcion.NoEncontrada     => NotFound(new { mensaje = "Inscripción no encontrada." }),
+            ErrorCambiarEstadoInscripcion.YaInscritoActivo => Conflict(new { mensaje = "No se puede reactivar: el beneficiario ya tiene otra inscripción activa en este programa." }),
+            ErrorCambiarEstadoInscripcion.CupoLleno        => Conflict(new { mensaje = "No se puede reactivar: el programa ya alcanzó su cupo máximo. Da de baja otra inscripción o aumenta el cupo del programa." }),
+            _                                              => Ok(res.Inscripcion),
+        };
     }
 
     [HttpDelete("{id:guid}")]

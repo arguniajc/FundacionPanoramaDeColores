@@ -1,9 +1,10 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Alert, Box, Button, Chip, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper,
-  Select, Snackbar, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
+  Alert, Box, Button, Chip, CircularProgress, FormControl, Grid, IconButton, InputAdornment, InputLabel,
+  MenuItem, Pagination, Paper, Select, Snackbar, Table, TableBody, TableCell, TableContainer, TableHead,
+  TableRow, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from '@mui/material';
+import SearchIcon            from '@mui/icons-material/Search';
 import AddIcon               from '@mui/icons-material/Add';
 import AttachMoneyIcon       from '@mui/icons-material/AttachMoney';
 import BlockIcon             from '@mui/icons-material/Block';
@@ -16,6 +17,9 @@ import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import FileDownloadIcon       from '@mui/icons-material/FileDownload';
 import SkeletonTabla         from '@/shared/components/SkeletonTabla';
 import { exportarExcel }    from '@/shared/utils/exportarExcel';
+import { obtenerTodasLasPaginas } from '@/shared/utils/paginas';
+import { useValorDiferido } from '@/shared/hooks/useValorDiferido';
+import { fechaLocalISO }    from '@/shared/utils/fecha';
 import { donacionesRepository } from '@/infrastructure/repositories/donacionesRepository';
 import { sedesRepository }      from '@/infrastructure/repositories/sedesRepository';
 import { useAuth } from '@/application/auth/useAuth';
@@ -29,6 +33,24 @@ import { StatCard } from './StatCard';
 import { NuevaDonacionDialog }      from './NuevaDonacionDialog';
 import { ReciboDonacionDialog }     from './ReciboDonacionDialog';
 import { CertificadoDonacionDialog } from './CertificadoDonacionDialog';
+
+const POR_PAGINA = 20;
+
+/** Filas legibles para el Excel de donaciones. */
+const filaExcel = d => ({
+  Fecha:           d.fechaDonacion,
+  Donante:         d.nombreDonante,
+  'Tipo donante':  d.tipoDonante === 'empresa' ? 'Empresa' : 'Persona',
+  Tipo:            d.tipo === 'dinero' ? 'Dinero' : 'Especie',
+  'Monto (COP)':   d.tipo === 'dinero' ? d.monto : '',
+  Cantidad:        d.tipo !== 'dinero' ? d.cantidad : '',
+  Unidad:          d.tipo !== 'dinero' ? (d.unidadMedida ?? '') : '',
+  Artículo:        d.tipo !== 'dinero' ? (d.nombreItem ?? '') : '',
+  Sede:            d.nombreSede ?? '',
+  Programa:        d.nombrePrograma ?? '',
+  'Recibo N°':     d.reciboNumero ?? '',
+  'Estado recibo': d.reciboEstado === 'anulado' ? 'Anulado' : 'Emitido',
+});
 
 export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
   const theme = useTheme();
@@ -49,6 +71,12 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
   const [filtSedeId, setFiltSedeId] = useState('');
   const [filtDesde,  setFiltDesde]  = useState('');
   const [filtHasta,  setFiltHasta]  = useState('');
+  const [textoBuscar, setTextoBuscar] = useState('');
+  const [pagina,     setPagina]     = useState(1);
+  const [total,      setTotal]      = useState(0);
+  const [exportando, setExportando] = useState(false);
+  // La búsqueda va al servidor 350 ms después de dejar de escribir
+  const buscar = useValorDiferido(textoBuscar.trim());
 
   const ok  = msg => setSnack({ open: true, msg, sev: 'success' });
   const err = msg => setSnack({ open: true, msg, sev: 'error' });
@@ -65,24 +93,52 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
     if (donanteInicial) setDialOpen(true);
   }, [donanteInicial]);
 
+  const filtros = useMemo(() => {
+    const params = {};
+    if (filtTipo)   params.tipo   = filtTipo;
+    if (filtSedeId) params.sedeId = filtSedeId;
+    if (filtDesde)  params.desde  = filtDesde;
+    if (filtHasta)  params.hasta  = filtHasta;
+    if (buscar)     params.buscar = buscar;
+    return params;
+  }, [filtTipo, filtSedeId, filtDesde, filtHasta, buscar]);
+
+  // Al cambiar un filtro se vuelve a la primera página (ajuste durante el render, sin efecto extra)
+  const [filtrosPrevios, setFiltrosPrevios] = useState(filtros);
+  if (filtrosPrevios !== filtros) {
+    setFiltrosPrevios(filtros);
+    setPagina(1);
+  }
+
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const params = {};
-      if (filtTipo)   params.tipo   = filtTipo;
-      if (filtSedeId) params.sedeId = filtSedeId;
-      if (filtDesde)  params.desde  = filtDesde;
-      if (filtHasta)  params.hasta  = filtHasta;
-      const { data } = await donacionesRepository.listar(params);
-      setDonaciones(data);
+      const { data } = await donacionesRepository.listar({ ...filtros, pagina, porPagina: POR_PAGINA });
+      setDonaciones(data?.data ?? []);
+      setTotal(data?.total ?? 0);
     } catch (e) { err(mensajeErrorApi(e, { accion: 'cargar las donaciones' })); }
     finally { setCargando(false); }
-  }, [filtTipo, filtSedeId, filtDesde, filtHasta]);
+  }, [filtros, pagina]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  const totalPaginas = Math.ceil(total / POR_PAGINA);
+
+  // Exporta TODAS las donaciones del filtro actual (todas las páginas), no solo las visibles
+  const handleExportar = async () => {
+    setExportando(true);
+    try {
+      const todas = await obtenerTodasLasPaginas(donacionesRepository.listar, filtros);
+      if (!todas.length) { err('No hay donaciones para exportar.'); return; }
+      if (await exportarExcel(`donaciones_${fechaLocalISO()}`, [{ nombre: 'Donaciones', datos: todas.map(filaExcel) }]))
+        ok(`${todas.length} donaciones exportadas.`);
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'exportar las donaciones' })); }
+    finally { setExportando(false); }
+  };
+
   const handleGuardada = (data, aviso) => {
     setDonaciones(prev => [data, ...prev]);
+    setTotal(t => t + 1);
     setDialOpen(false);
     onClearDonanteInicial();
     if (aviso) err(aviso); else ok('Donación registrada.');
@@ -98,9 +154,10 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
     if (!await confirm('¿Eliminar esta donación?')) return;
     try {
       await donacionesRepository.eliminar(don.id);
-      setDonaciones(prev => prev.filter(d => d.id !== don.id));
       ok('Donación eliminada.');
       recargarStats();
+      // Si la página quedó vacía se vuelve a la anterior; si no, se recarga para completarla
+      if (donaciones.length === 1 && pagina > 1) setPagina(p => p - 1); else cargar();
     } catch (e) { err(mensajeErrorApi(e, { accion: 'eliminar la donación' })); }
   };
 
@@ -113,7 +170,7 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
     } catch (e) { err(mensajeErrorApi(e, { accion: 'anular el recibo' })); }
   };
 
-  const hayFiltros = filtTipo || filtSedeId || filtDesde || filtHasta;
+  const hayFiltros = filtTipo || filtSedeId || filtDesde || filtHasta || buscar;
 
   return (
     <>
@@ -142,6 +199,9 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
 
       <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+          <TextField size="small" placeholder="Buscar donante, documento, recibo…" value={textoBuscar}
+            onChange={e => setTextoBuscar(e.target.value)} sx={{ minWidth: 230 }}
+            slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }} />
           <ToggleButtonGroup value={filtTipo} exclusive size="small"
             onChange={(_, v) => setFiltTipo(v ?? '')}>
             <ToggleButton value="">Todas</ToggleButton>
@@ -163,34 +223,23 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
             slotProps={{ inputLabel: { shrink: true } }} sx={{ width: 150 }} />
           {hayFiltros && (
             <Button size="small" startIcon={<CloseIcon />}
-              onClick={() => { setFiltTipo(''); setFiltSedeId(''); setFiltDesde(''); setFiltHasta(''); }}>
+              onClick={() => { setFiltTipo(''); setFiltSedeId(''); setFiltDesde(''); setFiltHasta(''); setTextoBuscar(''); }}>
               Limpiar
             </Button>
           )}
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
-            disabled={donaciones.length === 0}
-            onClick={() => exportarExcel('Donaciones', [{
-              nombre: 'Donaciones',
-              datos: donaciones.map(d => ({
-                Fecha:         d.fechaDonacion,
-                Donante:       d.nombreDonante,
-                'Tipo donante': d.tipoDonante === 'empresa' ? 'Empresa' : 'Persona',
-                Tipo:          d.tipo === 'dinero' ? 'Dinero' : 'Especie',
-                'Monto (COP)':  d.tipo === 'dinero' ? d.monto : '',
-                Cantidad:      d.tipo !== 'dinero' ? d.cantidad : '',
-                Unidad:        d.tipo !== 'dinero' ? (d.unidadMedida ?? '') : '',
-                Artículo:      d.tipo !== 'dinero' ? (d.nombreItem ?? '') : '',
-                Sede:          d.nombreSede ?? '',
-                Programa:      d.nombrePrograma ?? '',
-                'Recibo N°':   d.reciboNumero ?? '',
-                'Estado recibo': d.reciboEstado === 'anulado' ? 'Anulado' : 'Emitido',
-              })),
-            }])}
-          >
-            Exportar Excel
-          </Button>
+          <Tooltip title="Exporta todas las donaciones que cumplen los filtros actuales">
+            <span>
+              <Button size="small" variant="outlined"
+                startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <FileDownloadIcon />}
+                disabled={total === 0 || exportando}
+                onClick={handleExportar}
+              >
+                {exportando ? 'Exportando…' : 'Exportar Excel'}
+              </Button>
+            </span>
+          </Tooltip>
           {puedo('donaciones', 'crear') && (
             <Button variant="contained" startIcon={<AddIcon />}
               onClick={() => { onClearDonanteInicial(); setDialOpen(true); }}
@@ -321,6 +370,13 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
             </TableBody>
           </Table>
         </TableContainer>
+      )}
+
+      {totalPaginas > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 2.5, flexWrap: 'wrap' }}>
+          <Pagination count={totalPaginas} page={pagina} onChange={(_, v) => setPagina(v)} size="small" />
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{total} donaciones</Typography>
+        </Box>
       )}
 
       <ReciboDonacionDialog

@@ -19,6 +19,9 @@ public record EmpleadoResumenDto(
     string?  Telefono,
     int      NovedadesPendientes);
 
+/// <summary>Filtros del listado de empleados. Buscar compara nombres, apellidos, documento, cargo y área.</summary>
+public record FiltroEmpleados(bool? Activo, Guid? SedeId, string? Area, string? Buscar);
+
 public record EmpleadoDto(
     Guid     Id,
     string   Nombres,

@@ -446,12 +446,19 @@ export function registrar(api) {
     json: camposDe(Number(url.pathname.split('/')[4])),
   }));
 
-  // Inscripciones (lista plana, filtros programaId / estado)
+  // Inscripciones (paginado: { data, total, pagina, porPagina }; filtros programaId / estado / buscar)
   api.on('GET', '/api/inscripciones', ({ url }) => {
-    const prog   = Number(url.searchParams.get('programaId')) || null;
-    const estado = url.searchParams.get('estado');
-    const lista = INSCRIPCIONES.filter(i => (!prog || i.programaId === prog) && (!estado || i.estado === estado));
-    return { json: lista.length ? lista : INSCRIPCIONES };
+    const p      = url.searchParams;
+    const prog   = Number(p.get('programaId')) || null;
+    const estado = p.get('estado');
+    const q      = (p.get('buscar') ?? '').toLowerCase();
+    const filtradas = INSCRIPCIONES.filter(i =>
+      (!prog || i.programaId === prog) && (!estado || i.estado === estado) &&
+      (!q || `${i.nombreBeneficiario} ${i.documentoBeneficiario ?? ''} ${i.nombrePrograma}`.toLowerCase().includes(q)));
+    const lista     = filtradas.length ? filtradas : INSCRIPCIONES;
+    const pagina    = Number(p.get('pagina')) || 1;
+    const porPagina = Number(p.get('porPagina')) || 20;
+    return { json: { data: lista.slice((pagina - 1) * porPagina, pagina * porPagina), total: lista.length, pagina, porPagina } };
   });
   api.on('GET', /^\/api\/inscripciones\/\d+$/, ({ url }) => {
     const id = Number(url.pathname.split('/').pop());

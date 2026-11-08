@@ -7,6 +7,29 @@ import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { generarComprobantePDF } from './components/generarComprobantePDF';
 import { fechaLocalISO } from '@/shared/utils/fecha';
+import { obtenerTodasLasPaginas } from '@/shared/utils/paginas';
+import { useValorDiferido } from '@/shared/hooks/useValorDiferido';
+
+const POR_PAGINA_MOV = 25;
+const TOTALES_VACIOS = { totalIngresos: 0, totalEgresos: 0, cantidadIngresos: 0, cantidadEgresos: 0 };
+const listarMovimientos = (params) => apiClient.get('/api/contabilidad/movimientos', { params });
+/** Filas de una respuesta paginada ({ data, total, … }); tolera un arreglo plano. */
+const filasDe = (resp) => (Array.isArray(resp) ? resp : (resp?.data ?? []));
+/** Totales del filtro que envía el servidor; si no vienen se calculan con las filas recibidas. */
+function totalesDe(resp, filas) {
+  if (resp && !Array.isArray(resp) && resp.totalIngresos !== undefined) {
+    const { totalIngresos, totalEgresos, cantidadIngresos, cantidadEgresos } = resp;
+    return { totalIngresos, totalEgresos, cantidadIngresos, cantidadEgresos };
+  }
+  const vigentes = filas.filter(m => !m.anulado);
+  const de = tipo => vigentes.filter(m => m.tipo === tipo);
+  return {
+    totalIngresos: de('ingreso').reduce((s, m) => s + m.monto, 0),
+    totalEgresos:  de('egreso').reduce((s, m) => s + m.monto, 0),
+    cantidadIngresos: de('ingreso').length,
+    cantidadEgresos:  de('egreso').length,
+  };
+}
 
 export function useContabilidadPage() {
   const { puedo }  = useAuth();
@@ -26,12 +49,19 @@ export function useContabilidadPage() {
   const [cuentas,     setCuentas]     = useState([]);
   const [categorias,  setCategorias]  = useState([]);
   const [programas,   setProgramas]   = useState([]);
+  // Movimientos: página visible del listado paginado en el servidor + totales de todo el filtro
   const [movimientos, setMovimientos] = useState([]);
+  const [movTotal,    setMovTotal]    = useState(0);
+  const [movPagina,   setMovPagina]   = useState(1);
+  const [movTotales,  setMovTotales]  = useState(TOTALES_VACIOS);
+  const [ultimosMovimientos, setUltimosMovimientos] = useState([]); // pestaña Resumen (mes actual)
   const [presupuesto, setPresupuesto] = useState([]);
   const [reporte,     setReporte]     = useState(null);
   const [resumenAnual,setResumenAnual]= useState(null);
   const [guardando,   setGuardando]   = useState(false);
   const [busquedaMov, setBusquedaMov] = useState('');
+  // La búsqueda va al servidor 350 ms después de dejar de escribir
+  const buscarMov = useValorDiferido(busquedaMov.trim());
   const [dlgComprobante, setDlgComprobante] = useState(null);
   const [ocrCargando,    setOcrCargando]    = useState(false);
   const [ocrAdvertencia, setOcrAdvertencia] = useState('');
@@ -60,6 +90,14 @@ export function useContabilidadPage() {
   const [dlgArqueo,     setDlgArqueo]     = useState({ open: false });
   const [dlgReposicion, setDlgReposicion] = useState({ open: false });
 
+  const aplicarMovimientos = useCallback((resp, pagina) => {
+    const filas = filasDe(resp);
+    setMovimientos(filas);
+    setMovTotal(Array.isArray(resp) ? filas.length : (resp?.total ?? 0));
+    setMovPagina(pagina);
+    setMovTotales(totalesDe(resp, filas));
+  }, []);
+
   // ── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
@@ -69,16 +107,16 @@ export function useContabilidadPage() {
           apiClient.get('/api/contabilidad/stats'),
           apiClient.get('/api/contabilidad/cuentas'),
           apiClient.get('/api/contabilidad/categorias'),
-          apiClient.get('/api/contabilidad/movimientos', {
-            params: { mes: now.getMonth() + 1, anio: now.getFullYear() },
-          }),
+          // Mismos filtros por defecto de la pestaña Movimientos (mes y año actuales)
+          listarMovimientos({ mes: now.getMonth() + 1, anio: now.getFullYear(), pagina: 1, porPagina: POR_PAGINA_MOV }),
           // opcional: sin sedes solo se pierde el selector de programa
           apiClient.get('/api/sedes').catch(() => ({ data: [] })),
         ]);
         setStats(st);
         setCuentas(cu);
         setCategorias(ca);
-        setMovimientos(mo);
+        aplicarMovimientos(mo, 1);
+        setUltimosMovimientos(filasDe(mo).slice(0, 10));
         const progs = (sedesRes.data ?? []).flatMap(s =>
           (s.programas ?? []).map(p => ({ id: p.id, nombre: p.nombre }))
         );
@@ -94,19 +132,51 @@ export function useContabilidadPage() {
   }, []);
 
   // ── Recargas ──────────────────────────────────────────────────────────────
-  const cargarMovimientos = useCallback(async () => {
+  // Filtros actuales de la pestaña Movimientos (sin paginación)
+  const filtrosMovimientos = useCallback(() => {
     const params = {};
     if (filtroTipo)   params.tipo     = filtroTipo;
     if (filtroMes)    params.mes      = filtroMes;
     if (filtroAnio)   params.anio     = filtroAnio;
     if (filtroCuenta) params.cuentaId = filtroCuenta;
+    if (buscarMov)    params.buscar   = buscarMov;
+    return params;
+  }, [filtroTipo, filtroMes, filtroAnio, filtroCuenta, buscarMov]);
+
+  const cargarMovimientos = useCallback(async (pagina = 1) => {
     try {
-      const { data } = await apiClient.get('/api/contabilidad/movimientos', { params });
-      setMovimientos(data);
+      const params = { ...filtrosMovimientos(), porPagina: POR_PAGINA_MOV };
+      let { data } = await listarMovimientos({ ...params, pagina });
+      // Tras eliminar el último de una página se muestra la última página que sí tiene datos
+      const ultima = Math.max(1, Math.ceil((data?.total ?? 0) / POR_PAGINA_MOV));
+      if (pagina > ultima) {
+        pagina = ultima;
+        ({ data } = await listarMovimientos({ ...params, pagina }));
+      }
+      aplicarMovimientos(data, pagina);
     } catch (err) {
       toast(mensajeErrorApi(err, { accion: 'cargar los movimientos' }), 'error');
     }
-  }, [filtroTipo, filtroMes, filtroAnio, filtroCuenta, toast]);
+  }, [filtrosMovimientos, aplicarMovimientos, toast]);
+
+  // Al cambiar la búsqueda se vuelve a pedir la primera página (no en el montaje: ya lo hace la carga inicial)
+  const busquedaMontada = useRef(false);
+  useEffect(() => {
+    if (!busquedaMontada.current) { busquedaMontada.current = true; return; }
+    cargarMovimientos(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- solo reacciona a la búsqueda; los demás filtros se aplican con el botón Filtrar
+  }, [buscarMov]);
+
+  const cambiarPaginaMov = (pagina) => cargarMovimientos(pagina);
+
+  // Recarga la página visible de movimientos y los últimos del mes (Resumen) tras crear/editar/anular
+  const recargarMovimientos = async () => {
+    await cargarMovimientos(movPagina);
+    try {
+      const { data } = await listarMovimientos({ mes: now.getMonth() + 1, anio: now.getFullYear(), pagina: 1, porPagina: 10 });
+      setUltimosMovimientos(filasDe(data));
+    } catch { /* opcional: el Resumen conserva la lista anterior */ }
+  };
 
   const cargarPresupuesto = useCallback(async () => {
     try {
@@ -194,7 +264,7 @@ export function useContabilidadPage() {
     try {
       if (dlgMov.modo === 'crear') await apiClient.post('/api/contabilidad/movimientos', form);
       else await apiClient.put(`/api/contabilidad/movimientos/${dlgMov.data.id}`, form);
-      await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
+      await Promise.all([cargarStats(), cargarCuentas(), recargarMovimientos()]);
       if (tab === 5) await cargarCajaMenor();
       setDlgMov(d => ({ ...d, open: false }));
     } catch (err) {
@@ -210,7 +280,7 @@ export function useContabilidadPage() {
       toast(mensajeErrorApi(err, { accion: 'eliminar el movimiento' }), 'error');
       return;
     }
-    await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
+    await Promise.all([cargarStats(), cargarCuentas(), recargarMovimientos()]);
     if (tab === 5) await cargarCajaMenor();
   };
 
@@ -222,7 +292,7 @@ export function useContabilidadPage() {
       toast(mensajeErrorApi(err, { accion: 'anular el movimiento' }), 'error');
       return;
     }
-    await Promise.all([cargarStats(), cargarCuentas(), cargarMovimientos()]);
+    await Promise.all([cargarStats(), cargarCuentas(), recargarMovimientos()]);
     if (tab === 5) await cargarCajaMenor();
   };
 
@@ -362,17 +432,26 @@ export function useContabilidadPage() {
   };
 
   // ── CSV ───────────────────────────────────────────────────────────────────
-  const exportarCSV = () => {
-    const bq = busquedaMov.toLowerCase();
-    const filas = movimientos
-      .filter(m => !bq || (m.concepto + ' ' + (m.terceroNombre ?? '')).toLowerCase().includes(bq))
+  // Exporta TODOS los movimientos del filtro actual (todas las páginas), no solo los visibles
+  const exportarCSV = async () => {
+    let todos;
+    try {
+      todos = await obtenerTodasLasPaginas(listarMovimientos, filtrosMovimientos());
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'exportar los movimientos' }), 'error');
+      return;
+    }
+    if (!todos.length) { toast('No hay movimientos para exportar con los filtros actuales.', 'info'); return; }
+    // Comillas para que una coma o comilla dentro del texto no desarme las columnas
+    const celda = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const filas = todos
       .map(m => [
         m.consecutivo ? '#' + m.consecutivo + '-' + new Date(m.fecha).getFullYear() : '',
         m.fecha, m.tipo, m.concepto, m.codigoPuc, m.categoriaNombre,
         m.cuentaNombre, m.programaNombre ?? '', m.terceroNombre ?? '', m.terceroDocumento ?? '',
         m.numeroSoporte ?? '', m.tipoSoporte ?? '',
         m.monto, m.retencionPracticada ?? '',
-      ].join(','));
+      ].map(celda).join(','));
     const header = 'N Comp.,Fecha,Tipo,Concepto,Cod.PUC,Categoria,Cuenta,Programa,Tercero,NIT,Soporte,TipoSoporte,Monto,RTE';
     const csv = [header, ...filas].join('\n');
     const a = document.createElement('a');
@@ -404,6 +483,8 @@ export function useContabilidadPage() {
     cargando, error,
     // datos
     stats, cuentas, categorias, programas, movimientos, presupuesto, reporte, resumenAnual,
+    ultimosMovimientos,
+    movTotal, movPagina, movTotales, movTotalPaginas: Math.ceil(movTotal / POR_PAGINA_MOV), cambiarPaginaMov,
     guardando,
     // filtros movimientos
     filtroTipo, setFiltroTipo,

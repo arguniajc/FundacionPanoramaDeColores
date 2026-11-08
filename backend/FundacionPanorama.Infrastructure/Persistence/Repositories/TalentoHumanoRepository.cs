@@ -1,5 +1,6 @@
 using FundacionPanorama.Application.Features.TalentoHumano.DTOs;
 using FundacionPanorama.Application.Features.TalentoHumano.Interfaces;
+using FundacionPanorama.Application.Shared;
 using Npgsql;
 
 namespace FundacionPanorama.Infrastructure.Persistence.Repositories;
@@ -8,17 +9,36 @@ public class TalentoHumanoRepository(DbConnectionFactory factory) : ITalentoHuma
 {
     // ── Listar empleados ──────────────────────────────────────────────────────
 
-    public async Task<IReadOnlyList<EmpleadoResumenDto>> ListarAsync(bool? activo, Guid? sedeId, string? area, CancellationToken ct)
+    public async Task<ListaPaginada<EmpleadoResumenDto>> ListarAsync(FiltroEmpleados f, int pagina, int porPagina, CancellationToken ct)
     {
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
-        await using var cmd = conn.CreateCommand();
 
         var where = new List<string>();
-        if (activo.HasValue) where.Add("e.activo = @activo");
-        if (sedeId.HasValue) where.Add("e.sede_id = @sedeId");
-        if (!string.IsNullOrEmpty(area)) where.Add("e.area ILIKE @area");
+        var parms = new List<(string, object)>();
+        if (f.Activo.HasValue)             { where.Add("e.activo = @activo");  parms.Add(("activo", f.Activo.Value)); }
+        if (f.SedeId.HasValue)             { where.Add("e.sede_id = @sedeId"); parms.Add(("sedeId", f.SedeId.Value)); }
+        if (!string.IsNullOrEmpty(f.Area)) { where.Add("e.area ILIKE @area");  parms.Add(("area",   SqlLike.Contiene(f.Area))); }
+        if (!string.IsNullOrEmpty(f.Buscar))
+        {
+            where.Add("""
+                (concat_ws(' ', e.nombres, e.apellidos) ILIKE @buscar
+                 OR e.numero_documento ILIKE @buscar
+                 OR e.cargo ILIKE @buscar OR e.area ILIKE @buscar)
+                """);
+            parms.Add(("buscar", SqlLike.Contiene(f.Buscar)));
+        }
+        var whereSql = where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "";
 
+        int total;
+        await using (var cmdCount = conn.CreateCommand())
+        {
+            cmdCount.CommandText = $"SELECT COUNT(*)::int FROM empleados e {whereSql}";
+            foreach (var (name, val) in parms) cmdCount.Parameters.AddWithValue(name, val);
+            total = (int)(await cmdCount.ExecuteScalarAsync(ct))!;
+        }
+
+        await using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
             SELECT e.id, e.nombres, e.apellidos, e.tipo_documento, e.numero_documento,
                    e.cargo, e.area, e.sede_id, s.nombre AS sede_nombre,
@@ -27,18 +47,19 @@ public class TalentoHumanoRepository(DbConnectionFactory factory) : ITalentoHuma
                    (SELECT COUNT(*) FROM novedades_empleado n WHERE n.empleado_id = e.id AND n.estado = 'pendiente') AS novedades_pendientes
             FROM empleados e
             LEFT JOIN sedes s ON s.id = e.sede_id
-            {(where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "")}
-            ORDER BY e.apellidos, e.nombres
+            {whereSql}
+            ORDER BY e.apellidos, e.nombres, e.id
+            LIMIT @pp OFFSET @off
             """;
 
-        if (activo.HasValue)               cmd.Parameters.AddWithValue("activo", activo.Value);
-        if (sedeId.HasValue)               cmd.Parameters.AddWithValue("sedeId", sedeId.Value);
-        if (!string.IsNullOrEmpty(area))   cmd.Parameters.AddWithValue("area", $"%{area}%");
+        foreach (var (name, val) in parms) cmd.Parameters.AddWithValue(name, val);
+        cmd.Parameters.AddWithValue("pp",  porPagina);
+        cmd.Parameters.AddWithValue("off", (pagina - 1) * porPagina);
 
         await using var r = await cmd.ExecuteReaderAsync(ct);
         var list = new List<EmpleadoResumenDto>();
         while (await r.ReadAsync(ct)) list.Add(MapResumen(r));
-        return list;
+        return new ListaPaginada<EmpleadoResumenDto> { Data = list, Total = total, Pagina = pagina, PorPagina = porPagina };
     }
 
     // ── Obtener empleado ──────────────────────────────────────────────────────

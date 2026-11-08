@@ -66,9 +66,16 @@ public class ContabilidadService(IContabilidadRepository repo)
         => repo.EliminarCuentaAsync(id, ct);
 
     // ── Movimientos ──────────────────────────────────────────────────────────
-    public Task<IReadOnlyList<MovimientoDto>> ListarMovimientosAsync(
-        string? tipo, Guid? cuentaId, Guid? programaId, int? mes, int? anio, CancellationToken ct = default)
-        => repo.ListarMovimientosAsync(tipo, cuentaId, programaId, mes, anio, ct);
+    public Task<ListaMovimientosDto> ListarMovimientosAsync(
+        string? tipo, Guid? cuentaId, Guid? programaId, int? mes, int? anio, string? buscar,
+        int pagina, int porPagina, CancellationToken ct = default)
+    {
+        (pagina, porPagina) = FundacionPanorama.Application.Shared.Paginacion.Normalizar(pagina, porPagina);
+        var filtro = new FiltroMovimientos(
+            string.IsNullOrWhiteSpace(tipo) ? null : tipo.Trim(), cuentaId, programaId, mes, anio,
+            FundacionPanorama.Application.Shared.Paginacion.NormalizarBusqueda(buscar));
+        return repo.ListarMovimientosAsync(filtro, pagina, porPagina, ct);
+    }
 
     public Task<MovimientoDto?> ObtenerMovimientoAsync(Guid id, CancellationToken ct = default)
         => repo.ObtenerMovimientoAsync(id, ct);

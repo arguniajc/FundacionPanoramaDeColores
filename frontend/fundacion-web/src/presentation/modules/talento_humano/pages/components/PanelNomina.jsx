@@ -13,6 +13,9 @@ import CheckCircleIcon  from '@mui/icons-material/CheckCircle';
 import DeleteIcon       from '@mui/icons-material/Delete';
 import ExpandMoreIcon   from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon   from '@mui/icons-material/ExpandLess';
+import EditIcon         from '@mui/icons-material/Edit';
+import DownloadIcon     from '@mui/icons-material/Download';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { nominaRepository } from '@/infrastructure/repositories/nominaRepository';
 import { useConfirm } from '@/shared/components/useConfirm';
 import { useToast } from '@/shared/context/useToast';
@@ -21,14 +24,12 @@ import { r }                from '@/shared/utils/validacion';
 import { useValidacion }    from '@/shared/hooks/useValidacion';
 import ResumenErrores       from '@/shared/components/ResumenErrores';
 import { colorEstado }      from '@/shared/theme/paleta';
+import { useConfiguracion } from '@/shared/context/useConfiguracion';
+import { EditarLiquidacionDialog } from './EditarLiquidacionDialog';
+import { MESES, fmtCOP } from './nominaFormato';
+import { exportarNominaExcel, generarDesprendiblesPDF } from './exportarNomina';
 
-const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const ANIOS = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
-
-function fmtCOP(n) {
-  return Number(n || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
-}
 
 function EstadoChip({ estado }) {
   const theme = useTheme();
@@ -46,7 +47,7 @@ function EstadoChip({ estado }) {
   );
 }
 
-function FilaLiquidacion({ liq, puedeEditar, onEliminar }) {
+function FilaLiquidacion({ liq, puedeEditar, onEditar, onEliminar, onDesprendible }) {
   return (
     <TableRow hover>
       <TableCell sx={{ fontSize: '0.8rem' }}>
@@ -58,7 +59,19 @@ function FilaLiquidacion({ liq, puedeEditar, onEliminar }) {
       <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{fmtCOP(liq.totalDevengado)}</TableCell>
       <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'error.main' }}>{fmtCOP(liq.totalDeducciones)}</TableCell>
       <TableCell align="right" sx={{ fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: 700, color: 'success.main' }}>{fmtCOP(liq.netoPagar)}</TableCell>
-      <TableCell align="right">
+      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+        <Tooltip title="Desprendible de pago (PDF)">
+          <IconButton size="small" aria-label="Desprendible de pago" onClick={() => onDesprendible(liq)}>
+            <PictureAsPdfIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        {puedeEditar && (
+          <Tooltip title="Editar liquidación">
+            <IconButton size="small" color="primary" aria-label="Editar liquidación" onClick={() => onEditar(liq)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
         {puedeEditar && (
           <Tooltip title="Eliminar liquidación">
             <IconButton size="small" color="error" onClick={() => onEliminar(liq)}>
@@ -71,12 +84,15 @@ function FilaLiquidacion({ liq, puedeEditar, onEliminar }) {
   );
 }
 
-function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquidar }) {
+function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquidar, onCambio }) {
   const [expandido, setExpandido] = useState(false);
   const [liquidaciones, setLiquidaciones] = useState([]);
   const [cargandoLiq, setCargandoLiq] = useState(false);
+  const [editando, setEditando] = useState(null);
+  const [generandoPdf, setGenerandoPdf] = useState(false);
   const confirm = useConfirm();
   const toast   = useToast();
+  const config  = useConfiguracion();
 
   const cargarLiq = useCallback(async () => {
     if (!expandido) return;
@@ -100,6 +116,25 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
       setLiquidaciones(prev => prev.filter(l => l.id !== liq.id));
     } catch (e) {
       toast(mensajeErrorApi(e, { accion: 'eliminar la liquidación' }), 'error');
+    }
+  };
+
+  const handleGuardada = (liq) => {
+    setLiquidaciones(prev => prev.map(l => (l.id === liq.id ? liq : l)));
+    setEditando(null);
+    toast(`Liquidación de ${liq.empleadoNombre} actualizada.`, 'success');
+    onCambio?.();
+  };
+
+  const handleDesprendibles = async (lista) => {
+    setGenerandoPdf(true);
+    try {
+      await generarDesprendiblesPDF(periodo, lista, config);
+    } catch (e) {
+      console.error(e);
+      toast('No se pudo generar el desprendible de pago. Intenta de nuevo.', 'error');
+    } finally {
+      setGenerandoPdf(false);
     }
   };
 
@@ -165,6 +200,18 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
               Sin liquidaciones. Usa el botón <AutorenewIcon fontSize="inherit" /> para auto-liquidar.
             </Typography>
           ) : (
+            <>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end', mb: 1 }}>
+              <Button size="small" variant="outlined" startIcon={<DownloadIcon />}
+                onClick={() => exportarNominaExcel(periodo, liquidaciones)}>
+                Exportar Excel
+              </Button>
+              <Button size="small" variant="outlined" disabled={generandoPdf}
+                startIcon={generandoPdf ? <CircularProgress size={14} color="inherit" /> : <PictureAsPdfIcon />}
+                onClick={() => handleDesprendibles(liquidaciones)}>
+                Desprendibles (todos)
+              </Button>
+            </Box>
             <TableContainer>
               <Table size="small">
                 <TableHead>
@@ -184,7 +231,9 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
                       key={l.id}
                       liq={l}
                       puedeEditar={puedeEditar && periodo.estado === 'borrador'}
+                      onEditar={setEditando}
                       onEliminar={handleEliminarLiq}
+                      onDesprendible={liq => handleDesprendibles([liq])}
                     />
                   ))}
                   <TableRow sx={{ bgcolor: 'superficie2' }}>
@@ -197,9 +246,16 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
                 </TableBody>
               </Table>
             </TableContainer>
+            </>
           )}
         </Box>
       )}
+
+      <EditarLiquidacionDialog
+        liquidacion={editando}
+        onClose={() => setEditando(null)}
+        onGuardada={handleGuardada}
+      />
     </Paper>
   );
 }
@@ -374,6 +430,7 @@ export function PanelNomina({ puedo }) {
           onCerrar={handleCerrar}
           onEliminar={handleEliminar}
           onAutoLiquidar={handleAutoLiquidar}
+          onCambio={cargar}
         />
       ))}
 

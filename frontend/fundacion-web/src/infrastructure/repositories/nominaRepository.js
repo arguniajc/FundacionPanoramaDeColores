@@ -9,5 +9,6 @@ export const nominaRepository = {
   listarLiquidaciones: (periodoId)  => apiClient.get(`/api/nomina/periodos/${periodoId}/liquidaciones`),
   autoLiquidar:      (periodoId, datos) => apiClient.post(`/api/nomina/periodos/${periodoId}/auto-liquidar`, datos),
   liquidarEmpleado:  (periodoId, datos) => apiClient.post(`/api/nomina/periodos/${periodoId}/liquidaciones`, datos),
+  editarLiquidacion: (id, datos)    => apiClient.put(`/api/nomina/liquidaciones/${id}`, datos),
   eliminarLiquidacion: (id)         => apiClient.delete(`/api/nomina/liquidaciones/${id}`),
 };

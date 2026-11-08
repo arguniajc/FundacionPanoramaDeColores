@@ -17,8 +17,17 @@ import ExpandMoreIcon       from '@mui/icons-material/ExpandMore';
 import { useDashboardPage }  from './useDashboardPage';
 import { CustomTooltip, GeneroTooltip, KpiCard, FilaOrigen, SeccionHeader, AlertaChip } from './components/DashboardHelpers';
 import { COLORES_GENERO } from './components/coloresGenero';
+import { MODULO_RUTA } from '@/shared/hooks/useAlertas';
 
 const COLORES_RANGO = ['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
+
+const COLOR_NIVEL = { warning: '#F59E0B', info: '#0EA5E9', error: '#DC2626' };
+
+/** El chip muestra el número aparte: se quita del mensaje si este empieza por él. */
+const sinConteo = (a) => {
+  const prefijo = `${a.valor} `;
+  return a.mensaje?.startsWith(prefijo) ? a.mensaje.slice(prefijo.length) : a.mensaje;
+};
 
 const MODULOS = [
   { label: 'Beneficiarios', desc: 'Niños inscritos en la fundación',    icon: <ChildCareIcon sx={{ fontSize: 36 }} />,        grad: 'linear-gradient(135deg, var(--color-primario) 0%, #7c3aed 100%)', ruta: '/sede/beneficiarios' },
@@ -71,48 +80,17 @@ export default function DashboardPage() {
       </Box>
 
       {/* Alertas operativas */}
-      {alertas && (
+      {alertas.length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 3 }}>
-          {alertas.contratosVencer > 0 && (
+          {alertas.map(a => (
             <AlertaChip
-              count={alertas.contratosVencer}
-              label={`contrato${alertas.contratosVencer > 1 ? 's vencen' : ' vence'} en 30 días`}
-              color="#F59E0B"
-              onClick={() => navigate('/sede/talento-humano')}
+              key={a.tipo ?? a.mensaje}
+              count={a.valor}
+              label={sinConteo(a)}
+              color={COLOR_NIVEL[a.nivel] ?? COLOR_NIVEL.warning}
+              onClick={MODULO_RUTA[a.modulo] ? () => navigate(MODULO_RUTA[a.modulo]) : undefined}
             />
-          )}
-          {alertas.novedadesPendientes > 0 && (
-            <AlertaChip
-              count={alertas.novedadesPendientes}
-              label={`novedad${alertas.novedadesPendientes > 1 ? 'es pendientes' : ' pendiente'}`}
-              color="#EF4444"
-              onClick={() => navigate('/sede/talento-humano')}
-            />
-          )}
-          {alertas.stockBajo > 0 && (
-            <AlertaChip
-              count={alertas.stockBajo}
-              label={`ítem${alertas.stockBajo > 1 ? 's con stock bajo' : ' con stock bajo'}`}
-              color="#0EA5E9"
-              onClick={() => navigate('/sede/inventario')}
-            />
-          )}
-          {alertas.sinStock > 0 && (
-            <AlertaChip
-              count={alertas.sinStock}
-              label={`ítem${alertas.sinStock > 1 ? 's sin stock' : ' sin stock'}`}
-              color="#DC2626"
-              onClick={() => navigate('/sede/inventario')}
-            />
-          )}
-          {alertas.comodatosVencer > 0 && (
-            <AlertaChip
-              count={alertas.comodatosVencer}
-              label={`comodato${alertas.comodatosVencer > 1 ? 's vencen' : ' vence'} en 30 días`}
-              color="#B45309"
-              onClick={() => navigate('/sede/inventario')}
-            />
-          )}
+          ))}
         </Box>
       )}
 

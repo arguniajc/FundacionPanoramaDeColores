@@ -54,6 +54,18 @@ public record MovimientoDto(
     string?  ConceptoRetencion,
     bool     Anulado);
 
+/// <summary>Filtros del listado de movimientos. Buscar compara concepto, tercero (nombre/documento) y N° de soporte.</summary>
+public record FiltroMovimientos(string? Tipo, Guid? CuentaId, Guid? ProgramaId, int? Mes, int? Anio, string? Buscar);
+
+/// <summary>Página de movimientos más los totales de TODOS los que cumplen el filtro (sin anulados).</summary>
+public class ListaMovimientosDto : FundacionPanorama.Application.Shared.ListaPaginada<MovimientoDto>
+{
+    public decimal TotalIngresos    { get; init; }
+    public decimal TotalEgresos     { get; init; }
+    public int     CantidadIngresos { get; init; }
+    public int     CantidadEgresos  { get; init; }
+}
+
 public record CrearMovimientoDto(
     [Required][StringLength(10)]  string   Tipo,
     DateOnly Fecha,

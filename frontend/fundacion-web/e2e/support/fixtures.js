@@ -101,6 +101,19 @@ function registrarBase(api) {
     .on('POST', '/api/archivos/log-exportacion', {});
 }
 
+/**
+ * Respuesta de un listado vacío que sirve tanto si la página lo pide paginado
+ * (envía `pagina` → { data, total, pagina, porPagina }) como si espera un arreglo.
+ */
+export function listadoVacio({ url }) {
+  if (!url.searchParams.has('pagina')) return { json: [] };
+  return { json: {
+    data: [], total: 0,
+    pagina: Number(url.searchParams.get('pagina')),
+    porPagina: Number(url.searchParams.get('porPagina') ?? 15),
+  } };
+}
+
 /** GET /api/beneficiarios con búsqueda simple por nombre o documento. */
 export function mockListaBeneficiarios(api) {
   api.on('GET', '/api/beneficiarios', ({ url }) => {

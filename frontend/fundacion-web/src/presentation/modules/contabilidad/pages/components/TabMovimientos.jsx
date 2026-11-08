@@ -1,6 +1,6 @@
 import {
   Box, Button, Chip, FormControl, IconButton, InputAdornment,
-  InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell,
+  InputLabel, MenuItem, Pagination, Paper, Select, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
 import BlockIcon        from '@mui/icons-material/Block';
@@ -13,8 +13,14 @@ import SearchIcon       from '@mui/icons-material/Search';
 import VisibilityIcon   from '@mui/icons-material/Visibility';
 import { fmt, fmtFecha, MESES, ANIOS } from './formato';
 
+/**
+ * Listado paginado en el servidor: `movimientos` es la página visible; `total` y `totales`
+ * (sumas sin anulados) corresponden a TODOS los movimientos del filtro. La búsqueda también
+ * se resuelve en el servidor.
+ */
 export function TabMovimientos({
   movimientos, cuentas,
+  total = 0, totales, pagina = 1, totalPaginas = 0, onCambiarPagina,
   filtroTipo, setFiltroTipo,
   filtroMes, setFiltroMes,
   filtroAnio, setFiltroAnio,
@@ -25,11 +31,8 @@ export function TabMovimientos({
   onVerComprobante, onDescargarComprobante,
   onDuplicar, onEditar, onAnular, onEliminar,
 }) {
-  const filtrados = movimientos.filter(m =>
-    !busqueda || (m.concepto + ' ' + (m.terceroNombre ?? '')).toLowerCase().includes(busqueda.toLowerCase())
-  );
-  const totIng = filtrados.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
-  const totEgr = filtrados.filter(m => m.tipo === 'egreso').reduce((s, m) => s + m.monto, 0);
+  const totIng = totales?.totalIngresos ?? 0;
+  const totEgr = totales?.totalEgresos ?? 0;
   const bal = totIng - totEgr;
 
   return (
@@ -92,7 +95,7 @@ export function TabMovimientos({
             </TableRow>
           </TableHead>
           <TableBody>
-            {filtrados.map(m => (
+            {movimientos.map(m => (
               <TableRow key={m.id} hover sx={{ opacity: m.anulado ? 0.6 : 1 }}>
                 <TableCell>{fmtFecha(m.fecha)}</TableCell>
                 <TableCell>
@@ -188,17 +191,26 @@ export function TabMovimientos({
         </Table>
       </TableContainer>
 
-      {filtrados.length > 0 && (
-        <Box sx={{ display: 'flex', gap: 3, mt: 1.5, px: 1, flexWrap: 'wrap' }}>
+      {total > 0 && (
+        <Box sx={{ display: 'flex', gap: 3, mt: 1.5, px: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Typography sx={{ color: 'text.secondary' }} variant="caption">
+            {total} movimientos · totales sin anulados:
+          </Typography>
           <Typography sx={{ color: 'success.main', fontWeight: 700 }} variant="caption">
-            Ingresos: {fmt(totIng)} ({filtrados.filter(m => m.tipo === 'ingreso').length})
+            Ingresos: {fmt(totIng)} ({totales?.cantidadIngresos ?? 0})
           </Typography>
           <Typography sx={{ color: 'error.main', fontWeight: 700 }} variant="caption">
-            Egresos: {fmt(totEgr)} ({filtrados.filter(m => m.tipo === 'egreso').length})
+            Egresos: {fmt(totEgr)} ({totales?.cantidadEgresos ?? 0})
           </Typography>
           <Typography sx={{ fontWeight: 700, color: bal >= 0 ? 'primary.main' : 'warning.main' }} variant="caption">
             Balance: {fmt(bal)}
           </Typography>
+        </Box>
+      )}
+
+      {totalPaginas > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <Pagination count={totalPaginas} page={pagina} onChange={(_, v) => onCambiarPagina?.(v)} size="small" />
         </Box>
       )}
     </Box>

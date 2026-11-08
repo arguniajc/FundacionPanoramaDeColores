@@ -3,6 +3,7 @@ import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import { Alert, Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from '@/application/auth/useAuth';
 import apiClient   from '@/infrastructure/http/apiClient';
+import { obtenerTodasLasPaginas } from '@/shared/utils/paginas';
 import { OrgChartTab } from '@/presentation/modules/talento_humano/pages/components/OrgChartTab';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 
@@ -11,10 +12,8 @@ const COLOR = BRAND_COLOR;
 export default function OrganigramaPage() {
   const { puedo }  = useAuth();
   const { data: empleados, cargando, error, ejecutar: cargar } = useAsyncData(
-    async () => {
-      const { data } = await apiClient.get('/api/talento-humano', { params: { porPagina: 200 } });
-      return data.data ?? data ?? [];
-    },
+    // El listado es paginado (máx. 100 por página): para elegir empleado se piden todas las páginas
+    () => obtenerTodasLasPaginas(params => apiClient.get('/api/talento-humano', { params })),
     { inicial: [], errorMsg: 'No se pudieron cargar los empleados.' }
   );
 

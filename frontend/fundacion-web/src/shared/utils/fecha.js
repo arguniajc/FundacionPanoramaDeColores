@@ -1,7 +1,9 @@
 export function calcularEdad(fechaNac) {
   if (!fechaNac) return '—';
   const hoy = new Date();
-  const nac = new Date(fechaNac);
+  // 'AAAA-MM-DD' como fecha local: new Date('2015-06-20') es medianoche UTC, que en
+  // Colombia es el 19 a las 7 p. m., y el día antes del cumpleaños ya sumaba el año.
+  const nac = parsearFechaISO(String(fechaNac).slice(0, 10)) ?? new Date(fechaNac);
   let edad = hoy.getFullYear() - nac.getFullYear();
   const m = hoy.getMonth() - nac.getMonth();
   if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;

@@ -8,6 +8,7 @@ import { BRAND_COLOR }            from '@/shared/constants/brand';
 import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi }        from '@/shared/utils/mensajeErrorApi';
 import { fechaLocalISO } from '@/shared/utils/fecha';
+import { exportarExcel } from '@/shared/utils/exportarExcel';
 
 const COLOR = BRAND_COLOR;
 
@@ -152,6 +153,40 @@ export function useActividadesPage() {
     catch (e) { toast(mensajeErrorApi(e, { accion: 'eliminar la actividad' }), 'error'); }
   };
 
+  // Exporta las actividades del mes que muestra el calendario: es el filtro actual y la API ya
+  // devuelve todas las del mes (este listado no se pagina porque el calendario las necesita todas)
+  const [exportando, setExportando] = useState(false);
+  const exportar = async () => {
+    const fecha = mesCalendario ?? new Date();
+    const etiquetaMes = fecha.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+    if (!actividades.length) { toast(`No hay actividades en ${etiquetaMes} para exportar.`, 'info'); return; }
+    setExportando(true);
+    const fmt = (iso) => (iso ? new Date(iso).toLocaleString('es-CO', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    }) : '');
+    try {
+      const ok = await exportarExcel(`actividades_${fechaLocalISO(fecha).slice(0, 7)}`, [{
+        nombre: 'Actividades',
+        filas: [
+          ['Actividad', 'Programa', 'Inicio', 'Fin', 'Lugar', 'Estado', 'Personas registradas', 'Días adicionales', 'Descripción'],
+          ...actividades.map(a => [
+            a.titulo,
+            a.programaNombre ?? 'Sin programa',
+            fmt(a.fechaInicio),
+            fmt(a.fechaFin),
+            a.lugar ?? '',
+            ESTADOS.find(e => e.value === a.estado)?.label ?? a.estado,
+            a.totalInscritos ?? 0,
+            (a.diasAdicionales ?? []).map(d => `${d.fecha} ${d.horaInicio}–${d.horaFin}`).join('; '),
+            a.descripcion ?? '',
+          ]),
+        ],
+        cols: [34, 28, 18, 18, 24, 12, 12, 30, 40],
+      }]);
+      if (ok) toast(`${actividades.length} actividades de ${etiquetaMes} exportadas.`);
+    } finally { setExportando(false); }
+  };
+
   const cancelar = async (a) => {
     if (!await confirm(`¿Marcar "${a.titulo}" como cancelada?`)) return;
     try {
@@ -179,6 +214,7 @@ export function useActividadesPage() {
     mesCalendario, setMesCalendario,
     ctxMenu, abrirCtxMenu, cerrarCtxMenu,
     abrirNueva, abrirEditar, eliminar, cancelar,
+    exportar, exportando,
     cargar, cargarHorarios,
     eventos,
   };

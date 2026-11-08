@@ -18,12 +18,15 @@ public class NominaService(INominaRepository repo)
     }
 
     /// <summary>El período debe existir y seguir en borrador para poder liquidar.</summary>
-    async Task PeriodoEditable(int periodoId, CancellationToken ct)
+    async Task PeriodoEditable(int periodoId, CancellationToken ct, string mensajeCerrado = CerradoLiquidar)
     {
         var periodo = await repo.ObtenerPeriodoAsync(periodoId, ct);
         Exigir(periodo is not null, "El período de nómina no existe.");
-        Exigir(periodo!.Estado == Borrador, "Este período ya está cerrado: no se puede volver a liquidar.");
+        Exigir(periodo!.Estado == Borrador, mensajeCerrado);
     }
+
+    const string CerradoLiquidar = "Este período ya está cerrado: no se puede volver a liquidar.";
+    const string CerradoEditar   = "Este período ya está cerrado: sus liquidaciones no se pueden editar.";
 
     public Task<IReadOnlyList<NominaPeriodoDto>> ListarPeriodosAsync(int? anio, CancellationToken ct = default)
         => repo.ListarPeriodosAsync(anio, ct);
@@ -75,6 +78,27 @@ public class NominaService(INominaRepository repo)
         if (ValidarLiquidacion(dto) is { } error) throw new DatoInvalidoException(error);
         await PeriodoEditable(periodoId, ct);
         return await repo.LiquidarEmpleadoAsync(periodoId, dto, ct);
+    }
+
+    /// <summary>
+    /// Edita una liquidación (mismo empleado) con las mismas reglas que al liquidar; los
+    /// totales se recalculan en el repositorio igual que en LiquidarEmpleadoAsync.
+    /// Devuelve null si la liquidación no existe.
+    /// </summary>
+    public async Task<NominaLiquidacionDto?> EditarLiquidacionAsync(int id, EditarLiquidacionDto dto, CancellationToken ct = default)
+    {
+        var actual = await repo.ObtenerLiquidacionAsync(id, ct);
+        if (actual is null) return null;
+
+        var datos = new LiquidarEmpleadoDto(actual.EmpleadoId, dto.DiasTrabajados, dto.SalarioOverride,
+            dto.HorasExtras, dto.Bonificaciones, dto.RetencionFuente, dto.OtrasDeducciones, dto.Observacion);
+        if (ValidarLiquidacion(datos) is { } error) throw new DatoInvalidoException(error);
+        await PeriodoEditable(actual.PeriodoId, ct, CerradoEditar);
+
+        // El UPDATE vuelve a exigir el borrador (por si el período se cerró entre la consulta y el guardado)
+        var editada = await repo.ActualizarLiquidacionAsync(id, datos, ct);
+        Exigir(editada is not null, CerradoEditar);
+        return editada;
     }
 
     public Task<bool> EliminarLiquidacionAsync(int id, CancellationToken ct = default)

@@ -1,6 +1,6 @@
 using FundacionPanorama.Infrastructure.Persistence;
 using System.Text.Json;
-using System.Text.RegularExpressions;
+using FundacionPanorama.API.Services;
 using FundacionPanorama.API.Data;
 using FundacionPanorama.API.Filters;
 using FundacionPanorama.Application.Features.Contabilidad;
@@ -69,6 +69,8 @@ public class ContabilidadController(
 
     // ── Movimientos ────────────────────────────────────────────────────────────
 
+    // GET api/contabilidad/movimientos?pagina=1&porPagina=25&buscar=...&tipo=&cuentaId=&programaId=&mes=&anio=
+    // Respuesta: { data, total, pagina, porPagina, totalIngresos, totalEgresos, cantidadIngresos, cantidadEgresos }
     [HttpGet("movimientos")]
     [RequierePermiso("contabilidad", "ver")]
     public async Task<IActionResult> ListarMovimientos(
@@ -77,8 +79,11 @@ public class ContabilidadController(
         [FromQuery] Guid?   programaId = null,
         [FromQuery] int?    mes        = null,
         [FromQuery] int?    anio       = null,
+        [FromQuery] string? buscar     = null,
+        [FromQuery] int     pagina     = 1,
+        [FromQuery] int     porPagina  = 25,
         CancellationToken ct = default)
-        => Ok(await svc.ListarMovimientosAsync(tipo, cuentaId, programaId, mes, anio, ct));
+        => Ok(await svc.ListarMovimientosAsync(tipo, cuentaId, programaId, mes, anio, buscar, pagina, porPagina, ct));
 
     [HttpGet("movimientos/{id:guid}")]
     [RequierePermiso("contabilidad", "ver")]
@@ -307,85 +312,7 @@ public class ContabilidadController(
                     NumeroFactura: null, TipoSoporte: null,
                     Advertencia: "No se extrajo texto. Toma la foto con mejor luz y enfoque."));
 
-            return Ok(ParseTextoFactura(parsedText));
+            return Ok(ParserFactura.Parsear(parsedText));
         }
-    }
-
-    private static FacturaExtraidaDto ParseTextoFactura(string texto)
-    {
-        var upper = texto.ToUpperInvariant();
-        var lines = texto.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        // ── Monto ─────────────────────────────────────────────────────────────
-        decimal? monto = null;
-        foreach (var pattern in new[]
-        {
-            @"(?:TOTAL\s*A\s*PAGAR|GRAN\s*TOTAL|NETO\s*A\s*PAGAR|TOTAL)[^\d$]*\$?\s*([\d.,]+)",
-            @"(?:VALOR\s*TOTAL|VALOR)[^\d$]*\$?\s*([\d.,]+)",
-            @"\$\s*([\d.,]{4,})",
-        })
-        {
-            var m = Regex.Match(upper, pattern);
-            if (!m.Success) continue;
-            var numStr = Regex.Replace(m.Groups[1].Value, @"[^\d]", "");
-            if (decimal.TryParse(numStr, out var val) && val > 0) { monto = val; break; }
-        }
-
-        // ── Fecha ─────────────────────────────────────────────────────────────
-        string? fecha = null;
-        var mFecha = Regex.Match(texto, @"\b(\d{4})[/\-](\d{1,2})[/\-](\d{1,2})\b");
-        if (mFecha.Success)
-            fecha = $"{mFecha.Groups[1].Value}-{int.Parse(mFecha.Groups[2].Value):D2}-{int.Parse(mFecha.Groups[3].Value):D2}";
-        else
-        {
-            var mFecha2 = Regex.Match(texto, @"\b(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})\b");
-            if (mFecha2.Success && int.Parse(mFecha2.Groups[2].Value) <= 12)
-                fecha = $"{mFecha2.Groups[3].Value}-{int.Parse(mFecha2.Groups[2].Value):D2}-{int.Parse(mFecha2.Groups[1].Value):D2}";
-        }
-
-        // ── NIT ───────────────────────────────────────────────────────────────
-        string? nit = null;
-        var mNit = Regex.Match(upper, @"N\.?I\.?T\.?\s*[:#.\s]*?([\d]{6,12})");
-        if (mNit.Success) nit = mNit.Groups[1].Value;
-
-        // ── Número factura ────────────────────────────────────────────────────
-        string? numeroFactura = null;
-        var mFact = Regex.Match(upper,
-            @"(?:FACTURA(?:\s*ELECTR[ÓO]NICA)?|TIQUETE|RECIBO(?:\s*DE\s*CAJA)?|FACT\.?)\s*(?:N[°o]?\.?|#)?\s*([A-Z0-9\-]{2,20})");
-        if (mFact.Success) numeroFactura = mFact.Groups[1].Value.Trim();
-
-        // ── Tipo soporte ──────────────────────────────────────────────────────
-        var tipoSoporte = upper.Contains("FACTURA") ? "Factura electrónica"
-                        : upper.Contains("TIQUETE") ? "Recibo de caja"
-                        : "Recibo de caja";
-
-        // ── Nombre proveedor (primeras líneas) ────────────────────────────────
-        var nombreProveedor = lines
-            .Take(6)
-            .FirstOrDefault(l => l.Length > 4
-                && !Regex.IsMatch(l, @"^\d[\d\s\-\.]*$")
-                && !l.ToUpper().Contains("NIT") && !l.ToUpper().Contains("TEL"));
-
-        // ── Concepto ──────────────────────────────────────────────────────────
-        string? concepto = null;
-        foreach (var line in lines.Skip(3).Take(15))
-        {
-            if (line.Length < 5) continue;
-            var lu = line.ToUpper();
-            if (Regex.IsMatch(lu, @"^(TOTAL|SUBTOTAL|NIT|TEL|FAX|FECHA|DIR|WEB|GRACIAS|COPIA|RUT|IVA)")) continue;
-            if (Regex.IsMatch(line, @"^\d{4}")) continue;
-            concepto = line; break;
-        }
-
-        return new FacturaExtraidaDto(
-            Fecha:           fecha,
-            Monto:           monto,
-            Concepto:        concepto,
-            NitProveedor:    nit,
-            NombreProveedor: nombreProveedor,
-            NumeroFactura:   numeroFactura,
-            TipoSoporte:     tipoSoporte,
-            Advertencia:     monto == null && fecha == null
-                ? "Datos incompletos. Revisa y corrige manualmente." : null);
     }
 }

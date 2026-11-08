@@ -95,20 +95,66 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
 
     // ── Movimientos ───────────────────────────────────────────────────────────
 
-    public async Task<IReadOnlyList<MovimientoDto>> ListarMovimientosAsync(
-        string? tipo, Guid? cuentaId, Guid? programaId, int? mes, int? anio, CancellationToken ct)
+    public async Task<ListaMovimientosDto> ListarMovimientosAsync(FiltroMovimientos f, int pagina, int porPagina, CancellationToken ct)
     {
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
-        await using var cmd = conn.CreateCommand();
+        var (where, parms) = FiltrosMovimientos(f);
 
+        // Total y sumas de TODOS los que cumplen el filtro (no solo la página); los anulados no suman
+        int total, cantIng, cantEgr;
+        decimal totIng, totEgr;
+        await using (var cmdTot = conn.CreateCommand())
+        {
+            cmdTot.CommandText = $"""
+                SELECT COUNT(*)::int,
+                       COALESCE(SUM(m.monto) FILTER (WHERE m.tipo = 'ingreso' AND NOT COALESCE(m.anulado, false)), 0),
+                       COALESCE(SUM(m.monto) FILTER (WHERE m.tipo = 'egreso'  AND NOT COALESCE(m.anulado, false)), 0),
+                       (COUNT(*) FILTER (WHERE m.tipo = 'ingreso' AND NOT COALESCE(m.anulado, false)))::int,
+                       (COUNT(*) FILTER (WHERE m.tipo = 'egreso'  AND NOT COALESCE(m.anulado, false)))::int
+                FROM movimientos_contables m
+                {where}
+                """;
+            foreach (var (name, val) in parms) cmdTot.Parameters.AddWithValue(name, val);
+            await using var rt = await cmdTot.ExecuteReaderAsync(ct);
+            await rt.ReadAsync(ct);
+            (total, totIng, totEgr, cantIng, cantEgr) =
+                (rt.GetInt32(0), rt.GetDecimal(1), rt.GetDecimal(2), rt.GetInt32(3), rt.GetInt32(4));
+        }
+
+        var data = await SeleccionarMovimientosAsync(conn, where, parms, porPagina, (pagina - 1) * porPagina, ct);
+        return new ListaMovimientosDto
+        {
+            Data = data, Total = total, Pagina = pagina, PorPagina = porPagina,
+            TotalIngresos = totIng, TotalEgresos = totEgr, CantidadIngresos = cantIng, CantidadEgresos = cantEgr,
+        };
+    }
+
+    private static (string Where, List<(string, object)> Parms) FiltrosMovimientos(FiltroMovimientos f)
+    {
         var where = new List<string>();
-        if (!string.IsNullOrEmpty(tipo)) where.Add("m.tipo = @tipo");
-        if (cuentaId.HasValue)           where.Add("m.cuenta_id = @cuentaId");
-        if (programaId.HasValue)         where.Add("m.programa_id = @programaId");
-        if (mes.HasValue)                where.Add("EXTRACT(MONTH FROM m.fecha) = @mes");
-        if (anio.HasValue)               where.Add("EXTRACT(YEAR  FROM m.fecha) = @anio");
+        var parms = new List<(string, object)>();
+        if (!string.IsNullOrEmpty(f.Tipo)) { where.Add("m.tipo = @tipo");                       parms.Add(("tipo",       f.Tipo)); }
+        if (f.CuentaId.HasValue)           { where.Add("m.cuenta_id = @cuentaId");              parms.Add(("cuentaId",   f.CuentaId.Value)); }
+        if (f.ProgramaId.HasValue)         { where.Add("m.programa_id = @programaId");          parms.Add(("programaId", f.ProgramaId.Value)); }
+        if (f.Mes.HasValue)                { where.Add("EXTRACT(MONTH FROM m.fecha) = @mes");   parms.Add(("mes",        f.Mes.Value)); }
+        if (f.Anio.HasValue)               { where.Add("EXTRACT(YEAR  FROM m.fecha) = @anio");  parms.Add(("anio",       f.Anio.Value)); }
+        if (!string.IsNullOrEmpty(f.Buscar))
+        {
+            where.Add("""
+                (m.concepto ILIKE @buscar OR m.tercero_nombre ILIKE @buscar
+                 OR m.tercero_documento ILIKE @buscar OR m.numero_soporte ILIKE @buscar)
+                """);
+            parms.Add(("buscar", SqlLike.Contiene(f.Buscar)));
+        }
+        return (where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "", parms);
+    }
 
+    /// <summary>Movimientos que cumplen el filtro, en orden estable; sin límite si <paramref name="limite"/> es null.</summary>
+    private static async Task<List<MovimientoDto>> SeleccionarMovimientosAsync(
+        NpgsqlConnection conn, string where, List<(string, object)> parms, int? limite, int offset, CancellationToken ct)
+    {
+        await using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
             SELECT m.id, m.tipo, m.fecha, m.concepto, m.monto,
                    m.cuenta_id,   c.nombre   AS cuenta_nombre,
@@ -123,16 +169,17 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
             JOIN  cuentas_caja c    ON c.id   = m.cuenta_id
             JOIN  cat_contable cat  ON cat.id = m.categoria_id
             LEFT JOIN programas p  ON p.id   = m.programa_id
-            {(where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "")}
-            ORDER BY m.fecha DESC, m.fecha_creacion DESC
-            LIMIT 500
+            {where}
+            ORDER BY m.fecha DESC, m.fecha_creacion DESC, m.id
+            {(limite.HasValue ? "LIMIT @pp OFFSET @off" : "")}
             """;
 
-        if (!string.IsNullOrEmpty(tipo)) cmd.Parameters.AddWithValue("tipo",       tipo);
-        if (cuentaId.HasValue)           cmd.Parameters.AddWithValue("cuentaId",   cuentaId.Value);
-        if (programaId.HasValue)         cmd.Parameters.AddWithValue("programaId", programaId.Value);
-        if (mes.HasValue)                cmd.Parameters.AddWithValue("mes",        mes.Value);
-        if (anio.HasValue)               cmd.Parameters.AddWithValue("anio",       anio.Value);
+        foreach (var (name, val) in parms) cmd.Parameters.AddWithValue(name, val);
+        if (limite.HasValue)
+        {
+            cmd.Parameters.AddWithValue("pp",  limite.Value);
+            cmd.Parameters.AddWithValue("off", offset);
+        }
 
         await using var r = await cmd.ExecuteReaderAsync(ct);
         var list = new List<MovimientoDto>();
@@ -496,7 +543,11 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         }
         await r3.CloseAsync();
 
-        var todos = await ListarMovimientosAsync(null, null, null, mes, anio, ct);
+        // El reporte del contador lleva todos los movimientos del mes (sin paginar)
+        var (whereMes, parmsMes) = FiltrosMovimientos(new FiltroMovimientos(null, null, null, mes, anio, null));
+        await using var connMov = factory.Create();
+        await connMov.OpenAsync(ct);
+        var todos = await SeleccionarMovimientosAsync(connMov, whereMes, parmsMes, null, 0, ct);
         var movimientos = todos.Where(m => !m.Anulado).ToList();
         var periodo = $"{new DateTime(anio, mes, 1):MMMM yyyy}";
         return new ReporteContadorDto(periodo, totalIngresos, totalEgresos, totalIngresos - totalEgresos,

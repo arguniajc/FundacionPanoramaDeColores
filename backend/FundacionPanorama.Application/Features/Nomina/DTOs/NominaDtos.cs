@@ -57,4 +57,14 @@ public record LiquidarEmpleadoDto(
     decimal  OtrasDeducciones,
     string?  Observacion);
 
+/// <summary>Edición de una liquidación existente: los mismos campos que al liquidar, sin cambiar de empleado.</summary>
+public record EditarLiquidacionDto(
+    int      DiasTrabajados,
+    decimal? SalarioOverride,
+    decimal  HorasExtras,
+    decimal  Bonificaciones,
+    decimal  RetencionFuente,
+    decimal  OtrasDeducciones,
+    string?  Observacion);
+
 public record AutoLiquidarDto(bool SoloActivos = true);

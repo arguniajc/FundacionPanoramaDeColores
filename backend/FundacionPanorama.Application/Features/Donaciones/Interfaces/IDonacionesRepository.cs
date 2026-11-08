@@ -1,12 +1,12 @@
 using FundacionPanorama.Application.Features.Donaciones.DTOs;
+using FundacionPanorama.Application.Shared;
 
 namespace FundacionPanorama.Application.Features.Donaciones.Interfaces;
 
 public interface IDonacionesRepository
 {
-    Task<IReadOnlyList<DonacionDto>> ListarAsync(
-        Guid? donanteId, string? tipo, Guid? sedeId, Guid? programaId,
-        DateTime? desde, DateTime? hasta, CancellationToken ct = default);
+    /// <summary>Página de donaciones activas (más recientes primero) y total con los mismos filtros.</summary>
+    Task<ListaPaginada<DonacionDto>> ListarAsync(FiltroDonaciones filtro, int pagina, int porPagina, CancellationToken ct = default);
 
     Task<DonacionDto?> ObtenerAsync(Guid id, CancellationToken ct = default);
 

@@ -1,15 +1,23 @@
 using FundacionPanorama.Application.Features.Configuracion.DTOs;
 using FundacionPanorama.Application.Features.Donaciones.DTOs;
 using FundacionPanorama.Application.Features.Donaciones.Interfaces;
+using FundacionPanorama.Application.Shared;
 
 namespace FundacionPanorama.Application.Features.Donaciones;
 
 public class DonacionesService(IDonacionesRepository repo)
 {
-    public Task<IReadOnlyList<DonacionDto>> ListarAsync(
+    public Task<ListaPaginada<DonacionDto>> ListarAsync(
         Guid? donanteId, string? tipo, Guid? sedeId, Guid? programaId,
-        DateTime? desde, DateTime? hasta, CancellationToken ct = default)
-        => repo.ListarAsync(donanteId, tipo, sedeId, programaId, desde, hasta, ct);
+        DateTime? desde, DateTime? hasta, string? buscar,
+        int pagina, int porPagina, CancellationToken ct = default)
+    {
+        (pagina, porPagina) = Paginacion.Normalizar(pagina, porPagina);
+        var filtro = new FiltroDonaciones(
+            donanteId, string.IsNullOrWhiteSpace(tipo) ? null : tipo.Trim(), sedeId, programaId,
+            desde, hasta, Paginacion.NormalizarBusqueda(buscar));
+        return repo.ListarAsync(filtro, pagina, porPagina, ct);
+    }
 
     public Task<DonacionDto?> ObtenerAsync(Guid id, CancellationToken ct = default)
         => repo.ObtenerAsync(id, ct);

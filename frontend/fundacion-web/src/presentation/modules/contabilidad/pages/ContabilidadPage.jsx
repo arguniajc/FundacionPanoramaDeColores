@@ -35,6 +35,8 @@ export default function ContabilidadPage() {
     tab, setTab,
     cargando, error,
     stats, cuentas, categorias, programas, movimientos, presupuesto, reporte, resumenAnual,
+    ultimosMovimientos,
+    movTotal, movPagina, movTotales, movTotalPaginas, cambiarPaginaMov,
     guardando,
     filtroTipo, setFiltroTipo,
     filtroMes,  setFiltroMes,
@@ -158,18 +160,20 @@ export default function ContabilidadPage() {
         <Tab label="Libro Mayor" icon={<MenuBookIcon fontSize="small" />} iconPosition="start" />
       </Tabs>
 
-      {tab === 0 && <TabResumen stats={stats} cuentas={cuentas} movimientos={movimientos} />}
+      {tab === 0 && <TabResumen stats={stats} cuentas={cuentas} movimientos={ultimosMovimientos} />}
 
       {tab === 1 && (
         <TabMovimientos
           movimientos={movimientos} cuentas={cuentas}
+          total={movTotal} totales={movTotales}
+          pagina={movPagina} totalPaginas={movTotalPaginas} onCambiarPagina={cambiarPaginaMov}
           filtroTipo={filtroTipo} setFiltroTipo={setFiltroTipo}
           filtroMes={filtroMes}   setFiltroMes={setFiltroMes}
           filtroAnio={filtroAnio} setFiltroAnio={setFiltroAnio}
           filtroCuenta={filtroCuenta} setFiltroCuenta={setFiltroCuenta}
           busqueda={busquedaMov}  onBusqueda={setBusquedaMov}
           puedeCrear={puedeCrear} puedeEditar={puedeEditar}
-          onFiltrar={cargarMovimientos}
+          onFiltrar={() => cargarMovimientos(1)}
           onExportarCSV={exportarCSV}
           onVerComprobante={abrirVerComprobante}
           onDescargarComprobante={abrirDescargarComprobante}

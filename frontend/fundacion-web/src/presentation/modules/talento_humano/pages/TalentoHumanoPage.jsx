@@ -1,9 +1,9 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useConfirm } from '@/shared/components/useConfirm';
 import {
   Box, Typography, Button, TextField, MenuItem, Grid, Card, CardContent,
   Avatar, Chip, IconButton, Tabs, Tab, Alert, Skeleton, Tooltip,
-  Badge, InputAdornment,
+  Badge, InputAdornment, Pagination,
 } from '@mui/material';
 import AddIcon           from '@mui/icons-material/Add';
 import EditIcon          from '@mui/icons-material/Edit';
@@ -27,6 +27,11 @@ import { PanelNovedades } from './components/PanelNovedades';
 import { OrgChartTab }    from './components/OrgChartTab';
 import { PanelNomina }    from './components/PanelNomina';
 import { BRAND_COLOR } from '@/shared/constants/brand';
+import { obtenerTodasLasPaginas } from '@/shared/utils/paginas';
+import { useValorDiferido } from '@/shared/hooks/useValorDiferido';
+
+const POR_PAGINA = 20;
+const listarEmpleados = (params) => apiClient.get('/api/talento-humano', { params });
 
 const CONTRATO_COLORS = {
   indefinido:           'success',
@@ -59,14 +64,34 @@ export default function TalentoHumanoPage() {
   const { puedo } = useAuth();
   const confirm = useConfirm();
 
-  const [empleados, setEmpleados] = useState([]);
+  const [empleados, setEmpleados] = useState([]);   // página visible
+  const [total,     setTotal]     = useState(0);
+  const [pagina,    setPagina]    = useState(1);
   const [stats,     setStats]     = useState(null);
   const [sedes,     setSedes]     = useState([]);
   const [cargando,  setCargando]  = useState(true);
   const [error,     setError]     = useState('');
+  const [exportando, setExportando] = useState(false);
+  // Organigrama: necesita TODOS los empleados para elegir; se carga al abrir la pestaña
+  const [empleadosOrg, setEmpleadosOrg] = useState(null);
 
   const [busqueda,     setBusqueda]     = useState('');
   const [filtroActivo, setFiltroActivo] = useState('true');
+  // La búsqueda va al servidor 350 ms después de dejar de escribir
+  const buscar = useValorDiferido(busqueda.trim());
+
+  const filtros = useMemo(() => {
+    const p = filtroActivo !== 'todos' ? { activo: filtroActivo } : {};
+    if (buscar) p.buscar = buscar;
+    return p;
+  }, [filtroActivo, buscar]);
+
+  // Al cambiar un filtro se vuelve a la primera página (ajuste durante el render, sin efecto extra)
+  const [filtrosPrevios, setFiltrosPrevios] = useState(filtros);
+  if (filtrosPrevios !== filtros) {
+    setFiltrosPrevios(filtros);
+    setPagina(1);
+  }
 
   const [mainTab,        setMainTab]        = useState(0);
   const [dialogEmpleado, setDialogEmpleado] = useState(false);
@@ -77,13 +102,13 @@ export default function TalentoHumanoPage() {
   const cargar = useCallback(async () => {
     setCargando(true); setError('');
     try {
-      const params = filtroActivo !== 'todos' ? { activo: filtroActivo } : {};
       const [empRes, statsRes, sedesRes] = await Promise.all([
-        apiClient.get('/api/talento-humano', { params }),
+        listarEmpleados({ ...filtros, pagina, porPagina: POR_PAGINA }),
         apiClient.get('/api/talento-humano/stats'),
         apiClient.get('/api/sedes'),
       ]);
-      setEmpleados(empRes.data);
+      setEmpleados(empRes.data?.data ?? []);
+      setTotal(empRes.data?.total ?? 0);
       setStats(statsRes.data);
       setSedes(sedesRes.data ?? []);
     } catch (err) {
@@ -91,9 +116,50 @@ export default function TalentoHumanoPage() {
     } finally {
       setCargando(false);
     }
-  }, [filtroActivo]);
+  }, [filtros, pagina]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  const cargarEmpleadosOrg = useCallback(async () => {
+    try {
+      setEmpleadosOrg(await obtenerTodasLasPaginas(listarEmpleados));
+    } catch (err) {
+      setEmpleadosOrg([]);
+      setError(mensajeErrorApi(err, { accion: 'cargar los empleados del organigrama' }));
+    }
+  }, []);
+
+  // Se carga una vez al abrir la pestaña Organigrama (y se invalida al guardar o eliminar empleados)
+  useEffect(() => {
+    if (mainTab === 1 && empleadosOrg === null) cargarEmpleadosOrg();
+  }, [mainTab, empleadosOrg, cargarEmpleadosOrg]);
+
+  const totalPaginas = Math.ceil(total / POR_PAGINA);
+
+  // Exporta TODOS los empleados del filtro actual (todas las páginas), no solo los visibles
+  const handleExportar = async () => {
+    setExportando(true);
+    try {
+      const todos = await obtenerTodasLasPaginas(listarEmpleados, filtros);
+      await exportarExcel('Empleados', [{
+        nombre: 'Empleados',
+        datos: todos.map(e => ({
+          Nombres:               e.nombres,
+          Apellidos:             e.apellidos,
+          Documento:             e.numeroDocumento ?? '',
+          Cargo:                 e.cargo ?? '',
+          Área:                  e.area ?? '',
+          Contrato:              e.tipoContrato ?? '',
+          Estado:                e.activo ? 'Activo' : 'Inactivo',
+          'Novedades pendientes': e.novedadesPendientes ?? 0,
+        })),
+      }]);
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'exportar los empleados' }));
+    } finally {
+      setExportando(false);
+    }
+  };
 
   const eliminar = async (id) => {
     if (!await confirm('¿Eliminar este empleado? Esta acción no se puede deshacer.')) return;
@@ -104,7 +170,9 @@ export default function TalentoHumanoPage() {
       return;
     }
     if (panelEmpleado?.id === id) setPanelEmpleado(null);
-    cargar();
+    setEmpleadosOrg(null);
+    // Si la página quedó vacía se vuelve a la anterior; si no, se recarga para completarla
+    if (empleados.length === 1 && pagina > 1) setPagina(p => p - 1); else cargar();
   };
 
   const abrirPanel = async (emp) => {
@@ -116,11 +184,6 @@ export default function TalentoHumanoPage() {
       setError(mensajeErrorApi(err, { accion: 'cargar el detalle del empleado' }));
     }
   };
-
-  const filtrados = empleados.filter(e => {
-    const q = busqueda.toLowerCase();
-    return !q || `${e.nombres} ${e.apellidos} ${e.cargo ?? ''} ${e.area ?? ''} ${e.numeroDocumento ?? ''}`.toLowerCase().includes(q);
-  });
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
@@ -167,7 +230,9 @@ export default function TalentoHumanoPage() {
 
       {/* ── Tab Organigrama ───────────────────────────────────────── */}
       {mainTab === 1 && (
-        <OrgChartTab puedoEditar={puedo('talento_humano', 'editar')} empleados={empleados} />
+        empleadosOrg === null
+          ? [...Array(3)].map((_, i) => <Skeleton key={i} variant="rounded" height={90} sx={{ mb: 1 }} />)
+          : <OrgChartTab puedoEditar={puedo('talento_humano', 'editar')} empleados={empleadosOrg} />
       )}
 
       {/* ── Tab Nómina ────────────────────────────────────────────── */}
@@ -214,22 +279,10 @@ export default function TalentoHumanoPage() {
           <MenuItem value="todos">Todos</MenuItem>
         </TextField>
         <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
-          disabled={filtrados.length === 0}
-          onClick={() => exportarExcel('Empleados', [{
-            nombre: 'Empleados',
-            datos: filtrados.map(e => ({
-              Nombres:               e.nombres,
-              Apellidos:             e.apellidos,
-              Documento:             e.numeroDocumento ?? '',
-              Cargo:                 e.cargo ?? '',
-              Área:                  e.area ?? '',
-              Contrato:              e.tipoContrato ?? '',
-              Estado:                e.activo ? 'Activo' : 'Inactivo',
-              'Novedades pendientes': e.novedadesPendientes ?? 0,
-            })),
-          }])}
+          disabled={total === 0 || exportando}
+          onClick={handleExportar}
         >
-          Exportar Excel
+          {exportando ? 'Exportando…' : 'Exportar Excel'}
         </Button>
       </Box>
 
@@ -238,15 +291,17 @@ export default function TalentoHumanoPage() {
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, alignItems: { xs: 'stretch', md: 'flex-start' } }}>
         {/* Lista de empleados */}
         <Box sx={{ flex: { xs: '0 0 auto', md: panelEmpleado ? '0 0 380px' : 1 }, minWidth: 0 }}>
-          {cargando ? (
+          {cargando && empleados.length === 0 ? (
             [...Array(4)].map((_, i) => <Skeleton key={i} variant="rounded" height={76} sx={{ mb: 1 }} />)
-          ) : filtrados.length === 0 ? (
+          ) : empleados.length === 0 ? (
             <Box sx={{ py: 6, textAlign: 'center' }}>
               <PeopleIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
-              <Typography sx={{ color: 'text.secondary', mt: 1 }}>No hay empleados registrados</Typography>
+              <Typography sx={{ color: 'text.secondary', mt: 1 }}>
+                {buscar ? 'Ningún empleado coincide con la búsqueda' : 'No hay empleados registrados'}
+              </Typography>
             </Box>
           ) : (
-            filtrados.map(emp => (
+            empleados.map(emp => (
               <Card key={emp.id} elevation={0}
                 sx={{
                   mb: 1, cursor: 'pointer', border: '1px solid',
@@ -298,6 +353,12 @@ export default function TalentoHumanoPage() {
               </Card>
             ))
           )}
+          {totalPaginas > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1.5, mt: 2, flexWrap: 'wrap' }}>
+              <Pagination count={totalPaginas} page={pagina} onChange={(_, v) => setPagina(v)} size="small" />
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>{total} empleados</Typography>
+            </Box>
+          )}
         </Box>
 
         {/* Panel detalle */}
@@ -328,7 +389,7 @@ export default function TalentoHumanoPage() {
         onClose={() => setDialogEmpleado(false)}
         empleado={editEmpleado}
         sedes={sedes}
-        onSaved={() => { setDialogEmpleado(false); cargar(); }}
+        onSaved={() => { setDialogEmpleado(false); setEmpleadosOrg(null); cargar(); }}
       />
 
       </>}

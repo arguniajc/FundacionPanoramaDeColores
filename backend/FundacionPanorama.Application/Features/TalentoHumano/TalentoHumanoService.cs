@@ -1,5 +1,6 @@
 using FundacionPanorama.Application.Features.TalentoHumano.DTOs;
 using FundacionPanorama.Application.Features.TalentoHumano.Interfaces;
+using FundacionPanorama.Application.Shared;
 using static FundacionPanorama.Application.Shared.Validar;
 
 namespace FundacionPanorama.Application.Features.TalentoHumano;
@@ -18,8 +19,16 @@ public class TalentoHumanoService(ITalentoHumanoRepository repo)
     // difieren se usa el menor: numero_documento 30, email 150, telefono 20.
     const decimal SalarioMaximo = 999_999_999_999.99m; // NUMERIC(14,2)
 
-    public Task<IReadOnlyList<EmpleadoResumenDto>> ListarAsync(bool? activo, Guid? sedeId, string? area, CancellationToken ct = default)
-        => repo.ListarAsync(activo, sedeId, area, ct);
+    public Task<ListaPaginada<EmpleadoResumenDto>> ListarAsync(
+        bool? activo, Guid? sedeId, string? area, string? buscar,
+        int pagina, int porPagina, CancellationToken ct = default)
+    {
+        (pagina, porPagina) = Paginacion.Normalizar(pagina, porPagina);
+        var filtro = new FiltroEmpleados(
+            activo, sedeId, string.IsNullOrWhiteSpace(area) ? null : area.Trim(),
+            Paginacion.NormalizarBusqueda(buscar));
+        return repo.ListarAsync(filtro, pagina, porPagina, ct);
+    }
 
     public Task<EmpleadoDto?> ObtenerAsync(Guid id, CancellationToken ct = default)
         => repo.ObtenerAsync(id, ct);

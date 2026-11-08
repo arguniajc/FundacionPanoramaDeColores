@@ -1,5 +1,6 @@
 using FundacionPanorama.Application.Features.Donaciones.DTOs;
 using FundacionPanorama.Application.Features.Donaciones.Interfaces;
+using FundacionPanorama.Application.Shared;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -7,21 +8,49 @@ namespace FundacionPanorama.Infrastructure.Persistence.Repositories;
 
 public class DonacionesRepository(DbConnectionFactory factory) : IDonacionesRepository
 {
-    public async Task<IReadOnlyList<DonacionDto>> ListarAsync(
-        Guid? donanteId, string? tipo, Guid? sedeId, Guid? programaId,
-        DateTime? desde, DateTime? hasta, CancellationToken ct = default)
+    public async Task<ListaPaginada<DonacionDto>> ListarAsync(FiltroDonaciones f, int pagina, int porPagina, CancellationToken ct = default)
     {
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
-        await using var cmd = conn.CreateCommand();
 
         var where = new List<string> { "dn.activo = true" };
-        if (donanteId.HasValue)  { where.Add("dn.donante_id  = @did"); cmd.Parameters.AddWithValue("did", donanteId.Value); }
-        if (!string.IsNullOrWhiteSpace(tipo)) { where.Add("dn.tipo = @tipo"); cmd.Parameters.AddWithValue("tipo", tipo); }
-        if (sedeId.HasValue)     { where.Add("dn.sede_id     = @sid"); cmd.Parameters.AddWithValue("sid", sedeId.Value); }
-        if (programaId.HasValue) { where.Add("dn.programa_id = @pid"); cmd.Parameters.AddWithValue("pid", programaId.Value); }
-        if (desde.HasValue)      { where.Add("dn.fecha_donacion >= @desde"); cmd.Parameters.AddWithValue("desde", desde.Value.Date); }
-        if (hasta.HasValue)      { where.Add("dn.fecha_donacion <= @hasta"); cmd.Parameters.AddWithValue("hasta", hasta.Value.Date); }
+        var parms = new List<(string, object)>();
+        if (f.DonanteId.HasValue)  { where.Add("dn.donante_id  = @did"); parms.Add(("did", f.DonanteId.Value)); }
+        if (!string.IsNullOrWhiteSpace(f.Tipo)) { where.Add("dn.tipo = @tipo"); parms.Add(("tipo", f.Tipo)); }
+        if (f.SedeId.HasValue)     { where.Add("dn.sede_id     = @sid"); parms.Add(("sid", f.SedeId.Value)); }
+        if (f.ProgramaId.HasValue) { where.Add("dn.programa_id = @pid"); parms.Add(("pid", f.ProgramaId.Value)); }
+        if (f.Desde.HasValue)      { where.Add("dn.fecha_donacion >= @desde"); parms.Add(("desde", f.Desde.Value.Date)); }
+        if (f.Hasta.HasValue)      { where.Add("dn.fecha_donacion <= @hasta"); parms.Add(("hasta", f.Hasta.Value.Date)); }
+        if (!string.IsNullOrEmpty(f.Buscar))
+        {
+            where.Add("""
+                (d.nombre ILIKE @buscar OR d.documento ILIKE @buscar
+                 OR dn.recibo_numero ILIKE @buscar
+                 OR COALESCE(i.nombre, dn.nombre_item) ILIKE @buscar)
+                """);
+            parms.Add(("buscar", SqlLike.Contiene(f.Buscar)));
+        }
+
+        var desdeSql = $@"
+            FROM donaciones dn
+            JOIN  donantes d          ON d.id  = dn.donante_id
+            LEFT JOIN inventario_items i ON i.id  = dn.item_id
+            LEFT JOIN programas p     ON p.id  = dn.programa_id
+            LEFT JOIN sedes     s     ON s.id  = dn.sede_id
+            WHERE {string.Join(" AND ", where)}";
+
+        int total;
+        await using (var cmdCount = conn.CreateCommand())
+        {
+            cmdCount.CommandText = "SELECT COUNT(*)::int " + desdeSql;
+            foreach (var (name, val) in parms) cmdCount.Parameters.AddWithValue(name, val);
+            total = (int)(await cmdCount.ExecuteScalarAsync(ct))!;
+        }
+
+        await using var cmd = conn.CreateCommand();
+        foreach (var (name, val) in parms) cmd.Parameters.AddWithValue(name, val);
+        cmd.Parameters.AddWithValue("pp",  porPagina);
+        cmd.Parameters.AddWithValue("off", (pagina - 1) * porPagina);
 
         cmd.CommandText = $@"
             SELECT dn.id, dn.donante_id, d.nombre, d.tipo,
@@ -34,19 +63,14 @@ public class DonacionesRepository(DbConnectionFactory factory) : IDonacionesRepo
                    dn.activo, dn.fecha_creacion,
                    d.tipo_documento, d.documento,
                    d.email, COALESCE(dn.recibo_estado,'emitido')
-            FROM donaciones dn
-            JOIN  donantes d          ON d.id  = dn.donante_id
-            LEFT JOIN inventario_items i ON i.id  = dn.item_id
-            LEFT JOIN programas p     ON p.id  = dn.programa_id
-            LEFT JOIN sedes     s     ON s.id  = dn.sede_id
-            WHERE {string.Join(" AND ", where)}
-            ORDER BY dn.fecha_donacion DESC, dn.fecha_creacion DESC
-            LIMIT 500";
+            {desdeSql}
+            ORDER BY dn.fecha_donacion DESC, dn.fecha_creacion DESC, dn.id
+            LIMIT @pp OFFSET @off";
 
         var list = new List<DonacionDto>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct)) list.Add(LeerDonacion(r));
-        return list;
+        return new ListaPaginada<DonacionDto> { Data = list, Total = total, Pagina = pagina, PorPagina = porPagina };
     }
 
     public async Task<DonacionDto?> ObtenerAsync(Guid id, CancellationToken ct = default)

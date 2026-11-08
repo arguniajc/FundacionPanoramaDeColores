@@ -72,11 +72,14 @@ const STATS_NINOS_C = {
   ],
 };
 
-// useAlertas / AdminLayout: { modulo, nivel: warning|info|error, mensaje, valor }
+// useAlertas (campana del AdminLayout y chips del Dashboard): { tipo, modulo, nivel: warning|info|error, mensaje, valor }
 const ALERTAS = [
-  { modulo: 'talento_humano', nivel: 'warning', mensaje: '2 contratos de trabajo vencen en los próximos 30 días', valor: 2 },
-  { modulo: 'talento_humano', nivel: 'info',    mensaje: '3 novedades de personal pendientes de aprobación por la coordinación', valor: 3 },
-  { modulo: 'inventario',     nivel: 'error',   mensaje: '4 ítems del inventario están sin stock en la sede principal de Yumbo', valor: 4 },
+  { tipo: 'contrato_vencimiento', modulo: 'talento_humano', nivel: 'warning', mensaje: '2 contratos de trabajo vencen en los próximos 30 días', valor: 2 },
+  { tipo: 'novedad_pendiente',    modulo: 'talento_humano', nivel: 'info',    mensaje: '3 novedades de personal pendientes de aprobación por la coordinación', valor: 3 },
+  { tipo: 'stock_bajo',           modulo: 'inventario',     nivel: 'warning', mensaje: '6 artículos con stock bajo el mínimo', valor: 6 },
+  { tipo: 'sin_stock',            modulo: 'inventario',     nivel: 'error',   mensaje: '4 ítems del inventario están sin stock en la sede principal de Yumbo', valor: 4 },
+  { tipo: 'comodato_vencimiento', modulo: 'inventario',     nivel: 'warning', mensaje: '2 comodatos vencen en los próximos 30 días', valor: 2 },
+  { tipo: 'presupuesto_sobre_ejecutado', modulo: 'contabilidad', nivel: 'error', mensaje: '1 rubro del presupuesto superó lo presupuestado este año', valor: 1 },
 ];
 
 // ── Talento humano ────────────────────────────────────────────────────────────
@@ -154,16 +157,19 @@ const periodosDe = (anio) => [
   { id: anio * 100 + 6,  mes: 6,  anio, estado: 'cerrado',  totalEmpleados: 6, totalNeto: 32456780, observacion: 'Incluye prima de servicios de mitad de año' },
 ];
 
-// FilaLiquidacion: { id, empleadoNombre, cargo, salarioBase, auxilioTransporte, totalDevengado, totalDeducciones, netoPagar }
+// NominaLiquidacionDto (FilaLiquidacion, EditarLiquidacionDialog, Excel y desprendibles)
 const liquidacionesDe = (periodoId) => EMPLEADOS.filter(e => e.activo).map((e, i) => {
   const aux = e.salario <= 2847000 ? 200000 : 0;
   const devengado = e.salario + aux;
-  const deducciones = Math.round(e.salario * 0.08);
+  const salud = Math.round(e.salario * 0.04);
+  const deducciones = salud * 2;
   return {
     id: periodoId * 10 + i, periodoId, empleadoId: e.id,
-    empleadoNombre: `${e.nombres} ${e.apellidos}`, cargo: e.cargo,
-    salarioBase: e.salario, auxilioTransporte: aux, totalDevengado: devengado,
-    totalDeducciones: deducciones, netoPagar: devengado - deducciones,
+    empleadoNombre: `${e.nombres} ${e.apellidos}`, cargo: e.cargo, numeroDocumento: e.numeroDocumento ?? null,
+    diasTrabajados: 30, salarioBase: e.salario, auxilioTransporte: aux, horasExtras: 0, bonificaciones: 0,
+    deduccionSalud: salud, deduccionPension: salud, retencionFuente: 0, otrasDeducciones: 0,
+    totalDevengado: devengado, totalDeducciones: deducciones, netoPagar: devengado - deducciones,
+    observacion: null,
   };
 });
 
@@ -512,10 +518,17 @@ export function registrar(api) {
   compartido(api, 'GET', '/api/sedes', SEDES);
 
   // Talento humano (genéricos primero: el último registrado tiene prioridad)
+  // Paginado: { data, total, pagina, porPagina } (filtros activo / buscar)
   api.on('GET', '/api/talento-humano', ({ url }) => {
-    const activo = url.searchParams.get('activo');
-    const data = activo === null ? EMPLEADOS : EMPLEADOS.filter(e => String(e.activo) === activo);
-    return { json: data };
+    const p      = url.searchParams;
+    const activo = p.get('activo');
+    const q      = (p.get('buscar') ?? '').toLowerCase();
+    const lista = EMPLEADOS.filter(e =>
+      (activo === null || String(e.activo) === activo) &&
+      (!q || `${e.nombres} ${e.apellidos} ${e.cargo ?? ''} ${e.area ?? ''} ${e.numeroDocumento ?? ''}`.toLowerCase().includes(q)));
+    const pagina    = Number(p.get('pagina')) || 1;
+    const porPagina = Number(p.get('porPagina')) || 20;
+    return { json: { data: lista.slice((pagina - 1) * porPagina, pagina * porPagina), total: lista.length, pagina, porPagina } };
   });
   api.on('GET', /^\/api\/talento-humano\/[^/]+$/, ({ url }) => {
     const id = Number(url.pathname.split('/').pop());
@@ -616,6 +629,13 @@ export const DIALOGOS_C = [
   { nombre: 'Talento humano — Confirmar auto-liquidación', hash: '#/sede/talento-humano', abrir: async (page) => {
     await page.getByRole('tab', { name: 'Nómina' }).click();
     await page.getByRole('button', { name: 'Auto-liquidar empleados' }).first().click();
+    await visible(page);
+  } },
+  { nombre: 'Talento humano — Editar liquidación de nómina', hash: '#/sede/talento-humano', abrir: async (page) => {
+    await page.getByRole('tab', { name: 'Nómina' }).click();
+    // El período en borrador (Octubre) es el primero; al expandirlo se ven sus liquidaciones
+    await page.getByText(/^Octubre \d{4}$/).first().click();
+    await page.getByRole('button', { name: 'Editar liquidación' }).first().click();
     await visible(page);
   } },
   { nombre: 'Talento humano — Agregar persona al organigrama', hash: '#/sede/talento-humano', abrir: async (page) => {

@@ -50,3 +50,8 @@ public record StatsDonacionesDto(
 );
 
 public record LogEmisionDto(string Accion, string? DestinatarioEmail = null, string? Detalle = null);
+
+/// <summary>Filtros del listado de donaciones. Buscar compara donante (nombre/documento), N° de recibo y artículo.</summary>
+public record FiltroDonaciones(
+    Guid? DonanteId, string? Tipo, Guid? SedeId, Guid? ProgramaId,
+    DateTime? Desde, DateTime? Hasta, string? Buscar);

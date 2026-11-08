@@ -13,14 +13,19 @@ public class TalentoHumanoController(TalentoHumanoService svc) : ControllerBase
 {
     // ── Empleados ─────────────────────────────────────────────────────────────
 
+    // GET api/talento-humano?pagina=1&porPagina=20&buscar=...&activo=&sedeId=&area=
+    // Respuesta: { data, total, pagina, porPagina } (porPagina máximo 100; el organigrama pide todas las páginas)
     [HttpGet]
     [RequierePermiso("talento_humano", "ver")]
     public async Task<IActionResult> Listar(
-        [FromQuery] bool?   activo = null,
-        [FromQuery] Guid?   sedeId = null,
-        [FromQuery] string? area   = null,
+        [FromQuery] bool?   activo    = null,
+        [FromQuery] Guid?   sedeId    = null,
+        [FromQuery] string? area      = null,
+        [FromQuery] string? buscar    = null,
+        [FromQuery] int     pagina    = 1,
+        [FromQuery] int     porPagina = 20,
         CancellationToken ct = default)
-        => Ok(await svc.ListarAsync(activo, sedeId, area, ct));
+        => Ok(await svc.ListarAsync(activo, sedeId, area, buscar, pagina, porPagina, ct));
 
     [HttpGet("stats")]
     [RequierePermiso("talento_humano", "ver")]

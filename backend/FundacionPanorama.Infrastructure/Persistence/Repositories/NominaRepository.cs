@@ -103,18 +103,8 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            SELECT l.id, l.periodo_id, l.empleado_id,
-                   e.nombres || ' ' || e.apellidos AS nombre,
-                   e.cargo, e.numero_documento,
-                   l.dias_trabajados, l.salario_base, l.auxilio_transporte,
-                   l.horas_extras, l.bonificaciones,
-                   l.deduccion_salud, l.deduccion_pension,
-                   l.retencion_fuente, l.otras_deducciones,
-                   l.total_devengado, l.total_deducciones, l.neto_pagar,
-                   l.observacion
-            FROM nomina_liquidaciones l
-            JOIN empleados e ON e.id = l.empleado_id
+        cmd.CommandText = $"""
+            {SelectLiquidacion}
             WHERE l.periodo_id = @pid
             ORDER BY nombre
             """;
@@ -123,6 +113,56 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
         var list = new List<NominaLiquidacionDto>();
         while (await r.ReadAsync(ct)) list.Add(LeerLiquidacion(r));
         return list;
+    }
+
+    public async Task<NominaLiquidacionDto?> ObtenerLiquidacionAsync(int id, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"{SelectLiquidacion} WHERE l.id = @id";
+        cmd.Parameters.AddWithValue("id", id);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        return await r.ReadAsync(ct) ? LeerLiquidacion(r) : null;
+    }
+
+    public async Task<NominaLiquidacionDto?> ActualizarLiquidacionAsync(int id, LiquidarEmpleadoDto dto, CancellationToken ct)
+    {
+        var salario = dto.SalarioOverride ?? await ObtenerSalarioEmpleado(dto.EmpleadoId, ct);
+        var t = Calcular(salario, dto);
+
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        // Solo si el período sigue en borrador: un período cerrado ya se pagó
+        cmd.CommandText = """
+            UPDATE nomina_liquidaciones l SET
+                dias_trabajados = @dias, salario_base = @sal, auxilio_transporte = @aux,
+                horas_extras = @he, bonificaciones = @bon,
+                deduccion_salud = @salud, deduccion_pension = @pension,
+                retencion_fuente = @rte, otras_deducciones = @otras,
+                total_devengado = @dev, total_deducciones = @ded, neto_pagar = @neto,
+                observacion = @obs
+            FROM nomina_periodos p
+            WHERE l.id = @id AND l.periodo_id = p.id AND p.estado = 'borrador'
+            """;
+        cmd.Parameters.AddWithValue("id",   id);
+        cmd.Parameters.AddWithValue("dias", dto.DiasTrabajados);
+        cmd.Parameters.AddWithValue("sal",  salario);
+        cmd.Parameters.AddWithValue("aux",  t.Aux);
+        cmd.Parameters.AddWithValue("he",   dto.HorasExtras);
+        cmd.Parameters.AddWithValue("bon",  dto.Bonificaciones);
+        cmd.Parameters.AddWithValue("salud",   t.Salud);
+        cmd.Parameters.AddWithValue("pension", t.Pension);
+        cmd.Parameters.AddWithValue("rte",     dto.RetencionFuente);
+        cmd.Parameters.AddWithValue("otras",   dto.OtrasDeducciones);
+        cmd.Parameters.AddWithValue("dev",     t.Devengado);
+        cmd.Parameters.AddWithValue("ded",     t.Deducciones);
+        cmd.Parameters.AddWithValue("neto",    t.Neto);
+        cmd.Parameters.AddWithValue("obs",     dto.Observacion ?? (object)DBNull.Value);
+        if (await cmd.ExecuteNonQueryAsync(ct) == 0) return null;
+
+        return await ObtenerLiquidacionAsync(id, ct);
     }
 
     public async Task<IReadOnlyList<NominaLiquidacionDto>> AutoLiquidarAsync(int periodoId, AutoLiquidarDto dto, CancellationToken ct)
@@ -188,12 +228,7 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
     public async Task<NominaLiquidacionDto> LiquidarEmpleadoAsync(int periodoId, LiquidarEmpleadoDto dto, CancellationToken ct)
     {
         var salario = dto.SalarioOverride ?? await ObtenerSalarioEmpleado(dto.EmpleadoId, ct);
-        var aux      = salario <= 2 * SMLMV ? AuxilioTransporte : 0m;
-        var salud    = Math.Round(salario * TasaSalud, 0);
-        var pension  = Math.Round(salario * TasaPension, 0);
-        var devengado   = salario + aux + dto.HorasExtras + dto.Bonificaciones;
-        var deducciones = salud + pension + dto.RetencionFuente + dto.OtrasDeducciones;
-        var neto        = devengado - deducciones;
+        var (aux, salud, pension, devengado, deducciones, neto) = Calcular(salario, dto);
 
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
@@ -255,6 +290,32 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private const string SelectLiquidacion = """
+        SELECT l.id, l.periodo_id, l.empleado_id,
+               e.nombres || ' ' || e.apellidos AS nombre,
+               e.cargo, e.numero_documento,
+               l.dias_trabajados, l.salario_base, l.auxilio_transporte,
+               l.horas_extras, l.bonificaciones,
+               l.deduccion_salud, l.deduccion_pension,
+               l.retencion_fuente, l.otras_deducciones,
+               l.total_devengado, l.total_deducciones, l.neto_pagar,
+               l.observacion
+        FROM nomina_liquidaciones l
+        JOIN empleados e ON e.id = l.empleado_id
+        """;
+
+    /// <summary>Totales de una liquidación manual (al liquidar y al editar).</summary>
+    private static (decimal Aux, decimal Salud, decimal Pension, decimal Devengado, decimal Deducciones, decimal Neto)
+        Calcular(decimal salario, LiquidarEmpleadoDto dto)
+    {
+        var aux         = salario <= 2 * SMLMV ? AuxilioTransporte : 0m;
+        var salud       = Math.Round(salario * TasaSalud, 0);
+        var pension     = Math.Round(salario * TasaPension, 0);
+        var devengado   = salario + aux + dto.HorasExtras + dto.Bonificaciones;
+        var deducciones = salud + pension + dto.RetencionFuente + dto.OtrasDeducciones;
+        return (aux, salud, pension, devengado, deducciones, devengado - deducciones);
+    }
 
     private async Task<decimal> ObtenerSalarioEmpleado(Guid id, CancellationToken ct)
     {

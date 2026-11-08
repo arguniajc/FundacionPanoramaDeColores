@@ -4,7 +4,9 @@ namespace FundacionPanorama.Application.Features.TalentoHumano.Interfaces;
 
 public interface ITalentoHumanoRepository
 {
-    Task<IReadOnlyList<EmpleadoResumenDto>> ListarAsync(bool? activo, Guid? sedeId, string? area, CancellationToken ct);
+    /// <summary>Página de empleados (por apellidos y nombres) y total con los mismos filtros.</summary>
+    Task<FundacionPanorama.Application.Shared.ListaPaginada<EmpleadoResumenDto>> ListarAsync(
+        FiltroEmpleados filtro, int pagina, int porPagina, CancellationToken ct);
     Task<EmpleadoDto?>                     ObtenerAsync(Guid id, CancellationToken ct);
     Task<EmpleadoDto>                      CrearAsync(CrearEmpleadoDto dto, CancellationToken ct);
     Task<EmpleadoDto?>                     ActualizarAsync(Guid id, ActualizarEmpleadoDto dto, CancellationToken ct);

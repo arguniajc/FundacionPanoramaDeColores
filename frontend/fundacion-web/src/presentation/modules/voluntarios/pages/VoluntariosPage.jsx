@@ -11,6 +11,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import AssignmentIcon  from '@mui/icons-material/Assignment';
 import AccessTimeIcon  from '@mui/icons-material/AccessTime';
 import SearchIcon from '@mui/icons-material/Search';
+import DownloadIcon from '@mui/icons-material/Download';
 import { voluntariosRepository } from '@/infrastructure/repositories/voluntariosRepository';
 import { useConfirm } from '@/shared/components/useConfirm';
 import { COLOR }               from './components/helpers';
@@ -19,9 +20,35 @@ import { VoluntarioCard }      from './components/VoluntarioCard';
 import { VoluntarioDialog }    from './components/VoluntarioDialog';
 import { AsignacionesDialog }  from './components/AsignacionesDialog';
 import { mensajeErrorApi }     from '@/shared/utils/mensajeErrorApi';
+import { exportarExcel }       from '@/shared/utils/exportarExcel';
+import { fechaLocalISO }       from '@/shared/utils/fecha';
+import usePermisos             from '@/shared/hooks/usePermisos';
+
+const POR_PAGINA_EXPORT = 500;   // máximo que acepta GET /api/voluntarios por página
+const soloFecha = f => (f ? String(f).slice(0, 10) : '');
+
+const COLUMNAS_EXPORT = [
+  ['Nombre',             v => v.nombre ?? '',            30],
+  ['Tipo documento',     v => v.tipoDocumento ?? '',     10],
+  ['Documento',          v => v.documento ?? '',         15],
+  ['Correo',             v => v.email ?? '',             28],
+  ['Teléfono',           v => v.telefono ?? '',          14],
+  ['País',               v => v.pais ?? '',              14],
+  ['Departamento',       v => v.departamento ?? '',      18],
+  ['Ciudad',             v => v.ciudad ?? '',            18],
+  ['Profesión',          v => v.profesion ?? '',         22],
+  ['Fecha nacimiento',   v => soloFecha(v.fechaNacimiento), 12],
+  ['Fecha inicio',       v => soloFecha(v.fechaInicio),  12],
+  ['Programas',          v => Number(v.totalProgramas ?? 0), 10],
+  ['Horas/semana',       v => Number(v.horasSemanales ?? 0), 12],
+  ['Estado',             v => (v.activo ? 'Activo' : 'Inactivo'), 10],
+  ['Notas',              v => v.notas ?? '',             40],
+];
 
 export default function VoluntariosPage() {
   const confirm = useConfirm();
+  const { puedo } = usePermisos();
+  const [exportando,  setExportando]  = useState(false);
   const [voluntarios, setVoluntarios] = useState([]);
   const [stats,       setStats]       = useState(null);
   const [cargando,    setCargando]    = useState(false);
@@ -69,6 +96,29 @@ export default function VoluntariosPage() {
     recargarStats();
   }, []);
 
+  // Exporta todos los voluntarios de la búsqueda actual (no solo los cargados en pantalla)
+  const handleExportar = async () => {
+    setExportando(true);
+    try {
+      const todos = [];
+      for (let pagina = 1; pagina <= 100; pagina++) {   // tope de seguridad: 50.000 registros
+        const params = { pagina, porPagina: POR_PAGINA_EXPORT, ...(buscar ? { buscar } : {}) };
+        const { data } = await voluntariosRepository.listar(params);
+        const lote = Array.isArray(data) ? data : [];
+        todos.push(...lote);
+        if (lote.length < POR_PAGINA_EXPORT) break;
+      }
+      if (todos.length === 0) { err('No hay voluntarios para exportar con la búsqueda actual.'); return; }
+      const generado = await exportarExcel(`voluntarios_${fechaLocalISO()}`, [{
+        nombre: 'Voluntarios',
+        filas:  [COLUMNAS_EXPORT.map(([t]) => t), ...todos.map(v => COLUMNAS_EXPORT.map(([, valor]) => valor(v)))],
+        cols:   COLUMNAS_EXPORT.map(([, , ancho]) => ancho),
+      }]);
+      if (generado) ok(`${todos.length} voluntario${todos.length !== 1 ? 's' : ''} exportado${todos.length !== 1 ? 's' : ''}.`);
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'exportar los voluntarios' })); }
+    finally { setExportando(false); }
+  };
+
   const handleEliminar = async (v) => {
     if (!await confirm(`¿Eliminar a "${v.nombre}"? Si tiene asignaciones quedará inactivo.`)) return;
     try {
@@ -91,11 +141,20 @@ export default function VoluntariosPage() {
             Personas que dedican su tiempo a la fundación
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />}
-          onClick={() => setDialVol({ open: true, voluntario: null })}
-          sx={{ bgcolor: COLOR, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: 'primary.dark' } }}>
-          Nuevo voluntario
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {puedo('voluntarios', 'ver') && (
+            <Button variant="outlined" onClick={handleExportar} disabled={exportando}
+              startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
+              sx={{ fontWeight: 700, borderRadius: 2 }}>
+              {exportando ? 'Exportando…' : 'Exportar Excel'}
+            </Button>
+          )}
+          <Button variant="contained" startIcon={<AddIcon />}
+            onClick={() => setDialVol({ open: true, voluntario: null })}
+            sx={{ bgcolor: COLOR, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: 'primary.dark' } }}>
+            Nuevo voluntario
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>

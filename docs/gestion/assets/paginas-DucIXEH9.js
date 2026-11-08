@@ -1,0 +1,1 @@
+async function e(e,t={}){let n=[];for(let r=1;;r++){let{data:i}=await e({...t,pagina:r,porPagina:100}),a=i?.data??[];if(n.push(...a),a.length<100||n.length>=(i?.total??0))break}return n}export{e as t};

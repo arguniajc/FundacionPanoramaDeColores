@@ -49,7 +49,7 @@ import { useConfiguracion } from '@/shared/context/useConfiguracion';
 import { SIDEBAR, colorEstado } from '@/shared/theme/paleta';
 import ControlSesion         from '@/shared/components/ControlSesion';
 import usePermisos           from '@/shared/hooks/usePermisos';
-import { useAlertas }        from '@/shared/hooks/useAlertas';
+import { useAlertas, MODULO_RUTA } from '@/shared/hooks/useAlertas';
 
 const ANCHO_EXPANDIDO = 264;
 const ANCHO_COMPACTO  = 76;
@@ -61,11 +61,6 @@ const NIVEL_ICON = {
   warning: <WarningAmberIcon sx={{ fontSize: 16 }} />,
   info:    <InfoIcon         sx={{ fontSize: 16 }} />,
   error:   <ReportProblemIcon sx={{ fontSize: 16 }} />,
-};
-
-const MODULO_RUTA = {
-  talento_humano: '/sede/talento-humano',
-  inventario:     '/sede/inventario',
 };
 
 const ROL_LABEL = {

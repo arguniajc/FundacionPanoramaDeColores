@@ -1,5 +1,6 @@
 using FundacionPanorama.Application.Features.Inscripciones.DTOs;
 using FundacionPanorama.Application.Features.Inscripciones.Interfaces;
+using FundacionPanorama.Application.Shared;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -7,18 +8,64 @@ namespace FundacionPanorama.Infrastructure.Persistence.Repositories;
 
 public class InscripcionesRepository(DbConnectionFactory factory) : IInscripcionesRepository
 {
-    public async Task<IReadOnlyList<InscripcionDto>> ListarAsync(Guid? programaId, Guid? beneficiarioId, string? estado, CancellationToken ct = default)
+    public async Task<ListaPaginada<InscripcionDto>> ListarAsync(FiltroInscripciones f, int pagina, int porPagina, CancellationToken ct = default)
     {
         var where = new List<string> { "true" };
         var parms = new List<(string, object)>();
-        if (programaId.HasValue)     { where.Add("programa_id = @pid");     parms.Add(("pid", programaId.Value)); }
-        if (beneficiarioId.HasValue) { where.Add("beneficiario_id = @bid"); parms.Add(("bid", beneficiarioId.Value)); }
-        if (!string.IsNullOrEmpty(estado)) { where.Add("estado = @est");    parms.Add(("est", estado)); }
+        if (f.ProgramaId.HasValue)     { where.Add("i.programa_id = @pid");     parms.Add(("pid", f.ProgramaId.Value)); }
+        if (f.BeneficiarioId.HasValue) { where.Add("i.beneficiario_id = @bid"); parms.Add(("bid", f.BeneficiarioId.Value)); }
+        if (!string.IsNullOrEmpty(f.Estado)) { where.Add("i.estado = @est");    parms.Add(("est", f.Estado)); }
+        if (!string.IsNullOrEmpty(f.Buscar))
+        {
+            where.Add("""
+                (concat_ws(' ', b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido) ILIKE @buscar
+                 OR b.numero_documento ILIKE @buscar
+                 OR p.nombre ILIKE @buscar)
+                """);
+            parms.Add(("buscar", SqlLike.Contiene(f.Buscar)));
+        }
 
-        var sql = $"SELECT id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos::text, observaciones, activo, fecha_creacion " +
-                  $"FROM inscripciones WHERE {string.Join(" AND ", where)} ORDER BY fecha_inscripcion DESC";
-        var rows = await EjecutarSelectAsync(sql, parms, ct);
-        return await Enriquecer(rows, ct);
+        // Los JOIN solo sirven a la búsqueda; los nombres se resuelven en Enriquecer
+        var desde = $"""
+            FROM inscripciones i
+            LEFT JOIN beneficiarios b ON b.id = i.beneficiario_id
+            LEFT JOIN programas     p ON p.id = i.programa_id
+            WHERE {string.Join(" AND ", where)}
+            """;
+
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+
+        int total;
+        await using (var cmdCount = conn.CreateCommand())
+        {
+            cmdCount.CommandText = $"SELECT COUNT(*)::int {desde}";
+            foreach (var (name, val) in parms) cmdCount.Parameters.AddWithValue(name, val);
+            total = (int)(await cmdCount.ExecuteScalarAsync(ct))!;
+        }
+
+        var rows = new List<FilaInscripcion>();
+        await using (var cmd = conn.CreateCommand())
+        {
+            // Orden estable: a igual fecha decide el id (la paginación no repite ni salta filas)
+            cmd.CommandText = $"""
+                SELECT i.id, i.beneficiario_id, i.programa_id, i.estado, i.fecha_inscripcion, i.datos::text,
+                       i.observaciones, i.activo, i.fecha_creacion
+                {desde}
+                ORDER BY i.fecha_inscripcion DESC, i.id
+                LIMIT @pp OFFSET @off
+                """;
+            foreach (var (name, val) in parms) cmd.Parameters.AddWithValue(name, val);
+            cmd.Parameters.AddWithValue("pp",  porPagina);
+            cmd.Parameters.AddWithValue("off", (pagina - 1) * porPagina);
+            await using var r = await cmd.ExecuteReaderAsync(ct);
+            while (await r.ReadAsync(ct)) rows.Add(LeerFila(r));
+        }
+
+        return new ListaPaginada<InscripcionDto>
+        {
+            Data = await Enriquecer(rows, ct), Total = total, Pagina = pagina, PorPagina = porPagina,
+        };
     }
 
     public async Task<InscripcionDto?> ObtenerAsync(Guid id, CancellationToken ct = default)
@@ -35,56 +82,45 @@ public class InscripcionesRepository(DbConnectionFactory factory) : IInscripcion
     {
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
+        // Todo en una transacción con la fila del programa bloqueada: dos inscripciones simultáneas
+        // al mismo programa se atienden una tras otra, así el conteo del cupo no queda desactualizado.
+        await using var tx = await conn.BeginTransactionAsync(ct);
 
-        // Validar existencia usando Npgsql directo
         await using (var chk = conn.CreateCommand())
         {
+            chk.Transaction = tx;
             chk.CommandText = "SELECT COUNT(1) FROM beneficiarios WHERE id = @id";
             chk.Parameters.AddWithValue("id", dto.BeneficiarioId);
             if (Convert.ToInt64(await chk.ExecuteScalarAsync(ct)) == 0)
                 return new(null, ErrorCrearInscripcion.BeneficiarioNoEncontrado);
         }
-        await using (var chk = conn.CreateCommand())
-        {
-            chk.CommandText = "SELECT COUNT(1) FROM programas WHERE id = @id";
-            chk.Parameters.AddWithValue("id", dto.ProgramaId);
-            if (Convert.ToInt64(await chk.ExecuteScalarAsync(ct)) == 0)
-                return new(null, ErrorCrearInscripcion.ProgramaNoEncontrado);
-        }
-        await using (var chk = conn.CreateCommand())
-        {
-            chk.CommandText = "SELECT COUNT(1) FROM inscripciones WHERE beneficiario_id = @bid AND programa_id = @pid AND activo = true";
-            chk.Parameters.AddWithValue("bid", dto.BeneficiarioId);
-            chk.Parameters.AddWithValue("pid", dto.ProgramaId);
-            if (Convert.ToInt64(await chk.ExecuteScalarAsync(ct)) > 0)
-                return new(null, ErrorCrearInscripcion.YaInscritoActivo);
-        }
-        await using (var chk = conn.CreateCommand())
-        {
-            // Cupo máximo del programa (NULL = sin límite) frente a inscripciones activas
-            chk.CommandText = """
-                SELECT p.cupo_maximo,
-                       (SELECT COUNT(*) FROM inscripciones i WHERE i.programa_id = p.id AND i.activo = true)
-                FROM programas p WHERE p.id = @pid
-                """;
-            chk.Parameters.AddWithValue("pid", dto.ProgramaId);
-            await using var rc = await chk.ExecuteReaderAsync(ct);
-            if (await rc.ReadAsync(ct) && !rc.IsDBNull(0) && rc.GetInt64(1) >= rc.GetInt32(0))
-                return new(null, ErrorCrearInscripcion.CupoLleno);
-        }
 
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"INSERT INTO inscripciones (beneficiario_id, programa_id, estado, datos, observaciones, activo)
-                            VALUES (@bid, @pid, 'activa', @datos, @obs, true)
-                            RETURNING id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos::text, observaciones, activo, fecha_creacion";
-        cmd.Parameters.AddWithValue("bid", dto.BeneficiarioId);
-        cmd.Parameters.AddWithValue("pid", dto.ProgramaId);
-        cmd.Parameters.Add(new NpgsqlParameter("datos", NpgsqlDbType.Jsonb) { Value = dto.Datos });
-        cmd.Parameters.AddWithValue("obs", (object?)dto.Observaciones?.Trim() ?? DBNull.Value);
-        await using var r = await cmd.ExecuteReaderAsync(ct);
-        await r.ReadAsync(ct);
-        var row = LeerFila(r);
-        await r.CloseAsync();
+        var programa = await BloquearProgramaAsync(conn, tx, dto.ProgramaId, ct);
+        if (!programa.Existe)
+            return new(null, ErrorCrearInscripcion.ProgramaNoEncontrado);
+
+        if (await ContarActivasDelBeneficiarioAsync(conn, tx, dto.BeneficiarioId, dto.ProgramaId, null, ct) > 0)
+            return new(null, ErrorCrearInscripcion.YaInscritoActivo);
+
+        if (await CupoLlenoAsync(conn, tx, dto.ProgramaId, programa.CupoMaximo, ct))
+            return new(null, ErrorCrearInscripcion.CupoLleno);
+
+        FilaInscripcion row;
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.Transaction = tx;
+            cmd.CommandText = @"INSERT INTO inscripciones (beneficiario_id, programa_id, estado, datos, observaciones, activo)
+                                VALUES (@bid, @pid, 'activa', @datos, @obs, true)
+                                RETURNING id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos::text, observaciones, activo, fecha_creacion";
+            cmd.Parameters.AddWithValue("bid", dto.BeneficiarioId);
+            cmd.Parameters.AddWithValue("pid", dto.ProgramaId);
+            cmd.Parameters.Add(new NpgsqlParameter("datos", NpgsqlDbType.Jsonb) { Value = dto.Datos });
+            cmd.Parameters.AddWithValue("obs", (object?)dto.Observaciones?.Trim() ?? DBNull.Value);
+            await using var r = await cmd.ExecuteReaderAsync(ct);
+            await r.ReadAsync(ct);
+            row = LeerFila(r);
+        }
+        await tx.CommitAsync(ct);
         return new((await Enriquecer([row], ct))[0], ErrorCrearInscripcion.Ninguno);
     }
 
@@ -105,21 +141,51 @@ public class InscripcionesRepository(DbConnectionFactory factory) : IInscripcion
         return (await Enriquecer([row], ct))[0];
     }
 
-    public async Task<InscripcionDto?> CambiarEstadoAsync(Guid id, string estado, CancellationToken ct = default)
+    public async Task<CambiarEstadoInscripcionResultado> CambiarEstadoAsync(Guid id, string estado, CancellationToken ct = default)
     {
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"UPDATE inscripciones SET estado=@est, activo=@activo WHERE id=@id
-                            RETURNING id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos::text, observaciones, activo, fecha_creacion";
-        cmd.Parameters.AddWithValue("id",     id);
-        cmd.Parameters.AddWithValue("est",    estado);
-        cmd.Parameters.AddWithValue("activo", estado == "activa");
-        await using var r = await cmd.ExecuteReaderAsync(ct);
-        if (!await r.ReadAsync(ct)) return null;
-        var row = LeerFila(r);
-        await r.CloseAsync();
-        return (await Enriquecer([row], ct))[0];
+        await using var tx = await conn.BeginTransactionAsync(ct);
+
+        // Datos actuales de la inscripción
+        Guid programaId, beneficiarioId;
+        bool activaAntes;
+        await using (var sel = conn.CreateCommand())
+        {
+            sel.Transaction = tx;
+            // FOR UPDATE: dos cambios simultáneos de la misma inscripción se atienden en orden
+            sel.CommandText = "SELECT programa_id, beneficiario_id, activo FROM inscripciones WHERE id = @id FOR UPDATE";
+            sel.Parameters.AddWithValue("id", id);
+            await using var rs = await sel.ExecuteReaderAsync(ct);
+            if (!await rs.ReadAsync(ct)) return new(null, ErrorCambiarEstadoInscripcion.NoEncontrada);
+            (programaId, beneficiarioId, activaAntes) = (rs.GetGuid(0), rs.GetGuid(1), rs.GetBoolean(2));
+        }
+
+        // Reactivar ocupa un cupo: misma regla y mismo bloqueo que al crear
+        if (estado == "activa" && !activaAntes)
+        {
+            var programa = await BloquearProgramaAsync(conn, tx, programaId, ct);
+            if (await ContarActivasDelBeneficiarioAsync(conn, tx, beneficiarioId, programaId, id, ct) > 0)
+                return new(null, ErrorCambiarEstadoInscripcion.YaInscritoActivo);
+            if (programa.Existe && await CupoLlenoAsync(conn, tx, programaId, programa.CupoMaximo, ct))
+                return new(null, ErrorCambiarEstadoInscripcion.CupoLleno);
+        }
+
+        FilaInscripcion row;
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.Transaction = tx;
+            cmd.CommandText = @"UPDATE inscripciones SET estado=@est, activo=@activo WHERE id=@id
+                                RETURNING id, beneficiario_id, programa_id, estado, fecha_inscripcion, datos::text, observaciones, activo, fecha_creacion";
+            cmd.Parameters.AddWithValue("id",     id);
+            cmd.Parameters.AddWithValue("est",    estado);
+            cmd.Parameters.AddWithValue("activo", estado == "activa");
+            await using var r = await cmd.ExecuteReaderAsync(ct);
+            if (!await r.ReadAsync(ct)) return new(null, ErrorCambiarEstadoInscripcion.NoEncontrada);
+            row = LeerFila(r);
+        }
+        await tx.CommitAsync(ct);
+        return new((await Enriquecer([row], ct))[0], ErrorCambiarEstadoInscripcion.Ninguno);
     }
 
     public async Task<bool> EliminarAsync(Guid id, CancellationToken ct = default)
@@ -134,6 +200,53 @@ public class InscripcionesRepository(DbConnectionFactory factory) : IInscripcion
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Bloquea la fila del programa hasta el fin de la transacción (SELECT ... FOR UPDATE) y devuelve su
+    /// cupo (NULL = sin límite); Existe=false si el programa no existe. Quien crea o reactiva una inscripción del
+    /// mismo programa espera aquí, y como en READ COMMITTED cada sentencia ve lo ya confirmado, el conteo
+    /// posterior incluye las inscripciones de la transacción anterior.
+    /// </summary>
+    private static async Task<(bool Existe, int? CupoMaximo)> BloquearProgramaAsync(
+        NpgsqlConnection conn, NpgsqlTransaction tx, Guid programaId, CancellationToken ct)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT cupo_maximo FROM programas WHERE id = @pid FOR UPDATE";
+        cmd.Parameters.AddWithValue("pid", programaId);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return (false, null);
+        return (true, r.IsDBNull(0) ? null : r.GetInt32(0));
+    }
+
+    /// <summary>Inscripciones activas del beneficiario en el programa (sin contar <paramref name="excluirId"/>).</summary>
+    private static async Task<long> ContarActivasDelBeneficiarioAsync(
+        NpgsqlConnection conn, NpgsqlTransaction tx, Guid beneficiarioId, Guid programaId, Guid? excluirId, CancellationToken ct)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = """
+            SELECT COUNT(1) FROM inscripciones
+            WHERE beneficiario_id = @bid AND programa_id = @pid AND activo = true
+              AND (@excluir::uuid IS NULL OR id <> @excluir::uuid)
+            """;
+        cmd.Parameters.AddWithValue("bid", beneficiarioId);
+        cmd.Parameters.AddWithValue("pid", programaId);
+        cmd.Parameters.Add(new NpgsqlParameter("excluir", NpgsqlDbType.Uuid) { Value = (object?)excluirId ?? DBNull.Value });
+        return Convert.ToInt64(await cmd.ExecuteScalarAsync(ct));
+    }
+
+    /// <summary>true si el programa tiene cupo y ya hay esa cantidad de inscripciones activas.</summary>
+    private static async Task<bool> CupoLlenoAsync(
+        NpgsqlConnection conn, NpgsqlTransaction tx, Guid programaId, int? cupoMaximo, CancellationToken ct)
+    {
+        if (cupoMaximo is null) return false;
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT COUNT(*) FROM inscripciones WHERE programa_id = @pid AND activo = true";
+        cmd.Parameters.AddWithValue("pid", programaId);
+        return Convert.ToInt64(await cmd.ExecuteScalarAsync(ct)) >= cupoMaximo.Value;
+    }
 
     private record FilaInscripcion(Guid Id, Guid BeneficiarioId, Guid ProgramaId, string Estado,
         DateTime FechaInscripcion, string Datos, string? Observaciones, bool Activo, DateTime FechaCreacion);

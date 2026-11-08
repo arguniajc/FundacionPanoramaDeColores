@@ -340,6 +340,12 @@ export function registrar(api) {
     const t = (q ?? '').toLowerCase();
     return !t ? lista : lista.filter(x => campos.some(c => String(x[c] ?? '').toLowerCase().includes(t)));
   };
+  // Listados paginados en servidor: { data, total, pagina, porPagina }
+  const paginar = (lista, url, extra = {}) => {
+    const pagina    = Number(url.searchParams.get('pagina')) || 1;
+    const porPagina = Number(url.searchParams.get('porPagina')) || 20;
+    return { data: lista.slice((pagina - 1) * porPagina, pagina * porPagina), total: lista.length, pagina, porPagina, ...extra };
+  };
 
   // Sedes (otro grupo puede sobrescribir /api/sedes con más campos)
   api
@@ -399,12 +405,12 @@ export function registrar(api) {
     .on('GET', '/api/donaciones/stats', STATS_DONACIONES)
     .on('GET', '/api/donaciones', ({ url }) => {
       const p = url.searchParams;
-      const json = DONACIONES.filter(d =>
+      const lista = buscarEn(DONACIONES, p.get('buscar'), ['nombreDonante', 'reciboNumero', 'nombreItem']).filter(d =>
         (!p.get('tipo')   || d.tipo === p.get('tipo')) &&
         (!p.get('sedeId') || d.sedeId === p.get('sedeId')) &&
         (!p.get('desde')  || d.fechaDonacion >= p.get('desde')) &&
         (!p.get('hasta')  || d.fechaDonacion <= p.get('hasta')));
-      return { json };
+      return { json: paginar(lista, url) };
     });
 
   // Inventario (sobrescribe stats y comodatos-proximos de fixtures.js)
@@ -457,10 +463,16 @@ export function registrar(api) {
       const p = url.searchParams;
       const anio = num(p.get('anio')) ?? hoy().getFullYear();
       const meses = p.get('mes') ? [Number(p.get('mes'))] : [hoy().getMonth() + 1, hoy().getMonth() || 12];
-      const json = meses.flatMap(m => movimientosContables(m, anio)).filter(m =>
+      const lista = buscarEn(meses.flatMap(m => movimientosContables(m, anio)), p.get('buscar'), ['concepto', 'terceroNombre']).filter(m =>
         (!p.get('tipo')     || m.tipo === p.get('tipo')) &&
         (!p.get('cuentaId') || m.cuentaId === p.get('cuentaId')));
-      return { json };
+      const vigentes = lista.filter(m => !m.anulado);
+      const suma = tipo => vigentes.filter(m => m.tipo === tipo).reduce((s, m) => s + m.monto, 0);
+      return { json: paginar(lista, url, {
+        totalIngresos: suma('ingreso'), totalEgresos: suma('egreso'),
+        cantidadIngresos: vigentes.filter(m => m.tipo === 'ingreso').length,
+        cantidadEgresos:  vigentes.filter(m => m.tipo === 'egreso').length,
+      }) };
     })
     .on('GET', '/api/contabilidad/presupuesto', PRESUPUESTO)
     .on('GET', '/api/contabilidad/reporte', ({ url }) => {

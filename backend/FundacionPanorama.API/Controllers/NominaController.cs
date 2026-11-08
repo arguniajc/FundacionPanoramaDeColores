@@ -97,6 +97,21 @@ public class NominaController(NominaService svc, DbConnectionFactory db) : BaseC
         return Ok(liq);
     }
 
+    [HttpPut("liquidaciones/{id:int}")]
+    [RequierePermiso("talento_humano", "editar")]
+    public async Task<IActionResult> EditarLiquidacion(
+        int id,
+        [FromBody] EditarLiquidacionDto dto,
+        CancellationToken ct)
+    {
+        var liq = await svc.EditarLiquidacionAsync(id, dto, ct);
+        if (liq is null) return NotFound();
+        await using var conn = AbrirConexion(); await conn.OpenAsync();
+        await RegistrarAuditAsync(conn, null, "nomina_liquidacion", id.ToString(), liq.EmpleadoNombre, "editado",
+            $"periodo:{liq.PeriodoId}");
+        return Ok(liq);
+    }
+
     [HttpDelete("liquidaciones/{id:int}")]
     [RequierePermiso("talento_humano", "editar")]
     public async Task<IActionResult> EliminarLiquidacion(int id, CancellationToken ct)

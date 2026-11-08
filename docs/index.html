@@ -574,9 +574,18 @@
         var el = document.getElementById(id);
         if (el && val != null && val !== '') el.textContent = val;
       }
+      // Los enlaces e imágenes llegan de la configuración (y de su copia en localStorage):
+      // solo se aceptan https, mailto, tel, anclas y rutas relativas. Bloquea "javascript:".
+      function urlSegura(u) {
+        if (typeof u !== 'string') return null;
+        u = u.trim();
+        if (/^(https:\/\/|mailto:|tel:|#)/i.test(u)) return u;
+        return /^[^:]*$/.test(u) && u !== '' ? u : null;   // relativa: sin esquema
+      }
       function href(id, url) {
         var el = document.getElementById(id);
-        if (el && url) el.href = url;
+        var seguro = urlSegura(url);
+        if (el && seguro) el.href = seguro;
       }
       function esc(s) {
         return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -606,10 +615,10 @@
           if (textEl  && s.subtitulo) textEl.textContent = s.subtitulo;
           if (ctaEl) {
             if (s.cta)     ctaEl.textContent = s.cta;
-            if (s.ctaHref) ctaEl.href        = s.ctaHref;
+            if (urlSegura(s.ctaHref)) ctaEl.href = urlSegura(s.ctaHref);
           }
-          if (s.imagen) {
-            slides[i].style.backgroundImage  = 'url(' + s.imagen + ')';
+          if (urlSegura(s.imagen)) {
+            slides[i].style.backgroundImage  = 'url(' + JSON.stringify(urlSegura(s.imagen)) + ')';
             slides[i].style.backgroundSize   = 'cover';
             slides[i].style.backgroundPosition = 'center';
           }
@@ -618,7 +627,7 @@
         // ── Quiénes Somos ────────────────────────────────────────────────
         var qs = w.quienesSomos;
         var qsImg = document.getElementById('qs-imagen');
-        if (qsImg && qs.imagen) qsImg.src = qs.imagen;
+        if (qsImg && urlSegura(qs.imagen)) qsImg.src = urlSegura(qs.imagen);
         txt('qs-mision',   qs.mision);
         txt('qs-vision',   qs.vision);
         txt('qs-historia', qs.historia);
@@ -657,7 +666,7 @@
         var grid = document.getElementById('galeria-grid');
         if (grid && w.galeria && w.galeria.length) {
           grid.innerHTML = w.galeria.map(function(g, i) {
-            return '<div class="gallery-item" data-animate data-delay="' + (i * 80) + '"><img src="' + esc(g.imagen) + '" alt="' + esc(g.titulo) + '" width="600" height="450" loading="lazy" decoding="async"></div>';
+            return '<div class="gallery-item" data-animate data-delay="' + (i * 80) + '"><img src="' + esc(urlSegura(g.imagen) || '') + '" alt="' + esc(g.titulo) + '" width="600" height="450" loading="lazy" decoding="async"></div>';
           }).join('');
           // Re-adjuntar eventos de modal con delegación
           grid.addEventListener('click', function(e) {

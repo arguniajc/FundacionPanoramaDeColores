@@ -16,6 +16,17 @@ public class UsuariosRepository(DbConnectionFactory factory) : IUsuariosReposito
         return await r.ReadAsync(ct) ? Map(r) : null;
     }
 
+    public async Task<UsuarioDto?> BuscarPorEmailAsync(string email, CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT id,email,nombre,avatar_url,rol,activo,fecha_creacion FROM usuarios WHERE email=@email LIMIT 1";
+        cmd.Parameters.AddWithValue("email", email);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        return await r.ReadAsync(ct) ? Map(r) : null;
+    }
+
     public async Task<IReadOnlyList<UsuarioDto>> ListarAsync(CancellationToken ct = default)
     {
         await using var conn = factory.Create();

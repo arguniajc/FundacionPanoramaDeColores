@@ -21,9 +21,17 @@ export const saveSession = (token, user, rol, permisos) => {
   localStorage.setItem(PERMISOS_KEY, JSON.stringify(permisos ?? {}));
 };
 
+// Datos de trabajo que no deben quedar en el navegador al cerrar sesión (computadores
+// compartidos): borrador del formulario de un menor —también el que antes se guardaba
+// en localStorage— y el donante elegido para una nueva donación.
+const DATOS_DE_SESION = ['nuevo_beneficiario_draft', 'nuevaDonacionDonanteId', 'nuevaDonacionDonanteNombre'];
+
 export const clearSession = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(ROL_KEY);
   localStorage.removeItem(PERMISOS_KEY);
+  DATOS_DE_SESION.forEach(k => localStorage.removeItem(k));
+  // Caché de listados (beneficiarios, etc.) y borrador actual: todo lo de sessionStorage es del panel
+  try { sessionStorage.clear(); } catch { /* sin acceso a sessionStorage: nada que limpiar */ }
 };

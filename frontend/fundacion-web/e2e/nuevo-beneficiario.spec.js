@@ -5,7 +5,7 @@ const DRAFT_KEY = 'nuevo_beneficiario_draft';
 
 /** Abre el formulario desde la lista de niños (opcionalmente con un borrador guardado). */
 async function abrirFormulario(page, api, sesion, borrador) {
-  await sesion(borrador ? { extra: { [DRAFT_KEY]: JSON.stringify(borrador) } } : {});
+  await sesion(borrador ? { extraSesion: { [DRAFT_KEY]: JSON.stringify(borrador) } } : {});
   mockListaBeneficiarios(api);
   await page.goto('#/sede/beneficiarios');
   await page.getByRole('button', { name: '+ Nuevo beneficiario' }).click();
@@ -97,7 +97,7 @@ test.describe('Nuevo beneficiario', () => {
       whatsapp: '3001234567', viveConNino: true, numHermanos: 2, pesoKg: 28, autorizacion: true,
     });
     // El borrador se conserva para no perder lo escrito
-    expect(await page.evaluate(k => localStorage.getItem(k), DRAFT_KEY)).not.toBeNull();
+    expect(await page.evaluate(k => sessionStorage.getItem(k), DRAFT_KEY)).not.toBeNull();
   });
 
   test('al guardar bien se cierra, avisa y recarga la lista', async ({ page, api, sesion }) => {
@@ -111,6 +111,6 @@ test.describe('Nuevo beneficiario', () => {
     await expect(dialogo).toBeHidden();
     await expect(page.getByText('Beneficiario inscrito correctamente')).toBeVisible();
     await expect.poll(() => api.llamadas('GET', '/api/beneficiarios').length).toBeGreaterThan(listasAntes);
-    expect(await page.evaluate(k => localStorage.getItem(k), DRAFT_KEY)).toBeNull();
+    expect(await page.evaluate(k => sessionStorage.getItem(k), DRAFT_KEY)).toBeNull();
   });
 });

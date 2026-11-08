@@ -250,8 +250,14 @@ export async function abrirHojaDeVida(datos, edadTexto) {
 
   <div class="pie">Generado por Panel Admin · Fundación Panorama de Colores · ${new Date().toLocaleDateString('es-CO')}</div>
 </div>
-<script>window.onload=()=>window.print()</script>
 </body></html>`);
 
   ventana.document.close();
+  // Se imprime desde aquí y no con un <script> en la página: la pestaña hereda la CSP
+  // del panel, que prohíbe scripts en línea. Se espera a que cargue la foto.
+  const imagenes = [...ventana.document.images].map(img =>
+    img.complete ? Promise.resolve() : new Promise(fin => { img.onload = img.onerror = fin; }));
+  await Promise.race([Promise.all(imagenes), new Promise(fin => setTimeout(fin, 4000))]);
+  ventana.focus();
+  ventana.print();
 }

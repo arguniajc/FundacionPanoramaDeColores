@@ -401,7 +401,7 @@ export function registrar(api) {
     return { json: TODOS.find(b => b.id === id) ?? NINOS[0] };
   });
   api.on('GET', /^\/api\/beneficiarios\/\d+\/historial$/, HISTORIAL);
-  api.on('GET', /^\/api\/beneficiarios\/verificar-documento\/[^/]+$/, { existe: false });
+  api.on('POST', '/api/beneficiarios/verificar-documento', { existe: false });
   api.on('GET', '/api/beneficiarios', ({ url }) => {
     const lista = filtrarBeneficiarios(url);
     const sinFiltros = !url.searchParams.get('buscar') && url.searchParams.get('tipo');

@@ -61,4 +61,50 @@ public class ArchivosRepository(DbConnectionFactory factory) : IArchivosReposito
         cmd.Parameters.AddWithValue("url",   (object?)dto.UrlArchivo ?? DBNull.Value);
         await cmd.ExecuteNonQueryAsync(ct);
     }
+
+    // ── Exportaciones ────────────────────────────────────────────────────────
+
+    public async Task<long> ContarExportacionesAsync(CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM log_exportaciones";
+        return (long)(await cmd.ExecuteScalarAsync(ct))!;
+    }
+
+    public async Task<IReadOnlyList<LogExportacionRegistroDto>> ListarExportacionesAsync(int pagina, int porPagina, CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT id, usuario_email, archivo, modulo, registros, exportado_en
+            FROM log_exportaciones
+            ORDER BY exportado_en DESC
+            LIMIT @limit OFFSET @offset";
+        cmd.Parameters.AddWithValue("limit",  porPagina);
+        cmd.Parameters.AddWithValue("offset", (pagina - 1) * porPagina);
+        var lista = new List<LogExportacionRegistroDto>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            lista.Add(new LogExportacionRegistroDto(r.GetGuid(0), r.GetString(1), r.GetString(2),
+                r.IsDBNull(3) ? null : r.GetString(3), r.GetInt32(4), r.GetDateTime(5)));
+        return lista;
+    }
+
+    public async Task RegistrarExportacionAsync(string email, LogExportacionDto dto, CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            INSERT INTO log_exportaciones (usuario_email, archivo, modulo, registros)
+            VALUES (@email, @archivo, @modulo, @registros)";
+        cmd.Parameters.AddWithValue("email",     email);
+        cmd.Parameters.AddWithValue("archivo",   dto.Archivo);
+        cmd.Parameters.AddWithValue("modulo",    (object?)dto.Modulo ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("registros", dto.Registros);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
 }

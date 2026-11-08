@@ -2,6 +2,24 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <!--
+      Política de seguridad de contenido: solo scripts propios y el botón de Google
+      (sin scripts en línea), conexiones solo a la API (%VITE_API_URL% lo pone Vite según
+      el entorno), Supabase y Google. Si un dato malicioso llegara a pintarse en la
+      página, el navegador no ejecutaría su código ni lo dejaría enviar la sesión afuera.
+      'unsafe-inline' en estilos: MUI (emotion) inserta sus estilos en etiquetas <style>.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' https://accounts.google.com/gsi/client;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style;
+      font-src 'self' data: https://fonts.gstatic.com;
+      img-src 'self' data: blob: https:;
+      connect-src 'self' %VITE_API_URL% https://*.supabase.co https://accounts.google.com/gsi/;
+      frame-src https://accounts.google.com/gsi/;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self'" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -18,27 +36,8 @@
           rel="stylesheet" />
   </head>
   <body>
-    <script>
-      // Aplica el tema antes de que React renderice para evitar flash de color
-      (function () {
-        try {
-          var mode = localStorage.getItem('themeMode') || 'light';
-          var cfgRaw = localStorage.getItem('fundacion_config_cache');
-          var data = {};
-          if (cfgRaw) {
-            var parsed = JSON.parse(cfgRaw);
-            data = (parsed && parsed.ts) ? (parsed.data || {}) : (parsed || {});
-          }
-          var r = document.documentElement;
-          r.style.setProperty('--color-sidebar',        data.colorSidebar        || '#F4E3C1');
-          r.style.setProperty('--color-oscuro-sidebar',  data.colorOscuroSidebar  || '#1B1035');
-          r.style.setProperty('--color-oscuro-fondo',    data.colorOscuroFondo    || '#121212');
-          r.style.setProperty('--color-oscuro-paper',    data.colorOscuroPaper    || '#1E1A28');
-          r.style.setProperty('--color-primario',        data.colorPrimario       || '#6735A6');
-          r.setAttribute('data-theme', mode);
-        } catch (e) {}
-      })();
-    </script>
+    <!-- Tema inicial antes de que React renderice (archivo aparte: la CSP prohíbe scripts en línea) -->
+    <script src="%BASE_URL%tema-inicial.js"></script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

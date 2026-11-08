@@ -11,6 +11,10 @@ public class UsuariosService(IUsuariosRepository repo)
     public Task<UsuarioDto?> ObtenerPorEmailAsync(string email, CancellationToken ct = default)
         => repo.ObtenerPorEmailAsync(email, ct);
 
+    /// <summary>Incluye usuarios inactivos: sirve para negarles el acceso.</summary>
+    public Task<UsuarioDto?> BuscarPorEmailAsync(string email, CancellationToken ct = default)
+        => repo.BuscarPorEmailAsync(email, ct);
+
     public Task<IReadOnlyList<UsuarioDto>> ListarAsync(CancellationToken ct = default)
         => repo.ListarAsync(ct);
 

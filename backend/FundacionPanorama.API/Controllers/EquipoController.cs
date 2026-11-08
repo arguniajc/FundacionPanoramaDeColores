@@ -1,4 +1,5 @@
 using FundacionPanorama.API.Filters;
+using FundacionPanorama.API.Services;
 using FundacionPanorama.Application.Features.Permisos;
 using FundacionPanorama.Application.Features.Usuarios;
 using FundacionPanorama.Application.Features.Usuarios.DTOs;
@@ -10,7 +11,7 @@ namespace FundacionPanorama.API.Controllers;
 [ApiController]
 [Route("api/equipo")]
 [Authorize]
-public class EquipoController(UsuariosService svc) : ControllerBase
+public class EquipoController(UsuariosService svc, AccesoUsuarios acceso) : ControllerBase
 {
     const string SoloAdminAsignaAdmin = "Solo un administrador puede asignar el rol de administrador.";
 
@@ -38,6 +39,8 @@ public class EquipoController(UsuariosService svc) : ControllerBase
         if (dto.Rol == CatalogoPermisos.Administrador && !Permisos.EsAdministrador(User))
             return StatusCode(403, new { mensaje = SoloAdminAsignaAdmin });
         var result = await svc.ActualizarAsync(id, dto, ct);
+        // Desactivar o cambiar el rol aplica en la siguiente petición de ese usuario
+        if (result.IsSuccess) acceso.Invalidar(result.Value.Email);
         return result.IsFailure
             ? (result.Error == "Usuario no encontrado." ? NotFound(new { mensaje = result.Error }) : BadRequest(new { mensaje = result.Error }))
             : Ok(result.Value);

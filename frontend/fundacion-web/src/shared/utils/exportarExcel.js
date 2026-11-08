@@ -1,4 +1,5 @@
 import { notificar } from './notificar';
+import apiClient from '@/infrastructure/http/apiClient';
 
 /**
  * Genera y descarga un archivo .xlsx.
@@ -17,12 +18,25 @@ import { notificar } from './notificar';
 export async function exportarExcel(nombreArchivo, hojas) {
   try {
     await generarExcel(nombreArchivo, hojas);
+    registrarExportacion(nombreArchivo, hojas);
     return true;
   } catch (err) {
     console.error(err);
     notificar('No se pudo generar el archivo Excel. Intenta de nuevo; si persiste, avisa al administrador.', 'error');
     return false;
   }
+}
+
+/**
+ * Deja constancia en el servidor de quién exportó qué y cuántos registros (Ley 1581:
+ * los listados incluyen datos de menores). No bloquea ni avisa si falla: el archivo
+ * ya se descargó.
+ */
+export function registrarExportacion(nombreArchivo, hojas) {
+  const registros = hojas.reduce((n, h) => n + (h.datos?.length ?? Math.max(0, (h.filas?.length ?? 1) - 1)), 0);
+  const modulo = (window.location.hash.match(/#\/sede\/([^/?]+)/)?.[1] ?? 'inicio').slice(0, 100);
+  apiClient.post('/api/archivos/log-exportacion', { archivo: String(nombreArchivo).slice(0, 200), modulo, registros })
+    .catch(() => { /* el registro es auxiliar: no interrumpe la descarga */ });
 }
 
 async function generarExcel(nombreArchivo, hojas) {

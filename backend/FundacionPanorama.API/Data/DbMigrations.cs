@@ -124,6 +124,19 @@ public static class DbMigrations
             )
             """, "log_descargas");
 
+        // Exportaciones (Excel) de listados: quién exportó qué y cuántos registros (Ley 1581)
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS log_exportaciones (
+                id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                usuario_email VARCHAR(255) NOT NULL,
+                archivo       VARCHAR(200) NOT NULL,
+                modulo        VARCHAR(100),
+                registros     INT          NOT NULL DEFAULT 0,
+                exportado_en  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+            )
+            """, "log_exportaciones");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_log_exportaciones_fecha ON log_exportaciones(exportado_en DESC)", "log_exportaciones.idx_fecha");
+
         await Migrar("""
             CREATE TABLE IF NOT EXISTS documentos_institucionales (
                 id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

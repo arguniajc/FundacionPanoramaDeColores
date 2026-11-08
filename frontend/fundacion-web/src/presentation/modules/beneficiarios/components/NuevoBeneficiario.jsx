@@ -91,14 +91,14 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
   const [paso,          setPaso]          = useState(0);
   const [form,          setForm]          = useState(() => {
     try {
-      const d = localStorage.getItem(DRAFT_KEY);
+      const d = sessionStorage.getItem(DRAFT_KEY);
       if (d) return JSON.parse(d);
       return tipoDefault === 'adulto'
         ? { ...FORM_VACIO, tipo: 'adulto', tipoDocumento: 'CC' }
         : FORM_VACIO;
     } catch { return FORM_VACIO; }
   });
-  const [hasDraft,      setHasDraft]      = useState(() => !!localStorage.getItem(DRAFT_KEY));
+  const [hasDraft,      setHasDraft]      = useState(() => !!sessionStorage.getItem(DRAFT_KEY));
   const [touched,       setTouched]       = useState({});
   const [guardando,     setGuardando]     = useState(false);
   const [error,         setError]         = useState('');
@@ -110,7 +110,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
   const { esColombia, departamentos, ciudades, deptoHabilitado, ciudadHabilitada } =
     useGeografia(form.paisNacimiento, form.departamentoNacimiento);
 
-  useEffect(() => { localStorage.setItem(DRAFT_KEY, JSON.stringify(form)); }, [form]);
+  useEffect(() => { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(form)); }, [form]);
 
   const esNino    = form.tipo === 'niño';
   const categoria = calcularCategoria(form.fechaNacimiento);
@@ -159,13 +159,13 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
     if (!num) { setDocExiste(false); return; }
     setVerificandoDoc(true);
     try {
-      const { data } = await apiClient.get(`/api/beneficiarios/verificar-documento/${num}`);
+      const { data } = await apiClient.post('/api/beneficiarios/verificar-documento', { numero: num });
       setDocExiste(data.existe);
     } catch { /* ignorar */ }
     finally { setVerificandoDoc(false); }
   };
 
-  const limpiarDraft = () => { localStorage.removeItem(DRAFT_KEY); setHasDraft(false); };
+  const limpiarDraft = () => { sessionStorage.removeItem(DRAFT_KEY); setHasDraft(false); };
   const descartarDraft = () => { setForm(FORM_VACIO); limpiarDraft(); };
 
   const isDirty = JSON.stringify(form) !== JSON.stringify(FORM_VACIO);

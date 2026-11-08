@@ -63,7 +63,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer              = builder.Configuration["Jwt:Issuer"],
             ValidAudience            = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            // Por defecto ASP.NET acepta tokens hasta 5 min después de vencidos
+            ClockSkew                = TimeSpan.FromMinutes(1),
+        };
+        // Un token válido no basta: el usuario debe seguir activo y con el mismo rol en la BD.
+        // Así desactivar a alguien o cambiarle el rol aplica en ~1 min, no al vencer su token.
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async ctx =>
+            {
+                var email = ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                var rolToken = ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                if (string.IsNullOrWhiteSpace(email)) { ctx.Fail("Token sin correo."); return; }
+
+                var acceso = ctx.HttpContext.RequestServices.GetRequiredService<FundacionPanorama.API.Services.AccesoUsuarios>();
+                var rolVigente = await acceso.RolVigenteAsync(email, ctx.HttpContext.RequestAborted);
+                if (rolVigente is null) ctx.Fail("Usuario sin acceso o desactivado.");
+                // Con el rol cambiado solo se permite renovar: el token nuevo trae el rol actual
+                else if (rolVigente != rolToken && !ctx.HttpContext.Request.Path.StartsWithSegments("/api/auth/renovar"))
+                    ctx.Fail("El rol del usuario cambió: debe renovar la sesión.");
+            },
         };
     });
 
@@ -84,6 +104,7 @@ builder.Services.AddCors(options =>
 
 // ── Servicios propios ────────────────────────────────────────────────────────
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<AccesoUsuarios>();
 builder.Services.AddScoped<FundacionPanorama.API.Services.EmailService>();
 builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection("Supabase"));
 builder.Services.AddHttpClient();
@@ -195,6 +216,8 @@ app.Use(async (ctx, next) =>
     ctx.Response.Headers["X-Frame-Options"]          = "DENY";
     ctx.Response.Headers["Referrer-Policy"]          = "strict-origin-when-cross-origin";
     ctx.Response.Headers["Permissions-Policy"]       = "camera=(), microphone=(), geolocation=()";
+    // La API solo se sirve por HTTPS (Render): el navegador no debe intentar HTTP
+    ctx.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
     await next();
 });
 

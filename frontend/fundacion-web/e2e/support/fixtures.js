@@ -96,7 +96,9 @@ function registrarBase(api) {
     .on('GET', '/api/beneficiarios/stats-ninos', {})
     .on('GET', '/api/talento-humano/stats', { contratosProximosVencer: 0, novedadesPendientes: 0 })
     .on('GET', '/api/inventario/stats', { stockBajo: 0, sinStock: 0 })
-    .on('GET', '/api/inventario/comodatos-proximos', []);
+    .on('GET', '/api/inventario/comodatos-proximos', [])
+    // Registro de auditoría que el panel envía tras cada exportación a Excel/PDF
+    .on('POST', '/api/archivos/log-exportacion', {});
 }
 
 /** GET /api/beneficiarios con búsqueda simple por nombre o documento. */
@@ -116,6 +118,12 @@ export const test = base.extend({
     const api = new ApiFalsa();
     registrarBase(api);
 
+    // La CSP de index.html no debe bloquear nada de la propia app (scripts, estilos, API…)
+    const violacionesCsp = [];
+    page.on('console', m => {
+      if (m.type() === 'error' && /Content Security Policy/i.test(m.text())) violacionesCsp.push(m.text());
+    });
+
     // 1) Cualquier origen externo no previsto: se anota y se aborta.
     //    (las rutas registradas después tienen prioridad sobre esta)
     await page.route(url => url.hostname !== 'localhost', route => {
@@ -133,12 +141,14 @@ export const test = base.extend({
     await use(api);
 
     expect(api.inesperadas, 'peticiones sin mock (agrega api.on(...) en la prueba)').toEqual([]);
+    expect(violacionesCsp, 'la política de seguridad (CSP) bloqueó algo de la app').toEqual([]);
   }, { auto: true }],
 
   /** Sesión de administrador sembrada en localStorage antes de cargar la app. */
   sesion: async ({ page }, use) => {
-    const sembrar = async ({ rol = 'administrador', permisos = {}, token = crearJwt(), extra = {} } = {}) => {
-      await page.addInitScript(({ token, user, rol, permisos, extra }) => {
+    // extra → localStorage; extraSesion → sessionStorage (p. ej. el borrador del formulario)
+    const sembrar = async ({ rol = 'administrador', permisos = {}, token = crearJwt(), extra = {}, extraSesion = {} } = {}) => {
+      await page.addInitScript(({ token, user, rol, permisos, extra, extraSesion }) => {
         // Solo en la primera carga de la pestaña: si la app cierra la sesión y
         // recarga, no se vuelve a sembrar.
         if (sessionStorage.getItem('e2e_sesion_sembrada')) return;
@@ -148,7 +158,8 @@ export const test = base.extend({
         localStorage.setItem('admin_rol', rol);
         localStorage.setItem('admin_permisos', JSON.stringify(permisos));
         for (const [k, v] of Object.entries(extra)) localStorage.setItem(k, v);
-      }, { token, user: USUARIO, rol, permisos, extra });
+        for (const [k, v] of Object.entries(extraSesion)) sessionStorage.setItem(k, v);
+      }, { token, user: USUARIO, rol, permisos, extra, extraSesion });
       return token;
     };
     await use(sembrar);

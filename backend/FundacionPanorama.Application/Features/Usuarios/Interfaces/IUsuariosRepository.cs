@@ -5,6 +5,8 @@ namespace FundacionPanorama.Application.Features.Usuarios.Interfaces;
 public interface IUsuariosRepository
 {
     Task<UsuarioDto?> ObtenerPorEmailAsync(string email, CancellationToken ct = default);
+    /// <summary>Como ObtenerPorEmailAsync pero también devuelve usuarios inactivos (para bloquearlos).</summary>
+    Task<UsuarioDto?> BuscarPorEmailAsync(string email, CancellationToken ct = default);
     Task<IReadOnlyList<UsuarioDto>> ListarAsync(CancellationToken ct = default);
     Task<UsuarioDto> CrearAsync(CrearUsuarioDto dto, CancellationToken ct = default);
     Task<UsuarioDto?> ActualizarAsync(Guid id, ActualizarUsuarioDto dto, CancellationToken ct = default);

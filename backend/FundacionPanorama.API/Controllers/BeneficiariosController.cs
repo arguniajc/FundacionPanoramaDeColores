@@ -96,12 +96,18 @@ public class BeneficiariosController : BaseController
     }
 
     // =========================================================================
-    // GET api/beneficiarios/verificar-documento/{numero}
+    // POST api/beneficiarios/verificar-documento  { "numero": "..." }
+    // El número va en el cuerpo, no en la URL: las rutas quedan en el log de cada petición
+    // y el documento de un menor no debe aparecer ahí.
     // =========================================================================
-    [HttpGet("verificar-documento/{numero}")]
+    public record VerificarDocumentoDto(string Numero);
+
+    [HttpPost("verificar-documento")]
     [RequiereAlgunPermiso("beneficiarios:crear", "beneficiarios:editar")]
-    public async Task<IActionResult> VerificarDocumento(string numero, CancellationToken ct = default)
-        => Ok(new { existe = await _svc.ExisteDocumentoAsync(numero, ct) });
+    public async Task<IActionResult> VerificarDocumento([FromBody] VerificarDocumentoDto dto, CancellationToken ct = default)
+        => string.IsNullOrWhiteSpace(dto?.Numero)
+            ? BadRequest(new { mensaje = "Escribe el número de documento." })
+            : Ok(new { existe = await _svc.ExisteDocumentoAsync(dto.Numero.Trim(), ct) });
 
     // =========================================================================
     // POST api/beneficiarios

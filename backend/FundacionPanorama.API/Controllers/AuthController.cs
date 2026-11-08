@@ -15,6 +15,7 @@ public class AuthController(
     AuthService       authService,
     UsuariosService   usuariosService,
     PermisosService   permisosService,
+    AccesoUsuarios    acceso,
     ILogger<AuthController> logger) : ControllerBase
 {
     [HttpPost("google")]
@@ -28,8 +29,11 @@ public class AuthController(
 
         try
         {
-            // 1. Buscar usuario en DB
-            var usuario = await usuariosService.ObtenerPorEmailAsync(payload.Email, ct);
+            // 1. Buscar usuario en DB (también inactivos: un usuario desactivado no entra,
+            //    aunque su correo esté en la lista de administradores de arranque)
+            var usuario = await usuariosService.BuscarPorEmailAsync(payload.Email, ct);
+            if (usuario is { Activo: false })
+                return StatusCode(403, new { mensaje = "Tu usuario está desactivado. Pide acceso a un administrador." });
 
             // 2. Bootstrap: si está en appsettings y no en DB → crear como administrador
             if (usuario is null && authService.EsAdminBootstrap(payload.Email))
@@ -37,6 +41,7 @@ public class AuthController(
 
             if (usuario is null)
                 return StatusCode(403, new { mensaje = "Tu correo no tiene acceso al panel." });
+            acceso.Invalidar(payload.Email);
 
             // 3. Generar JWT con el rol real del usuario
             var token    = authService.GenerarJwt(payload.Email, payload.Name, payload.Picture, usuario.Rol);
@@ -54,10 +59,11 @@ public class AuthController(
                 Permisos  = permisos,
             });
         }
-        catch (Exception ex)
+        catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P01")
         {
-            // Fallback: si la tabla usuarios aún no existe (migración pendiente)
-            // los emails en appsettings siguen pudiendo entrar como administrador
+            // Fallback SOLO si la tabla usuarios aún no existe (migración pendiente): los emails
+            // en appsettings pueden entrar como administrador. Cualquier otro error (BD caída,
+            // credenciales) NO emite un token de administrador: llega al manejador global.
             logger.LogWarning(ex, "Auth fallback activado para {Email} — posible migración pendiente", payload.Email);
 
             if (!authService.EsAdminBootstrap(payload.Email))
@@ -89,8 +95,8 @@ public class AuthController(
         if (string.IsNullOrWhiteSpace(email))
             return Unauthorized(new { mensaje = "Sesión inválida. Vuelve a iniciar sesión." });
 
-        var usuario = await usuariosService.ObtenerPorEmailAsync(email, ct);
-        var rol     = usuario?.Rol ?? (authService.EsAdminBootstrap(email) ? "administrador" : null);
+        acceso.Invalidar(email);
+        var rol = await acceso.RolVigenteAsync(email, ct);
         if (rol is null)
             return StatusCode(403, new { mensaje = "Tu usuario ya no tiene acceso al panel." });
 

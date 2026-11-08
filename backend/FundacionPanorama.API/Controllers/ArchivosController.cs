@@ -196,6 +196,24 @@ public class ArchivosController : ControllerBase
         [FromQuery] int porPagina = 20)
         => Ok(await _archivos.ObtenerLogAsync(pagina, porPagina));
 
+    // GET api/archivos/log-exportaciones?pagina=1&porPagina=20
+    [HttpGet("log-exportaciones")]
+    [RequierePermiso("log_descargas", "ver")]
+    public async Task<IActionResult> ObtenerExportaciones(
+        [FromQuery] int pagina    = 1,
+        [FromQuery] int porPagina = 20)
+        => Ok(await _archivos.ObtenerExportacionesAsync(pagina, porPagina));
+
+    // POST api/archivos/log-exportacion — el panel lo llama tras generar un Excel
+    [HttpPost("log-exportacion")]
+    [Authorize]
+    public async Task<IActionResult> LogExportacion([FromBody] LogExportacionDto dto)
+    {
+        var email = User.FindFirst(ClaimTypes.Email)?.Value ?? User.Identity?.Name ?? "desconocido";
+        await _archivos.RegistrarExportacionAsync(email, dto);
+        return Ok();
+    }
+
     // POST api/archivos/log-descarga
     [HttpPost("log-descarga")]
     [Authorize]

@@ -17,6 +17,7 @@ import {
 import FirmaPad from '@/shared/components/FirmaPad';
 import { LISTAS_POR_TIPO } from './validacionFormulario';
 import { abrirArchivo } from '@/shared/utils/archivos';
+import { validarArchivo, ACCEPT_ARCHIVO } from '@/shared/utils/archivosPermitidos';
 import { COLOR, calcEdad } from './camposUtils';
 
 export function SeccionHeader({ titulo }) {
@@ -275,7 +276,10 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
   if (campo.tipo === 'document') {
     const handleFile = async (e) => {
       const file = e.target.files?.[0];
+      e.target.value = '';
       if (!file) return;
+      const errArchivo = validarArchivo(file, { tipos: 'pdf' });
+      if (errArchivo) { toast(errArchivo, 'error'); return; }
       setSubiendo(true);
       try {
         const { data } = await archivosRepository.subir(file, 'inscripciones');
@@ -304,7 +308,7 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
             <Button variant="outlined" component="label" size="small" disabled={subiendo}
               sx={{ color: COLOR, borderColor: COLOR }}>
               {subiendo ? 'Subiendo...' : 'Seleccionar PDF'}
-              <input type="file" hidden accept="application/pdf" onChange={handleFile} />
+              <input type="file" hidden accept={ACCEPT_ARCHIVO.pdf} onChange={handleFile} />
             </Button>
           </Box>
         )}

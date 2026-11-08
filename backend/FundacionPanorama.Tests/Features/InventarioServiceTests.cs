@@ -251,4 +251,76 @@ public class InventarioServiceTests
         Assert.Equal(EstadoResultadoInventario.Ok, res.Estado);
         _repo.Verify(r => r.IngresarDesdeDonacionAsync(dto, "Balón", "u@x.com"), Times.Once);
     }
+
+    // ── Validación de listas, longitudes y fechas ────────────────────────────
+
+    [Theory]
+    [InlineData("Juguetes", "propio", "categoría no es válida")]
+    [InlineData("Otros", "prestado", "tipo de tenencia no es válido")]
+    public async Task CrearItemAsync_Listas_Cerradas(string categoria, string tenencia, string fragmento)
+    {
+        var res = await _sut.CrearItemAsync(NuevoItem(categoria: categoria) with { TipoTenencia = tenencia });
+
+        Assert.Equal(EstadoResultadoInventario.Invalido, res.Estado);
+        Assert.Contains(fragmento, res.Mensaje);
+        _repo.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task CrearItemAsync_Longitudes_Segun_Columnas()
+    {
+        var nombre = await _sut.CrearItemAsync(NuevoItem(nombre: new string('a', 201)));
+        Assert.Contains("200 caracteres", nombre.Mensaje);
+        var unidad = await _sut.CrearItemAsync(NuevoItem() with { UnidadMedida = new string('a', 51) });
+        Assert.Contains("50 caracteres", unidad.Mensaje);
+    }
+
+    [Theory]
+    [InlineData("2026-12-31", "2026-01-01", "anterior")]
+    [InlineData("31/12/2026", null, "AAAA-MM-DD")]
+    public async Task Comodato_Fechas_Invalidas(string? inicio, string? fin, string fragmento)
+    {
+        var dto = NuevoItem() with { TipoTenencia = "comodato", Comodante = "Alcaldía", ComodatoFechaInicio = inicio, ComodatoFechaFin = fin };
+        var res = await _sut.CrearItemAsync(dto);
+        Assert.Equal(EstadoResultadoInventario.Invalido, res.Estado);
+        Assert.Contains(fragmento, res.Mensaje);
+
+        var upd = await _sut.ActualizarItemAsync(Guid.NewGuid(),
+            new ActualizarItemDto("X", null, "unidad", "Otros", 0, "comodato", "Alcaldía", null, inicio, fin));
+        Assert.Contains(fragmento, upd.Mensaje);
+    }
+
+    [Fact]
+    public async Task CrearItemAsync_Comodato_Valido_Y_Fechas_Vacias_Se_Envian_Como_Null()
+    {
+        _repo.Setup(r => r.CrearItemAsync(It.IsAny<CrearItemDto>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+             .ReturnsAsync(Item(Guid.NewGuid()));
+
+        var res = await _sut.CrearItemAsync(NuevoItem() with { TipoTenencia = "comodato", ComodatoFechaInicio = "2026-01-01", ComodatoFechaFin = "" });
+
+        Assert.Equal(EstadoResultadoInventario.Ok, res.Estado);
+        _repo.Verify(r => r.CrearItemAsync(It.Is<CrearItemDto>(d => d.ComodatoFechaInicio == "2026-01-01" && d.ComodatoFechaFin == null),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CrearItemAsync_Sede_Inexistente()
+    {
+        var sede = Guid.NewGuid();
+        _repo.Setup(r => r.ExisteSedeAsync(sede)).ReturnsAsync(false);
+
+        var res = await _sut.CrearItemAsync(NuevoItem() with { SedeId = sede });
+
+        Assert.Equal(EstadoResultadoInventario.Invalido, res.Estado);
+        Assert.Contains("sede", res.Mensaje);
+        _repo.Verify(r => r.CrearItemAsync(It.IsAny<CrearItemDto>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task IngresarDesdeDonacionAsync_Categoria_Invalida()
+    {
+        var res = await _sut.IngresarDesdeDonacionAsync(Ingreso() with { Categoria = "Juguetes" }, null);
+        Assert.Equal(EstadoResultadoInventario.Invalido, res.Estado);
+        Assert.Contains("categoría", res.Mensaje);
+    }
 }

@@ -68,7 +68,8 @@ export function TabSmtp({ form, set, v }) {
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth size="small" label="Nombre del remitente"
               placeholder="Fundación Panorama de Colores"
-              value={form.smtpDeNombre ?? ''} onChange={set('smtpDeNombre')} />
+              value={form.smtpDeNombre ?? ''} onChange={set('smtpDeNombre')}
+              {...v.props('smtpDeNombre')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth size="small" label="Email del remitente (visible para el donante)"

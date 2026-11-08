@@ -14,6 +14,13 @@ export function sinExtension(nombre) {
   return nombre?.replace(/\.[^/.]+$/, '') ?? nombre;
 }
 
+/** Recorta un nombre de archivo a `max` caracteres conservando la extensión (columnas nombre_original VARCHAR(200)). */
+export function recortarNombreArchivo(nombre, max = 200) {
+  if (!nombre || nombre.length <= max) return nombre;
+  const ext = /\.[^/.]{1,10}$/.exec(nombre)?.[0] ?? '';
+  return nombre.slice(0, max - ext.length) + ext;
+}
+
 export function useToast() {
   const [toast, setToast] = useState({ open: false, msg: '', severity: 'success' });
   const show  = useCallback((msg, severity = 'success') => setToast({ open: true, msg, severity }), []);

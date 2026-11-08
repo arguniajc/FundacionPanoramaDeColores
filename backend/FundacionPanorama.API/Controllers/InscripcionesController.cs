@@ -41,6 +41,7 @@ public class InscripcionesController(InscripcionesService svc) : ControllerBase
             ErrorCrearInscripcion.BeneficiarioNoEncontrado => BadRequest(new { mensaje = "Beneficiario no encontrado." }),
             ErrorCrearInscripcion.ProgramaNoEncontrado     => BadRequest(new { mensaje = "Programa no encontrado." }),
             ErrorCrearInscripcion.YaInscritoActivo         => Conflict(new { mensaje = "El beneficiario ya está inscrito activamente en este programa." }),
+            ErrorCrearInscripcion.CupoLleno                => Conflict(new { mensaje = "El programa ya alcanzó su cupo máximo. Da de baja una inscripción o aumenta el cupo del programa." }),
             _                                              => Ok(res.Inscripcion),
         };
     }

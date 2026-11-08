@@ -1,0 +1,1 @@
+import{ct as e,it as t}from"./apiClient-DF_dNAtX.js";import{nt as n}from"./index-CBZ09MIh.js";var r=t();function i({props:t,name:r,defaultTheme:i,themeId:a}){let o=e(i);return a&&(o=o[a]||o),n({theme:o,name:r,props:t})}export{r as n,i as t};

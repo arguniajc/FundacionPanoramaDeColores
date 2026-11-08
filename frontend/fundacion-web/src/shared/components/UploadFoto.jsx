@@ -12,8 +12,9 @@ import CamaraFoto       from './CamaraFoto';
 import apiClient        from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { useArchivoUrl } from '@/shared/utils/archivos';
+import { validarArchivo, ACCEPT_ARCHIVO } from '@/shared/utils/archivosPermitidos';
 
-const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
+const ACCEPT = ACCEPT_ARCHIVO.imagen;
 
 /**
  * @param {{ label: string, carpeta?: string, value: string|null, onChange: (url: string|null) => void }} props
@@ -31,6 +32,8 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
   const cerrarMenu = ()  => setAnchorEl(null);
 
   const subirArchivo = async (archivo) => {
+    const errArchivo = validarArchivo(archivo, { tipos: 'imagen' });
+    if (errArchivo) { setErrorMsg(errArchivo); return; }
     setSubiendo(true);
     setErrorMsg('');
     try {

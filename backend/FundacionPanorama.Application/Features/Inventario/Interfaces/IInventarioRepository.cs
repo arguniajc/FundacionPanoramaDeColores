@@ -24,4 +24,5 @@ public interface IInventarioRepository
     Task<IReadOnlyList<DonanteResumenDto>> BuscarDonantesAsync(string? buscar);
     Task<StatsInventarioDto>               ObtenerStatsAsync(Guid? sedeId);
     Task<IReadOnlyList<ItemInventarioDto>> ComodatosProximosAsync(int dias);
+    Task<bool>                             ExisteSedeAsync(Guid id);
 }

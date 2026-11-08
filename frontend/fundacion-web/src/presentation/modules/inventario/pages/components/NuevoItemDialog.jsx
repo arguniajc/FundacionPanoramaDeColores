@@ -23,7 +23,7 @@ const ESQUEMA = {
   sedeId:       { etiqueta: 'Sede', reglas: [r.si(f => !f._editando, r.seleccion('Sede Principal'))] },
   nombre:       { etiqueta: 'Nombre', reglas: [r.obligatorio('Cuaderno cuadriculado 100 hojas'), r.texto({ min: 2, max: 150 })] },
   categoria:    { etiqueta: 'Categoría', reglas: [r.seleccion('Material escolar')] },
-  unidadMedida: { etiqueta: 'Unidad', reglas: [r.obligatorio('unidad, kg o caja'), r.texto({ max: 30 })] },
+  unidadMedida: { etiqueta: 'Unidad', reglas: [r.obligatorio('unidad, kg o caja'), r.texto({ max: 50 })] },
   stockActual:  { etiqueta: 'Stock inicial', reglas: [r.si(f => !f._editando, r.numero({ min: 0, ejemplo: '20' }))] },
   stockMinimo:  { etiqueta: 'Stock mínimo', reglas: [r.numero({ min: 0, entero: true, ejemplo: '5' })] },
   comodante:    { etiqueta: 'Comodante', reglas: [r.si(esComodatoForm, r.obligatorio('Alcaldía de Cali')), r.texto({ max: 150 })] },

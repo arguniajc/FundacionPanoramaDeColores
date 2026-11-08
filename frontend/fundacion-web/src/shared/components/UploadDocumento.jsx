@@ -18,9 +18,10 @@ import CamaraFoto        from './CamaraFoto';
 import apiClient         from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { resolverArchivo } from '@/shared/utils/archivos';
+import { validarArchivo, ACCEPT_ARCHIVO, LIMITES_ARCHIVO } from '@/shared/utils/archivosPermitidos';
 
-const ACCEPT_IMG = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif';
-const ACCEPT_PDF = 'application/pdf';
+const ACCEPT_IMG = ACCEPT_ARCHIVO.imagen;
+const ACCEPT_PDF = ACCEPT_ARCHIVO.pdf;
 
 const toDataUrl = file => new Promise(resolve => {
   const r = new FileReader();
@@ -132,8 +133,11 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
         const fUrl    = frente.preview  ?? await toDataUrl(frente.file);
         const rUrl    = reverso.preview ?? await toDataUrl(reverso.file);
         const pdfBlob = await crearPdf(fUrl, rUrl);
+        const pdf     = new File([pdfBlob], `documento-${Date.now()}.pdf`, { type: 'application/pdf' });
+        const errPdf  = validarArchivo(pdf, { tipos: 'pdf' });
+        if (errPdf) { setErrorMsg(`El documento generado supera ${LIMITES_ARCHIVO.pdf.maxMB} MB. Toma las fotos con menor resolución.`); return; }
         const fd      = new FormData();
-        fd.append('archivo', new File([pdfBlob], `documento-${Date.now()}.pdf`, { type: 'application/pdf' }));
+        fd.append('archivo', pdf);
         const { data } = await apiClient.post('/api/archivos/upload?carpeta=documentos', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
@@ -178,6 +182,8 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
+    const errArchivo = validarArchivo(file, { tipos: 'pdf' });
+    if (errArchivo) { setErrorMsg(errArchivo); return; }
     setSubiendo(true);
     setErrorMsg('');
     try {
@@ -195,6 +201,9 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
   };
 
   const capturarLado = useCallback((lado) => (file) => {
+    const errArchivo = validarArchivo(file, { tipos: 'imagen' });
+    if (errArchivo) { setErrorMsg(errArchivo); return; }
+    setErrorMsg('');
     const reader = new FileReader();
     reader.onload = e => {
       if (lado === 'frente') setFrente({ file, preview: e.target.result });

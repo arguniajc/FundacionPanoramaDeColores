@@ -59,6 +59,19 @@ public class InscripcionesRepository(DbConnectionFactory factory) : IInscripcion
             if (Convert.ToInt64(await chk.ExecuteScalarAsync(ct)) > 0)
                 return new(null, ErrorCrearInscripcion.YaInscritoActivo);
         }
+        await using (var chk = conn.CreateCommand())
+        {
+            // Cupo máximo del programa (NULL = sin límite) frente a inscripciones activas
+            chk.CommandText = """
+                SELECT p.cupo_maximo,
+                       (SELECT COUNT(*) FROM inscripciones i WHERE i.programa_id = p.id AND i.activo = true)
+                FROM programas p WHERE p.id = @pid
+                """;
+            chk.Parameters.AddWithValue("pid", dto.ProgramaId);
+            await using var rc = await chk.ExecuteReaderAsync(ct);
+            if (await rc.ReadAsync(ct) && !rc.IsDBNull(0) && rc.GetInt64(1) >= rc.GetInt32(0))
+                return new(null, ErrorCrearInscripcion.CupoLleno);
+        }
 
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"INSERT INTO inscripciones (beneficiario_id, programa_id, estado, datos, observaciones, activo)

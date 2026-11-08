@@ -25,6 +25,7 @@ import {
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
+import { validarArchivo } from '@/shared/utils/archivosPermitidos';
 
 const TIPOS_DOC = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI', 'PEP', 'PPT', 'Otro'];
 
@@ -34,11 +35,11 @@ const ESQUEMA = {
   sedeId:              { etiqueta: 'Sede',                     reglas: [r.seleccion('Sede Principal')] },
   nombre:              { etiqueta: 'Nombre del programa',      reglas: [r.obligatorio('Escuela de fútbol'), r.texto({ min: 3, max: 150 })] },
   descripcion:         { etiqueta: 'Descripción',              reglas: [r.texto({ max: 500 })] },
-  cupoMaximo:          { etiqueta: 'Cupo máximo',              reglas: [r.numero({ min: 1, entero: true, unidad: 'cupos', ejemplo: '30' })] },
+  cupoMaximo:          { etiqueta: 'Cupo máximo',              reglas: [r.numero({ min: 1, max: 100000, entero: true, unidad: 'cupos', ejemplo: '30' })] },
   nombreTercero:       { etiqueta: 'Nombre de la entidad ejecutora', reglas: [
     r.si(conTercero, r.obligatorio('Club Deportivo AJAZZ F.C.')), r.si(conTercero, r.texto({ min: 3, max: 200 })),
   ] },
-  terceroRepNombre:    { etiqueta: 'Nombre del representante', reglas: [r.si(conTercero, r.nombreCompleto('Juan Carlos Pérez Gómez'))] },
+  terceroRepNombre:    { etiqueta: 'Nombre del representante', reglas: [r.si(conTercero, r.nombreCompleto('Juan Carlos Pérez Gómez')), r.si(conTercero, r.texto({ max: 200 }))] },
   terceroRepDocumento: { etiqueta: 'Número de documento',      reglas: [r.si(conTercero, r.documentoSegunTipo('terceroRepTipoDoc'))] },
   terceroRepCargo:     { etiqueta: 'Cargo',                    reglas: [r.si(conTercero, r.texto({ max: 100 }))] },
 };
@@ -118,6 +119,8 @@ export default function ProgramasPage() {
   const handleUploadFirmaTercero = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const errArchivo = validarArchivo(file, { tipos: 'imagen' });
+    if (errArchivo) { setError(''); setErrForm(errArchivo); e.target.value = ''; return; }
     try {
       const raw      = await leerArchivoComoDataUrl(file);
       const resizada = await redimensionarImagen(raw, 600);

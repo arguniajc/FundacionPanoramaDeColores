@@ -1,10 +1,41 @@
 using FundacionPanorama.Application.Features.Inventario.DTOs;
 using FundacionPanorama.Application.Features.Inventario.Interfaces;
+using static FundacionPanorama.Application.Shared.Validar;
 
 namespace FundacionPanorama.Application.Features.Inventario;
 
 public class InventarioService(IInventarioRepository repo)
 {
+    /// <summary>Valores del panel (geodata.js CATEGORIAS_INVENTARIO y NuevoItemDialog.jsx TIPOS_TENENCIA).</summary>
+    public static readonly string[] Categorias =
+    [
+        "Material escolar", "Equipos electrónicos", "Deportivo", "Ropa y calzado", "Alimentos",
+        "Medicamentos", "Muebles y enseres", "Herramientas", "Otros",
+    ];
+    public static readonly string[] TiposTenencia = ["propio", "comodato", "donacion_uso", "arrendamiento"];
+
+    // Columnas de inventario_items: nombre 200, unidad_medida 50, categoria 50,
+    // tipo_tenencia 20, comodante 200, comodato_contrato 100.
+    static void ValidarItem(string nombre, string? unidadMedida, string? categoria, string? tipoTenencia,
+        string? comodante, string? comodatoContrato, string? comodatoInicio, string? comodatoFin)
+    {
+        Largo(nombre, 200, "El nombre");
+        Largo(unidadMedida, 50, "La unidad de medida");
+        if (!string.IsNullOrWhiteSpace(categoria))
+            EnLista(categoria, Categorias, "La categoría no es válida. Elígela de la lista. Ejemplo: Material escolar");
+        if (!string.IsNullOrWhiteSpace(tipoTenencia))
+            EnLista(tipoTenencia, TiposTenencia, "El tipo de tenencia no es válido (propio, comodato, donación en uso o arrendamiento).");
+        Largo(comodante, 200, "El comodante");
+        Largo(comodatoContrato, 100, "El número de contrato de comodato");
+        var inicio = FechaTexto(comodatoInicio, "La fecha de inicio del comodato", "2025-01-15");
+        var fin    = FechaTexto(comodatoFin, "La fecha de fin del comodato", "2025-12-31");
+        Exigir(inicio is null || fin is null || fin >= inicio,
+            "La fecha de fin del comodato no puede ser anterior a la fecha de inicio.");
+    }
+
+    /// <summary>Una fecha vacía ("") llegaría a la BD como texto inválido: se trata como sin fecha.</summary>
+    static string? SinVacio(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+
     // ── Items ─────────────────────────────────────────────────────────────────
 
     public Task<IReadOnlyList<ItemInventarioDto>> ListarItemsAsync(
@@ -20,8 +51,15 @@ public class InventarioService(IInventarioRepository repo)
             return ResultadoInventario<ItemInventarioDto>.Invalido("El nombre es obligatorio.");
         if (dto.StockActual < 0 || dto.StockMinimo < 0)
             return ResultadoInventario<ItemInventarioDto>.Invalido("El stock no puede ser negativo.");
+        if (PrimerError(() => ValidarItem(dto.Nombre, dto.UnidadMedida, dto.Categoria, dto.TipoTenencia,
+                dto.Comodante, dto.ComodatoContrato, dto.ComodatoFechaInicio, dto.ComodatoFechaFin)) is { } error)
+            return ResultadoInventario<ItemInventarioDto>.Invalido(error);
+        if (dto.SedeId is { } sedeId && sedeId != Guid.Empty && !await repo.ExisteSedeAsync(sedeId))
+            return ResultadoInventario<ItemInventarioDto>.Invalido("La sede seleccionada no existe. Recarga la página y elígela de nuevo.");
+        if (SinVacio(dto.ComodatoFechaInicio) != dto.ComodatoFechaInicio || SinVacio(dto.ComodatoFechaFin) != dto.ComodatoFechaFin)
+            dto = dto with { ComodatoFechaInicio = SinVacio(dto.ComodatoFechaInicio), ComodatoFechaFin = SinVacio(dto.ComodatoFechaFin) };
 
-        var cat    = string.IsNullOrWhiteSpace(dto.Categoria) ? "Otros" : dto.Categoria.Trim();
+        var cat   = string.IsNullOrWhiteSpace(dto.Categoria) ? "Otros" : dto.Categoria.Trim();
         var prefix = InventarioReglas.CatPrefix(cat);
         var yy     = DateTime.UtcNow.ToString("yy");
 
@@ -35,6 +73,11 @@ public class InventarioService(IInventarioRepository repo)
             return ResultadoInventario<ItemInventarioDto>.Invalido("El nombre es obligatorio.");
         if (dto.StockMinimo < 0)
             return ResultadoInventario<ItemInventarioDto>.Invalido("El stock mínimo no puede ser negativo.");
+        if (PrimerError(() => ValidarItem(dto.Nombre, dto.UnidadMedida, dto.Categoria, dto.TipoTenencia,
+                dto.Comodante, dto.ComodatoContrato, dto.ComodatoFechaInicio, dto.ComodatoFechaFin)) is { } error)
+            return ResultadoInventario<ItemInventarioDto>.Invalido(error);
+        if (SinVacio(dto.ComodatoFechaInicio) != dto.ComodatoFechaInicio || SinVacio(dto.ComodatoFechaFin) != dto.ComodatoFechaFin)
+            dto = dto with { ComodatoFechaInicio = SinVacio(dto.ComodatoFechaInicio), ComodatoFechaFin = SinVacio(dto.ComodatoFechaFin) };
 
         var item = await repo.ActualizarItemAsync(id, dto);
         return item is null
@@ -91,6 +134,10 @@ public class InventarioService(IInventarioRepository repo)
         var nombre = dto.NombreItem?.Trim();
         if (string.IsNullOrEmpty(nombre))
             return Task.FromResult(ResultadoInventario<IngresoDonacionResultado>.Invalido("El nombre del artículo es obligatorio."));
+        if (PrimerError(() => ValidarItem(nombre, dto.UnidadMedida, dto.Categoria, null, null, null, null, null)) is { } error)
+            return Task.FromResult(ResultadoInventario<IngresoDonacionResultado>.Invalido(error));
+        if (dto.StockMinimo < 0)
+            return Task.FromResult(ResultadoInventario<IngresoDonacionResultado>.Invalido("El stock mínimo no puede ser negativo."));
         return repo.IngresarDesdeDonacionAsync(dto, nombre, usuarioEmail);
     }
 }

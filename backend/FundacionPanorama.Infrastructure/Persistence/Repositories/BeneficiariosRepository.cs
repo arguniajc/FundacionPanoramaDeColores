@@ -3,10 +3,11 @@ using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 using FundacionPanorama.Application.Features.Beneficiarios.Interfaces;
 using Npgsql;
 using NpgsqlTypes;
+using Microsoft.Extensions.Logging;
 
 namespace FundacionPanorama.Infrastructure.Persistence.Repositories;
 
-public class BeneficiariosRepository(DbConnectionFactory factory) : IBeneficiariosRepository
+public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<BeneficiariosRepository>? logger = null) : IBeneficiariosRepository
 {
     private async Task<NpgsqlConnection> AbrirAsync(CancellationToken ct)
     {
@@ -884,13 +885,30 @@ public class BeneficiariosRepository(DbConnectionFactory factory) : IBeneficiari
         catch (Exception ex)
         {
             await tx.RollbackAsync(ct);
-            return ex.Message;
+            // El detalle técnico (tabla, columna, SQL) solo va al log; al usuario, un motivo entendible
+            logger?.LogWarning(ex, "Importación de beneficiarios: una fila fue rechazada por la BD");
+            return MotivoErrorImportacion(ex);
         }
     }
 
     // =========================================================================
     // HELPERS PRIVADOS
     // =========================================================================
+
+    /// <summary>Motivo para el usuario cuando una fila importada no se pudo guardar (sin detalles técnicos).</summary>
+    public static string MotivoErrorImportacion(Exception ex)
+    {
+        PostgresException? pg = null;
+        for (var e = ex; e is not null && pg is null; e = e.InnerException) pg = e as PostgresException;
+        return pg?.SqlState switch
+        {
+            "23505" => "No se pudo guardar: ya existe un registro con esos datos (revisa que el documento no esté duplicado).",
+            "22001" => "No se pudo guardar: uno de los textos es demasiado largo. Acórtalo en el Excel.",
+            "23502" => "No se pudo guardar: falta un dato obligatorio.",
+            "22P02" or "22007" or "22008" or "22003" => "No se pudo guardar: uno de los datos tiene un formato no válido (fecha o número).",
+            _ => "No se pudo guardar (dato inválido o duplicado). Revisa los datos de la fila.",
+        };
+    }
 
     private static async Task<bool> BeneficiarioExisteAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid id)
     {

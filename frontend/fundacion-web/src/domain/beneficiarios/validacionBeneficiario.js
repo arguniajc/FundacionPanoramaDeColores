@@ -265,3 +265,51 @@ export function primerPasoConErrores(form) {
 
 /** Texto "Etiqueta: mensaje" para mostrar en el resumen. */
 export const describirError = (campo, mensaje) => `${REGLAS[campo]?.etiqueta ?? campo}: ${mensaje}`;
+
+// ── Importación desde Excel ──────────────────────────────────────────────────
+
+/** Largo máximo de cada columna de la plantilla (el menor entre la columna de la BD y el DTO del servidor). */
+export const MAX_IMPORTACION = {
+  primerNombre: 80, segundoNombre: 80, primerApellido: 80, segundoApellido: 80,
+  numeroDocumento: 30, eps: 100, nombreAcudiente: 150, whatsapp: 20,
+  direccion: 200, nombreColegio: 200, gradoEscolar: 50,
+};
+
+/** Campos opcionales en la plantilla: su regla de formato solo aplica si la celda trae valor. */
+const OPCIONALES_IMPORTACION = ['tipoDocumento', 'numeroDocumento', 'whatsapp'];
+
+/** 'DD/MM/AAAA' (o D/M/AAAA) → 'AAAA-MM-DD'; cualquier otro texto se devuelve igual. */
+function fechaAIso(v) {
+  const s = String(v ?? '').trim();
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);
+  return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : s;
+}
+
+/**
+ * Errores de una fila de la plantilla de importación (lista vacía si el servidor la aceptará).
+ * Aplica las mismas reglas que el formulario (nombres, fecha según tipo, documento, WhatsApp),
+ * pero los campos opcionales solo se revisan cuando traen valor, igual que el backend.
+ */
+export function validarFilaImportacion(fila) {
+  const form = {
+    ...fila,
+    tipo: String(fila.tipo ?? '').trim().toLowerCase() === 'adulto' ? 'adulto' : 'niño',
+    tipoDocumento: String(fila.tipoDocumento ?? '').trim().toUpperCase(),
+    fechaNacimiento: fechaAIso(fila.fechaNacimiento),
+  };
+  const errores = [];
+  for (const campo of ['primerNombre', 'segundoNombre', 'primerApellido', 'segundoApellido', 'fechaNacimiento']) {
+    const msg = validarCampo(campo, form);
+    if (msg) errores.push(describirError(campo, msg));
+  }
+  for (const campo of OPCIONALES_IMPORTACION) {
+    if (vacio(form[campo])) continue;
+    const msg = validarCampo(campo, form);
+    if (msg) errores.push(describirError(campo, msg));
+  }
+  for (const [campo, max] of Object.entries(MAX_IMPORTACION)) {
+    if (String(fila[campo] ?? '').trim().length > max)
+      errores.push(`${REGLAS[campo]?.etiqueta ?? campo}: debe tener máximo ${max} caracteres.`);
+  }
+  return errores;
+}

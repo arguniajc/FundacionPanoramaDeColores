@@ -33,13 +33,19 @@ const configurandoSmtp = f => [f.smtpHost, f.smtpUsuario, f.smtpClave, f.smtpDeN
 
 // Reglas de toda la configuración (se guarda todo con un solo botón). `tab` indica la pestaña del campo.
 // Los campos de la Página Web se aplanan con el prefijo `web…` (ver datosValidacion).
+// Los máximos son los de las columnas de la tabla configuracion.
 const ESQUEMA = {
+  nombreFundacion: { tab: 0, etiqueta: 'Fundación · Nombre',    reglas: [r.texto({ max: 200 })] },
   nit:             { tab: 0, etiqueta: 'Fundación · NIT',      reglas: [r.nit()] },
   telefono:        { tab: 0, etiqueta: 'Fundación · Teléfono', reglas: [r.telefono()] },
-  nombreRepLegal:  { tab: 1, etiqueta: 'Representante · Nombre completo', reglas: [r.nombreCompleto('María Pérez Gómez')] },
+  direccion:       { tab: 0, etiqueta: 'Fundación · Dirección', reglas: [r.texto({ max: 300 })] },
+  nombreRepLegal:  { tab: 1, etiqueta: 'Representante · Nombre completo', reglas: [r.nombreCompleto('María Pérez Gómez'), r.texto({ max: 200 })] },
   documentoRep:    { tab: 1, etiqueta: 'Representante · Número de documento', reglas: [r.documentoSegunTipo('tipoDocRep')] },
-  emailContacto:   { tab: 3, etiqueta: 'Textos · Correo de contacto', reglas: [r.correo('contacto@fundacionpanoramadecolores.org')] },
-  sitioWeb:        { tab: 3, etiqueta: 'Textos · Sitio web',          reglas: [url()] },
+  cargoRep:        { tab: 1, etiqueta: 'Representante · Cargo', reglas: [r.texto({ max: 100 })] },
+  tagline:         { tab: 3, etiqueta: 'Textos · Tagline / Slogan', reglas: [r.texto({ max: 500 })] },
+  emailContacto:   { tab: 3, etiqueta: 'Textos · Correo de contacto', reglas: [r.correo('contacto@fundacionpanoramadecolores.org'), r.texto({ max: 200 })] },
+  sitioWeb:        { tab: 3, etiqueta: 'Textos · Sitio web',          reglas: [url(), r.texto({ max: 300 })] },
+  footerTexto:     { tab: 3, etiqueta: 'Textos · Footer del sistema', reglas: [r.texto({ max: 500 })] },
   webDonWhatsapp:  { tab: 4, etiqueta: 'Página Web · WhatsApp para donaciones', reglas: [whatsapp] },
   webDonEmail:     { tab: 4, etiqueta: 'Página Web · Email para donaciones',    reglas: [r.correo()] },
   webConTelefono:  { tab: 4, etiqueta: 'Página Web · Teléfono de contacto',     reglas: [telefonoPublico] },
@@ -47,12 +53,13 @@ const ESQUEMA = {
   webConInstagram: { tab: 4, etiqueta: 'Página Web · URL Instagram', reglas: [url('https://www.instagram.com/fundacionpanoramadecolores/')] },
   webConTiktok:    { tab: 4, etiqueta: 'Página Web · URL TikTok',    reglas: [url('https://www.tiktok.com/@fundapanoramadecolores')] },
   webConWhatsapp:  { tab: 4, etiqueta: 'Página Web · WhatsApp',      reglas: [whatsapp] },
-  smtpHost:        { tab: 5, etiqueta: 'Correo · Servidor SMTP', reglas: [r.si(configurandoSmtp, r.obligatorio('smtp.gmail.com'))] },
+  smtpHost:        { tab: 5, etiqueta: 'Correo · Servidor SMTP', reglas: [r.si(configurandoSmtp, r.obligatorio('smtp.gmail.com')), r.texto({ max: 200 })] },
   smtpPuerto:      { tab: 5, etiqueta: 'Correo · Puerto', reglas: [
     r.si(configurandoSmtp, r.obligatorio('587')), r.numero({ min: 1, max: 65535, entero: true, ejemplo: '587' }),
   ] },
   smtpUsuario:     { tab: 5, etiqueta: 'Correo · Usuario / Email de envío', reglas: [r.si(configurandoSmtp, r.obligatorio('fundacion@gmail.com')), r.texto({ max: 200 })] }, // algunos proveedores usan un usuario que no es correo (p. ej. 'apikey')
-  smtpDeEmail:     { tab: 5, etiqueta: 'Correo · Email del remitente',      reglas: [r.correo('donaciones@fundacion.org')] },
+  smtpDeNombre:    { tab: 5, etiqueta: 'Correo · Nombre del remitente',     reglas: [r.texto({ max: 200 })] },
+  smtpDeEmail:     { tab: 5, etiqueta: 'Correo · Email del remitente',      reglas: [r.correo('donaciones@fundacion.org'), r.texto({ max: 200 })] },
 };
 
 export default function ConfiguracionPage() {

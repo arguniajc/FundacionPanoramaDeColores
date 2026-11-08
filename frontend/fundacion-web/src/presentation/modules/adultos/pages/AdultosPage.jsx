@@ -31,6 +31,11 @@ import DeleteForeverIcon    from '@mui/icons-material/DeleteForever';
 import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning';
 import { calcularEdad }     from '@/shared/utils/fecha';
 import { colorEstado }      from '@/shared/theme/paleta';
+import { r }                from '@/shared/utils/validacion';
+
+/** Motivo de baja: columna beneficiarios.motivo_baja VARCHAR(500). */
+const MAX_MOTIVO_BAJA = 500;
+const errorMotivoBaja = r.texto({ max: MAX_MOTIVO_BAJA });
 
 function calcularCompletitudAdulto(ins) {
   const checks = [
@@ -537,11 +542,13 @@ export default function AdultosPage() {
             value={motivoBaja}
             onChange={e => setMotivoBaja(e.target.value)}
             placeholder="Ej: Cambio de domicilio, solicitud del acudiente..."
+            error={!!errorMotivoBaja(motivoBaja)}
+            helperText={errorMotivoBaja(motivoBaja) || `${motivoBaja.length}/${MAX_MOTIVO_BAJA}`}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => { setIdBaja(null); setMotivoBaja(''); }} variant="outlined">Cancelar</Button>
-          <Button variant="contained" onClick={handleDarDeBaja} disabled={procesandoBaja}
+          <Button variant="contained" onClick={handleDarDeBaja} disabled={procesandoBaja || !!errorMotivoBaja(motivoBaja)}
             sx={{ bgcolor: '#e65100', '&:hover': { bgcolor: '#bf360c' } }}>
             {procesandoBaja ? 'Procesando…' : 'Dar de baja'}
           </Button>

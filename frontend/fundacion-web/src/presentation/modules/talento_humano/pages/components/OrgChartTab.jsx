@@ -22,10 +22,11 @@ import { r, vacio } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
 import { useArchivoUrl } from '@/shared/utils/archivos';
+import { validarArchivo } from '@/shared/utils/archivosPermitidos';
 
 // Reglas del diálogo de persona del organigrama
 const ESQUEMA_PERSONA = {
-  cargo:         { etiqueta: 'Cargo', reglas: [r.obligatorio('Coordinador Pedagógico'), r.texto({ min: 2, max: 100 })] },
+  cargo:         { etiqueta: 'Cargo', reglas: [r.obligatorio('Coordinador Pedagógico'), r.texto({ min: 2, max: 200 })] },
   nombreExterno: { etiqueta: 'Nombre completo', reglas: [
     r.propia((valor, f) => (!f.empleadoId && vacio(valor)
       ? 'Selecciona un empleado del panel o escribe el nombre de la persona externa. Ejemplo: Ana Gómez' : '')),
@@ -226,7 +227,11 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
 
   const handleFoto = (e) => {
     const f = e.target.files?.[0];
+    e.target.value = '';
     if (!f) return;
+    const errArchivo = validarArchivo(f, { tipos: 'imagen' });
+    if (errArchivo) { setError(errArchivo); return; }
+    setError('');
     setFotoFile(f);
     setFotoPreview(URL.createObjectURL(f));
   };

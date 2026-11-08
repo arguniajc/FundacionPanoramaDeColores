@@ -35,6 +35,11 @@ const ESQUEMA = {
   concepto:    { etiqueta: 'Concepto',      reglas: [r.obligatorio('Compra de útiles escolares'), r.texto({ min: 3, max: 200, ejemplo: 'Compra de útiles escolares' })] },
   cuentaId:    { etiqueta: 'Cuenta',        reglas: [r.seleccion('Caja general o la cuenta bancaria')] },
   categoriaId: { etiqueta: 'Categoría PUC', reglas: [r.seleccion('4120 — Donaciones (ingreso) o 5195 — Diversos (egreso)')] },
+  terceroNombre: { etiqueta: 'Nombre del tercero', reglas: [r.texto({ max: 200 })] },
+  // numero_soporte es VARCHAR(100) en la BD, pero el servidor acepta máximo 50 (CrearMovimientoDto)
+  numeroSoporte: { etiqueta: 'N° soporte / factura', reglas: [r.texto({ max: 50 })] },
+  conceptoRetencion: { etiqueta: 'Concepto de retención', reglas: [r.si(esEgreso, r.texto({ max: 100 }))] },
+  descripcion:   { etiqueta: 'Descripción adicional', reglas: [r.texto({ max: 1000 })] },
   terceroDocumento: { etiqueta: 'NIT / Documento del tercero', reglas: [
     r.propia(v => (!r.nit()(v) || !r.documento({ alfanumerico: true })(v) ? ''
       : 'Escribe el NIT con guion y dígito de verificación, o el documento sin puntos ni espacios. Ejemplo: 900123456-7 o 1144123456')),
@@ -227,7 +232,8 @@ export function DialogMovimiento({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Nombre del tercero" size="small"
-              value={form.terceroNombre} onChange={set('terceroNombre')} />
+              value={form.terceroNombre} onChange={set('terceroNombre')}
+              {...v.props('terceroNombre')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="NIT / Documento del tercero" size="small"
@@ -236,7 +242,8 @@ export function DialogMovimiento({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="N° soporte / factura" size="small"
-              value={form.numeroSoporte} onChange={set('numeroSoporte')} />
+              value={form.numeroSoporte} onChange={set('numeroSoporte')}
+              {...v.props('numeroSoporte')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
@@ -274,13 +281,15 @@ export function DialogMovimiento({
             <Grid size={12}>
               <TextField fullWidth label="Concepto de retención" size="small"
                 value={form.conceptoRetencion} onChange={set('conceptoRetencion')}
-                placeholder="Ej: Honorarios por servicios contables" />
+                placeholder="Ej: Honorarios por servicios contables"
+                {...v.props('conceptoRetencion')} />
             </Grid>
           </>}
 
           <Grid size={12}>
             <TextField fullWidth label="Descripción adicional" size="small" multiline rows={2}
-              value={form.descripcion} onChange={set('descripcion')} />
+              value={form.descripcion} onChange={set('descripcion')}
+              {...v.props('descripcion')} />
           </Grid>
         </Grid>
       </DialogContent>

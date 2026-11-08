@@ -13,7 +13,7 @@ import ResumenErrores from '@/shared/components/ResumenErrores';
 const ESQUEMA = {
   nombre:      { etiqueta: 'Nombre',      reglas: [r.obligatorio('Escuela de fútbol'), r.texto({ min: 3, max: 150 })] },
   descripcion: { etiqueta: 'Descripción', reglas: [r.texto({ max: 500 })] },
-  cupoMaximo:  { etiqueta: 'Cupo máximo', reglas: [r.numero({ min: 1, entero: true, unidad: 'cupos', ejemplo: '30' })] },
+  cupoMaximo:  { etiqueta: 'Cupo máximo', reglas: [r.numero({ min: 1, max: 100000, entero: true, unidad: 'cupos', ejemplo: '30' })] },
 };
 
 export function DialogPrograma({ abierto, onCerrar, onGuardado, sedeId, inicial }) {

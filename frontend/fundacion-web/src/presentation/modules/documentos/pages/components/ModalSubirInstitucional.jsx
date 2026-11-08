@@ -13,18 +13,20 @@ import { mensajeErrorApi }        from '@/shared/utils/mensajeErrorApi';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
-import { CATEGORIAS, HEADER_GRADIENT, sinExtension } from './helpers';
+import { CATEGORIAS, HEADER_GRADIENT, sinExtension, recortarNombreArchivo } from './helpers';
+import { validarArchivo, clasificarArchivo, ACCEPT_ARCHIVO, LIMITES_ARCHIVO } from '@/shared/utils/archivosPermitidos';
 
-const MAX_MB = 10;
+/** documentos_institucionales.titulo VARCHAR(200): el título sale del nombre del archivo. */
+const MAX_TITULO = 200;
 
 // Reglas del formulario: cada una dice qué está mal y cómo llenarlo
 const ESQUEMA = {
   categoria: { etiqueta: 'Categoría', reglas: [r.seleccion('Actas')] },
   archivos:  { etiqueta: 'Archivos', reglas: [r.propia(lista => {
     if (!lista?.length) return 'Selecciona al menos un PDF haciendo clic o arrastrándolo al recuadro. Ejemplo: acta_asamblea_2025.pdf';
-    const grandes = lista.filter(f => f.size > MAX_MB * 1024 * 1024).map(f => f.name);
-    return grandes.length
-      ? `Superan el máximo de ${MAX_MB} MB: ${grandes.join(', ')}. Quítalos de la lista o comprímelos.` : '';
+    const malos = lista.filter(f => validarArchivo(f, { tipos: 'pdf' })).map(f => f.name);
+    return malos.length
+      ? `Superan el máximo de ${LIMITES_ARCHIVO.pdf.maxMB} MB o están vacíos: ${malos.join(', ')}. Quítalos de la lista o comprímelos.` : '';
   })] },
 };
 
@@ -41,8 +43,9 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
 
   const agregarArchivos = (lista) => {
     const todos     = Array.from(lista);
-    const nuevos    = todos.filter(f => f.type === 'application/pdf');
-    const omitidos  = todos.filter(f => f.type !== 'application/pdf').map(f => f.name);
+    const esPdf     = f => clasificarArchivo(f) === 'pdf';
+    const nuevos    = todos.filter(esPdf);
+    const omitidos  = todos.filter(f => !esPdf(f)).map(f => f.name);
     setArchivos(prev => {
       const nombres = new Set(prev.map(f => f.name));
       return [...prev, ...nuevos.filter(f => !nombres.has(f.name))];
@@ -70,7 +73,10 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
           '/api/archivos/upload?carpeta=documentos-institucionales', fd,
           { headers: { 'Content-Type': 'multipart/form-data' } }
         );
-        await onSubido({ titulo: sinExtension(file.name), categoria, url: up.url, nombreOriginal: file.name });
+        await onSubido({
+          titulo: sinExtension(file.name).trim().slice(0, MAX_TITULO),
+          categoria, url: up.url, nombreOriginal: recortarNombreArchivo(file.name),
+        });
         ok++;
       } catch (err) {
         fallos.push(`"${file.name}": ${mensajeErrorApi(err, { accion: 'subir el documento' })}`);
@@ -127,7 +133,7 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
           {archivos.length === 0 && (
             <Typography sx={{ color: 'text.disabled' }} variant="caption">Puedes seleccionar varios a la vez</Typography>
           )}
-          <input ref={inputRef} type="file" accept="application/pdf" multiple hidden
+          <input ref={inputRef} type="file" accept={ACCEPT_ARCHIVO.pdf} multiple hidden
             onChange={e => agregarArchivos(e.target.files)} />
         </Box>
         {v.err('archivos') && <FormHelperText error sx={{ mt: -1.5 }}>{v.err('archivos')}</FormHelperText>}

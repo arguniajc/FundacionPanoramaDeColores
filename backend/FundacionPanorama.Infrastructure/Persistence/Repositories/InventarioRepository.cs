@@ -665,6 +665,16 @@ public class InventarioRepository(DbConnectionFactory factory) : IInventarioRepo
 
     // ── Comodatos próximos a vencer ───────────────────────────────────────────
 
+    public async Task<bool> ExisteSedeAsync(Guid id)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT EXISTS(SELECT 1 FROM sedes WHERE id = @id)";
+        cmd.Parameters.AddWithValue("id", id);
+        return (bool)(await cmd.ExecuteScalarAsync())!;
+    }
+
     public async Task<IReadOnlyList<ItemInventarioDto>> ComodatosProximosAsync(int dias)
     {
         await using var conn = factory.Create();

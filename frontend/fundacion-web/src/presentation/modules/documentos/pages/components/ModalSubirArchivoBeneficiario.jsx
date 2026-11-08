@@ -12,18 +12,15 @@ import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
-import { HEADER_GRADIENT } from './helpers';
-
-const MAX_MB = 10;
+import { HEADER_GRADIENT, recortarNombreArchivo } from './helpers';
+import { validarArchivo, ACCEPT_ARCHIVO } from '@/shared/utils/archivosPermitidos';
 
 // Reglas del formulario: cada una dice qué está mal y cómo llenarlo
 const ESQUEMA = {
   titulo:  { etiqueta: 'Nombre del documento', reglas: [r.obligatorio('Registro civil'), r.texto({ min: 3, max: 200 })] },
   archivo: { etiqueta: 'Archivo', reglas: [r.propia(f => {
     if (!f) return 'Selecciona un PDF haciendo clic en el recuadro. Ejemplo: registro_civil.pdf';
-    if (f.size > MAX_MB * 1024 * 1024)
-      return `El archivo pesa ${(f.size / 1024 / 1024).toFixed(1)} MB y el máximo es ${MAX_MB} MB. Comprime el PDF o divídelo.`;
-    return '';
+    return validarArchivo(f, { tipos: 'pdf' }) ?? '';
   })] },
 };
 
@@ -47,7 +44,7 @@ export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido
         `/api/archivos/upload?carpeta=documentos-beneficiarios/${beneficiario.id}`,
         fd, { headers: { 'Content-Type': 'multipart/form-data' } }
       );
-      await onSubido({ titulo: titulo.trim(), url: up.url, nombreOriginal: archivo.name });
+      await onSubido({ titulo: titulo.trim(), url: up.url, nombreOriginal: recortarNombreArchivo(archivo.name) });
       onToast('Documento subido correctamente', 'success');
       onCerrar();
     } catch (e) {
@@ -82,7 +79,7 @@ export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido
           <Typography sx={{ color: archivo ? 'var(--color-primario)' : 'text.secondary', fontWeight: archivo ? 600 : 400 }} variant="body2">
             {archivo ? archivo.name : 'Haz clic para seleccionar un PDF (máx. 10 MB)'}
           </Typography>
-          <input ref={inputRef} type="file" accept="application/pdf" hidden
+          <input ref={inputRef} type="file" accept={ACCEPT_ARCHIVO.pdf} hidden
             onChange={e => { setArchivo(e.target.files[0] || null); setError(''); v.tocar('archivo'); }} />
         </Box>
         {v.err('archivo') && <FormHelperText error sx={{ mt: -1.5 }}>{v.err('archivo')}</FormHelperText>}

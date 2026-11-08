@@ -3,6 +3,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using FundacionPanorama.API.Filters;
+using FundacionPanorama.API.Services;
+using Microsoft.Extensions.Options;
 using FundacionPanorama.Application.Features.Documentos;
 using FundacionPanorama.Application.Features.Documentos.DTOs;
 
@@ -11,8 +13,13 @@ namespace FundacionPanorama.API.Controllers;
 [ApiController]
 [Route("api/documentos")]
 [Authorize]
-public class DocumentosController(DocumentosService svc) : ControllerBase
+public class DocumentosController(DocumentosService svc, IOptions<SupabaseOptions> supabase) : ControllerBase
 {
+    // Enlaces https permitidos: solo los públicos del propio Supabase (el resto debe ser "privado://…")
+    string? OrigenPublico => string.IsNullOrWhiteSpace(supabase.Value.Url)
+        ? null
+        : $"{supabase.Value.Url}/storage/v1/object/public/"; // igual que SupabaseStorageService.PrefijoPublico
+
     // ── Institucionales ──────────────────────────────────────────────────────
 
     // GET api/documentos?categoria=Actas
@@ -30,7 +37,7 @@ public class DocumentosController(DocumentosService svc) : ControllerBase
                  ?? User.FindFirst("email")?.Value
                  ?? "desconocido";
 
-        var id = await svc.CrearAsync(dto, email);
+        var id = await svc.CrearAsync(dto, email, OrigenPublico);
         return Ok(new { Id = id });
     }
 
@@ -54,7 +61,7 @@ public class DocumentosController(DocumentosService svc) : ControllerBase
     public async Task<IActionResult> GuardarArchivoBeneficiario(
         Guid beneficiarioId, [FromBody] GuardarArchivoDto dto)
     {
-        var id = await svc.GuardarArchivoBeneficiarioAsync(beneficiarioId, dto);
+        var id = await svc.GuardarArchivoBeneficiarioAsync(beneficiarioId, dto, OrigenPublico);
         if (id is null) return NotFound(new { mensaje = "Beneficiario no encontrado." });
         return Ok(new { Id = id.Value });
     }

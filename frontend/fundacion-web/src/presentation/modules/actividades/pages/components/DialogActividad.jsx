@@ -44,6 +44,7 @@ const ESQUEMA = {
   fecha:           { etiqueta: 'Fecha',       reglas: [r.obligatorio('2025-03-15'), r.fecha({ ejemplo: '2025-03-15' })] },
   horaInicio:      { etiqueta: 'Hora inicio', reglas: [r.obligatorio('08:00')] },
   horaFin:         { etiqueta: 'Hora fin',    reglas: [horaDespuesDe('horaInicio')] },
+  lugar:           { etiqueta: 'Lugar',       reglas: [r.texto({ max: 200 })] },
   diasAdicionales: { etiqueta: 'Días adicionales', reglas: [diasCompletos] },
 };
 
@@ -170,7 +171,8 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
         </TextField>
 
         <TextField label="Lugar" fullWidth size="small"
-          value={form.lugar} onChange={set('lugar')} />
+          value={form.lugar} onChange={set('lugar')}
+          {...v.props('lugar')} />
 
         <TextField label="Descripción" fullWidth size="small" multiline rows={2}
           value={form.descripcion} onChange={set('descripcion')} />

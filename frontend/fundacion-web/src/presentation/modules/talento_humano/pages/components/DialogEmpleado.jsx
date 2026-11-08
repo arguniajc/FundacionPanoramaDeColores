@@ -21,12 +21,16 @@ const ESQUEMA = {
   nombres:          { etiqueta: 'Nombres',            reglas: [r.obligatorio('María José'), r.texto({ min: 2, max: 100, soloLetras: true, ejemplo: 'María José' })] },
   apellidos:        { etiqueta: 'Apellidos',          reglas: [r.obligatorio('Rodríguez Pérez'), r.texto({ min: 2, max: 100, soloLetras: true, ejemplo: 'Rodríguez Pérez' })] },
   numeroDocumento:  { etiqueta: 'Número documento',   reglas: [r.documentoSegunTipo('tipoDocumento')] },
-  email:            { etiqueta: 'Email',              reglas: [r.correo('maria.rodriguez@correo.com')] },
+  email:            { etiqueta: 'Email',              reglas: [r.correo('maria.rodriguez@correo.com'), r.texto({ max: 150 })] },
   telefono:         { etiqueta: 'Teléfono',           reglas: [r.telefono()] },
   celular:          { etiqueta: 'Celular',            reglas: [r.celular()] },
+  cargo:            { etiqueta: 'Cargo',              reglas: [r.texto({ max: 100 })] },
+  area:             { etiqueta: 'Área',               reglas: [r.texto({ max: 100 })] },
   fechaIngreso:     { etiqueta: 'Fecha ingreso',      reglas: [r.fecha({ ejemplo: '2025-02-01' })] },
   fechaFinContrato: { etiqueta: 'Fecha fin contrato', reglas: [r.fecha({ ejemplo: '2025-12-31' }), r.fechaDesde('fechaIngreso', 'la fecha de ingreso')] },
   salario:          { etiqueta: 'Salario (COP)',      reglas: [r.monto('1423500')] },
+  eps:              { etiqueta: 'EPS',                reglas: [r.texto({ max: 100 })] },
+  pension:          { etiqueta: 'Pensión',            reglas: [r.texto({ max: 100 })] },
 };
 
 const EMPLEADO_VACIO = {
@@ -152,7 +156,7 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
               onInputChange={(_, v) => setForm(p => ({ ...p, cargo: v }))}
               renderInput={(params) => (
                 <TextField {...params} fullWidth label="Cargo" size="small"
-                  placeholder="Ej: Director, Coordinador, Voluntario..." />
+                  placeholder="Ej: Director, Coordinador, Voluntario..." {...v.props('cargo')} />
               )}
             />
           </Grid>
@@ -186,10 +190,10 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
             <TextField fullWidth label="Salario (COP)" value={form.salario} onChange={set('salario')} size="small" type="number" {...v.props('salario')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="EPS" value={form.eps} onChange={set('eps')} size="small" />
+            <TextField fullWidth label="EPS" value={form.eps} onChange={set('eps')} size="small" {...v.props('eps')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Pensión" value={form.pension} onChange={set('pension')} size="small" />
+            <TextField fullWidth label="Pensión" value={form.pension} onChange={set('pension')} size="small" {...v.props('pension')} />
           </Grid>
 
           {/* Estado y notas */}

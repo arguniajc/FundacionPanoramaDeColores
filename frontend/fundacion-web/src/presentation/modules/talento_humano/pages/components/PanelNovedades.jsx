@@ -33,11 +33,20 @@ const NOVEDAD_COLORS = {
 const ESTADO_NOVEDAD_COLORS = { pendiente: 'warning', aprobada: 'success', rechazada: 'error' };
 const NOVEDAD_VACIA = { tipo: 'vacaciones', fechaInicio: '', fechaFin: '', dias: '', descripcion: '', estado: 'pendiente' };
 
+// Los días no pueden superar los días calendario entre la fecha de inicio y la de fin (ambas incluidas)
+const diasDentroDelRango = r.propia((v, f) => {
+  if (!v || !f.fechaInicio || !f.fechaFin) return '';
+  const rango = Math.round((new Date(`${f.fechaFin}T00:00:00`) - new Date(`${f.fechaInicio}T00:00:00`)) / 86400000) + 1;
+  return rango > 0 && Number(v) > rango
+    ? `Del ${f.fechaInicio} al ${f.fechaFin} hay ${rango} día${rango === 1 ? '' : 's'}: los días no pueden ser más. Ejemplo: ${rango}` : '';
+});
+
 // Reglas del formulario de novedad
 const ESQUEMA_NOVEDAD = {
   fechaInicio: { etiqueta: 'Fecha inicio', reglas: [r.obligatorio('2025-07-01'), r.fecha({ ejemplo: '2025-07-01' })] },
   fechaFin:    { etiqueta: 'Fecha fin',    reglas: [r.fecha({ ejemplo: '2025-07-15' }), r.fechaDesde('fechaInicio', 'la fecha de inicio')] },
-  dias:        { etiqueta: 'Días',         reglas: [r.numero({ min: 1, max: 365, entero: true, unidad: 'días', ejemplo: '15' })] },
+  dias:        { etiqueta: 'Días',         reglas: [r.numero({ min: 1, max: 365, entero: true, unidad: 'días', ejemplo: '15' }), diasDentroDelRango] },
+  descripcion: { etiqueta: 'Descripción',  reglas: [r.texto({ max: 1000 })] },
 };
 
 function fmtFecha(f) {
@@ -120,7 +129,7 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
           </Grid>
           <Grid size={12}>
             <TextField fullWidth label="Descripción" value={form.descripcion} onChange={set('descripcion')}
-              size="small" multiline rows={2} />
+              size="small" multiline rows={2} {...v.props('descripcion')} />
           </Grid>
         </Grid>
       </DialogContent>

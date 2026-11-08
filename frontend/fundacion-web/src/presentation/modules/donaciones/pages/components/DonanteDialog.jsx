@@ -14,7 +14,7 @@ import ResumenErrores from '@/shared/components/ResumenErrores';
 
 // Reglas del formulario: cada una dice qué está mal y cómo llenarlo
 const ESQUEMA = {
-  nombre:    { etiqueta: 'Nombre',          reglas: [r.obligatorio('Fundación Éxito o Ana Gómez'), r.texto({ min: 3, max: 150 })] },
+  nombre:    { etiqueta: 'Nombre',          reglas: [r.obligatorio('Fundación Éxito o Ana Gómez'), r.texto({ min: 3, max: 200 })] },
   documento: { etiqueta: 'Documento / NIT', reglas: [r.documentoSegunTipo('tipoDocumento')] },
   email:     { etiqueta: 'Email',           reglas: [r.correo()] },
   telefono:  { etiqueta: 'Teléfono',        reglas: [r.telefono()] },

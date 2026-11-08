@@ -3,6 +3,7 @@ import { Box, Button, Tooltip, Typography } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import FirmaPad from '@/shared/components/FirmaPad';
 import { COLOR, leerArchivoComoDataUrl, redimensionarImagen } from './helpers';
+import { validarArchivo } from '@/shared/utils/archivosPermitidos';
 
 export function FirmaRepresentante({ value, onChange }) {
   const inputRef        = useRef(null);
@@ -13,8 +14,8 @@ export function FirmaRepresentante({ value, onChange }) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    if (!file.type.startsWith('image/')) { setErrImg('El archivo debe ser una imagen'); return; }
-    if (file.size > 5 * 1024 * 1024)    { setErrImg('La imagen no puede superar 5 MB'); return; }
+    const errArchivo = validarArchivo(file, { tipos: 'imagen' });
+    if (errArchivo) { setErrImg(errArchivo); return; }
     setErrImg(''); setSubiendo(true);
     try {
       const raw      = await leerArchivoComoDataUrl(file);

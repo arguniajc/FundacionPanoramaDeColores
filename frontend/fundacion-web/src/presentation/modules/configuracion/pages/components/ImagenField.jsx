@@ -7,6 +7,7 @@ import UploadFileIcon        from '@mui/icons-material/UploadFile';
 import apiClient from '@/infrastructure/http/apiClient';
 import { COLOR } from './helpers';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { validarArchivo } from '@/shared/utils/archivosPermitidos';
 
 export function ImagenField({ label, value, onChange }) {
   const inputRef             = useRef(null);
@@ -17,8 +18,8 @@ export function ImagenField({ label, value, onChange }) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    if (!file.type.startsWith('image/')) { setErrImg('El archivo debe ser una imagen'); return; }
-    if (file.size > 5 * 1024 * 1024)    { setErrImg('La imagen no puede superar 5 MB'); return; }
+    const errArchivo = validarArchivo(file, { tipos: 'imagen' });
+    if (errArchivo) { setErrImg(errArchivo); return; }
     setErrImg(''); setSubiendo(true);
     try {
       const fd = new FormData();

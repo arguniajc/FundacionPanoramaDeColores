@@ -7,4 +7,5 @@ public interface IOrganigramaRepository
     Task<OrganigramaPersonaDto>                CrearAsync(CrearOrganigramaPersonaDto dto, CancellationToken ct = default);
     Task<OrganigramaPersonaDto?>               ActualizarAsync(Guid id, ActualizarOrganigramaPersonaDto dto, CancellationToken ct = default);
     Task<bool>                                 EliminarAsync(Guid id, CancellationToken ct = default);
+    Task<bool>                                 ExisteEmpleadoAsync(Guid id, CancellationToken ct = default);
 }

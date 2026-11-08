@@ -9,7 +9,8 @@ export function TabTextos({ form, set, v }) {
           <Grid size={12}>
             <TextField fullWidth size="small" label="Tagline / Slogan"
               placeholder="Ej: Transformando vidas a través de la educación y el arte"
-              value={form.tagline} onChange={set('tagline')} />
+              value={form.tagline} onChange={set('tagline')}
+              {...v.props('tagline')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth size="small" label="Correo de contacto" type="email"
@@ -47,7 +48,8 @@ export function TabTextos({ form, set, v }) {
             </Grid>
             <Grid size={12}>
               <TextField fullWidth size="small" label="Footer del sistema"
-                value={form.footerTexto} onChange={set('footerTexto')} />
+                value={form.footerTexto} onChange={set('footerTexto')}
+                {...v.props('footerTexto')} />
             </Grid>
           </Grid>
         </Seccion>

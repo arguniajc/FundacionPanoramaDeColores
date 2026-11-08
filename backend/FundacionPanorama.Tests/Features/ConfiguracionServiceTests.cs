@@ -81,4 +81,52 @@ public class ConfiguracionServiceTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.GuardarAsync(guardarDto));
     }
+
+    // ── Validación de campos ─────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("rojo")]
+    [InlineData("#12345")]
+    [InlineData("#1234567")]
+    [InlineData("#GGGGGG")]
+    public async Task GuardarAsync_Color_Con_Formato_Invalido(string color)
+    {
+        var result = await _sut.GuardarAsync(Guardar(colorPrimario: color));
+
+        Assert.True(result.IsFailure);
+        Assert.Contains("#RRGGBB", result.Error);
+        _repo.Verify(r => r.GuardarAsync(It.IsAny<GuardarConfiguracionDto>(), default), Times.Never);
+    }
+
+    [Fact]
+    public async Task GuardarAsync_Longitudes_Correos_Puerto_Y_Firma()
+    {
+        async Task<string?> Error(GuardarConfiguracionDto dto) => (await _sut.GuardarAsync(dto)).Error;
+
+        Assert.Contains("200 caracteres", await Error(Guardar(nombre: new string('a', 201))));
+        Assert.Contains("50 caracteres", await Error(Guardar() with { Nit = new string('9', 51) }));
+        Assert.Contains("500 caracteres", await Error(Guardar() with { FooterTexto = new string('a', 501) }));
+        Assert.Contains("correo de contacto no es válido", await Error(Guardar() with { EmailContacto = "contacto@" }));
+        Assert.Contains("correo del remitente no es válido", await Error(Guardar() with { SmtpDeEmail = "x" }));
+        Assert.Contains("entre 1 y 65535", await Error(Guardar() with { SmtpPuerto = 0 }));
+        Assert.Contains("entre 1 y 65535", await Error(Guardar() with { SmtpPuerto = 70000 }));
+        Assert.Contains("imagen válida", await Error(Guardar() with { FirmaRep = "javascript:alert(1)" }));
+        Assert.Contains("demasiado pesada", await Error(Guardar() with { FirmaRep = "data:image/png;base64," + new string('A', 500_001) }));
+        Assert.Contains("sitio web", await Error(Guardar() with { SitioWeb = "javascript:alert(1)" }));
+    }
+
+    [Fact]
+    public async Task GuardarAsync_Valores_Validos_Se_Guardan()
+    {
+        var dto = Guardar("Fundación", "#4E1B95", "#150830") with
+        {
+            EmailContacto = "contacto@fundacion.org", SmtpPuerto = 587, SitioWeb = "www.fundacion.org",
+            FirmaRep = "data:image/png;base64,iVBORw0KGgo=",
+        };
+        _repo.Setup(r => r.GuardarAsync(dto, default)).ReturnsAsync(Config("Fundación"));
+
+        var result = await _sut.GuardarAsync(dto);
+
+        Assert.True(result.IsSuccess);
+    }
 }

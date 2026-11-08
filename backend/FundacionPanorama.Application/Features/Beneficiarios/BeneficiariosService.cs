@@ -3,6 +3,7 @@
 // (activo=false). El DELETE existe para limpieza de datos por admin.
 using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 using FundacionPanorama.Application.Features.Beneficiarios.Interfaces;
+using FundacionPanorama.Domain.Shared;
 
 namespace FundacionPanorama.Application.Features.Beneficiarios;
 
@@ -172,6 +173,9 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
     public Task<BeneficiarioDto?> DarDeBajaAsync(Guid id, string? motivo, string? usuarioEmail, CancellationToken ct = default)
     {
         var motivoLimpio = string.IsNullOrWhiteSpace(motivo) ? null : motivo.Trim();
+        // beneficiarios.motivo_baja VARCHAR(500)
+        if (motivoLimpio is { Length: > 500 })
+            throw new DatoInvalidoException("El motivo de la baja no puede superar 500 caracteres.");
         var motivoLog    = motivoLimpio is null ? null : $"Motivo: {motivoLimpio}";
         return repo.DarDeBajaAsync(id, motivoLimpio, motivoLog, usuarioEmail, ct);
     }

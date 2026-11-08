@@ -288,8 +288,9 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         cmd.Parameters.AddWithValue("hi",    dto.HoraInicio);
         cmd.Parameters.AddWithValue("hf",    dto.HoraFin);
         cmd.Parameters.AddWithValue("lugar", (object?)dto.Lugar?.Trim() ?? DBNull.Value);
-        cmd.Parameters.Add(new NpgsqlParameter("fiv", NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaInicioVigencia ?? DBNull.Value });
-        cmd.Parameters.Add(new NpgsqlParameter("ffv", NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaFinVigencia    ?? DBNull.Value });
+        // NpgsqlDbType.Date no acepta un string (lanzaba InvalidCastException → 500): se envía DateOnly
+        cmd.Parameters.Add(new NpgsqlParameter("fiv", NpgsqlTypes.NpgsqlDbType.Date) { Value = FechaDb(dto.FechaInicioVigencia) });
+        cmd.Parameters.Add(new NpgsqlParameter("ffv", NpgsqlTypes.NpgsqlDbType.Date) { Value = FechaDb(dto.FechaFinVigencia) });
         var newId = (Guid)(await cmd.ExecuteScalarAsync(ct))!;
         return (await ListarHorariosAsync(null, ct)).First(h => h.Id == newId);
     }
@@ -317,8 +318,8 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         cmd.Parameters.AddWithValue("hf",     dto.HoraFin);
         cmd.Parameters.AddWithValue("lugar",  (object?)dto.Lugar?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("activo", dto.Activo);
-        cmd.Parameters.Add(new NpgsqlParameter("fiv", NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaInicioVigencia ?? DBNull.Value });
-        cmd.Parameters.Add(new NpgsqlParameter("ffv", NpgsqlTypes.NpgsqlDbType.Date) { Value = (object?)dto.FechaFinVigencia    ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("fiv", NpgsqlTypes.NpgsqlDbType.Date) { Value = FechaDb(dto.FechaInicioVigencia) });
+        cmd.Parameters.Add(new NpgsqlParameter("ffv", NpgsqlTypes.NpgsqlDbType.Date) { Value = FechaDb(dto.FechaFinVigencia) });
         cmd.Parameters.AddWithValue("id",     id);
         var rows = await cmd.ExecuteNonQueryAsync(ct);
         if (rows == 0) return null;
@@ -335,7 +336,39 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
         return await cmd.ExecuteNonQueryAsync(ct) > 0;
     }
 
+    // ── Validación ──────────────────────────────────────────────────────────────
+
+    public async Task<bool> ExisteProgramaAsync(Guid id, CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT EXISTS(SELECT 1 FROM programas WHERE id = @id)";
+        cmd.Parameters.AddWithValue("id", id);
+        return (bool)(await cmd.ExecuteScalarAsync(ct))!;
+    }
+
+    public async Task<IReadOnlyList<Guid>> BeneficiariosInexistentesAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct)
+    {
+        if (ids.Count == 0) return [];
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT t.id FROM unnest(@ids) AS t(id) WHERE NOT EXISTS (SELECT 1 FROM beneficiarios b WHERE b.id = t.id)";
+        cmd.Parameters.AddWithValue("ids", ids.ToArray());
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        var faltan = new List<Guid>();
+        while (await r.ReadAsync(ct)) faltan.Add(r.GetGuid(0));
+        return faltan;
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────────
+
+    /// <summary>Fecha "AAAA-MM-DD" (ya validada en el servicio) como DateOnly, o NULL.</summary>
+    static object FechaDb(string? fecha)
+        => string.IsNullOrWhiteSpace(fecha)
+            ? DBNull.Value
+            : DateOnly.ParseExact(fecha.Trim(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
 
     private async Task<Dictionary<Guid, List<ActividadDiaDto>>> CargarDiasAsync(Guid[] ids, CancellationToken ct)
     {

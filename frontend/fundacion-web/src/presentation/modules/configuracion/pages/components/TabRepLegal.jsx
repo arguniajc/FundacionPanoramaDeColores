@@ -32,7 +32,8 @@ export function TabRepLegal({ form, set, setForm, v }) {
         <Grid size={12}>
           <TextField fullWidth size="small" label="Cargo"
             placeholder="Ej: Directora Ejecutiva, Representante Legal…"
-            value={form.cargoRep} onChange={set('cargoRep')} />
+            value={form.cargoRep} onChange={set('cargoRep')}
+            {...v.props('cargoRep')} />
         </Grid>
         <Grid size={12}>
           <FirmaRepresentante value={form.firmaRep} onChange={(v) => setForm(p => ({ ...p, firmaRep: v }))} />

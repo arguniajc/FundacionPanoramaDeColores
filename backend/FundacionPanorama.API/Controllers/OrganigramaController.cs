@@ -49,8 +49,13 @@ public class OrganigramaController(OrganigramaService svc, SupabaseStorageServic
         if (foto.Length > 5 * 1024 * 1024)
             return BadRequest(new { mensaje = "La imagen no puede superar 5 MB." });
 
+        // La actualización siempre escribe parent_id: se conserva el jefe actual para que
+        // subir una foto no deje a la persona como raíz del organigrama.
+        var actual = await svc.ObtenerAsync(id, ct);
+        if (actual is null) return NotFound();
+
         var url = await storage.SubirAsync(foto, "organigrama");
-        var result = await svc.ActualizarAsync(id, new ActualizarOrganigramaPersonaDto(null, null, null, null, url, null), ct);
+        var result = await svc.ActualizarAsync(id, new ActualizarOrganigramaPersonaDto(null, null, null, null, url, actual.ParentId), ct);
         return result is null ? NotFound() : Ok(new { url });
     }
 }

@@ -93,6 +93,16 @@ public sealed class OrganigramaRepository(DbConnectionFactory factory) : IOrgani
         return await cmd.ExecuteNonQueryAsync(ct) > 0;
     }
 
+    public async Task<bool> ExisteEmpleadoAsync(Guid id, CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT EXISTS(SELECT 1 FROM empleados WHERE id = @id)";
+        cmd.Parameters.AddWithValue("id", id);
+        return (bool)(await cmd.ExecuteScalarAsync(ct))!;
+    }
+
     static OrganigramaPersonaDto Map(NpgsqlDataReader r) => new(
         r.GetGuid(0),
         r.GetString(1),

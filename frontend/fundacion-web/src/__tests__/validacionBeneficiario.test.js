@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   edadDesde, validarCampo, validarPaso, validarFormulario, primerPasoConErrores, describirError,
+  validarFilaImportacion,
 } from '@/domain/beneficiarios/validacionBeneficiario';
 
 // Fecha fija: 15 de junio de 2026 (hora local).
@@ -250,5 +251,43 @@ describe('validarPaso / primerPasoConErrores / describirError', () => {
   });
   it('validarCampo de un campo sin regla devuelve vacío', () => {
     expect(validarCampo('noExiste', NINO)).toBe('');
+  });
+});
+
+describe('validarFilaImportacion (plantilla Excel)', () => {
+  const FILA = { primerNombre: 'Maria', primerApellido: 'Gonzalez', fechaNacimiento: '2015-03-22' };
+
+  it('una fila mínima válida (solo obligatorios) no tiene errores', () => {
+    expect(validarFilaImportacion(FILA)).toEqual([]);
+    expect(validarFilaImportacion({ ...FILA, tipoDocumento: 'TI', numeroDocumento: '1234567890', whatsapp: '3001234567' })).toEqual([]);
+  });
+
+  it('acepta la fecha como DD/MM/AAAA, igual que el servidor', () => {
+    expect(validarFilaImportacion({ ...FILA, fechaNacimiento: '22/03/2015' })).toEqual([]);
+  });
+
+  it('obligatorios vacíos y fecha inválida', () => {
+    const errs = validarFilaImportacion({});
+    expect(errs.some(e => e.startsWith('Primer nombre'))).toBe(true);
+    expect(errs.some(e => e.startsWith('Primer apellido'))).toBe(true);
+    expect(errs.some(e => e.startsWith('Fecha de nacimiento'))).toBe(true);
+    expect(validarFilaImportacion({ ...FILA, fechaNacimiento: '2015-13-40' })[0]).toMatch(/no es válida/);
+  });
+
+  it('marca documento, WhatsApp y tipo/edad que el servidor rechaza', () => {
+    expect(validarFilaImportacion({ ...FILA, tipoDocumento: 'TI', numeroDocumento: '12.345' })[0]).toMatch(/Número de documento/);
+    expect(validarFilaImportacion({ ...FILA, whatsapp: '12345' })[0]).toMatch(/WhatsApp/);
+    expect(validarFilaImportacion({ ...FILA, tipoDocumento: 'CC', numeroDocumento: '1144123456' })[0]).toMatch(/Cédula/);
+    expect(validarFilaImportacion({ ...FILA, tipo: 'adulto' })[0]).toMatch(/adulto debe tener 18/);
+    expect(validarFilaImportacion({ ...FILA, primerNombre: 'Mar1a' })[0]).toMatch(/solo letras/);
+  });
+
+  it('el WhatsApp no se exige ni se valida para adultos', () => {
+    expect(validarFilaImportacion({ ...FILA, tipo: 'adulto', fechaNacimiento: '1985-08-20', whatsapp: '123' })).toEqual([]);
+  });
+
+  it('textos más largos que la columna', () => {
+    expect(validarFilaImportacion({ ...FILA, direccion: 'x'.repeat(201) })[0]).toMatch(/Dirección: debe tener máximo 200/);
+    expect(validarFilaImportacion({ ...FILA, primerNombre: 'a'.repeat(81) }).some(e => /máximo 80/.test(e))).toBe(true);
   });
 });

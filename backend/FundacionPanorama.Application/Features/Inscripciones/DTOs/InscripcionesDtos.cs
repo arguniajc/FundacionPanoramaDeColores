@@ -37,6 +37,8 @@ public enum ErrorCrearInscripcion
     BeneficiarioNoEncontrado,
     ProgramaNoEncontrado,
     YaInscritoActivo,
+    /// <summary>El programa tiene cupo_maximo y ya tiene esa cantidad de inscripciones activas.</summary>
+    CupoLleno,
 }
 
 public record CrearInscripcionResultado(InscripcionDto? Inscripcion, ErrorCrearInscripcion Error);

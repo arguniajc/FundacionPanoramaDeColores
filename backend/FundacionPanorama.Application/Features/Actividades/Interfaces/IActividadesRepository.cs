@@ -17,4 +17,9 @@ public interface IActividadesRepository
     Task<HorarioDto>  CrearHorarioAsync(CrearHorarioDto dto, CancellationToken ct);
     Task<HorarioDto?> ActualizarHorarioAsync(Guid id, ActualizarHorarioDto dto, CancellationToken ct);
     Task<bool>        EliminarHorarioAsync(Guid id, CancellationToken ct);
+
+    // Validación
+    Task<bool> ExisteProgramaAsync(Guid id, CancellationToken ct);
+    /// <summary>De los ids recibidos, los que no corresponden a ningún beneficiario.</summary>
+    Task<IReadOnlyList<Guid>> BeneficiariosInexistentesAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct);
 }

@@ -574,4 +574,26 @@ public class BeneficiariosServiceTests
         dto.PesoKg = 500m;
         Assert.Equal(["El peso debe estar entre 2 y 150 kg."], ValidacionBeneficiario.ValidarFormato(dto, esNino: true));
     }
+
+    [Fact]
+    public async Task DarDeBajaAsync_Motivo_Mayor_A_500_Es_Invalido()
+    {
+        var ex = await Assert.ThrowsAsync<FundacionPanorama.Domain.Shared.DatoInvalidoException>(
+            () => _sut.DarDeBajaAsync(Guid.NewGuid(), new string('a', 501), null));
+        Assert.Contains("500 caracteres", ex.Message);
+        _repo.Verify(r => r.DarDeBajaAsync(It.IsAny<Guid>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), default), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("23505", "duplicado")]
+    [InlineData("22001", "demasiado largo")]
+    [InlineData("XX000", "No se pudo guardar")]
+    public void Importacion_Error_De_Bd_Da_Motivo_Sin_Detalles_Tecnicos(string sqlState, string fragmento)
+    {
+        var pg = new Npgsql.PostgresException("duplicate key value violates unique constraint \"beneficiarios_pkey\"", "ERROR", "ERROR", sqlState);
+        var motivo = FundacionPanorama.Infrastructure.Persistence.Repositories.BeneficiariosRepository.MotivoErrorImportacion(pg);
+        Assert.Contains(fragmento, motivo);
+        Assert.DoesNotContain("constraint", motivo);
+        Assert.DoesNotContain("beneficiarios_pkey", motivo);
+    }
 }

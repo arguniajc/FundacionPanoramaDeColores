@@ -7,7 +7,8 @@ export function TabFundacion({ form, set, v }) {
       <Grid container spacing={2.5}>
         <Grid size={12}>
           <TextField fullWidth size="small" label="Nombre de la fundación"
-            value={form.nombreFundacion} onChange={set('nombreFundacion')} />
+            value={form.nombreFundacion} onChange={set('nombreFundacion')}
+            {...v.props('nombreFundacion')} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField fullWidth size="small" label="NIT" value={form.nit} onChange={set('nit')}
@@ -18,7 +19,8 @@ export function TabFundacion({ form, set, v }) {
             {...v.props('telefono')} />
         </Grid>
         <Grid size={12}>
-          <TextField fullWidth size="small" label="Dirección" value={form.direccion} onChange={set('direccion')} />
+          <TextField fullWidth size="small" label="Dirección" value={form.direccion} onChange={set('direccion')}
+            {...v.props('direccion')} />
         </Grid>
       </Grid>
     </Seccion>

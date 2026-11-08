@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   Alert, Box, Button, Chip, CircularProgress, DialogActions,
   DialogContent, DialogTitle, Divider, LinearProgress,
@@ -13,8 +13,13 @@ import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { alpha, useTheme } from '@mui/material/styles';
 import { colorEstado } from '@/shared/theme/paleta';
+import { validarFilaImportacion } from '@/domain/beneficiarios/validacionBeneficiario';
 
 const COLOR = 'primary.main';
+
+/** Topes de la importación: un archivo más grande o con más filas se rechaza antes de leerlo/enviarlo. */
+const MAX_MB_EXCEL = 5;
+const MAX_FILAS    = 2000;
 
 // ── Columnas de la plantilla ───────────────────────────────────────────────────
 const COLS = [
@@ -68,17 +73,9 @@ const esFilaPistas = (row) =>
   row.filter(Boolean).some(v => HINT_PATTERN.test(v.toString().trim()));
 
 // ── Validar una fila ───────────────────────────────────────────────────────────
-function validarFila(f) {
-  const errs = [];
-  if (!f.primerNombre?.trim())   errs.push('Primer nombre obligatorio');
-  if (!f.primerApellido?.trim()) errs.push('Primer apellido obligatorio');
-  if (!f.fechaNacimiento?.trim()) {
-    errs.push('Fecha nacimiento obligatoria');
-  } else if (isNaN(Date.parse(f.fechaNacimiento))) {
-    errs.push('Fecha inválida — use AAAA-MM-DD');
-  }
-  return errs;
-}
+// Mismas reglas que el formulario de beneficiario (domain/beneficiarios/validacionBeneficiario.js):
+// la vista previa marca como inválidas las filas que el servidor rechazará.
+const validarFila = validarFilaImportacion;
 
 // ── Descarga de plantilla con listas desplegables (exceljs — dynamic import) ───
 async function generarPlantilla() {
@@ -189,7 +186,15 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
   const handleArchivo = async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    setArchivo(f); setResultado(null); setError('');
+    setArchivo(f); setResultado(null); setError(''); setFilas([]);
+    if (!/.xlsx?$/i.test(f.name)) {
+      setError('Solo se aceptan archivos de Excel (.xlsx). Descarga la plantilla y llénala.');
+      return;
+    }
+    if (f.size > MAX_MB_EXCEL * 1024 * 1024) {
+      setError(`El archivo pesa ${(f.size / 1024 / 1024).toFixed(1)} MB y el máximo es ${MAX_MB_EXCEL} MB. Divídelo en varios archivos de máximo ${MAX_FILAS} filas.`);
+      return;
+    }
     try {
       const ab = await f.arrayBuffer();
       const XLSX = await import('xlsx');
@@ -224,14 +229,20 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
         })
         .filter(r => Object.values(r).some(v => v !== ''));
 
+      if (filasParsed.length > MAX_FILAS) {
+        setError(`El archivo tiene ${filasParsed.length} filas y el máximo por importación es ${MAX_FILAS}. Divídelo en varios archivos.`);
+        return;
+      }
       setFilas(filasParsed);
     } catch {
       setError('No se pudo leer el archivo. Asegúrese de usar el formato .xlsx.');
     }
   };
 
+  const erroresPorFila = useMemo(() => filas.map(validarFila), [filas]);
+
   const importar = async () => {
-    const validas = filas.filter(f => validarFila(f).length === 0);
+    const validas = filas.filter((_, i) => erroresPorFila[i].length === 0);
     if (!validas.length) { setError('Ninguna fila es válida. Revise los errores resaltados.'); return; }
     setCargando(true); setError(''); setResultado(null);
     try {
@@ -245,8 +256,8 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
     }
   };
 
-  const filasValidas   = filas.filter(f => validarFila(f).length === 0);
-  const filasInvalidas = filas.filter(f => validarFila(f).length > 0);
+  const filasValidas   = filas.filter((_, i) => erroresPorFila[i].length === 0);
+  const filasInvalidas = filas.filter((_, i) => erroresPorFila[i].length > 0);
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -337,7 +348,7 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
                 </TableHead>
                 <TableBody>
                   {filas.map((f, i) => {
-                    const errs = validarFila(f);
+                    const errs = erroresPorFila[i];
                     return (
                       <TableRow key={i} sx={{ bgcolor: errs.length ? alpha(theme.palette.error.main, 0.08) : 'inherit' }}>
                         <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{i + 1}</TableCell>

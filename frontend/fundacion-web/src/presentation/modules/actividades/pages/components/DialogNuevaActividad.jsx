@@ -56,6 +56,7 @@ const ESQUEMA_UNICO = {
   fecha:           { etiqueta: 'Fecha',       reglas: [r.obligatorio('2025-03-15'), r.fecha({ ejemplo: '2025-03-15' })] },
   horaInicio:      { etiqueta: 'Hora inicio', reglas: [r.obligatorio('08:00')] },
   horaFin:         { etiqueta: 'Hora fin',    reglas: [horaDespuesDe('horaInicio')] },
+  lugar:           { etiqueta: 'Lugar',       reglas: [r.texto({ max: 200 })] },
   diasAdicionales: { etiqueta: 'Días adicionales', reglas: [diasCompletos] },
 };
 
@@ -67,6 +68,7 @@ const ESQUEMA_RECURRENTE = {
   ] },
   horaInicio: { etiqueta: 'Hora inicio', reglas: [r.obligatorio('08:00')] },
   horaFin:    { etiqueta: 'Hora fin',    reglas: [r.obligatorio('10:00'), horaDespuesDe('horaInicio')] },
+  lugar:      { etiqueta: 'Lugar',       reglas: [r.texto({ max: 200 })] },
   fechaInicioVigencia: { etiqueta: 'Fecha inicio de vigencia', reglas: [r.fecha({ ejemplo: '2025-02-03' })] },
   fechaFinVigencia:    { etiqueta: 'Fecha fin de vigencia',    reglas: [
     r.fecha({ ejemplo: '2025-11-28' }), r.fechaDesde('fechaInicioVigencia', 'la fecha de inicio de vigencia'),
@@ -222,7 +224,8 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
             <Grid size={12}>
               <TextField fullWidth size="small" label="Lugar"
                 placeholder="Ej: Cancha 1, Salón…"
-                value={unico.lugar} onChange={setU('lugar')} />
+                value={unico.lugar} onChange={setU('lugar')}
+                {...vU.props('lugar')} />
             </Grid>
             <Grid size={12}>
               <TextField fullWidth size="small" label="Descripción" multiline rows={2}
@@ -328,7 +331,8 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
             <Grid size={12}>
               <TextField fullWidth size="small" label="Lugar (opcional)"
                 placeholder="Ej: Cancha 1, Salón 3…"
-                value={recur.lugar} onChange={setR('lugar')} />
+                value={recur.lugar} onChange={setR('lugar')}
+                {...vR.props('lugar')} />
             </Grid>
 
             <Grid size={12}>

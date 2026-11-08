@@ -54,7 +54,7 @@ public class NominaController(NominaService svc, DbConnectionFactory db) : BaseC
     }
 
     [HttpDelete("periodos/{id:int}")]
-    [RequierePermiso("talento_humano", "editar")]
+    [RequierePermiso("talento_humano", "eliminar")]
     public async Task<IActionResult> EliminarPeriodo(int id, CancellationToken ct)
     {
         if (!await svc.EliminarPeriodoAsync(id, ct)) return NotFound();
@@ -113,7 +113,7 @@ public class NominaController(NominaService svc, DbConnectionFactory db) : BaseC
     }
 
     [HttpDelete("liquidaciones/{id:int}")]
-    [RequierePermiso("talento_humano", "editar")]
+    [RequierePermiso("talento_humano", "eliminar")]
     public async Task<IActionResult> EliminarLiquidacion(int id, CancellationToken ct)
     {
         if (!await svc.EliminarLiquidacionAsync(id, ct)) return NotFound();

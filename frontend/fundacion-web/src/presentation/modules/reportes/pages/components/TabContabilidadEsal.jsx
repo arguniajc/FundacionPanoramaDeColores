@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { exportarExcel } from '@/shared/utils/exportarExcel';
+import usePermisos from '@/shared/hooks/usePermisos';
 import TrendingUpIcon   from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import BalanceIcon      from '@mui/icons-material/Balance';
@@ -22,6 +23,7 @@ const MESES = [
 const fmtCOP = v => Number(v).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 export function TabContabilidadEsal() {
+  const { puedo } = usePermisos();
   const theme = useTheme();
   const hoy   = new Date();
   const [mes,       setMes]       = useState(hoy.getMonth() + 1);
@@ -71,25 +73,27 @@ export function TabContabilidadEsal() {
       <Grid container spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
         <Grid size={{ xs: 6, sm: 4, md: 3 }}>
           <FormControl fullWidth size="small">
-            <InputLabel>Mes</InputLabel>
-            <Select value={mes} label="Mes" onChange={e => setMes(Number(e.target.value))}>
+            <InputLabel id="tab-contabilidad-esal-mes-label">Mes</InputLabel>
+            <Select labelId="tab-contabilidad-esal-mes-label" value={mes} label="Mes" onChange={e => setMes(Number(e.target.value))}>
               {MESES.map((m, i) => <MenuItem key={i+1} value={i+1}>{m}</MenuItem>)}
             </Select>
           </FormControl>
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 3 }}>
           <FormControl fullWidth size="small">
-            <InputLabel>Año</InputLabel>
-            <Select value={anio} label="Año" onChange={e => setAnio(Number(e.target.value))}>
+            <InputLabel id="tab-contabilidad-esal-ano-label">Año</InputLabel>
+            <Select labelId="tab-contabilidad-esal-ano-label" value={anio} label="Año" onChange={e => setAnio(Number(e.target.value))}>
               {anios.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
           </FormControl>
         </Grid>
         <Grid>
-          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
-            onClick={exportar} disabled={!reporte}>
-            Exportar Excel
-          </Button>
+          {puedo('reportes', 'exportar') && (
+            <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
+              onClick={exportar} disabled={!reporte}>
+              Exportar Excel
+            </Button>
+          )}
         </Grid>
       </Grid>
 

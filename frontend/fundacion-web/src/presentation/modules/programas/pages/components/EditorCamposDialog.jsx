@@ -429,8 +429,8 @@ export function EditorCamposDialog({ programa, onCerrar }) {
             </Grid>
             <Grid size={12}>
               <FormControl fullWidth size="small">
-                <InputLabel>Tipo de campo</InputLabel>
-                <Select label="Tipo de campo" value={form.tipo} onChange={set('tipo')}>
+                <InputLabel id="editor-campos-dialog-tipo-de-campo-label">Tipo de campo</InputLabel>
+                <Select labelId="editor-campos-dialog-tipo-de-campo-label" label="Tipo de campo" value={form.tipo} onChange={set('tipo')}>
                   {TIPOS_CAMPO.map((t, i) => t._h
                     ? <ListSubheader key={`h-${i}`}>{t.label}</ListSubheader>
                     : <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>

@@ -69,8 +69,8 @@ export function DialogReposicion({ open, cuentaCajaId, cuentas, guardando, onClo
         <Grid container spacing={2}>
           <Grid size={12}>
             <FormControl fullWidth size="small" error={!!v.err('cuentaOrigenId')}>
-              <InputLabel>Transferir desde *</InputLabel>
-              <Select value={form.cuentaOrigenId} label="Transferir desde *" onChange={set('cuentaOrigenId')}
+              <InputLabel id="dialog-reposicion-transferir-desde-label">Transferir desde *</InputLabel>
+              <Select labelId="dialog-reposicion-transferir-desde-label" value={form.cuentaOrigenId} label="Transferir desde *" onChange={set('cuentaOrigenId')}
                 onBlur={() => v.tocar('cuentaOrigenId')}>
                 {bancos.map(b => (
                   <MenuItem key={b.id} value={b.id}>{b.nombre} — {fmt(b.saldoActual)}</MenuItem>

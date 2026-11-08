@@ -12,8 +12,14 @@ namespace FundacionPanorama.API.Services;
 /// Servicio centralizado de correo. Todos los envíos del sistema pasan por aquí.
 /// Usa EnviarAsync como núcleo; los demás métodos construyen el contenido y lo delegan.
 /// </summary>
-public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db)
+public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db, ILogger<EmailService> logger)
 {
+    /// <summary>Mensaje para el usuario cuando falla el envío; el detalle técnico solo va al log.</summary>
+    public const string MensajeErrorEnvio =
+        "No se pudo enviar el correo. Verifica la configuración SMTP (servidor, puerto, usuario y clave) o inténtalo más tarde.";
+
+    static string H(string? texto) => System.Net.WebUtility.HtmlEncode(texto ?? "");
+
     // ── NÚCLEO: único punto de envío SMTP ────────────────────────────────────
 
     /// <summary>
@@ -57,9 +63,13 @@ public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db)
             await client.DisconnectAsync(true, ct);
             return (true, "");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
-            return (false, $"Error al enviar: {ex.Message}");
+            // El mensaje de MailKit puede revelar host, usuario o detalles del servidor: solo al log.
+            var codigo = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+            logger.LogError(ex, "❌ Falló el envío SMTP [{Codigo}] ({Destinatarios} destinatario(s), asunto: {Asunto})",
+                codigo, lista.Count, asunto);
+            return (false, $"{MensajeErrorEnvio} Código: {codigo}");
         }
     }
 
@@ -67,17 +77,16 @@ public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db)
 
     /// <summary>
     /// Envía una notificación a todos los administradores activos del sistema.
-    /// Los errores se silencian para no interrumpir el flujo principal.
+    /// Se llama en segundo plano (ver <see cref="TrabajoEnSegundoPlano"/>): un envío fallido queda
+    /// en el log, y un error inesperado (p. ej. de BD) se propaga para que el llamador lo registre.
     /// </summary>
     public async Task NotificarAdminsAsync(string asunto, string htmlBody, CancellationToken ct = default)
     {
-        try
-        {
-            var admins = await ObtenerEmailsAdminsAsync(ct);
-            if (admins.Count == 0) return;
-            await EnviarAsync(admins.Select(e => (e, (string?)null)), asunto, htmlBody, ct);
-        }
-        catch { /* No interrumpir el flujo principal */ }
+        var admins = await ObtenerEmailsAdminsAsync(ct);
+        if (admins.Count == 0) return;
+        var (ok, detalle) = await EnviarAsync(admins.Select(e => (e, (string?)null)), asunto, htmlBody, ct);
+        if (!ok)
+            logger.LogWarning("⚠️ Aviso a administradores no enviado ({Asunto}): {Detalle}", asunto, detalle);
     }
 
     // ── TEMPLATES ESPECÍFICOS ─────────────────────────────────────────────────
@@ -122,21 +131,30 @@ public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db)
         string? fechaInicio,
         string? fechaFin,
         CancellationToken ct = default)
+        => NotificarAdminsAsync($"[Actividad] Cambio en: {titulo}",
+            HtmlCambioActividad(titulo, estadoAnterior, estadoNuevo, fechaInicio, fechaFin), ct);
+
+    /// <summary>
+    /// Cuerpo HTML del aviso de cambio en una actividad. Todo dato del usuario va codificado
+    /// (HtmlEncode) para que un título con etiquetas no inyecte HTML en el correo.
+    /// </summary>
+    public static string HtmlCambioActividad(
+        string titulo, string? estadoAnterior, string estadoNuevo, string? fechaInicio, string? fechaFin)
     {
         var cambioEstado = estadoAnterior is not null && estadoAnterior != estadoNuevo
             ? $"<tr><td style='padding:4px 8px;color:#555'>Estado</td>"
-            + $"<td style='padding:4px 8px'><strong>{estadoAnterior}</strong> → <strong>{estadoNuevo}</strong></td></tr>"
+            + $"<td style='padding:4px 8px'><strong>{H(estadoAnterior)}</strong> → <strong>{H(estadoNuevo)}</strong></td></tr>"
             : string.Empty;
 
         var filaFecha = fechaInicio is not null
             ? $"<tr><td style='padding:4px 8px;color:#555'>Fecha / hora</td>"
-            + $"<td style='padding:4px 8px'>{fechaInicio}{(fechaFin != null ? " → " + fechaFin : "")}</td></tr>"
+            + $"<td style='padding:4px 8px'>{H(fechaInicio)}{(fechaFin != null ? " → " + H(fechaFin) : "")}</td></tr>"
             : string.Empty;
 
-        var html = $"""
+        return $"""
             <div style="font-family:Arial,sans-serif;font-size:14px;max-width:560px">
               <h2 style="color:#4E1B95">Cambio en actividad</h2>
-              <p>Se modificó la actividad <strong>{titulo}</strong>:</p>
+              <p>Se modificó la actividad <strong>{H(titulo)}</strong>:</p>
               <table style="border-collapse:collapse;width:100%">
                 {cambioEstado}
                 {filaFecha}
@@ -146,30 +164,25 @@ public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db)
               </p>
             </div>
             """;
-
-        return NotificarAdminsAsync($"[Actividad] Cambio en: {titulo}", html, ct);
     }
 
     // ── HELPERS INTERNOS ──────────────────────────────────────────────────────
 
     private async Task<List<string>> ObtenerEmailsAdminsAsync(CancellationToken ct)
     {
+        // Sin try/catch: un error de BD se propaga y queda en el log con código (no se traga).
         var emails = new List<string>();
-        try
-        {
-            await using var conn = db.Create();
-            await conn.OpenAsync(ct);
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = """
-                SELECT email FROM usuarios
-                WHERE activo = true
-                  AND rol IN ('representante_legal','sistemas')
-                  AND email IS NOT NULL AND email <> ''
-                """;
-            await using var r = await cmd.ExecuteReaderAsync(ct);
-            while (await r.ReadAsync(ct)) emails.Add(r.GetString(0));
-        }
-        catch { }
+        await using var conn = db.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT email FROM usuarios
+            WHERE activo = true
+              AND rol IN ('representante_legal','sistemas')
+              AND email IS NOT NULL AND email <> ''
+            """;
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct)) emails.Add(r.GetString(0));
         return emails;
     }
 }

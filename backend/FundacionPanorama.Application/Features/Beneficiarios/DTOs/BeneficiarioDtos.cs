@@ -176,6 +176,80 @@ public class BeneficiarioListDto
     public int                   PorPagina { get; set; }
 }
 
+/// <summary>
+/// Fila del LISTADO de beneficiarios (GET api/beneficiarios): solo lo que muestran la tabla
+/// y los buscadores. Sin salud, dirección, acudiente ni rutas de fotos: esos datos de menores
+/// solo viajan en el detalle (GET api/beneficiarios/{id}) o en la exportación con permiso.
+/// </summary>
+public class BeneficiarioResumenDto
+{
+    public Guid     Id                 { get; set; }
+    public string   NombreMenor        { get; set; } = string.Empty;
+    public DateOnly FechaNacimiento    { get; set; }
+    public string   TipoDocumento      { get; set; } = string.Empty;
+    public string?  NumeroDocumento    { get; set; }
+    public string?  Genero             { get; set; }
+    public string?  Whatsapp           { get; set; } // la tabla lo muestra con enlace a WhatsApp
+    public string   TieneAlergia       { get; set; } = "no"; // solo si/no; la descripción va en el detalle
+    public bool     Activo             { get; set; }
+    public string   Tipo               { get; set; } = "niño";
+    public bool     TieneFotoMenor     { get; set; }
+    public bool     TieneFotoDocumento { get; set; }
+    /// <summary>Porcentaje de perfil completo (0-100), calculado con la ficha completa.</summary>
+    public int      Completitud        { get; set; }
+
+    /// <summary>
+    /// Misma regla que tenía el frontend: 10 campos para niños y 8 para adultos
+    /// (sin colegio ni grado). "No registra" cuenta como vacío.
+    /// </summary>
+    public static int CalcularCompletitud(BeneficiarioDto b)
+    {
+        static bool Dato(string? v) => !string.IsNullOrWhiteSpace(v) && v != "No registra";
+        var checks = new List<bool>
+        {
+            !string.IsNullOrWhiteSpace(b.FotoMenorUrl),
+            !string.IsNullOrWhiteSpace(b.FotoDocumentoUrl),
+            Dato(b.Eps),
+            !string.IsNullOrWhiteSpace(b.Whatsapp),
+            Dato(b.Direccion),
+            Dato(b.TallaCamisa),
+            Dato(b.TallaZapatos),
+            b.PesoKg is > 0,
+        };
+        if (b.Tipo != "adulto")
+        {
+            checks.Add(Dato(b.NombreColegio));
+            checks.Add(!string.IsNullOrWhiteSpace(b.GradoEscolar));
+        }
+        return (int)Math.Round(checks.Count(c => c) * 100.0 / checks.Count, MidpointRounding.AwayFromZero);
+    }
+
+    public static BeneficiarioResumenDto Desde(BeneficiarioDto b) => new()
+    {
+        Id                 = b.Id,
+        NombreMenor        = b.NombreMenor,
+        FechaNacimiento    = b.FechaNacimiento,
+        TipoDocumento      = b.TipoDocumento,
+        NumeroDocumento    = b.NumeroDocumento,
+        Genero             = b.Genero,
+        Whatsapp           = b.Whatsapp,
+        TieneAlergia       = b.TieneAlergia,
+        Activo             = b.Activo,
+        Tipo               = b.Tipo,
+        TieneFotoMenor     = !string.IsNullOrWhiteSpace(b.FotoMenorUrl),
+        TieneFotoDocumento = !string.IsNullOrWhiteSpace(b.FotoDocumentoUrl),
+        Completitud        = CalcularCompletitud(b),
+    };
+}
+
+public class BeneficiarioResumenListDto
+{
+    public List<BeneficiarioResumenDto> Data      { get; set; } = [];
+    public int                          Total     { get; set; }
+    public int                          Pagina    { get; set; }
+    public int                          PorPagina { get; set; }
+}
+
 public class BeneficiarioStatsDto
 {
     public int Total       { get; set; }

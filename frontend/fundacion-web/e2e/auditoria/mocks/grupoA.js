@@ -13,7 +13,7 @@
 //   for (const r of RUTAS_A) await page.goto(r.hash) …
 //   for (const d of DIALOGOS_A) { await page.goto(d.hash); await d.abrir(page); }
 //   (cada `abrir` también navega a `hash` si la página aún no está ahí)
-import { BORRADOR_VALIDO, PNG_1X1 } from '../../support/datos.js';
+import { BORRADOR_VALIDO, PNG_1X1, resumenBeneficiario } from '../../support/datos.js';
 
 const FECHA = (d, h = '10:30') => `2026-${d}T${h}:00.000Z`;
 
@@ -410,9 +410,18 @@ export function registrar(api) {
     // Total "inflado" en las listas principales para que aparezca la paginación
     const total = sinFiltros ? (STATS[tipo]?.[estado === 'baja' ? 'baja' : estado === 'activos' ? 'activos' : 'total'] ?? lista.length) : lista.length;
     return { json: {
-      data: lista, total,
+      data: lista.map(resumenBeneficiario), total,
       pagina: Number(url.searchParams.get('pagina') ?? 1),
       porPagina: Number(url.searchParams.get('porPagina') ?? 15),
+    } };
+  });
+  // Exportación a Excel: ficha completa (permiso beneficiarios:exportar)
+  api.on('GET', '/api/beneficiarios/exportar', ({ url }) => {
+    const lista = filtrarBeneficiarios(url);
+    return { json: {
+      data: lista, total: lista.length,
+      pagina: Number(url.searchParams.get('pagina') ?? 1),
+      porPagina: Number(url.searchParams.get('porPagina') ?? 100),
     } };
   });
   api.on('GET', '/api/beneficiarios/stats', ({ url }) => ({ json: statsDetalle(url.searchParams.get('tipo') ?? 'todos') }));

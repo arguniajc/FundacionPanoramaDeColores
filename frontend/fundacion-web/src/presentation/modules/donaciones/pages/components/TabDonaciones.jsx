@@ -209,8 +209,8 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
             <ToggleButton value="especie">Especie</ToggleButton>
           </ToggleButtonGroup>
           <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Sede</InputLabel>
-            <Select value={filtSedeId} label="Sede" onChange={e => setFiltSedeId(e.target.value)}>
+            <InputLabel id="tab-donaciones-sede-label">Sede</InputLabel>
+            <Select labelId="tab-donaciones-sede-label" value={filtSedeId} label="Sede" onChange={e => setFiltSedeId(e.target.value)}>
               <MenuItem value="">Todas</MenuItem>
               {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
             </Select>
@@ -229,17 +229,19 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
           )}
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Tooltip title="Exporta todas las donaciones que cumplen los filtros actuales">
-            <span>
-              <Button size="small" variant="outlined"
-                startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <FileDownloadIcon />}
-                disabled={total === 0 || exportando}
-                onClick={handleExportar}
-              >
-                {exportando ? 'Exportando…' : 'Exportar Excel'}
-              </Button>
-            </span>
-          </Tooltip>
+          {puedo('donaciones', 'exportar') && (
+            <Tooltip title="Exporta todas las donaciones que cumplen los filtros actuales">
+              <span>
+                <Button size="small" variant="outlined"
+                  startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <FileDownloadIcon />}
+                  disabled={total === 0 || exportando}
+                  onClick={handleExportar}
+                >
+                  {exportando ? 'Exportando…' : 'Exportar Excel'}
+                </Button>
+              </span>
+            </Tooltip>
+          )}
           {puedo('donaciones', 'crear') && (
             <Button variant="contained" startIcon={<AddIcon />}
               onClick={() => { onClearDonanteInicial(); setDialOpen(true); }}

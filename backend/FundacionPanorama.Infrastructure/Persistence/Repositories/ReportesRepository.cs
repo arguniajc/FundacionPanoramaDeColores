@@ -230,6 +230,19 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
         return list;
     }
 
+    /// <summary>
+    /// Estado de la actividad según la fecha, igual que ActividadesService.EstadoEfectivo:
+    /// programada/en curso con fin vencido cuenta como realizada; programada ya iniciada, como en curso.
+    /// Se calcula al leer porque el listado de actividades ya no reescribe el estado en la BD.
+    /// </summary>
+    const string EstadoEfectivoSql = """
+        (CASE
+           WHEN estado IN ('programada','en_curso') AND fecha_fin IS NOT NULL AND fecha_fin < NOW() THEN 'realizada'
+           WHEN estado = 'programada' AND fecha_inicio <= NOW() AND (fecha_fin IS NULL OR fecha_fin > NOW()) THEN 'en_curso'
+           ELSE estado
+         END)
+        """;
+
     // ── Actividades ───────────────────────────────────────────────────────────
 
     public async Task<ActividadesReporteDto> ActividadesAsync(int? anio, CancellationToken ct)
@@ -241,10 +254,10 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
         var resumen = await QueryResumenActividades(conn, ct, year);
 
         var porEstado = await QueryGrupo(conn, ct, $"""
-            SELECT estado AS etiqueta, COUNT(*) AS cantidad
+            SELECT {EstadoEfectivoSql} AS etiqueta, COUNT(*) AS cantidad
             FROM actividades
             WHERE EXTRACT(YEAR FROM fecha_inicio) = {year}
-            GROUP BY estado
+            GROUP BY 1
             ORDER BY cantidad DESC
             """);
 
@@ -267,9 +280,9 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
             SELECT COUNT(*),
-                   SUM(CASE WHEN estado = 'completada'   THEN 1 ELSE 0 END),
-                   SUM(CASE WHEN estado = 'en_curso'     THEN 1 ELSE 0 END),
-                   SUM(CASE WHEN estado = 'planificada'  THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN {EstadoEfectivoSql} = 'realizada'  THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN {EstadoEfectivoSql} = 'en_curso'   THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN {EstadoEfectivoSql} = 'programada' THEN 1 ELSE 0 END),
                    COALESCE((SELECT COUNT(*) FROM actividad_asistencia aa
                               JOIN actividades a2 ON a2.id = aa.actividad_id
                               WHERE aa.asistio = true AND EXTRACT(YEAR FROM a2.fecha_inicio) = {year}), 0),
@@ -298,7 +311,7 @@ public class ReportesRepository(DbConnectionFactory factory) : IReportesReposito
                    (SELECT COUNT(*) FROM actividad_asistencia aa WHERE aa.actividad_id = a.id) AS inscritos,
                    (SELECT COUNT(*) FROM actividad_asistencia aa WHERE aa.actividad_id = a.id AND aa.asistio = true) AS asistieron
             FROM actividades a
-            WHERE a.estado = 'completada' AND EXTRACT(YEAR FROM a.fecha_inicio) = {year}
+            WHERE {EstadoEfectivoSql} = 'realizada' AND EXTRACT(YEAR FROM a.fecha_inicio) = {year}
             ORDER BY a.fecha_inicio DESC
             LIMIT 10
             """;

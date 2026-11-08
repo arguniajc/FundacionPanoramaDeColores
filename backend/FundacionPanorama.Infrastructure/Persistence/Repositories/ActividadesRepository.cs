@@ -8,31 +8,8 @@ public class ActividadesRepository(DbConnectionFactory factory) : IActividadesRe
 {
     public async Task<IReadOnlyList<ActividadResumenDto>> ListarAsync(int? mes, int? anio, Guid? programaId, CancellationToken ct)
     {
-        // Auto-transición de estados según fecha
-        await using (var connAuto = factory.Create())
-        {
-            await connAuto.OpenAsync(ct);
-            await using var cmdReal = connAuto.CreateCommand();
-            cmdReal.CommandText = """
-                UPDATE actividades
-                SET estado = 'realizada'
-                WHERE estado IN ('programada','en_curso')
-                  AND fecha_fin IS NOT NULL
-                  AND fecha_fin < NOW()
-                """;
-            await cmdReal.ExecuteNonQueryAsync(ct);
-
-            await using var cmdCurso = connAuto.CreateCommand();
-            cmdCurso.CommandText = """
-                UPDATE actividades
-                SET estado = 'en_curso'
-                WHERE estado = 'programada'
-                  AND fecha_inicio <= NOW()
-                  AND (fecha_fin IS NULL OR fecha_fin > NOW())
-                """;
-            await cmdCurso.ExecuteNonQueryAsync(ct);
-        }
-
+        // Solo lectura: el estado según la fecha (en curso / realizada) lo calcula
+        // ActividadesService.EstadoEfectivo al devolver los datos, sin escribir en la BD.
         var filas = new List<(Guid Id, string Titulo, string? Desc, Guid? ProgId, string? ProgNombre, DateTime FI, DateTime? FF, string? Lugar, string Estado, int Total)>();
 
         await using (var conn = factory.Create())

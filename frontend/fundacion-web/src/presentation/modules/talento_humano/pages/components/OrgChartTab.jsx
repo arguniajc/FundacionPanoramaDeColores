@@ -313,8 +313,8 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
 
         {/* Jefe directo */}
         <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
-          <InputLabel>Reporta a (jefe directo)</InputLabel>
-          <Select value={parentId} label="Reporta a (jefe directo)" onChange={e => setParentId(e.target.value)}>
+          <InputLabel id="org-chart-tab-reporta-a-jefe-directo-label">Reporta a (jefe directo)</InputLabel>
+          <Select labelId="org-chart-tab-reporta-a-jefe-directo-label" value={parentId} label="Reporta a (jefe directo)" onChange={e => setParentId(e.target.value)}>
             <MenuItem value="">— Nivel raíz (sin jefe) —</MenuItem>
             {posiblesJefes.map(p => {
               const n = p.empleadoNombre ?? p.nombreExterno ?? '—';
@@ -329,8 +329,8 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
 
         {/* Selector de empleado */}
         <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
-          <InputLabel>Empleado del panel</InputLabel>
-          <Select
+          <InputLabel id="org-chart-tab-empleado-del-panel-label">Empleado del panel</InputLabel>
+          <Select labelId="org-chart-tab-empleado-del-panel-label"
             value={empleadoId}
             label="Empleado del panel"
             onChange={e => {

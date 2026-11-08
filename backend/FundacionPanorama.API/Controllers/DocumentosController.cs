@@ -13,7 +13,11 @@ namespace FundacionPanorama.API.Controllers;
 [ApiController]
 [Route("api/documentos")]
 [Authorize]
-public class DocumentosController(DocumentosService svc, IOptions<SupabaseOptions> supabase) : ControllerBase
+public class DocumentosController(
+    DocumentosService svc,
+    IOptions<SupabaseOptions> supabase,
+    SupabaseStorageService storage,
+    ILogger<DocumentosController> logger) : ControllerBase
 {
     // Enlaces https permitidos: solo los públicos del propio Supabase (el resto debe ser "privado://…")
     string? OrigenPublico => string.IsNullOrWhiteSpace(supabase.Value.Url)
@@ -45,7 +49,12 @@ public class DocumentosController(DocumentosService svc, IOptions<SupabaseOption
     [HttpDelete("{id:guid}")]
     [RequierePermiso("documentos", "eliminar")]
     public async Task<IActionResult> Eliminar(Guid id)
-        => await svc.EliminarAsync(id) ? Ok() : NotFound();
+    {
+        var eliminado = await svc.EliminarAsync(id);
+        if (eliminado is null) return NotFound();
+        await BorrarDelAlmacenamientoAsync(eliminado.Url);
+        return Ok();
+    }
 
     // ── Por beneficiario (tabla archivos) ────────────────────────────────────
 
@@ -70,5 +79,24 @@ public class DocumentosController(DocumentosService svc, IOptions<SupabaseOption
     [HttpDelete("archivo/{id:guid}")]
     [RequierePermiso("documentos", "eliminar")]
     public async Task<IActionResult> EliminarArchivo(Guid id)
-        => await svc.EliminarArchivoAsync(id) ? Ok() : NotFound();
+    {
+        var eliminado = await svc.EliminarArchivoAsync(id);
+        if (eliminado is null) return NotFound();
+        await BorrarDelAlmacenamientoAsync(eliminado.Url);
+        return Ok();
+    }
+
+    // El registro ya quedó borrado: si Storage falla solo se deja constancia en el log
+    // (el archivo queda huérfano, pero el usuario no recibe un error por algo que ya hizo).
+    async Task BorrarDelAlmacenamientoAsync(string? url)
+    {
+        try
+        {
+            await storage.EliminarPrivadoAsync(url, HttpContext.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "No se pudo borrar del almacenamiento el archivo de un documento eliminado ({Url})", url);
+        }
+    }
 }

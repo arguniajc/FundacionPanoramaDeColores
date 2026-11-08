@@ -169,16 +169,16 @@ export default function InscripcionesPage() {
         <TextField size="small" label="Buscar beneficiario, documento o programa" sx={{ minWidth: 200, flex: 1 }}
           value={filtroBuscar} onChange={e => setFiltroBuscar(e.target.value)} />
         <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel>Programa</InputLabel>
-          <Select label="Programa" value={filtroProg}
+          <InputLabel id="inscripciones-page-programa-label">Programa</InputLabel>
+          <Select labelId="inscripciones-page-programa-label" label="Programa" value={filtroProg}
             onChange={e => setFiltroProg(e.target.value)}>
             <MenuItem value="">Todos</MenuItem>
             {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel>Estado</InputLabel>
-          <Select label="Estado" value={filtroEstado}
+          <InputLabel id="inscripciones-page-estado-label">Estado</InputLabel>
+          <Select labelId="inscripciones-page-estado-label" label="Estado" value={filtroEstado}
             onChange={e => setFiltroEstado(e.target.value)}>
             <MenuItem value="">Todos</MenuItem>
             {ESTADOS.map(e => <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>)}
@@ -261,6 +261,7 @@ export default function InscripcionesPage() {
                 }}>
                   <FormControl size="small" sx={{ minWidth: 120 }}>
                     <Select value={i.estado} size="small"
+                      inputProps={{ 'aria-label': `Estado de la inscripción de ${i.nombreBeneficiario ?? ''}`.trim() }}
                       disabled={cambiandoId === i.id}
                       onChange={e => handleCambiarEstado(i.id, e.target.value)}>
                       {ESTADOS.map(e => <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>)}

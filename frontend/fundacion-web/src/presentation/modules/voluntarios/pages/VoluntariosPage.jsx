@@ -142,7 +142,7 @@ export default function VoluntariosPage() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {puedo('voluntarios', 'ver') && (
+          {puedo('voluntarios', 'exportar') && (
             <Button variant="outlined" onClick={handleExportar} disabled={exportando}
               startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
               sx={{ fontWeight: 700, borderRadius: 2 }}>

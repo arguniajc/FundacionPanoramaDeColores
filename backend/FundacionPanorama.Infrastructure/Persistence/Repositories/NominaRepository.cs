@@ -1,7 +1,7 @@
 using FundacionPanorama.Application.Features.Nomina.DTOs;
 using FundacionPanorama.Application.Features.Nomina.Interfaces;
 using Npgsql;
-using static FundacionPanorama.Application.Features.Nomina.DTOs.NominaConstants;
+using FundacionPanorama.Application.Features.Nomina;
 
 namespace FundacionPanorama.Infrastructure.Persistence.Repositories;
 
@@ -129,7 +129,7 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
     public async Task<NominaLiquidacionDto?> ActualizarLiquidacionAsync(int id, LiquidarEmpleadoDto dto, CancellationToken ct)
     {
         var salario = dto.SalarioOverride ?? await ObtenerSalarioEmpleado(dto.EmpleadoId, ct);
-        var t = Calcular(salario, dto);
+        var t = Calcular(salario, dto);   // salario_base guarda el salario MENSUAL; los totales van proporcionales a los días
 
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
@@ -149,7 +149,7 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
         cmd.Parameters.AddWithValue("id",   id);
         cmd.Parameters.AddWithValue("dias", dto.DiasTrabajados);
         cmd.Parameters.AddWithValue("sal",  salario);
-        cmd.Parameters.AddWithValue("aux",  t.Aux);
+        cmd.Parameters.AddWithValue("aux",  t.Auxilio);
         cmd.Parameters.AddWithValue("he",   dto.HorasExtras);
         cmd.Parameters.AddWithValue("bon",  dto.Bonificaciones);
         cmd.Parameters.AddWithValue("salud",   t.Salud);
@@ -186,12 +186,8 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
         var result = new List<NominaLiquidacionDto>();
         foreach (var (empId, salario) in empleados)
         {
-            var aux     = salario <= 2 * SMLMV ? AuxilioTransporte : 0m;
-            var salud   = Math.Round(salario * TasaSalud, 0);
-            var pension = Math.Round(salario * TasaPension, 0);
-            var devengado   = salario + aux;
-            var deducciones = salud + pension;
-            var neto        = devengado - deducciones;
+            // Mes completo (30 días); el ajuste por días se hace al editar la liquidación
+            var (_, aux, salud, pension, devengado, deducciones, neto) = CalculoNomina.Calcular(salario, CalculoNomina.DiasMes);
 
             await using var cmdIns = conn.CreateCommand();
             cmdIns.CommandText = """
@@ -228,7 +224,7 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
     public async Task<NominaLiquidacionDto> LiquidarEmpleadoAsync(int periodoId, LiquidarEmpleadoDto dto, CancellationToken ct)
     {
         var salario = dto.SalarioOverride ?? await ObtenerSalarioEmpleado(dto.EmpleadoId, ct);
-        var (aux, salud, pension, devengado, deducciones, neto) = Calcular(salario, dto);
+        var (_, aux, salud, pension, devengado, deducciones, neto) = Calcular(salario, dto);
 
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
@@ -305,17 +301,10 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
         JOIN empleados e ON e.id = l.empleado_id
         """;
 
-    /// <summary>Totales de una liquidación manual (al liquidar y al editar).</summary>
-    private static (decimal Aux, decimal Salud, decimal Pension, decimal Devengado, decimal Deducciones, decimal Neto)
-        Calcular(decimal salario, LiquidarEmpleadoDto dto)
-    {
-        var aux         = salario <= 2 * SMLMV ? AuxilioTransporte : 0m;
-        var salud       = Math.Round(salario * TasaSalud, 0);
-        var pension     = Math.Round(salario * TasaPension, 0);
-        var devengado   = salario + aux + dto.HorasExtras + dto.Bonificaciones;
-        var deducciones = salud + pension + dto.RetencionFuente + dto.OtrasDeducciones;
-        return (aux, salud, pension, devengado, deducciones, devengado - deducciones);
-    }
+    /// <summary>Totales de una liquidación manual (al liquidar y al editar): proporcionales a los días.</summary>
+    private static TotalesLiquidacion Calcular(decimal salarioMensual, LiquidarEmpleadoDto dto)
+        => CalculoNomina.Calcular(salarioMensual, dto.DiasTrabajados,
+            dto.HorasExtras, dto.Bonificaciones, dto.RetencionFuente, dto.OtrasDeducciones);
 
     private async Task<decimal> ObtenerSalarioEmpleado(Guid id, CancellationToken ct)
     {

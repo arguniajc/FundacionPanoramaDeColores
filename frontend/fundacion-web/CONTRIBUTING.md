@@ -15,7 +15,7 @@ src/
 │   └── ...             Un sub-directorio por dominio
 │
 ├── domain/             Reglas de negocio puras (sin React, sin API)
-│   └── beneficiarios/  beneficiarioRules.js
+│   └── beneficiarios/  validacionBeneficiario.js
 │
 ├── infrastructure/     Integración con servicios externos
 │   ├── http/           apiClient.js  ← el único lugar que importa axios

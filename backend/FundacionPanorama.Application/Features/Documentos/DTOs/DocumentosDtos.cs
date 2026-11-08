@@ -29,3 +29,6 @@ public record ArchivoBeneficiarioDto(
     string   Url,
     string?  NombreOriginal,
     DateTime FechaCreacion);
+
+/// <summary>Registro desactivado: Url es el archivo que hay que borrar del almacenamiento.</summary>
+public sealed record DocumentoEliminado(string? Url);

@@ -77,8 +77,8 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 4 }}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Ícono (Font Awesome)</InputLabel>
-                    <Select label="Ícono (Font Awesome)" value={prog.icono} onChange={setProg(i, 'icono')}>
+                    <InputLabel id={`tab-pagina-web-icono-${i}-label`}>Ícono (Font Awesome)</InputLabel>
+                    <Select labelId={`tab-pagina-web-icono-${i}-label`} label="Ícono (Font Awesome)" value={prog.icono} onChange={setProg(i, 'icono')}>
                       {FA_ICONOS.map(ic => <MenuItem key={ic} value={ic}><i className={`fas ${ic}`} style={{ marginRight: 8 }} />{ic.replace('fa-', '')}</MenuItem>)}
                     </Select>
                   </FormControl>

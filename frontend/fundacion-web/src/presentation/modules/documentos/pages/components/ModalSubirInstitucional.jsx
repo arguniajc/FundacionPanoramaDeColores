@@ -107,8 +107,8 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
       <DialogContent dividers sx={{ py: 2.5, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
         {error && <Alert severity="error">{error}</Alert>}
         <FormControl size="small" fullWidth error={!!v.err('categoria')}>
-          <InputLabel>Categoría</InputLabel>
-          <Select label="Categoría" value={categoria} onChange={e => setCategoria(e.target.value)}
+          <InputLabel id="modal-subir-institucional-categoria-label">Categoría</InputLabel>
+          <Select labelId="modal-subir-institucional-categoria-label" label="Categoría" value={categoria} onChange={e => setCategoria(e.target.value)}
             onBlur={() => v.tocar('categoria')}>
             {CATEGORIAS.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
           </Select>

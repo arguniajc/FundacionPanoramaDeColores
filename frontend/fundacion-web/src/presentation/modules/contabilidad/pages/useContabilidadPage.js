@@ -40,6 +40,8 @@ export function useContabilidadPage() {
 
   const puedeCrear  = puedo('contabilidad', 'crear');
   const puedeEditar = puedo('contabilidad', 'editar');
+  const puedeEliminar = puedo('contabilidad', 'eliminar');
+  const puedeExportar = puedo('contabilidad', 'exportar');
 
   const now = new Date();
   const [tab,         setTab]         = useState(0);
@@ -476,7 +478,7 @@ export function useContabilidadPage() {
 
   return {
     // permisos + config
-    puedeCrear, puedeEditar, config,
+    puedeCrear, puedeEditar, puedeEliminar, puedeExportar, config,
     // navegación
     tab, setTab,
     // carga

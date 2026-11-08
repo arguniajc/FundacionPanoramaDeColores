@@ -333,8 +333,8 @@ export default function ProgramasPage() {
             <Grid sx={{ mt: 0 }} container spacing={2.5}>
               <Grid size={12}>
                 <FormControl fullWidth size="small" error={!!v.err('sedeId')}>
-                  <InputLabel>Sede *</InputLabel>
-                  <Select label="Sede *" value={formPrograma.sedeId} onBlur={() => v.tocar('sedeId')}
+                  <InputLabel id="programas-page-sede-label">Sede *</InputLabel>
+                  <Select labelId="programas-page-sede-label" label="Sede *" value={formPrograma.sedeId} onBlur={() => v.tocar('sedeId')}
                     onChange={e => setFormPrograma(p => ({ ...p, sedeId: e.target.value }))}>
                     {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
                   </Select>
@@ -402,8 +402,8 @@ export default function ProgramasPage() {
                   </Grid>
                   <Grid size={{ xs: 12, sm: 5 }}>
                     <FormControl fullWidth size="small">
-                      <InputLabel>Tipo de documento</InputLabel>
-                      <Select label="Tipo de documento" value={formPrograma.terceroRepTipoDoc}
+                      <InputLabel id="programas-page-tipo-de-documento-label">Tipo de documento</InputLabel>
+                      <Select labelId="programas-page-tipo-de-documento-label" label="Tipo de documento" value={formPrograma.terceroRepTipoDoc}
                         onChange={e => setFormPrograma(p => ({ ...p, terceroRepTipoDoc: e.target.value }))}>
                         {TIPOS_DOC.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                       </Select>

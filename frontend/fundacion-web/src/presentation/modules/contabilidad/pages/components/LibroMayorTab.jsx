@@ -46,14 +46,14 @@ export function LibroMayorTab() {
       {/* Filtros */}
       <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <FormControl size="small" sx={{ minWidth: 110 }}>
-          <InputLabel>Año</InputLabel>
-          <Select value={anio} label="Año" onChange={e => setAnio(e.target.value)}>
+          <InputLabel id="libro-mayor-tab-ano-label">Año</InputLabel>
+          <Select labelId="libro-mayor-tab-ano-label" value={anio} label="Año" onChange={e => setAnio(e.target.value)}>
             {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 130 }}>
-          <InputLabel>Mes</InputLabel>
-          <Select value={mes} label="Mes" onChange={e => setMes(e.target.value)}>
+          <InputLabel id="libro-mayor-tab-mes-label">Mes</InputLabel>
+          <Select labelId="libro-mayor-tab-mes-label" value={mes} label="Mes" onChange={e => setMes(e.target.value)}>
             <MenuItem value="">Todos</MenuItem>
             {MESES.map((m, i) => <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>)}
           </Select>

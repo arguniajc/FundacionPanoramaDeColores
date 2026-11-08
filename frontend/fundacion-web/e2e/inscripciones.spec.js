@@ -35,7 +35,7 @@ async function llenarInscripcion(page, api, sesion) {
 
   // Paso 3: autorización y firma
   await expect(dialogo.getByText('Este programa no tiene campos adicionales.')).toBeVisible();
-  await dialogo.locator('.MuiFormControl-root').filter({ hasText: '¿Quién firma?' }).getByRole('combobox').click();
+  await dialogo.getByRole('combobox', { name: '¿Quién firma?' }).click();
   await page.getByRole('option', { name: 'Madre' }).click();
   await dialogo.getByRole('textbox', { name: 'Nombre completo' }).fill('Ana Gómez');
   await dialogo.getByRole('textbox', { name: 'Número de documento' }).fill('1144123456');

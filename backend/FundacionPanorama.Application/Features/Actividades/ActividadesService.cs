@@ -10,7 +10,7 @@ namespace FundacionPanorama.Application.Features.Actividades;
 /// </summary>
 public class ActividadesService(IActividadesRepository repo)
 {
-    /// <summary>Estados que usa el panel (y la auto-transición del repositorio).</summary>
+    /// <summary>Estados que usa el panel (y el cálculo de <see cref="EstadoEfectivo"/>).</summary>
     public static readonly string[] Estados = ["programada", "en_curso", "realizada", "cancelada"];
 
     // Columnas: actividades.titulo VARCHAR(200), lugar VARCHAR(200); programa_horarios.lugar VARCHAR(200)
@@ -18,11 +18,34 @@ public class ActividadesService(IActividadesRepository repo)
     const int MaxLugar  = 200;
     const int MaxDiasAdicionales = 366;
 
-    public Task<IReadOnlyList<ActividadResumenDto>> ListarAsync(int? mes, int? anio, Guid? programaId, CancellationToken ct = default)
-        => repo.ListarAsync(mes, anio, programaId, ct);
+    /// <summary>
+    /// Estado que se muestra según la fecha, calculado al leer (sin escribir en la BD):
+    /// una actividad programada o en curso cuya fecha de fin ya pasó se muestra "realizada", y una
+    /// programada que ya empezó y no ha terminado se muestra "en_curso". "cancelada" y "realizada"
+    /// no cambian. Si el usuario edita y guarda, el estado mostrado queda persistido.
+    /// ReportesRepository aplica la misma regla en SQL para los conteos por estado.
+    /// </summary>
+    public static string EstadoEfectivo(string estado, DateTime fechaInicio, DateTime? fechaFin, DateTime ahora)
+    {
+        if (estado is "programada" or "en_curso" && fechaFin is { } fin && fin < ahora) return "realizada";
+        if (estado == "programada" && fechaInicio <= ahora && (fechaFin is null || fechaFin > ahora)) return "en_curso";
+        return estado;
+    }
 
-    public Task<ActividadDto?> ObtenerAsync(Guid id, CancellationToken ct = default)
-        => repo.ObtenerAsync(id, ct);
+    static ActividadResumenDto ConEstado(ActividadResumenDto a, DateTime ahora)
+        => a with { Estado = EstadoEfectivo(a.Estado, a.FechaInicio, a.FechaFin, ahora) };
+
+    static ActividadDto? ConEstado(ActividadDto? a, DateTime ahora)
+        => a is null ? null : a with { Estado = EstadoEfectivo(a.Estado, a.FechaInicio, a.FechaFin, ahora) };
+
+    public async Task<IReadOnlyList<ActividadResumenDto>> ListarAsync(int? mes, int? anio, Guid? programaId, CancellationToken ct = default)
+    {
+        var ahora = DateTime.UtcNow;
+        return (await repo.ListarAsync(mes, anio, programaId, ct)).Select(a => ConEstado(a, ahora)).ToList();
+    }
+
+    public async Task<ActividadDto?> ObtenerAsync(Guid id, CancellationToken ct = default)
+        => ConEstado(await repo.ObtenerAsync(id, ct), DateTime.UtcNow);
 
     async Task ValidarActividad(string? titulo, Guid? programaId, DateTime fechaInicio, DateTime? fechaFin,
         string? lugar, List<CrearActividadDiaDto>? dias, CancellationToken ct)
@@ -57,14 +80,14 @@ public class ActividadesService(IActividadesRepository repo)
     public async Task<ActividadDto> CrearAsync(CrearActividadDto dto, CancellationToken ct = default)
     {
         await ValidarActividad(dto.Titulo, dto.ProgramaId, dto.FechaInicio, dto.FechaFin, dto.Lugar, dto.DiasAdicionales, ct);
-        return await repo.CrearAsync(dto, ct);
+        return ConEstado(await repo.CrearAsync(dto, ct), DateTime.UtcNow)!;
     }
 
     public async Task<ActividadDto?> ActualizarAsync(Guid id, ActualizarActividadDto dto, CancellationToken ct = default)
     {
         EnLista(dto.Estado, Estados, "El estado no es válido (programada, en curso, realizada o cancelada).");
         await ValidarActividad(dto.Titulo, dto.ProgramaId, dto.FechaInicio, dto.FechaFin, dto.Lugar, dto.DiasAdicionales, ct);
-        return await repo.ActualizarAsync(id, dto with { Estado = dto.Estado.Trim() }, ct);
+        return ConEstado(await repo.ActualizarAsync(id, dto with { Estado = dto.Estado.Trim() }, ct), DateTime.UtcNow);
     }
 
     public Task<bool> EliminarAsync(Guid id, CancellationToken ct = default)

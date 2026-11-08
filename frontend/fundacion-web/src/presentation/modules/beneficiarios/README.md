@@ -38,4 +38,4 @@ Gestión completa de los niños y adultos inscritos en la fundación. Incluye li
 
 ## Reglas de negocio
 
-Ver `domain/beneficiarios/beneficiarioRules.js` — contiene validaciones de edad, tipo (niño/adulto) y categoría (CC/RC) que no deben duplicarse en el componente.
+Ver `domain/beneficiarios/validacionBeneficiario.js` — validaciones del formulario y de la importación que no deben duplicarse en el componente.

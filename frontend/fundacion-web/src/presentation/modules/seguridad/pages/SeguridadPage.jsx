@@ -186,8 +186,8 @@ function TabAuditoria() {
       {/* Filtros */}
       <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
         <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Módulo</InputLabel>
-          <Select value={filtTipo} label="Módulo" onChange={e => setFiltTipo(e.target.value)}>
+          <InputLabel id="seguridad-page-modulo-label">Módulo</InputLabel>
+          <Select labelId="seguridad-page-modulo-label" value={filtTipo} label="Módulo" onChange={e => setFiltTipo(e.target.value)}>
             <MenuItem value="">Todos</MenuItem>
             {tipos.map(t => (
               <MenuItem key={t} value={t}>{TIPO_LABELS[t] ?? t}</MenuItem>
@@ -196,8 +196,8 @@ function TabAuditoria() {
         </FormControl>
 
         <FormControl size="small" sx={{ minWidth: 155 }}>
-          <InputLabel>Acción</InputLabel>
-          <Select value={filtAccion} label="Acción" onChange={e => setFiltAccion(e.target.value)}>
+          <InputLabel id="seguridad-page-accion-label">Acción</InputLabel>
+          <Select labelId="seguridad-page-accion-label" value={filtAccion} label="Acción" onChange={e => setFiltAccion(e.target.value)}>
             <MenuItem value="">Todas</MenuItem>
             {ACCIONES_FILTRO.map(a => (
               <MenuItem key={a} value={a}>{a}</MenuItem>

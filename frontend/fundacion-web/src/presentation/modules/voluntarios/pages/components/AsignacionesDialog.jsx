@@ -180,8 +180,8 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
         <Grid sx={{ alignItems: 'center' }} container spacing={2}>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small" error={!!v.err('sedeId')}>
-              <InputLabel>Sede</InputLabel>
-              <Select value={form.sedeId} label="Sede" onBlur={() => v.tocar('sedeId')}
+              <InputLabel id="asignaciones-dialog-sede-label">Sede</InputLabel>
+              <Select labelId="asignaciones-dialog-sede-label" value={form.sedeId} label="Sede" onBlur={() => v.tocar('sedeId')}
                 onChange={e => setF('sedeId', e.target.value)}>
                 <MenuItem value=""><em>Sin sede</em></MenuItem>
                 {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
@@ -191,8 +191,8 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small" disabled={!form.sedeId || programas.length === 0}>
-              <InputLabel>Programa</InputLabel>
-              <Select value={form.programaId} label="Programa" onChange={e => setF('programaId', e.target.value)}>
+              <InputLabel id="asignaciones-dialog-programa-label">Programa</InputLabel>
+              <Select labelId="asignaciones-dialog-programa-label" value={form.programaId} label="Programa" onChange={e => setF('programaId', e.target.value)}>
                 <MenuItem value=""><em>Sin programa</em></MenuItem>
                 {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
               </Select>

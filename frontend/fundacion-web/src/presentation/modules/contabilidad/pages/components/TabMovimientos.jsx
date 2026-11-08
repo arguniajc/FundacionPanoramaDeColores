@@ -26,7 +26,7 @@ export function TabMovimientos({
   filtroAnio, setFiltroAnio,
   filtroCuenta, setFiltroCuenta,
   busqueda, onBusqueda,
-  puedeCrear, puedeEditar,
+  puedeCrear, puedeEditar, puedeEliminar, puedeExportar,
   onFiltrar, onExportarCSV,
   onVerComprobante, onDescargarComprobante,
   onDuplicar, onEditar, onAnular, onEliminar,
@@ -40,29 +40,29 @@ export function TabMovimientos({
       <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'superficie2', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 130 }}>
-            <InputLabel>Tipo</InputLabel>
-            <Select value={filtroTipo} label="Tipo" onChange={e => setFiltroTipo(e.target.value)}>
+            <InputLabel id="tab-movimientos-tipo-label">Tipo</InputLabel>
+            <Select labelId="tab-movimientos-tipo-label" value={filtroTipo} label="Tipo" onChange={e => setFiltroTipo(e.target.value)}>
               <MenuItem value="">Todos</MenuItem>
               <MenuItem value="ingreso">Ingreso</MenuItem>
               <MenuItem value="egreso">Egreso</MenuItem>
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 130 }}>
-            <InputLabel>Mes</InputLabel>
-            <Select value={filtroMes} label="Mes" onChange={e => setFiltroMes(e.target.value)}>
+            <InputLabel id="tab-movimientos-mes-label">Mes</InputLabel>
+            <Select labelId="tab-movimientos-mes-label" value={filtroMes} label="Mes" onChange={e => setFiltroMes(e.target.value)}>
               <MenuItem value="">Todos</MenuItem>
               {MESES.map((m, i) => <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>)}
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 100 }}>
-            <InputLabel>Año</InputLabel>
-            <Select value={filtroAnio} label="Año" onChange={e => setFiltroAnio(e.target.value)}>
+            <InputLabel id="tab-movimientos-ano-label">Año</InputLabel>
+            <Select labelId="tab-movimientos-ano-label" value={filtroAnio} label="Año" onChange={e => setFiltroAnio(e.target.value)}>
               {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Cuenta</InputLabel>
-            <Select value={filtroCuenta} label="Cuenta" onChange={e => setFiltroCuenta(e.target.value)}>
+            <InputLabel id="tab-movimientos-cuenta-label">Cuenta</InputLabel>
+            <Select labelId="tab-movimientos-cuenta-label" value={filtroCuenta} label="Cuenta" onChange={e => setFiltroCuenta(e.target.value)}>
               <MenuItem value="">Todas</MenuItem>
               {cuentas.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
             </Select>
@@ -71,9 +71,11 @@ export function TabMovimientos({
           <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }}
             size="small" placeholder="Buscar concepto / tercero..." value={busqueda}
             onChange={e => onBusqueda(e.target.value)} sx={{ minWidth: 220 }} />
-          <Button variant="outlined" size="small" startIcon={<DownloadIcon />} onClick={onExportarCSV}>
-            CSV
-          </Button>
+          {puedeExportar && (
+            <Button variant="outlined" size="small" startIcon={<DownloadIcon />} onClick={onExportarCSV}>
+              CSV
+            </Button>
+          )}
         </Box>
       </Paper>
 
@@ -171,12 +173,14 @@ export function TabMovimientos({
                         </IconButton>
                       </Tooltip>
                     )}
+                  </>}
+                  {puedeEliminar && (
                     <Tooltip title="Eliminar">
                       <IconButton size="small" color="error" onClick={() => onEliminar(m.id)}>
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                  </>}
+                  )}
                 </TableCell>
               </TableRow>
             ))}

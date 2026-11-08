@@ -7,6 +7,7 @@ using FundacionPanorama.Application.Features.Archivos.DTOs;
 using FundacionPanorama.Application.Features.Archivos.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FundacionPanorama.API.Controllers;
 
@@ -72,6 +73,7 @@ public class ArchivosController : ControllerBase
     // se firma si el rol puede ver el módulo de su carpeta; si no, queda fuera de la respuesta.
     [HttpPost("firmar")]
     [Authorize]
+    [EnableRateLimiting(LimiteSolicitudes.PoliticaFirmar)]
     public async Task<IActionResult> Firmar([FromBody] FirmarDto dto, CancellationToken ct)
     {
         var refs = (dto.Referencias ?? []).Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList();

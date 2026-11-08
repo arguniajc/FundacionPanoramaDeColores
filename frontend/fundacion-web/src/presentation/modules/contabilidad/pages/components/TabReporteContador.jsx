@@ -12,6 +12,7 @@ export function TabReporteContador({
   reporte, resumenAnual,
   repMes, setRepMes, repAnio, setRepAnio,
   onGenerar, onCargarResumenAnual,
+  puedeExportar,
   config,
 }) {
   return (
@@ -19,14 +20,14 @@ export function TabReporteContador({
       <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'superficie2', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Mes</InputLabel>
-            <Select value={repMes} label="Mes" onChange={e => setRepMes(e.target.value)}>
+            <InputLabel id="tab-reporte-contador-mes-label">Mes</InputLabel>
+            <Select labelId="tab-reporte-contador-mes-label" value={repMes} label="Mes" onChange={e => setRepMes(e.target.value)}>
               {MESES.map((m, i) => <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>)}
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 100 }}>
-            <InputLabel>Año</InputLabel>
-            <Select value={repAnio} label="Año" onChange={e => { setRepAnio(e.target.value); onCargarResumenAnual(e.target.value); }}>
+            <InputLabel id="tab-reporte-contador-ano-label">Año</InputLabel>
+            <Select labelId="tab-reporte-contador-ano-label" value={repAnio} label="Año" onChange={e => { setRepAnio(e.target.value); onCargarResumenAnual(e.target.value); }}>
               {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
           </FormControl>
@@ -36,7 +37,7 @@ export function TabReporteContador({
               Imprimir
             </Button>
           )}
-          {reporte && (
+          {reporte && puedeExportar && (
             <Button variant="contained" color="error" startIcon={<PictureAsPdfIcon />}
               onClick={() => generarReportePDF(reporte, config)}>
               Descargar PDF

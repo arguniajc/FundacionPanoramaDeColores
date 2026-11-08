@@ -7,7 +7,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon   from '@mui/icons-material/Edit';
 import { fmt } from './formato';
 
-export function TabCuentas({ cuentas, puedeCrear, puedeEditar, onCrear, onEditar, onEliminar }) {
+export function TabCuentas({ cuentas, puedeCrear, puedeEditar, puedeEliminar, onCrear, onEditar, onEliminar }) {
   return (
     <Box>
       {puedeCrear && (
@@ -36,14 +36,18 @@ export function TabCuentas({ cuentas, puedeCrear, puedeEditar, onCrear, onEditar
                       </Typography>
                     )}
                   </Box>
-                  {puedeEditar && (
+                  {(puedeEditar || puedeEliminar) && (
                     <Box>
-                      <IconButton size="small" onClick={() => onEditar(c)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" color="error" onClick={() => onEliminar(c.id)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      {puedeEditar && (
+                        <IconButton size="small" aria-label="Editar cuenta" onClick={() => onEditar(c)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      {puedeEliminar && (
+                        <IconButton size="small" color="error" aria-label="Eliminar cuenta" onClick={() => onEliminar(c.id)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </Box>
                   )}
                 </Box>

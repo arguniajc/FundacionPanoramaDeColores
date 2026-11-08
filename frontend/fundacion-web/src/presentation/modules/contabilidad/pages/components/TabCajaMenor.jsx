@@ -21,7 +21,7 @@ export function TabCajaMenor({
   cajaMes, setCajaMes,
   cajaAnio, setCajaAnio,
   libroAuxiliar, arqueos, cargandoCaja,
-  puedeCrear, puedeEditar,
+  puedeCrear, puedeEliminar,
   onFiltrar,
   onRegistrarIngreso, onRegistrarGasto,
   onReponer, onArquear,
@@ -37,8 +37,8 @@ export function TabCajaMenor({
       <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'superficie2', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Cuenta de caja</InputLabel>
-            <Select value={cajaCuentaId} label="Cuenta de caja"
+            <InputLabel id="tab-caja-menor-cuenta-de-caja-label">Cuenta de caja</InputLabel>
+            <Select labelId="tab-caja-menor-cuenta-de-caja-label" value={cajaCuentaId} label="Cuenta de caja"
               onChange={e => setCajaCuentaId(e.target.value)}>
               {cuentas.filter(c => c.tipo !== 'cuenta_bancaria').map(c =>
                 <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>
@@ -46,15 +46,15 @@ export function TabCajaMenor({
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Mes</InputLabel>
-            <Select value={cajaMes} label="Mes" onChange={e => setCajaMes(e.target.value)}>
+            <InputLabel id="tab-caja-menor-mes-label">Mes</InputLabel>
+            <Select labelId="tab-caja-menor-mes-label" value={cajaMes} label="Mes" onChange={e => setCajaMes(e.target.value)}>
               <MenuItem value="">Todo el año</MenuItem>
               {MESES.map((m, i) => <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>)}
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 100 }}>
-            <InputLabel>Año</InputLabel>
-            <Select value={cajaAnio} label="Año" onChange={e => setCajaAnio(e.target.value)}>
+            <InputLabel id="tab-caja-menor-ano-label">Año</InputLabel>
+            <Select labelId="tab-caja-menor-ano-label" value={cajaAnio} label="Año" onChange={e => setCajaAnio(e.target.value)}>
               {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
           </FormControl>
@@ -201,7 +201,7 @@ export function TabCajaMenor({
                     <TableCell align="right">Diferencia</TableCell>
                     <TableCell>Responsable</TableCell>
                     <TableCell>Observación</TableCell>
-                    {puedeEditar && <TableCell />}
+                    {puedeEliminar && <TableCell />}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -222,9 +222,9 @@ export function TabCajaMenor({
                       <TableCell sx={{ maxWidth: 200 }}>
                         <Typography variant="body2" noWrap>{a.observacion ?? '—'}</Typography>
                       </TableCell>
-                      {puedeEditar && (
+                      {puedeEliminar && (
                         <TableCell>
-                          <IconButton size="small" color="error" onClick={() => onEliminarArqueo(a.id)}>
+                          <IconButton size="small" color="error" aria-label="Eliminar arqueo" onClick={() => onEliminarArqueo(a.id)}>
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </TableCell>
@@ -233,7 +233,7 @@ export function TabCajaMenor({
                   ))}
                   {arqueos.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={puedeEditar ? 7 : 6} align="center" sx={{ py: 3 }}>
+                      <TableCell colSpan={puedeEliminar ? 7 : 6} align="center" sx={{ py: 3 }}>
                         <Typography sx={{ color: 'text.secondary' }}>
                           No hay arqueos registrados para esta cuenta
                         </Typography>

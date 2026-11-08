@@ -22,9 +22,8 @@ async function abrirInventario(page, api, sesion, items = []) {
   await expect(page.getByText('Control de bienes, materiales y donaciones por sede')).toBeVisible();
 }
 
-// Los Select de MUI no enlazan su etiqueta: se ubican por el FormControl que la contiene
-const combo = (dialogo, etiqueta) =>
-  dialogo.locator('.MuiFormControl-root').filter({ has: dialogo.page().locator('label', { hasText: etiqueta }) }).getByRole('combobox');
+// Los Select enlazan su etiqueta (InputLabel id + labelId): se ubican por su nombre accesible
+const combo = (dialogo, etiqueta) => dialogo.getByRole('combobox', { name: etiqueta });
 
 test.describe('Inventario', () => {
   test('crear un artículo envía sede, categoría, unidad y stock', async ({ page, api, sesion }) => {

@@ -10,7 +10,10 @@ namespace FundacionPanorama.API.Controllers;
 [ApiController]
 [Route("api/actividades")]
 [Authorize]
-public class ActividadesController(ActividadesService svc, EmailService email) : ControllerBase
+public class ActividadesController(
+    ActividadesService svc,
+    IServiceScopeFactory scopes,
+    ILogger<ActividadesController> logger) : ControllerBase
 {
     [HttpGet]
     [RequierePermiso("actividades", "ver")]
@@ -48,17 +51,15 @@ public class ActividadesController(ActividadesService svc, EmailService email) :
         var fechaCambio  = anterior?.FechaInicio != result.FechaInicio || anterior?.FechaFin != result.FechaFin;
         if (estadoCambio || fechaCambio)
         {
-            _ = Task.Run(async () =>
-            {
-                var fi = result.FechaInicio.ToString("yyyy-MM-dd HH:mm");
-                var ff = result.FechaFin?.ToString("yyyy-MM-dd HH:mm");
-                await email.NotificarCambioActividadAsync(
-                    result.Titulo,
-                    estadoCambio ? anterior!.Estado : null,
-                    result.Estado,
-                    fi, ff,
-                    CancellationToken.None);
-            }, CancellationToken.None);
+            // El correo no demora la respuesta. Se envía con un scope propio (el del request se
+            // libera al responder) y si falla queda en el log con código.
+            var titulo         = result.Titulo;
+            var estadoAnterior = estadoCambio ? anterior?.Estado : null;
+            var estadoNuevo    = result.Estado;
+            var fi = result.FechaInicio.ToString("yyyy-MM-dd HH:mm");
+            var ff = result.FechaFin?.ToString("yyyy-MM-dd HH:mm");
+            _ = TrabajoEnSegundoPlano.Lanzar<EmailService>(scopes, logger, $"aviso de cambio en la actividad {id}",
+                (email, token) => email.NotificarCambioActividadAsync(titulo, estadoAnterior, estadoNuevo, fi, ff, token));
         }
 
         return Ok(result);

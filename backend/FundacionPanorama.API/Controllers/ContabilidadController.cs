@@ -8,6 +8,7 @@ using FundacionPanorama.Application.Features.Contabilidad.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Npgsql;
 
 namespace FundacionPanorama.API.Controllers;
@@ -58,7 +59,7 @@ public class ContabilidadController(
     }
 
     [HttpDelete("cuentas/{id:guid}")]
-    [RequierePermiso("contabilidad", "editar")]
+    [RequierePermiso("contabilidad", "eliminar")]
     public async Task<IActionResult> EliminarCuenta(Guid id, CancellationToken ct)
     {
         if (!await svc.EliminarCuentaAsync(id, ct)) return NotFound();
@@ -115,7 +116,7 @@ public class ContabilidadController(
     }
 
     [HttpDelete("movimientos/{id:guid}")]
-    [RequierePermiso("contabilidad", "editar")]
+    [RequierePermiso("contabilidad", "eliminar")]
     public async Task<IActionResult> EliminarMovimiento(Guid id, CancellationToken ct)
     {
         if (!await svc.EliminarMovimientoAsync(id, ct)) return NotFound();
@@ -163,7 +164,7 @@ public class ContabilidadController(
     }
 
     [HttpDelete("presupuesto/{id:guid}")]
-    [RequierePermiso("contabilidad", "editar")]
+    [RequierePermiso("contabilidad", "eliminar")]
     public async Task<IActionResult> EliminarPresupuesto(Guid id, CancellationToken ct)
     {
         if (!await svc.EliminarPresupuestoAsync(id, ct)) return NotFound();
@@ -199,7 +200,7 @@ public class ContabilidadController(
     }
 
     [HttpDelete("caja-menor/arqueos/{id:int}")]
-    [RequierePermiso("contabilidad", "editar")]
+    [RequierePermiso("contabilidad", "eliminar")]
     public async Task<IActionResult> EliminarArqueo(int id, CancellationToken ct)
     {
         if (!await svc.EliminarArqueoAsync(id, ct)) return NotFound();
@@ -263,6 +264,7 @@ public class ContabilidadController(
 
     [HttpPost("extraer-factura")]
     [RequierePermiso("contabilidad", "crear")]
+    [EnableRateLimiting(LimiteSolicitudes.PoliticaOcr)]
     [RequestTimeout(60_000)]
     public async Task<IActionResult> ExtraerFactura(
         [FromBody] ExtraerFacturaRequestDto dto,

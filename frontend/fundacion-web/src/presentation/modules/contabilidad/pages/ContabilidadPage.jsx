@@ -31,7 +31,7 @@ import { useContabilidadPage } from './useContabilidadPage';
 
 export default function ContabilidadPage() {
   const {
-    puedeCrear, puedeEditar, config,
+    puedeCrear, puedeEditar, puedeEliminar, puedeExportar, config,
     tab, setTab,
     cargando, error,
     stats, cuentas, categorias, programas, movimientos, presupuesto, reporte, resumenAnual,
@@ -172,8 +172,9 @@ export default function ContabilidadPage() {
           filtroAnio={filtroAnio} setFiltroAnio={setFiltroAnio}
           filtroCuenta={filtroCuenta} setFiltroCuenta={setFiltroCuenta}
           busqueda={busquedaMov}  onBusqueda={setBusquedaMov}
-          puedeCrear={puedeCrear} puedeEditar={puedeEditar}
+          puedeCrear={puedeCrear} puedeEditar={puedeEditar} puedeEliminar={puedeEliminar}
           onFiltrar={() => cargarMovimientos(1)}
+          puedeExportar={puedeExportar}
           onExportarCSV={exportarCSV}
           onVerComprobante={abrirVerComprobante}
           onDescargarComprobante={abrirDescargarComprobante}
@@ -187,7 +188,7 @@ export default function ContabilidadPage() {
       {tab === 2 && (
         <TabCuentas
           cuentas={cuentas}
-          puedeCrear={puedeCrear} puedeEditar={puedeEditar}
+          puedeCrear={puedeCrear} puedeEditar={puedeEditar} puedeEliminar={puedeEliminar}
           onCrear={abrirCrearCuenta}
           onEditar={abrirEditarCuenta}
           onEliminar={eliminarCuenta}
@@ -198,7 +199,7 @@ export default function ContabilidadPage() {
         <TabPresupuesto
           presupuesto={presupuesto}
           presAnio={presAnio} setPresAnio={setPresAnio}
-          puedeCrear={puedeCrear} puedeEditar={puedeEditar}
+          puedeCrear={puedeCrear} puedeEditar={puedeEditar} puedeEliminar={puedeEliminar}
           onCargar={cargarPresupuesto}
           onCrear={abrirCrearPres}
           onEditar={abrirEditarPres}
@@ -213,6 +214,7 @@ export default function ContabilidadPage() {
           repAnio={repAnio} setRepAnio={setRepAnio}
           onGenerar={generarReporte}
           onCargarResumenAnual={cargarResumenAnual}
+          puedeExportar={puedeExportar}
           config={config}
         />
       )}
@@ -224,7 +226,7 @@ export default function ContabilidadPage() {
           cajaMes={cajaMes} setCajaMes={setCajaMes}
           cajaAnio={cajaAnio} setCajaAnio={setCajaAnio}
           libroAuxiliar={libroAuxiliar} arqueos={arqueos} cargandoCaja={cargandoCaja}
-          puedeCrear={puedeCrear} puedeEditar={puedeEditar}
+          puedeCrear={puedeCrear} puedeEditar={puedeEditar} puedeEliminar={puedeEliminar}
           onFiltrar={cargarCajaMenor}
           onRegistrarIngreso={abrirIngresoCaja}
           onRegistrarGasto={abrirGastoCaja}

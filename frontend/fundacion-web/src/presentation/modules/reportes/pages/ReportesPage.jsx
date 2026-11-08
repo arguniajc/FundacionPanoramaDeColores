@@ -16,6 +16,7 @@ import { TabContabilidadEsal }   from './components/TabContabilidadEsal';
 import { useToast } from '@/shared/context/useToast';
 import { fechaLocalISO } from '@/shared/utils/fecha';
 import { registrarExportacion } from '@/shared/utils/exportarExcel';
+import usePermisos from '@/shared/hooks/usePermisos';
 
 const TABS = [
   { label: 'Beneficiarios',     icon: <PeopleIcon />,            component: <TabBeneficiarios /> },
@@ -31,6 +32,7 @@ export default function ReportesPage() {
   const [exportando, setExportando] = useState(false);
   const contentRef = useRef(null);
   const toast      = useToast();
+  const { puedo }  = usePermisos();
 
   const exportarPDF = async () => {
     if (!contentRef.current) return;
@@ -92,14 +94,16 @@ export default function ReportesPage() {
             Visualización de datos e indicadores clave por módulo
           </Typography>
         </Box>
-        <Button
-          variant="outlined" size="small"
-          startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
-          onClick={exportarPDF}
-          disabled={exportando}
-        >
-          {exportando ? 'Generando PDF…' : 'Exportar PDF'}
-        </Button>
+        {puedo('reportes', 'exportar') && (
+          <Button
+            variant="outlined" size="small"
+            startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
+            onClick={exportarPDF}
+            disabled={exportando}
+          >
+            {exportando ? 'Generando PDF…' : 'Exportar PDF'}
+          </Button>
+        )}
       </Box>
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto"

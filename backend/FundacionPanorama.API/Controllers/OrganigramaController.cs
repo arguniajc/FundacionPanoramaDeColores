@@ -1,5 +1,4 @@
 using FundacionPanorama.API.Filters;
-using FundacionPanorama.API.Services;
 using FundacionPanorama.Application.Features.Organigrama;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +8,8 @@ namespace FundacionPanorama.API.Controllers;
 [ApiController]
 [Route("api/organigrama")]
 [Authorize]
-public class OrganigramaController(OrganigramaService svc, SupabaseStorageService storage) : ControllerBase
+// Las fotos se suben con POST /api/archivos/upload?carpeta=organigrama y su URL viaja en Crear/Actualizar.
+public class OrganigramaController(OrganigramaService svc) : ControllerBase
 {
     [HttpGet]
     [RequierePermiso("talento_humano", "ver")]
@@ -33,29 +33,4 @@ public class OrganigramaController(OrganigramaService svc, SupabaseStorageServic
     [RequierePermiso("talento_humano", "eliminar")]
     public async Task<IActionResult> Eliminar(Guid id, CancellationToken ct)
         => await svc.EliminarAsync(id, ct) ? NoContent() : NotFound();
-
-    [HttpPost("{id:guid}/foto")]
-    [RequierePermiso("talento_humano", "editar")]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> SubirFoto(Guid id, IFormFile foto, CancellationToken ct)
-    {
-        if (foto is null || foto.Length == 0)
-            return BadRequest(new { mensaje = "No se recibió ningún archivo." });
-
-        var tiposOk = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp" };
-        if (!tiposOk.Contains(foto.ContentType.ToLower()))
-            return BadRequest(new { mensaje = "Solo se permiten imágenes JPG, PNG o WEBP." });
-
-        if (foto.Length > 5 * 1024 * 1024)
-            return BadRequest(new { mensaje = "La imagen no puede superar 5 MB." });
-
-        // La actualización siempre escribe parent_id: se conserva el jefe actual para que
-        // subir una foto no deje a la persona como raíz del organigrama.
-        var actual = await svc.ObtenerAsync(id, ct);
-        if (actual is null) return NotFound();
-
-        var url = await storage.SubirAsync(foto, "organigrama");
-        var result = await svc.ActualizarAsync(id, new ActualizarOrganigramaPersonaDto(null, null, null, null, url, actual.ParentId), ct);
-        return result is null ? NotFound() : Ok(new { url });
-    }
 }

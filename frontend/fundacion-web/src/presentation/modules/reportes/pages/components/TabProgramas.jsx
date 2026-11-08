@@ -4,6 +4,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import PeopleIcon from '@mui/icons-material/People';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { exportarExcel } from '@/shared/utils/exportarExcel';
+import usePermisos from '@/shared/hooks/usePermisos';
 import {
   BarChart, Bar, CartesianGrid, Cell, Legend,
   PieChart, Pie, Tooltip, XAxis, YAxis,
@@ -15,6 +16,7 @@ import { COLORES } from './colores';
 import { useTheme } from '@mui/material/styles';
 
 export function TabProgramas() {
+  const { puedo } = usePermisos();
   const theme = useTheme();
   const [data,  setData]  = useState(null);
   const [error, setError] = useState('');
@@ -50,9 +52,11 @@ export function TabProgramas() {
     <Grid container spacing={2}>
       <Grid size={{ xs: 12 }}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />} onClick={exportar}>
-            Exportar Excel
-          </Button>
+          {puedo('reportes', 'exportar') && (
+            <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />} onClick={exportar}>
+              Exportar Excel
+            </Button>
+          )}
         </Box>
       </Grid>
       <Grid size={{ xs: 6, sm: 4, md: 4 }}>

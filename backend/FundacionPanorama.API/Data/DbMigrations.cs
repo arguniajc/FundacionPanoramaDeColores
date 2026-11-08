@@ -736,6 +736,17 @@ public static class DbMigrations
 
         await Migrar("DELETE FROM roles_permisos WHERE modulo = 'equipo' AND rol <> 'administrador'", "roles_permisos.equipo_solo_admin");
 
+        // Los DELETE de Contabilidad y Nómina exigían "editar"; ahora exigen "eliminar".
+        // Para que nadie pierda lo que hoy hace (p. ej. tesorero y contador borran movimientos),
+        // quien tenía "editar" en esos módulos recibe "eliminar" una sola vez. Después el
+        // administrador puede quitarlo desde Seguridad y esta migración no lo vuelve a poner.
+        await MigrarUnaVez("""
+            INSERT INTO roles_permisos (rol, modulo, accion, permitido)
+            SELECT rol, modulo, 'eliminar', true FROM roles_permisos
+             WHERE modulo IN ('contabilidad', 'talento_humano') AND accion = 'editar' AND permitido = true
+            ON CONFLICT (rol, modulo, accion) DO UPDATE SET permitido = true
+            """, "roles_permisos.eliminar_desde_editar_contab_th");
+
         // ── Módulo Actividades ────────────────────────────────────────────────
         await Migrar("""
             CREATE TABLE IF NOT EXISTS actividades (

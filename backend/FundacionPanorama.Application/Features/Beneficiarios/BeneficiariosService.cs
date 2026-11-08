@@ -11,7 +11,24 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
 {
     // ── Lecturas ──────────────────────────────────────────────────────────────
 
-    public Task<BeneficiarioListDto> ListarAsync(
+    /// <summary>Listado para pantallas: resumen sin datos sensibles (ver BeneficiarioResumenDto).</summary>
+    public async Task<BeneficiarioResumenListDto> ListarAsync(
+        int pagina, int porPagina, string? buscar, string estado, string? genero,
+        int? edadMin, int? edadMax, string? eps, string? tieneAlergia, string? tipo,
+        CancellationToken ct = default)
+    {
+        var completo = await ListarCompletoAsync(pagina, porPagina, buscar, estado, genero, edadMin, edadMax, eps, tieneAlergia, tipo, ct);
+        return new BeneficiarioResumenListDto
+        {
+            Data      = completo.Data.Select(BeneficiarioResumenDto.Desde).ToList(),
+            Total     = completo.Total,
+            Pagina    = completo.Pagina,
+            PorPagina = completo.PorPagina,
+        };
+    }
+
+    /// <summary>Listado con la ficha completa: solo para la exportación (permiso beneficiarios:exportar).</summary>
+    public Task<BeneficiarioListDto> ListarCompletoAsync(
         int pagina, int porPagina, string? buscar, string estado, string? genero,
         int? edadMin, int? edadMax, string? eps, string? tieneAlergia, string? tipo,
         CancellationToken ct = default)

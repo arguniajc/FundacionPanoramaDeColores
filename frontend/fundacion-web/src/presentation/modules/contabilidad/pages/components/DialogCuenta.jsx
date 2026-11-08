@@ -72,8 +72,8 @@ export function DialogCuenta({ open, modo, data, guardando, onClose, onGuardar }
           </Grid>
           <Grid size={12}>
             <FormControl fullWidth size="small">
-              <InputLabel>Tipo *</InputLabel>
-              <Select value={form.tipo} label="Tipo *" onChange={set('tipo')}>
+              <InputLabel id="dialog-cuenta-tipo-label">Tipo *</InputLabel>
+              <Select labelId="dialog-cuenta-tipo-label" value={form.tipo} label="Tipo *" onChange={set('tipo')}>
                 <MenuItem value="caja_menor">Caja Menor</MenuItem>
                 <MenuItem value="caja">Caja efectivo (general)</MenuItem>
                 <MenuItem value="cuenta_bancaria">Cuenta bancaria</MenuItem>

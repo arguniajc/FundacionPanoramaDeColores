@@ -26,7 +26,7 @@ import ResumenErrores       from '@/shared/components/ResumenErrores';
 import { colorEstado }      from '@/shared/theme/paleta';
 import { useConfiguracion } from '@/shared/context/useConfiguracion';
 import { EditarLiquidacionDialog } from './EditarLiquidacionDialog';
-import { MESES, fmtCOP } from './nominaFormato';
+import { MESES, fmtCOP, salarioPeriodo } from './nominaFormato';
 import { exportarNominaExcel, generarDesprendiblesPDF } from './exportarNomina';
 
 const ANIOS = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
@@ -47,14 +47,14 @@ function EstadoChip({ estado }) {
   );
 }
 
-function FilaLiquidacion({ liq, puedeEditar, onEditar, onEliminar, onDesprendible }) {
+function FilaLiquidacion({ liq, puedeEditar, puedeEliminar, onEditar, onEliminar, onDesprendible }) {
   return (
     <TableRow hover>
       <TableCell sx={{ fontSize: '0.8rem' }}>
         <Typography sx={{ fontWeight: 600, fontSize: 'inherit' }}>{liq.empleadoNombre}</Typography>
         {liq.cargo && <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>{liq.cargo}</Typography>}
       </TableCell>
-      <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{fmtCOP(liq.salarioBase)}</TableCell>
+      <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{fmtCOP(salarioPeriodo(liq))}</TableCell>
       <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{fmtCOP(liq.auxilioTransporte)}</TableCell>
       <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{fmtCOP(liq.totalDevengado)}</TableCell>
       <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'error.main' }}>{fmtCOP(liq.totalDeducciones)}</TableCell>
@@ -72,7 +72,7 @@ function FilaLiquidacion({ liq, puedeEditar, onEditar, onEliminar, onDesprendibl
             </IconButton>
           </Tooltip>
         )}
-        {puedeEditar && (
+        {puedeEliminar && (
           <Tooltip title="Eliminar liquidación">
             <IconButton size="small" color="error" onClick={() => onEliminar(liq)}>
               <DeleteIcon fontSize="small" />
@@ -84,7 +84,7 @@ function FilaLiquidacion({ liq, puedeEditar, onEditar, onEliminar, onDesprendibl
   );
 }
 
-function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquidar, onCambio }) {
+function PeriodoCard({ periodo, puedeEditar, puedeEliminar, onCerrar, onEliminar, onAutoLiquidar, onCambio }) {
   const [expandido, setExpandido] = useState(false);
   const [liquidaciones, setLiquidaciones] = useState([]);
   const [cargandoLiq, setCargandoLiq] = useState(false);
@@ -166,23 +166,29 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
           </Typography>
         </Box>
         <EstadoChip estado={periodo.estado} />
-        {puedeEditar && periodo.estado === 'borrador' && (
+        {(puedeEditar || puedeEliminar) && periodo.estado === 'borrador' && (
           <Box onClick={e => e.stopPropagation()} sx={{ display: 'flex', gap: 0.5 }}>
-            <Tooltip title="Auto-liquidar empleados">
-              <IconButton size="small" color="primary" onClick={handleAutoLiquidar}>
-                <AutorenewIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Cerrar período">
-              <IconButton size="small" color="success" onClick={() => onCerrar(periodo)}>
-                <CheckCircleIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Eliminar período">
-              <IconButton size="small" color="error" onClick={() => onEliminar(periodo)}>
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            {puedeEditar && (
+              <Tooltip title="Auto-liquidar empleados">
+                <IconButton size="small" color="primary" onClick={handleAutoLiquidar}>
+                  <AutorenewIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            {puedeEditar && (
+              <Tooltip title="Cerrar período">
+                <IconButton size="small" color="success" onClick={() => onCerrar(periodo)}>
+                  <CheckCircleIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            {puedeEliminar && (
+              <Tooltip title="Eliminar período">
+                <IconButton size="small" color="error" onClick={() => onEliminar(periodo)}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
         )}
         <IconButton size="small">
@@ -231,6 +237,7 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
                       key={l.id}
                       liq={l}
                       puedeEditar={puedeEditar && periodo.estado === 'borrador'}
+                      puedeEliminar={puedeEliminar && periodo.estado === 'borrador'}
                       onEditar={setEditando}
                       onEliminar={handleEliminarLiq}
                       onDesprendible={liq => handleDesprendibles([liq])}
@@ -300,15 +307,15 @@ function NuevoPeriodoDialog({ open, onClose, onCreado }) {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           {err && <Alert severity="error">{err}</Alert>}
           <FormControl fullWidth size="small" error={!!v.err('mes')}>
-            <InputLabel>Mes</InputLabel>
-            <Select value={mes} label="Mes" onBlur={() => v.tocar('mes')} onChange={e => setMes(e.target.value)}>
+            <InputLabel id="panel-nomina-mes-label">Mes</InputLabel>
+            <Select labelId="panel-nomina-mes-label" value={mes} label="Mes" onBlur={() => v.tocar('mes')} onChange={e => setMes(e.target.value)}>
               {MESES.map((m, i) => <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>)}
             </Select>
             {v.err('mes') && <FormHelperText>{v.err('mes')}</FormHelperText>}
           </FormControl>
           <FormControl fullWidth size="small" error={!!v.err('anio')}>
-            <InputLabel>Año</InputLabel>
-            <Select value={anio} label="Año" onBlur={() => v.tocar('anio')} onChange={e => setAnio(e.target.value)}>
+            <InputLabel id="panel-nomina-ano-label">Año</InputLabel>
+            <Select labelId="panel-nomina-ano-label" value={anio} label="Año" onBlur={() => v.tocar('anio')} onChange={e => setAnio(e.target.value)}>
               {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
             {v.err('anio') && <FormHelperText>{v.err('anio')}</FormHelperText>}
@@ -392,8 +399,8 @@ export function PanelNomina({ puedo }) {
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <FormControl size="small" sx={{ minWidth: 110 }}>
-          <InputLabel>Año</InputLabel>
-          <Select value={anioFiltro} label="Año" onChange={e => setAnioFiltro(e.target.value)}>
+          <InputLabel id="panel-nomina-ano-2-label">Año</InputLabel>
+          <Select labelId="panel-nomina-ano-2-label" value={anioFiltro} label="Año" onChange={e => setAnioFiltro(e.target.value)}>
             {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
           </Select>
         </FormControl>
@@ -427,6 +434,7 @@ export function PanelNomina({ puedo }) {
           key={p.id}
           periodo={p}
           puedeEditar={puedo('talento_humano', 'editar')}
+          puedeEliminar={puedo('talento_humano', 'eliminar')}
           onCerrar={handleCerrar}
           onEliminar={handleEliminar}
           onAutoLiquidar={handleAutoLiquidar}

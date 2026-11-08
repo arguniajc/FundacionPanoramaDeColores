@@ -89,8 +89,8 @@ export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida 
         <Grid container spacing={2}>
           <Grid size={12}>
             <FormControl fullWidth size="small" error={!!v.err('sedeDestinoId')}>
-              <InputLabel>Sede destino *</InputLabel>
-              <Select value={form.sedeDestinoId} label="Sede destino *"
+              <InputLabel id="transferencia-dialog-sede-destino-label">Sede destino *</InputLabel>
+              <Select labelId="transferencia-dialog-sede-destino-label" value={form.sedeDestinoId} label="Sede destino *"
                 onBlur={() => v.tocar('sedeDestinoId')}
                 onChange={e => set('sedeDestinoId', e.target.value)}>
                 {sedesDestino.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}

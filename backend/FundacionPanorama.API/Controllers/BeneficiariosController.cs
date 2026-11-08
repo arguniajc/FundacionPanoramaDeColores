@@ -4,10 +4,12 @@
 // Solo HTTP: binding, permisos, caché y códigos de estado. Reglas en BeneficiariosService,
 // SQL en BeneficiariosRepository.
 using FundacionPanorama.API.Filters;
+using FundacionPanorama.API.Services;
 using FundacionPanorama.Application.Features.Beneficiarios;
 using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace FundacionPanorama.API.Controllers;
@@ -43,6 +45,26 @@ public class BeneficiariosController : BaseController
         [FromQuery] string? tipo         = null,
         CancellationToken ct = default)
         => Ok(await _svc.ListarAsync(pagina, porPagina, buscar, estado, genero, edadMin, edadMax, eps, tieneAlergia, tipo, ct));
+
+    // =========================================================================
+    // GET api/beneficiarios/exportar — mismos filtros que el listado, pero con la ficha
+    // completa (salud, acudiente, dirección) para el Excel. Exige el permiso de exportar.
+    // =========================================================================
+    [HttpGet("exportar")]
+    [RequierePermiso("beneficiarios", "exportar")]
+    public async Task<IActionResult> Exportar(
+        [FromQuery] int     pagina       = 1,
+        [FromQuery] int     porPagina    = 100,
+        [FromQuery] string? buscar       = null,
+        [FromQuery] string  estado       = "todos",
+        [FromQuery] string? genero       = null,
+        [FromQuery] int?    edadMin      = null,
+        [FromQuery] int?    edadMax      = null,
+        [FromQuery] string? eps          = null,
+        [FromQuery] string? tieneAlergia = null,
+        [FromQuery] string? tipo         = null,
+        CancellationToken ct = default)
+        => Ok(await _svc.ListarCompletoAsync(pagina, porPagina, buscar, estado, genero, edadMin, edadMax, eps, tieneAlergia, tipo, ct));
 
     // =========================================================================
     // GET api/beneficiarios/stats
@@ -205,6 +227,7 @@ public class BeneficiariosController : BaseController
     // =========================================================================
     [HttpPost("importar-xlsx")]
     [RequierePermiso("beneficiarios", "crear")]
+    [EnableRateLimiting(LimiteSolicitudes.PoliticaImportar)]
     public async Task<IActionResult> ImportarXlsx(
         [FromBody] List<ImportarBeneficiarioRowDto> filas, CancellationToken ct)
     {

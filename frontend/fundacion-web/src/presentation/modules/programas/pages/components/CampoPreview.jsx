@@ -2,6 +2,7 @@
   Autocomplete, Box, Button, Chip, FormControl, FormControlLabel,
   InputAdornment, InputLabel, MenuItem, Select, Switch, TextField, Typography,
 } from '@mui/material';
+import { useId } from 'react';
 import { lighten } from '@mui/material/styles';
 import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
@@ -12,6 +13,8 @@ import {
 import { TIPOS_CAMPO } from './helpers';
 
 export function CampoPreview({ campo }) {
+  // Id único por instancia: enlaza la etiqueta con el select (nombre accesible del combobox)
+  const uid = useId();
   const label = campo.etiqueta + (campo.obligatorio ? ' *' : '');
   const tipoLabel = TIPOS_CAMPO.find(t => !t._h && t.value === campo.tipo)?.label ?? campo.tipo;
 
@@ -24,8 +27,8 @@ export function CampoPreview({ campo }) {
 
   if (campo.tipo === 'select') return (
     <FormControl fullWidth size="small">
-      <InputLabel shrink>{label}</InputLabel>
-      <Select label={label} value="" disabled displayEmpty>
+      <InputLabel id={`${uid}-select-label`} shrink>{label}</InputLabel>
+      <Select labelId={`${uid}-select-label`} label={label} value="" disabled displayEmpty>
         <MenuItem value=""><em>Seleccionar…</em></MenuItem>
         {(campo.opciones ?? []).map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
       </Select>
@@ -100,8 +103,8 @@ export function CampoPreview({ campo }) {
       </Typography>
       <Box sx={{ display: 'flex', gap: 1 }}>
         <FormControl size="small" disabled sx={{ width: 130 }}>
-          <InputLabel shrink>Tipo</InputLabel>
-          <Select label="Tipo" value="" displayEmpty>
+          <InputLabel id={`${uid}-tipo-label`} shrink>Tipo</InputLabel>
+          <Select labelId={`${uid}-tipo-label`} label="Tipo" value="" displayEmpty>
             {TIPOS_DOCUMENTO.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
           </Select>
         </FormControl>
@@ -117,14 +120,14 @@ export function CampoPreview({ campo }) {
       </Typography>
       <Box sx={{ display: 'flex', gap: 1.5 }}>
         <FormControl size="small" disabled sx={{ flex: 2 }}>
-          <InputLabel shrink>Grado</InputLabel>
-          <Select label="Grado" value="" displayEmpty>
+          <InputLabel id={`${uid}-grado-label`} shrink>Grado</InputLabel>
+          <Select labelId={`${uid}-grado-label`} label="Grado" value="" displayEmpty>
             {GRADOS_COLOMBIA.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
           </Select>
         </FormControl>
         <FormControl size="small" disabled sx={{ flex: 1 }}>
-          <InputLabel shrink>Jornada</InputLabel>
-          <Select label="Jornada" value="" displayEmpty>
+          <InputLabel id={`${uid}-jornada-label`} shrink>Jornada</InputLabel>
+          <Select labelId={`${uid}-jornada-label`} label="Jornada" value="" displayEmpty>
             {JORNADAS_ESCOLARES.map(j => <MenuItem key={j} value={j}>{j}</MenuItem>)}
           </Select>
         </FormControl>
@@ -194,8 +197,8 @@ export function CampoPreview({ campo }) {
     const ops = listas[campo.tipo];
     return (
       <FormControl fullWidth size="small">
-        <InputLabel shrink>{label}</InputLabel>
-        <Select label={label} value="" disabled displayEmpty>
+        <InputLabel id={`${uid}-lista-label`} shrink>{label}</InputLabel>
+        <Select labelId={`${uid}-lista-label`} label={label} value="" disabled displayEmpty>
           <MenuItem value=""><em>Seleccionar…</em></MenuItem>
           {ops.map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
         </Select>

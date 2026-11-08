@@ -46,7 +46,7 @@ test.describe('Donaciones', () => {
     await dialogo.getByRole('spinbutton', { name: /^Monto/ }).fill('500000');
     await dialogo.getByRole('checkbox', { name: 'Registrar ingreso en contabilidad' }).check();
     // Solo se ofrecen las cuentas activas
-    await dialogo.locator('.MuiFormControl-root').filter({ hasText: 'Cuenta destino' }).getByRole('combobox').click();
+    await dialogo.getByRole('combobox', { name: 'Cuenta destino' }).click();
     await expect(page.getByRole('option', { name: 'Cuenta cerrada' })).toHaveCount(0);
     await page.getByRole('option', { name: 'Caja general' }).click();
     await dialogo.getByRole('textbox', { name: 'Descripción' }).fill('Aporte campaña útiles');

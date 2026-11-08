@@ -10,7 +10,7 @@ import { fmt, ANIOS } from './formato';
 
 export function TabPresupuesto({
   presupuesto, presAnio, setPresAnio,
-  puedeCrear, puedeEditar,
+  puedeCrear, puedeEditar, puedeEliminar,
   onCargar, onCrear, onEditar, onEliminar,
 }) {
   const sobre  = presupuesto.filter(p => p.montoPresupuestado > 0 && p.ejecutado > p.montoPresupuestado);
@@ -25,8 +25,8 @@ export function TabPresupuesto({
       <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'superficie2', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <FormControl size="small" sx={{ minWidth: 100 }}>
-            <InputLabel>Año</InputLabel>
-            <Select value={presAnio} label="Año" onChange={e => setPresAnio(e.target.value)}>
+            <InputLabel id="tab-presupuesto-ano-label">Año</InputLabel>
+            <Select labelId="tab-presupuesto-ano-label" value={presAnio} label="Año" onChange={e => setPresAnio(e.target.value)}>
               {ANIOS.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
           </FormControl>
@@ -67,7 +67,7 @@ export function TabPresupuesto({
               <TableCell align="right">Ejecutado</TableCell>
               <TableCell align="right">Disponible</TableCell>
               <TableCell>% Ejecución</TableCell>
-              {puedeEditar && <TableCell />}
+              {(puedeEditar || puedeEliminar) && <TableCell />}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -117,14 +117,18 @@ export function TabPresupuesto({
                       </Typography>
                     </Box>
                   </TableCell>
-                  {puedeEditar && (
+                  {(puedeEditar || puedeEliminar) && (
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      <IconButton size="small" onClick={() => onEditar(p)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" color="error" onClick={() => onEliminar(p.id)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      {puedeEditar && (
+                        <IconButton size="small" aria-label="Editar presupuesto" onClick={() => onEditar(p)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      {puedeEliminar && (
+                        <IconButton size="small" color="error" aria-label="Eliminar presupuesto" onClick={() => onEliminar(p.id)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </TableCell>
                   )}
                 </TableRow>
@@ -132,7 +136,7 @@ export function TabPresupuesto({
             })}
             {presupuesto.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={(puedeEditar || puedeEliminar) ? 8 : 7} align="center" sx={{ py: 4 }}>
                   <Typography sx={{ color: 'text.secondary' }}>
                     Sin presupuesto definido para {presAnio}
                   </Typography>

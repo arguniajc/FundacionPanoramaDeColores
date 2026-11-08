@@ -128,6 +128,37 @@ public class SupabaseStorageService
         return publica ? PrefijoPublico + nombreObj : PrefijoPrivado + nombreObj;
     }
 
+    /// <summary>
+    /// Ruta interna de una referencia "privado://carpeta/archivo" de este proyecto, o null si
+    /// no es del bucket privado propio (enlace externo, bucket público, ruta con "..", carpeta
+    /// desconocida…). Solo con una ruta válida se permite borrar.
+    /// </summary>
+    public static string? RutaPrivadaPropia(string? referencia)
+    {
+        if (string.IsNullOrWhiteSpace(referencia) || !referencia.StartsWith(PrefijoPrivado, StringComparison.Ordinal))
+            return null;
+        var ruta = referencia[PrefijoPrivado.Length..];
+        var corte = ruta.LastIndexOf('/');
+        if (corte <= 0 || corte == ruta.Length - 1) return null; // sin carpeta o sin nombre de archivo
+        if (ruta.Contains("..") || ruta.Contains('\\') || ruta.Any(c => char.IsWhiteSpace(c) || char.IsControl(c)))
+            return null;
+        return CarpetaPermitida(ruta[..corte]) && !EsCarpetaPublica(ruta[..corte]) ? ruta : null;
+    }
+
+    /// <summary>
+    /// Borra del bucket privado el archivo de una referencia "privado://…" propia.
+    /// Devuelve false (sin llamar a Storage) si la referencia no es del bucket propio.
+    /// Lanza si Storage responde con error.
+    /// </summary>
+    public async Task<bool> EliminarPrivadoAsync(string? referencia, CancellationToken ct = default)
+    {
+        var ruta = RutaPrivadaPropia(referencia);
+        if (ruta is null) return false;
+        var cuerpo = JsonContent.Create(new { prefixes = new[] { ruta } });
+        using var _ = await EnviarAsync(Peticion(HttpMethod.Delete, $"object/{BucketPrivado}", cuerpo), ct: ct);
+        return true;
+    }
+
     /// <summary>Crea el bucket privado si todavía no existe (se llama al arrancar).</summary>
     public async Task AsegurarBucketPrivadoAsync(CancellationToken ct = default)
     {

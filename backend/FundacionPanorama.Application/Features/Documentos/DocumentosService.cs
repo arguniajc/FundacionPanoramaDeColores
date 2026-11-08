@@ -39,7 +39,7 @@ public class DocumentosService(IDocumentosRepository repo)
         return repo.CrearAsync(dto with { Categoria = dto.Categoria.Trim() }, email, ct);
     }
 
-    public Task<bool> EliminarAsync(Guid id, CancellationToken ct = default)
+    public Task<DocumentoEliminado?> EliminarAsync(Guid id, CancellationToken ct = default)
         => repo.EliminarAsync(id, ct);
 
     public Task<IReadOnlyList<ArchivoBeneficiarioDto>> ListarPorBeneficiarioAsync(Guid beneficiarioId, CancellationToken ct = default)
@@ -54,7 +54,7 @@ public class DocumentosService(IDocumentosRepository repo)
         return repo.GuardarArchivoBeneficiarioAsync(beneficiarioId, dto, ct);
     }
 
-    public Task<bool> EliminarArchivoAsync(Guid id, CancellationToken ct = default)
+    public Task<DocumentoEliminado?> EliminarArchivoAsync(Guid id, CancellationToken ct = default)
         => repo.EliminarArchivoAsync(id, ct);
 
     /// <summary>Solo "privado://carpeta/archivo" o https (del origen permitido, si se indica).</summary>

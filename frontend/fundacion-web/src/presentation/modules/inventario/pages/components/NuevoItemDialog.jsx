@@ -127,8 +127,8 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           {!editando && (
             <Grid size={12}>
               <FormControl fullWidth size="small" error={!!v.err('sedeId')}>
-                <InputLabel>Sede *</InputLabel>
-                <Select value={form.sedeId ?? ''} label="Sede *" onChange={e => set('sedeId', e.target.value)}
+                <InputLabel id="nuevo-item-dialog-sede-label">Sede *</InputLabel>
+                <Select labelId="nuevo-item-dialog-sede-label" value={form.sedeId ?? ''} label="Sede *" onChange={e => set('sedeId', e.target.value)}
                   onBlur={() => v.tocar('sedeId')}>
                   {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
                 </Select>
@@ -152,8 +152,8 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           )}
           <Grid size={6}>
             <FormControl fullWidth size="small" error={!!v.err('categoria')}>
-              <InputLabel>Categoría</InputLabel>
-              <Select value={form.categoria} label="Categoría" onChange={e => set('categoria', e.target.value)}
+              <InputLabel id="nuevo-item-dialog-categoria-label">Categoría</InputLabel>
+              <Select labelId="nuevo-item-dialog-categoria-label" value={form.categoria} label="Categoría" onChange={e => set('categoria', e.target.value)}
                 onBlur={() => v.tocar('categoria')}>
                 {CATEGORIAS.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
               </Select>
@@ -190,8 +190,8 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           </Grid>
           <Grid size={12}>
             <FormControl fullWidth size="small">
-              <InputLabel>Tipo de tenencia *</InputLabel>
-              <Select value={form.tipoTenencia} label="Tipo de tenencia *"
+              <InputLabel id="nuevo-item-dialog-tipo-de-tenencia-label">Tipo de tenencia *</InputLabel>
+              <Select labelId="nuevo-item-dialog-tipo-de-tenencia-label" value={form.tipoTenencia} label="Tipo de tenencia *"
                 onChange={e => set('tipoTenencia', e.target.value)}>
                 {TIPOS_TENENCIA.map(t => (
                   <MenuItem key={t.value} value={t.value}>

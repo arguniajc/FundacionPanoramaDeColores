@@ -30,10 +30,8 @@ async function abrirEgreso(page) {
   return dialogo;
 }
 
-// Los Select de MUI de este diálogo no enlazan su etiqueta (combobox sin nombre accesible):
-// se ubican por el FormControl que contiene la etiqueta.
-const combo = (dialogo, etiqueta) =>
-  dialogo.locator('.MuiFormControl-root').filter({ has: dialogo.page().locator('label', { hasText: etiqueta }) }).getByRole('combobox');
+// Los Select enlazan su etiqueta (InputLabel id + labelId): se ubican por su nombre accesible
+const combo = (dialogo, etiqueta) => dialogo.getByRole('combobox', { name: etiqueta });
 
 async function elegir(page, dialogo, etiqueta, opcion) {
   await combo(dialogo, etiqueta).click();

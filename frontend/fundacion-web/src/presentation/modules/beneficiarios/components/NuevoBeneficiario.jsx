@@ -256,8 +256,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
       </Grid>
       <Grid size={{ xs: 12, sm: 4 }}>
         <FormControl fullWidth size="small" error={!!err('tipoDocumento')}>
-          <InputLabel>Tipo de documento</InputLabel>
-          <Select label="Tipo de documento" value={form.tipoDocumento}
+          <InputLabel id="nuevo-beneficiario-tipo-de-documento-label">Tipo de documento</InputLabel>
+          <Select labelId="nuevo-beneficiario-tipo-de-documento-label" label="Tipo de documento" value={form.tipoDocumento}
             onChange={e => { setForm(p => ({ ...p, tipoDocumento: e.target.value })); touch('tipoDocumento')(); }}>
             {TIPOS_DOC.map(tp => <MenuItem key={tp} value={tp}>{tp}</MenuItem>)}
           </Select>
@@ -305,8 +305,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
       )}
       <Grid size={{ xs: 12, sm: 4 }}>
         <FormControl fullWidth size="small" required error={!!err('genero')}>
-          <InputLabel>Género *</InputLabel>
-          <Select label="Género *" value={form.genero} onChange={set('genero')} onBlur={touch('genero')}>
+          <InputLabel id="nuevo-beneficiario-genero-label">Género *</InputLabel>
+          <Select labelId="nuevo-beneficiario-genero-label" label="Género *" value={form.genero} onChange={set('genero')} onBlur={touch('genero')}>
             <MenuItem value=""><em>Selecciona</em></MenuItem>
             {GENEROS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
           </Select>
@@ -385,8 +385,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
       <SeccionTitulo>Tallas</SeccionTitulo>
       <Grid size={{ xs: 12, sm: 4 }}>
         <FormControl fullWidth size="small" required error={!!err('tallaCamisa')}>
-          <InputLabel>Talla camisa *</InputLabel>
-          <Select label="Talla camisa *" value={form.tallaCamisa} onChange={set('tallaCamisa')} onBlur={touch('tallaCamisa')}>
+          <InputLabel id="nuevo-beneficiario-talla-camisa-label">Talla camisa *</InputLabel>
+          <Select labelId="nuevo-beneficiario-talla-camisa-label" label="Talla camisa *" value={form.tallaCamisa} onChange={set('tallaCamisa')} onBlur={touch('tallaCamisa')}>
             <MenuItem value=""><em>Selecciona</em></MenuItem>
             {TALLAS_CAMISA.map(tp => <MenuItem key={tp} value={tp}>{tp}</MenuItem>)}
           </Select>
@@ -461,8 +461,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
         <FormControl fullWidth size="small">
-          <InputLabel>¿Tiene alergia?</InputLabel>
-          <Select label="¿Tiene alergia?" value={form.tieneAlergia} onChange={set('tieneAlergia')}>
+          <InputLabel id="nuevo-beneficiario-tiene-alergia-label">¿Tiene alergia?</InputLabel>
+          <Select labelId="nuevo-beneficiario-tiene-alergia-label" label="¿Tiene alergia?" value={form.tieneAlergia} onChange={set('tieneAlergia')}>
             <MenuItem value="no">No</MenuItem>
             <MenuItem value="si">Sí</MenuItem>
           </Select>
@@ -511,8 +511,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth size="small" required error={!!err('parentesco')}>
-            <InputLabel>Parentesco *</InputLabel>
-            <Select label="Parentesco *" value={form.parentesco} onChange={set('parentesco')} onBlur={touch('parentesco')}>
+            <InputLabel id="nuevo-beneficiario-parentesco-label">Parentesco *</InputLabel>
+            <Select labelId="nuevo-beneficiario-parentesco-label" label="Parentesco *" value={form.parentesco} onChange={set('parentesco')} onBlur={touch('parentesco')}>
               <MenuItem value=""><em>Selecciona</em></MenuItem>
               {PARENTESCOS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
             </Select>
@@ -529,8 +529,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth size="small" required error={!!err('viveConNino')}>
-            <InputLabel>¿Vive con el niño? *</InputLabel>
-            <Select label="¿Vive con el niño? *" value={form.viveConNino} onChange={set('viveConNino')} onBlur={touch('viveConNino')}>
+            <InputLabel id="nuevo-beneficiario-vive-con-el-nino-label">¿Vive con el niño? *</InputLabel>
+            <Select labelId="nuevo-beneficiario-vive-con-el-nino-label" label="¿Vive con el niño? *" value={form.viveConNino} onChange={set('viveConNino')} onBlur={touch('viveConNino')}>
               <MenuItem value=""><em>Selecciona</em></MenuItem>
               <MenuItem value="si">Sí</MenuItem>
               <MenuItem value="no">No</MenuItem>
@@ -573,8 +573,8 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Nivel educativo alcanzado</InputLabel>
-              <Select label="Nivel educativo alcanzado" value={form.gradoEscolar} onChange={set('gradoEscolar')}>
+              <InputLabel id="nuevo-beneficiario-nivel-educativo-alcanzado-label">Nivel educativo alcanzado</InputLabel>
+              <Select labelId="nuevo-beneficiario-nivel-educativo-alcanzado-label" label="Nivel educativo alcanzado" value={form.gradoEscolar} onChange={set('gradoEscolar')}>
                 <MenuItem value=""><em>No especificado</em></MenuItem>
                 {NIVELES_EDUCATIVOS.map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
               </Select>

@@ -8,6 +8,9 @@ namespace FundacionPanorama.API.Filters;
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
 public class RequierePermisoAttribute(string modulo, string accion) : Attribute, IAsyncAuthorizationFilter
 {
+    public string Modulo => modulo;
+    public string Accion => accion;
+
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         var user = context.HttpContext.User;

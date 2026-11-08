@@ -60,8 +60,8 @@ export function DialogPresupuesto({ open, modo, data, categorias, programas, pre
         <Grid container spacing={2}>
           <Grid size={12}>
             <FormControl fullWidth size="small" error={!!v.err('categoriaId')}>
-              <InputLabel>Categoría PUC *</InputLabel>
-              <Select value={form.categoriaId} label="Categoría PUC *" onChange={set('categoriaId')}
+              <InputLabel id="dialog-presupuesto-categoria-puc-label">Categoría PUC *</InputLabel>
+              <Select labelId="dialog-presupuesto-categoria-puc-label" value={form.categoriaId} label="Categoría PUC *" onChange={set('categoriaId')}
                 onBlur={() => v.tocar('categoriaId')}>
                 {categorias.map(c => (
                   <MenuItem key={c.id} value={String(c.id)}>
@@ -74,8 +74,8 @@ export function DialogPresupuesto({ open, modo, data, categorias, programas, pre
           </Grid>
           <Grid size={12}>
             <FormControl fullWidth size="small">
-              <InputLabel>Programa (opcional)</InputLabel>
-              <Select value={form.programaId} label="Programa (opcional)" onChange={set('programaId')}>
+              <InputLabel id="dialog-presupuesto-programa-opcional-label">Programa (opcional)</InputLabel>
+              <Select labelId="dialog-presupuesto-programa-opcional-label" value={form.programaId} label="Programa (opcional)" onChange={set('programaId')}>
                 <MenuItem value="">General (sin programa)</MenuItem>
                 {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
               </Select>

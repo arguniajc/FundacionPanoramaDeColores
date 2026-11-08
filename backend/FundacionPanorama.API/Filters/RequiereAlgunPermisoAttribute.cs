@@ -14,6 +14,9 @@ namespace FundacionPanorama.API.Filters;
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class RequiereAlgunPermisoAttribute(params string[] permisos) : Attribute, IAsyncAuthorizationFilter
 {
+    /// <summary>Pares "modulo:accion" aceptados (uno basta).</summary>
+    public IReadOnlyList<string> PermisosAceptados => permisos;
+
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         if (context.HttpContext.User.Identity?.IsAuthenticated != true)

@@ -321,8 +321,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small" error={!!err('tipoDocumento')}>
-              <InputLabel>Tipo de documento</InputLabel>
-              <Select label="Tipo de documento" value={form.tipoDocumento} onBlur={touch('tipoDocumento')}
+              <InputLabel id="editar-inscripcion-tipo-de-documento-label">Tipo de documento</InputLabel>
+              <Select labelId="editar-inscripcion-tipo-de-documento-label" label="Tipo de documento" value={form.tipoDocumento} onBlur={touch('tipoDocumento')}
                 onChange={e => { setV('tipoDocumento', e.target.value); touch('tipoDocumento')(); }}>
                 {TIPOS_DOC.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </Select>
@@ -360,8 +360,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           )}
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small" required error={!!err('genero')}>
-              <InputLabel>Género *</InputLabel>
-              <Select label="Género *" value={form.genero} onChange={set('genero')} onBlur={touch('genero')}>
+              <InputLabel id="editar-inscripcion-genero-label">Género *</InputLabel>
+              <Select labelId="editar-inscripcion-genero-label" label="Género *" value={form.genero} onChange={set('genero')} onBlur={touch('genero')}>
                 <MenuItem value=""><em>Selecciona</em></MenuItem>
                 {GENEROS.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
               </Select>
@@ -440,8 +440,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
 
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small" required error={!!err('tallaCamisa')}>
-              <InputLabel>Talla camisa *</InputLabel>
-              <Select label="Talla camisa *" value={form.tallaCamisa} onChange={set('tallaCamisa')}>
+              <InputLabel id="editar-inscripcion-talla-camisa-label">Talla camisa *</InputLabel>
+              <Select labelId="editar-inscripcion-talla-camisa-label" label="Talla camisa *" value={form.tallaCamisa} onChange={set('tallaCamisa')}>
                 <MenuItem value=""><em>Selecciona</em></MenuItem>
                 {TALLAS_CAMISA.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </Select>
@@ -502,8 +502,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>¿Tiene alergia?</InputLabel>
-              <Select label="¿Tiene alergia?" value={form.tieneAlergia} onChange={set('tieneAlergia')}>
+              <InputLabel id="editar-inscripcion-tiene-alergia-label">¿Tiene alergia?</InputLabel>
+              <Select labelId="editar-inscripcion-tiene-alergia-label" label="¿Tiene alergia?" value={form.tieneAlergia} onChange={set('tieneAlergia')}>
                 <MenuItem value="no">No</MenuItem>
                 <MenuItem value="si">Sí</MenuItem>
               </Select>
@@ -562,8 +562,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           ) : (
             <Grid size={12}>
               <FormControl fullWidth size="small">
-                <InputLabel>Nivel educativo alcanzado</InputLabel>
-                <Select
+                <InputLabel id="editar-inscripcion-nivel-educativo-alcanzado-label">Nivel educativo alcanzado</InputLabel>
+                <Select labelId="editar-inscripcion-nivel-educativo-alcanzado-label"
                   label="Nivel educativo alcanzado"
                   value={form.gradoEscolar}
                   onChange={set('gradoEscolar')}>
@@ -584,8 +584,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small" required error={!!err('parentesco')}>
-              <InputLabel>Parentesco *</InputLabel>
-              <Select label="Parentesco *" value={form.parentesco} onChange={set('parentesco')}>
+              <InputLabel id="editar-inscripcion-parentesco-label">Parentesco *</InputLabel>
+              <Select labelId="editar-inscripcion-parentesco-label" label="Parentesco *" value={form.parentesco} onChange={set('parentesco')}>
                 <MenuItem value=""><em>Selecciona</em></MenuItem>
                 {PARENTESCOS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
               </Select>
@@ -600,8 +600,8 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small" required error={!!err('viveConNino')}>
-              <InputLabel>¿Vive con el niño? *</InputLabel>
-              <Select label="¿Vive con el niño? *" value={form.viveConNino} onChange={set('viveConNino')}>
+              <InputLabel id="editar-inscripcion-vive-con-el-nino-label">¿Vive con el niño? *</InputLabel>
+              <Select labelId="editar-inscripcion-vive-con-el-nino-label" label="¿Vive con el niño? *" value={form.viveConNino} onChange={set('viveConNino')}>
                 <MenuItem value=""><em>Selecciona</em></MenuItem>
                 <MenuItem value="si">Sí</MenuItem>
                 <MenuItem value="no">No</MenuItem>

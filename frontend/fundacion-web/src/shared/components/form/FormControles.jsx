@@ -8,7 +8,7 @@
  *   SelectorUbicacion — cascada país / departamento / ciudad
  *   CampoMedidas      — peso (kg) + talla (cm)
  */
-import React, { useMemo } from 'react';
+import React, { useId, useMemo } from 'react';
 import {
   TextField, FormControl, InputLabel, Select, MenuItem,
   Grid, InputAdornment, Autocomplete, FormHelperText,
@@ -49,12 +49,14 @@ export function CampoDocumento({
   // Validación opcional (useValidacion): props({ error, helperText, onBlur }) por campo
   validacionTipo, validacionNumero,
 }) {
+  // Id único por instancia: enlaza la etiqueta con el select (nombre accesible del combobox)
+  const uid = useId();
   return (
     <Grid container spacing={2}>
       <Grid size={5}>
         <FormControl fullWidth size={size} error={!!validacionTipo?.error}>
-          <InputLabel>{labelTipo}</InputLabel>
-          <Select value={tipoDocumento} label={labelTipo} onBlur={validacionTipo?.onBlur}
+          <InputLabel id={`${uid}-tipo-documento-label`}>{labelTipo}</InputLabel>
+          <Select labelId={`${uid}-tipo-documento-label`} value={tipoDocumento} label={labelTipo} onBlur={validacionTipo?.onBlur}
             onChange={e => onChangeTipo(e.target.value)}>
             <MenuItem value=""><em>—</em></MenuItem>
             {TIPOS_DOCUMENTO.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}

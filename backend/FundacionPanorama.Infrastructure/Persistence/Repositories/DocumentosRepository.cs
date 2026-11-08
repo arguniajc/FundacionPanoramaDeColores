@@ -67,7 +67,7 @@ public class DocumentosRepository(DbConnectionFactory factory) : IDocumentosRepo
         return (Guid)(await cmd.ExecuteScalarAsync(ct))!;
     }
 
-    public async Task<bool> EliminarAsync(Guid id, CancellationToken ct = default)
+    public async Task<DocumentoEliminado?> EliminarAsync(Guid id, CancellationToken ct = default)
     {
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
@@ -75,9 +75,18 @@ public class DocumentosRepository(DbConnectionFactory factory) : IDocumentosRepo
         cmd.CommandText = @"
             UPDATE documentos_institucionales
             SET activo = false, fecha_modificacion = NOW()
-            WHERE id = @id AND activo = true";
+            WHERE id = @id AND activo = true
+            RETURNING url";
         cmd.Parameters.AddWithValue("id", id);
-        return await cmd.ExecuteNonQueryAsync(ct) > 0;
+        return await LeerEliminadoAsync(cmd, ct);
+    }
+
+    // RETURNING url: sin fila = no existía o ya estaba inactivo
+    static async Task<DocumentoEliminado?> LeerEliminadoAsync(Npgsql.NpgsqlCommand cmd, CancellationToken ct)
+    {
+        await using var rd = await cmd.ExecuteReaderAsync(ct);
+        if (!await rd.ReadAsync(ct)) return null;
+        return new DocumentoEliminado(rd.IsDBNull(0) ? null : rd.GetString(0));
     }
 
     // ── Por beneficiario (tabla archivos) ────────────────────────────────────
@@ -130,7 +139,7 @@ public class DocumentosRepository(DbConnectionFactory factory) : IDocumentosRepo
         return (Guid)(await cmd.ExecuteScalarAsync(ct))!;
     }
 
-    public async Task<bool> EliminarArchivoAsync(Guid id, CancellationToken ct = default)
+    public async Task<DocumentoEliminado?> EliminarArchivoAsync(Guid id, CancellationToken ct = default)
     {
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
@@ -138,8 +147,9 @@ public class DocumentosRepository(DbConnectionFactory factory) : IDocumentosRepo
         cmd.CommandText = @"
             UPDATE archivos
             SET activo = false, fecha_modificacion = NOW()
-            WHERE id = @id AND activo = true";
+            WHERE id = @id AND activo = true
+            RETURNING url";
         cmd.Parameters.AddWithValue("id", id);
-        return await cmd.ExecuteNonQueryAsync(ct) > 0;
+        return await LeerEliminadoAsync(cmd, ct);
     }
 }

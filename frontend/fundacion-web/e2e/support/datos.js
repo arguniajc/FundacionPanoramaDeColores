@@ -66,6 +66,27 @@ export const BENEFICIARIOS = [
 
 export const STATS_BENEFICIARIOS = { activos: 3, baja: 0, total: 3 };
 
+/**
+ * Forma de cada fila de GET /api/beneficiarios (BeneficiarioResumenDto en la API): sin salud,
+ * dirección, acudiente ni rutas de fotos. La ficha completa va en GET /api/beneficiarios/{id}
+ * y en GET /api/beneficiarios/exportar. La completitud replica BeneficiarioResumenDto.CalcularCompletitud.
+ */
+export function resumenBeneficiario(b) {
+  const dato = v => !!v && v !== 'No registra';
+  const checks = [
+    !!b.fotoMenorUrl, !!b.fotoDocumentoUrl, dato(b.eps), !!b.whatsapp, dato(b.direccion),
+    dato(b.tallaCamisa), dato(b.tallaZapatos), Number(b.pesoKg) > 0,
+    ...(b.tipo === 'adulto' ? [] : [dato(b.nombreColegio), !!b.gradoEscolar]),
+  ];
+  return {
+    id: b.id, nombreMenor: b.nombreMenor, fechaNacimiento: b.fechaNacimiento,
+    tipoDocumento: b.tipoDocumento, numeroDocumento: b.numeroDocumento, genero: b.genero,
+    whatsapp: b.whatsapp, tieneAlergia: b.tieneAlergia, activo: b.activo, tipo: b.tipo ?? 'niño',
+    tieneFotoMenor: !!b.fotoMenorUrl, tieneFotoDocumento: !!b.fotoDocumentoUrl,
+    completitud: Math.round(checks.filter(Boolean).length / checks.length * 100),
+  };
+}
+
 // Un perfil incompleto con foto privada: obliga a firmar la URL con /api/archivos/firmar
 export const FOTO_PRIVADA = 'privado://fotos/isabella.jpg';
 export const PNG_1X1 =

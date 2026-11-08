@@ -37,19 +37,6 @@ import { r }                from '@/shared/utils/validacion';
 const MAX_MOTIVO_BAJA = 500;
 const errorMotivoBaja = r.texto({ max: MAX_MOTIVO_BAJA });
 
-function calcularCompletitudAdulto(ins) {
-  const checks = [
-    !!ins.fotoMenorUrl,
-    !!ins.fotoDocumentoUrl,
-    !!(ins.eps && ins.eps !== 'No registra'),
-    !!(ins.whatsapp),
-    !!(ins.direccion && ins.direccion !== 'No registra'),
-    !!(ins.tallaCamisa && ins.tallaCamisa !== 'No registra'),
-    !!(ins.tallaZapatos && ins.tallaZapatos !== 'No registra'),
-    !!(ins.pesoKg && ins.pesoKg > 0),
-  ];
-  return Math.round(checks.filter(Boolean).length / checks.length * 100);
-}
 
 import DetalleInscripcion   from '@/presentation/modules/beneficiarios/components/DetalleInscripcion';
 import EditarInscripcion    from '@/presentation/modules/beneficiarios/components/EditarInscripcion';
@@ -58,9 +45,6 @@ import { ModalEstadisticas, StatCard } from '@/presentation/modules/beneficiario
 import { ImportarBeneficiariosDialog } from '@/presentation/modules/beneficiarios/pages/components/ImportarBeneficiariosDialog';
 import { PerfilesIncompletosDialog }    from '@/presentation/modules/beneficiarios/pages/components/PerfilesIncompletosDialog';
 import { useBeneficiariosPage } from '@/presentation/modules/beneficiarios/pages/useBeneficiariosPage';
-import apiClient from '@/infrastructure/http/apiClient';
-import { useToast } from '@/shared/context/useToast';
-import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 const HOVER_SX_ADULTOS = (t) => ({
   bgcolor: `${alpha(t.palette.success.main, 0.1)} !important`,
@@ -72,7 +56,7 @@ const HOVER_SX_ADULTOS = (t) => ({
 const AdultoFila = memo(function AdultoFila({
   ins, idx, esAdmin, onVer, onEditar, onBaja, onReactivar, onEliminar,
 }) {
-  const pct      = calcularCompletitudAdulto(ins);
+  const pct      = ins.completitud ?? 0; // la calcula la API (el listado no trae los campos)
   const theme    = useTheme();
   const modo     = theme.palette.mode;
   const pctTono  = colorEstado(pct >= 80 ? 'exito' : pct >= 50 ? 'aviso' : 'error', modo);
@@ -96,14 +80,14 @@ const AdultoFila = memo(function AdultoFila({
       <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'text.primary' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap' }}>
           {ins.nombreMenor}
-          {!ins.fotoMenorUrl && (
+          {!ins.tieneFotoMenor && (
             <Tooltip title="Foto pendiente — haz clic en Editar para cargarla">
               <Chip label="📷 Foto" size="small"
                 onClick={e => { e.stopPropagation(); onEditar(ins); }}
                 sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: colorEstado('aviso', modo).fondo, color: colorEstado('aviso', modo).texto, cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }} />
             </Tooltip>
           )}
-          {!ins.fotoDocumentoUrl && (
+          {!ins.tieneFotoDocumento && (
             <Tooltip title="Documento de identidad pendiente — haz clic en Editar para cargarlo">
               <Chip label="📄 Doc." size="small"
                 onClick={e => { e.stopPropagation(); onEditar(ins); }}
@@ -200,11 +184,11 @@ export default function AdultosPage() {
     hayFiltrosAvanzados, limpiarFiltros,
     cargando, error, actualizando,
     toast, setToast,
-    exportando, exportarExcel,
+    exportando, exportarExcel, puedeExportar,
     stats, cargandoStats,
     modalStats, setModalStats,
     seleccionada, setSeleccionada,
-    editando, setEditando,
+    editando, setEditando, verFicha, editarFicha,
     creando, setCreando,
     idBaja, setIdBaja, motivoBaja, setMotivoBaja, procesandoBaja,
     importDialog, setImportDialog,
@@ -215,7 +199,6 @@ export default function AdultosPage() {
   } = useBeneficiariosPage({ tipo: 'adulto' });
 
   const [pendientesOpen, setPendientesOpen] = useState(false);
-  const notificar = useToast();
 
   const [inputSearch, setInputSearch] = useState('');
   useEffect(() => {
@@ -223,22 +206,15 @@ export default function AdultosPage() {
     return () => clearTimeout(t);
   }, [inputSearch, setBuscar]);
 
-  const onVer       = useCallback((ins) => setSeleccionada(ins), [setSeleccionada]);
-  const onEditar    = useCallback((ins) => setEditando(ins), [setEditando]);
+  const onVer       = useCallback((ins) => verFicha(ins.id), [verFicha]);
+  const onEditar    = useCallback((ins) => editarFicha(ins.id), [editarFicha]);
   const onBaja      = useCallback((id)  => setIdBaja(id), [setIdBaja]);
   const onReactivar = useCallback((id)  => handleReactivar(id), [handleReactivar]);
   const onEliminar  = useCallback(({ id, nombre }) => { setEliminar({ id, nombre }); setErrorEliminar(''); }, [setEliminar, setErrorEliminar]);
 
   const handleEditarDesdePanel = async (id) => {
     setPendientesOpen(false);
-    const enLista = inscripciones.find(ins => ins.id === id);
-    if (enLista) { setEditando(enLista); return; }
-    try {
-      const { data } = await apiClient.get(`/api/beneficiarios/${id}`);
-      setEditando(data);
-    } catch (err) {
-      notificar(mensajeErrorApi(err, { accion: 'abrir el beneficiario para editarlo' }), 'error');
-    }
+    await editarFicha(id);
   };
 
   return (
@@ -347,16 +323,18 @@ export default function AdultosPage() {
                   Estadísticas
                 </Button>
               </Tooltip>
-              <Tooltip title="Exporta TODOS los adultos de la base de datos">
-                <Button
-                  variant="contained" size="small"
-                  startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
-                  onClick={exportarExcel} disabled={exportando}
-                  sx={{ bgcolor: '#43a047', '&:hover': { filter: 'brightness(0.85)' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
-                >
-                  {exportando ? 'Exportando…' : 'Exportar Excel'}
-                </Button>
-              </Tooltip>
+              {puedeExportar && (
+                <Tooltip title="Exporta TODOS los adultos de la base de datos">
+                  <Button
+                    variant="contained" size="small"
+                    startIcon={exportando ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
+                    onClick={exportarExcel} disabled={exportando}
+                    sx={{ bgcolor: '#43a047', '&:hover': { filter: 'brightness(0.85)' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
+                  >
+                    {exportando ? 'Exportando…' : 'Exportar Excel'}
+                  </Button>
+                </Tooltip>
+              )}
               <Tooltip title="Perfiles con datos sin completar">
                 <Button
                   variant="outlined" size="small"
@@ -374,8 +352,8 @@ export default function AdultosPage() {
             <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: (t) => alpha(t.palette.success.main, 0.05), borderColor: (t) => alpha(t.palette.success.main, 0.3) }}>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>Género</InputLabel>
-                  <Select value={fGenero} label="Género" onChange={e => setFGenero(e.target.value)}>
+                  <InputLabel id="adultos-page-genero-label">Género</InputLabel>
+                  <Select labelId="adultos-page-genero-label" value={fGenero} label="Género" onChange={e => setFGenero(e.target.value)}>
                     <MenuItem value="">Todos</MenuItem>
                     <MenuItem value="Masculino">Masculino</MenuItem>
                     <MenuItem value="Femenino">Femenino</MenuItem>
@@ -390,8 +368,8 @@ export default function AdultosPage() {
                   onChange={e => setFEps(e.target.value)} sx={{ width: 180 }}
                   placeholder="Ej: Sanitas, Sura…" />
                 <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>Alergia</InputLabel>
-                  <Select value={fAlergia} label="Alergia" onChange={e => setFAlergia(e.target.value)}>
+                  <InputLabel id="adultos-page-alergia-label">Alergia</InputLabel>
+                  <Select labelId="adultos-page-alergia-label" value={fAlergia} label="Alergia" onChange={e => setFAlergia(e.target.value)}>
                     <MenuItem value="">Todos</MenuItem>
                     <MenuItem value="si">Con alergia</MenuItem>
                     <MenuItem value="no">Sin alergia</MenuItem>

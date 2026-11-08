@@ -1,7 +1,7 @@
 // Exportaciones de un período de nómina: Excel (una fila por empleado) y desprendibles
 // de pago en PDF (una página por empleado), con jsPDF cargado solo al generar.
 import { exportarExcel, registrarExportacion } from '@/shared/utils/exportarExcel';
-import { fmtCOP, nombrePeriodo } from './nominaFormato';
+import { fmtCOP, nombrePeriodo, salarioPeriodo } from './nominaFormato';
 
 const COLOR = [78, 27, 149];
 
@@ -14,7 +14,8 @@ export const COLUMNAS_NOMINA = [
   ['Empleado',           l => l.empleadoNombre ?? '',   30],
   ['Cargo',              l => l.cargo ?? '',            24],
   ['Días trabajados',    l => Number(l.diasTrabajados ?? 0), 9],
-  ['Salario base',       l => Number(l.salarioBase ?? 0),       14],
+  ['Salario mensual',    l => Number(l.salarioBase ?? 0),       14],
+  ['Salario del período', l => salarioPeriodo(l),               14],
   ['Auxilio transporte', l => Number(l.auxilioTransporte ?? 0), 14],
   ['Horas extras',       l => Number(l.horasExtras ?? 0),       13],
   ['Bonificaciones',     l => Number(l.bonificaciones ?? 0),    13],
@@ -109,7 +110,7 @@ function dibujarDesprendible(doc, periodo, l, config) {
 
   // ── Devengados y deducciones (dos columnas) ─────────────────────────────
   const devengados = [
-    ['Salario básico',        l.salarioBase],
+    [`Salario (${l.diasTrabajados ?? 30} de 30 días)`, salarioPeriodo(l)],
     ['Auxilio de transporte', l.auxilioTransporte],
     ['Horas extras',          l.horasExtras],
     ['Bonificaciones',        l.bonificaciones],

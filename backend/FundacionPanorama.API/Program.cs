@@ -140,34 +140,41 @@ builder.Services.AddRequestTimeouts(options =>
         TimeoutStatusCode = StatusCodes.Status504GatewayTimeout,
     });
 
-// ── B1: Rate limiting — máx 10 intentos/min por IP en el endpoint de login ──
-// Cada IP tiene su propio cupo (antes era un único cupo compartido por todos los usuarios).
-// Render está detrás de Cloudflare: la IP real del cliente llega en estas cabeceras.
-static string IpCliente(HttpContext ctx)
+// ── B1: Rate limiting ────────────────────────────────────────────────────────
+// Login: máx 10 intentos/min por IP. Endpoints costosos o abusables: por usuario (o IP sin
+// sesión). La forma de obtener la IP real está explicada en LimiteSolicitudes.
+static FixedWindowRateLimiterOptions PorMinuto(int permitidas) => new()
 {
-    var h = ctx.Request.Headers;
-    var ip = h["CF-Connecting-IP"].FirstOrDefault()
-          ?? h["True-Client-IP"].FirstOrDefault()
-          ?? h["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim();
-    return string.IsNullOrWhiteSpace(ip) ? ctx.Connection.RemoteIpAddress?.ToString() ?? "desconocida" : ip;
-}
+    Window               = TimeSpan.FromMinutes(1),
+    PermitLimit          = permitidas,
+    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+    QueueLimit           = 0,
+};
 
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(IpCliente(ctx), _ =>
-        new FixedWindowRateLimiterOptions
-        {
-            Window               = TimeSpan.FromMinutes(1),
-            PermitLimit          = 10,
-            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-            QueueLimit           = 0,
-        }));
+    options.AddPolicy(LimiteSolicitudes.PoliticaAuth, ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(LimiteSolicitudes.IpCliente(ctx), _ => PorMinuto(10)));
+    // Firmar enlaces: el panel agrupa las fotos de cada pantalla en una sola llamada
+    options.AddPolicy(LimiteSolicitudes.PoliticaFirmar, ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(LimiteSolicitudes.UsuarioOIp(ctx), _ => PorMinuto(60)));
+    // OCR externo (OCR.space, cupo limitado) y lectura de imágenes de hasta 10 MB
+    options.AddPolicy(LimiteSolicitudes.PoliticaOcr, ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(LimiteSolicitudes.UsuarioOIp(ctx), _ => PorMinuto(10)));
+    // Importación masiva de beneficiarios: escribe cientos de filas por llamada
+    options.AddPolicy(LimiteSolicitudes.PoliticaImportar, ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(LimiteSolicitudes.UsuarioOIp(ctx), _ => PorMinuto(5)));
+
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, ct) =>
     {
-        context.HttpContext.Response.ContentType = "application/json";
-        await context.HttpContext.Response.WriteAsJsonAsync(
-            new { mensaje = "Demasiados intentos de inicio de sesión. Espera un minuto e intenta de nuevo." }, ct);
+        var http = context.HttpContext;
+        http.Response.ContentType = "application/json";
+        http.Response.Headers.RetryAfter = "60";
+        var mensaje = http.Request.Path.StartsWithSegments("/api/auth")
+            ? "Demasiados intentos de inicio de sesión. Espera un minuto e intenta de nuevo."
+            : "Hiciste demasiadas solicitudes seguidas. Espera un minuto e intenta de nuevo.";
+        await http.Response.WriteAsJsonAsync(new { mensaje }, ct);
     };
 });
 
@@ -221,9 +228,6 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
-// ── B1: Rate limiter ─────────────────────────────────────────────────────────
-app.UseRateLimiter();
-
 // Captura excepciones no manejadas DESPUÉS de CORS para que la respuesta
 // de error incluya el header Access-Control-Allow-Origin
 app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
@@ -266,6 +270,8 @@ app.Use(async (ctx, next) =>
 });
 
 app.UseAuthentication();
+// ── B1: Rate limiter — después de la autenticación para poder limitar por usuario ──
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
 

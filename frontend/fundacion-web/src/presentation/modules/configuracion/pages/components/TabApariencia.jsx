@@ -89,8 +89,8 @@ export function TabApariencia({ form, setForm }) {
         <Grid sx={{ alignItems: 'flex-start' }} container spacing={3}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Fuente principal</InputLabel>
-              <Select
+              <InputLabel id="tab-apariencia-fuente-principal-label">Fuente principal</InputLabel>
+              <Select labelId="tab-apariencia-fuente-principal-label"
                 value={ff}
                 label="Fuente principal"
                 onChange={(e) => cambiarFuente(e.target.value)}

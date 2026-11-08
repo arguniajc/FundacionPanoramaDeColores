@@ -38,7 +38,7 @@ describe('nómina: Excel del período', () => {
     const filas = filasNominaExcel([liq(1, 'Ana Pérez', 1_580_000), liq(2, 'Luis Gómez', 1_000_000)]);
     expect(filas).toHaveLength(4);
     expect(filas[0]).toEqual([
-      'Documento', 'Empleado', 'Cargo', 'Días trabajados', 'Salario base', 'Auxilio transporte',
+      'Documento', 'Empleado', 'Cargo', 'Días trabajados', 'Salario mensual', 'Salario del período', 'Auxilio transporte',
       'Horas extras', 'Bonificaciones', 'Deducción salud', 'Deducción pensión', 'Retención fuente',
       'Otras deducciones', 'Total devengado', 'Total deducciones', 'Neto a pagar',
     ]);
@@ -47,6 +47,13 @@ describe('nómina: Excel del período', () => {
     expect(total[0]).toBe('TOTAL');
     expect(total.at(-1)).toBe(2_580_000);
     expect(total[4]).toBe(3_000_000);
+  });
+
+  it('con días incompletos muestra el salario mensual y el del período', () => {
+    // 15 de 30 días: salario 750.000 y auxilio 100.000 → devengado 850.000
+    const quincena = liq(3, 'Eva Ruiz', 0, { diasTrabajados: 15, auxilioTransporte: 100_000, totalDevengado: 850_000 });
+    const [, fila] = filasNominaExcel([quincena]);
+    expect(fila.slice(3, 7)).toEqual([15, 1_500_000, 750_000, 100_000]);
   });
 
   it('el registro de la exportación cuenta empleados, no la fila de totales', async () => {

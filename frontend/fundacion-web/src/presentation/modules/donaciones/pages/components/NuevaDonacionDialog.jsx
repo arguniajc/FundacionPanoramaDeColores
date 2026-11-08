@@ -255,8 +255,8 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
             {form.registrarContabilidad && (
               <Grid size={12}>
                 <FormControl fullWidth size="small" required error={!!v.err('cuentaContabId')}>
-                  <InputLabel>Cuenta destino *</InputLabel>
-                  <Select value={form.cuentaContabId} label="Cuenta destino *"
+                  <InputLabel id="nueva-donacion-dialog-cuenta-destino-label">Cuenta destino *</InputLabel>
+                  <Select labelId="nueva-donacion-dialog-cuenta-destino-label" value={form.cuentaContabId} label="Cuenta destino *"
                     onChange={e => set('cuentaContabId', e.target.value)}
                     onBlur={() => v.tocar('cuentaContabId')}>
                     <MenuItem value=""><em>Seleccione una cuenta…</em></MenuItem>
@@ -326,8 +326,8 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
             {form.ingresarInventario && !itemSel && <>
               <Grid size={6}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Categoría *</InputLabel>
-                  <Select value={form.categoriaInv} label="Categoría *"
+                  <InputLabel id="nueva-donacion-dialog-categoria-label">Categoría *</InputLabel>
+                  <Select labelId="nueva-donacion-dialog-categoria-label" value={form.categoriaInv} label="Categoría *"
                     onChange={e => set('categoriaInv', e.target.value)}>
                     {CATEGORIAS_INVENTARIO.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
                   </Select>
@@ -344,8 +344,8 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
 
           <Grid size={6}>
             <FormControl fullWidth size="small">
-              <InputLabel>Sede (opcional)</InputLabel>
-              <Select value={form.sedeId} label="Sede (opcional)" onChange={e => setSedeId(e.target.value)}>
+              <InputLabel id="nueva-donacion-dialog-sede-opcional-label">Sede (opcional)</InputLabel>
+              <Select labelId="nueva-donacion-dialog-sede-opcional-label" value={form.sedeId} label="Sede (opcional)" onChange={e => setSedeId(e.target.value)}>
                 <MenuItem value=""><em>Sin sede</em></MenuItem>
                 {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
               </Select>
@@ -353,8 +353,8 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
           </Grid>
           <Grid size={6}>
             <FormControl fullWidth size="small" disabled={!form.sedeId || programas.length === 0}>
-              <InputLabel>Programa (opcional)</InputLabel>
-              <Select value={form.programaId} label="Programa (opcional)"
+              <InputLabel id="nueva-donacion-dialog-programa-opcional-label">Programa (opcional)</InputLabel>
+              <Select labelId="nueva-donacion-dialog-programa-opcional-label" value={form.programaId} label="Programa (opcional)"
                 onChange={e => set('programaId', e.target.value)}>
                 <MenuItem value=""><em>Sin programa</em></MenuItem>
                 {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}

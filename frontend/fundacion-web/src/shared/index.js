@@ -9,7 +9,6 @@ export { default as CamaraFoto }         from './components/CamaraFoto';
 export { default as PantallaCarga }      from './components/PantallaCarga';
 export { default as RutaProtegida }      from './components/RutaProtegida';
 export { default as SinAcceso }          from './components/SinAcceso';
-export { default as ModuloEnDesarrollo } from './components/ModuloEnDesarrollo';
 export {
   CampoFecha, CampoDocumento, CampoCiudad,
   SelectorUbicacion, CampoUnidadMedida, CampoMedidas,

@@ -144,3 +144,79 @@ public class EndpointsConDatosPersonalesTests
         Assert.NotNull(p);
     }
 }
+
+/// <summary>
+/// Protección contra regresiones: cada endpoint exige la acción que corresponde a lo que hace.
+/// Un DELETE con "editar" dejaba borrar a quien solo debía modificar.
+/// </summary>
+public class AccionesDePermisoTests
+{
+    static IEnumerable<MethodInfo> Endpoints() =>
+        typeof(BaseController).Assembly.GetTypes()
+            .Where(t => typeof(ControllerBase).IsAssignableFrom(t) && !t.IsAbstract)
+            .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            .Where(m => m.GetCustomAttributes<Microsoft.AspNetCore.Mvc.Routing.HttpMethodAttribute>().Any());
+
+    static IEnumerable<string> Acciones(MethodInfo m) =>
+        m.GetCustomAttributes<RequierePermisoAttribute>().Select(p => p.Accion)
+         .Concat(m.GetCustomAttributes<RequiereAlgunPermisoAttribute>()
+                  .SelectMany(p => p.PermisosAceptados).Select(p => p.Split(':', 2)[^1]));
+
+    static string Nombre(MethodInfo m) => $"{m.DeclaringType!.Name}.{m.Name}";
+
+    // Borrados que en realidad editan la configuración de otro registro (no eliminan la entidad
+    // del módulo). Pasarlos a "eliminar" le quitaría la capacidad al coordinador de programas
+    // (tiene programas:editar pero no programas:eliminar).
+    static readonly HashSet<string> DeleteQueEditan =
+    [
+        "SedesController.EliminarCampo",         // quitar un campo del formulario de un programa
+        "VoluntariosController.EliminarAsignacion", // quitar a un voluntario de una actividad
+    ];
+
+    [Fact]
+    public void Ningun_Delete_Usa_Ver_Ni_Editar()
+    {
+        var malos = Endpoints()
+            .Where(m => m.GetCustomAttributes<HttpDeleteAttribute>().Any())
+            .Where(m => Acciones(m).Any(a => a is "ver" or "editar"))
+            .Select(Nombre)
+            .Where(n => !DeleteQueEditan.Contains(n))
+            .ToList();
+        Assert.Empty(malos);
+    }
+
+    [Theory]
+    [InlineData(typeof(ContabilidadController))]
+    [InlineData(typeof(NominaController))]
+    public void Delete_De_Contabilidad_Y_Nomina_Exigen_Eliminar(Type controlador)
+    {
+        var deletes = controlador.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(m => m.GetCustomAttributes<HttpDeleteAttribute>().Any()).ToList();
+        Assert.NotEmpty(deletes);
+        Assert.All(deletes, m => Assert.Equal("eliminar", Assert.Single(m.GetCustomAttributes<RequierePermisoAttribute>()).Accion));
+    }
+
+    [Fact]
+    public void Ninguna_Escritura_Exige_Solo_Ver()
+    {
+        // log-emision solo registra que alguien imprimió/envió un recibo: basta con poder verlo
+        HashSet<string> excepciones = ["DonacionesController.LogEmision"];
+        var malos = Endpoints()
+            .Where(m => m.GetCustomAttributes<HttpPostAttribute>().Any()
+                     || m.GetCustomAttributes<HttpPutAttribute>().Any()
+                     || m.GetCustomAttributes<HttpPatchAttribute>().Any())
+            .Where(m => Acciones(m).Any() && Acciones(m).All(a => a == "ver"))
+            .Select(Nombre)
+            .Where(n => !excepciones.Contains(n))
+            .ToList();
+        Assert.Empty(malos);
+    }
+
+    [Fact]
+    public void Exportar_Beneficiarios_Exige_Su_Permiso()
+    {
+        var m = typeof(BeneficiariosController).GetMethod(nameof(BeneficiariosController.Exportar))!;
+        var p = Assert.Single(m.GetCustomAttributes<RequierePermisoAttribute>());
+        Assert.Equal(("beneficiarios", "exportar"), (p.Modulo, p.Accion));
+    }
+}

@@ -3,6 +3,7 @@ import { Alert, Box, Button, FormControl, Grid, InputLabel, MenuItem, Select } f
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { exportarExcel } from '@/shared/utils/exportarExcel';
+import usePermisos from '@/shared/hooks/usePermisos';
 import {
   AreaChart, Area, BarChart, Bar, CartesianGrid, Cell,
   PieChart, Pie, Tooltip, XAxis, YAxis,
@@ -14,6 +15,7 @@ import { COLORES } from './colores';
 import { useTheme } from '@mui/material/styles';
 
 export function TabDonaciones() {
+  const { puedo } = usePermisos();
   const theme = useTheme();
   const hoy   = new Date();
   const [anio,  setAnio]  = useState(hoy.getFullYear());
@@ -56,15 +58,17 @@ export function TabDonaciones() {
       <Grid size={{ xs: 12 }}>
         <Box sx={{ display: 'flex', gap: 2, mb: 1, alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 110 }}>
-            <InputLabel>Año</InputLabel>
-            <Select value={anio} label="Año" onChange={e => setAnio(Number(e.target.value))}>
+            <InputLabel id="tab-donaciones-ano-label">Año</InputLabel>
+            <Select labelId="tab-donaciones-ano-label" value={anio} label="Año" onChange={e => setAnio(Number(e.target.value))}>
               {anios.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
             </Select>
           </FormControl>
-          <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
-            onClick={exportar} disabled={!data}>
-            Exportar Excel
-          </Button>
+          {puedo('reportes', 'exportar') && (
+            <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />}
+              onClick={exportar} disabled={!data}>
+              Exportar Excel
+            </Button>
+          )}
         </Box>
       </Grid>
 

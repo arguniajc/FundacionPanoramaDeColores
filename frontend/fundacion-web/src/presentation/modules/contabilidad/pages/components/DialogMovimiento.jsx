@@ -201,8 +201,8 @@ export function DialogMovimiento({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small" error={!!v.err('cuentaId')}>
-              <InputLabel>Cuenta *</InputLabel>
-              <Select value={form.cuentaId} label="Cuenta *" onChange={set('cuentaId')}
+              <InputLabel id="dialog-movimiento-cuenta-label">Cuenta *</InputLabel>
+              <Select labelId="dialog-movimiento-cuenta-label" value={form.cuentaId} label="Cuenta *" onChange={set('cuentaId')}
                 onBlur={() => v.tocar('cuentaId')}>
                 {cuentas.map(c => <MenuItem key={c.id} value={c.id}>{c.nombre}</MenuItem>)}
               </Select>
@@ -211,8 +211,8 @@ export function DialogMovimiento({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small" error={!!v.err('categoriaId')}>
-              <InputLabel>Categoría PUC *</InputLabel>
-              <Select value={form.categoriaId} label="Categoría PUC *" onChange={set('categoriaId')}
+              <InputLabel id="dialog-movimiento-categoria-puc-label">Categoría PUC *</InputLabel>
+              <Select labelId="dialog-movimiento-categoria-puc-label" value={form.categoriaId} label="Categoría PUC *" onChange={set('categoriaId')}
                 onBlur={() => v.tocar('categoriaId')}>
                 {catsFiltradas.map(c => (
                   <MenuItem key={c.id} value={String(c.id)}>{c.codigoPuc} — {c.nombre}</MenuItem>
@@ -223,8 +223,8 @@ export function DialogMovimiento({
           </Grid>
           <Grid size={12}>
             <FormControl fullWidth size="small">
-              <InputLabel>Programa (opcional)</InputLabel>
-              <Select value={form.programaId} label="Programa (opcional)" onChange={set('programaId')}>
+              <InputLabel id="dialog-movimiento-programa-opcional-label">Programa (opcional)</InputLabel>
+              <Select labelId="dialog-movimiento-programa-opcional-label" value={form.programaId} label="Programa (opcional)" onChange={set('programaId')}>
                 <MenuItem value="">Sin programa</MenuItem>
                 {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
               </Select>
@@ -247,8 +247,8 @@ export function DialogMovimiento({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Tipo de soporte</InputLabel>
-              <Select value={form.tipoSoporte} label="Tipo de soporte" onChange={set('tipoSoporte')}>
+              <InputLabel id="dialog-movimiento-tipo-de-soporte-label">Tipo de soporte</InputLabel>
+              <Select labelId="dialog-movimiento-tipo-de-soporte-label" value={form.tipoSoporte} label="Tipo de soporte" onChange={set('tipoSoporte')}>
                 <MenuItem value=""><em>Sin especificar</em></MenuItem>
                 {TIPOS_SOPORTE.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </Select>
@@ -263,8 +263,8 @@ export function DialogMovimiento({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Tarifa de retención</InputLabel>
-                <Select value={form.tarifaRetencion} label="Tarifa de retención" onChange={handleTarifaChange}>
+                <InputLabel id="dialog-movimiento-tarifa-de-retencion-label">Tarifa de retención</InputLabel>
+                <Select labelId="dialog-movimiento-tarifa-de-retencion-label" value={form.tarifaRetencion} label="Tarifa de retención" onChange={handleTarifaChange}>
                   <MenuItem value=""><em>Sin retención</em></MenuItem>
                   {TARIFAS_RETENCION.map(t => (
                     <MenuItem key={t.value} value={String(t.value)}>{t.label}</MenuItem>

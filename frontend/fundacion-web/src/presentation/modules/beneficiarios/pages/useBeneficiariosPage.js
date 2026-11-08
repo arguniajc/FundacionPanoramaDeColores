@@ -11,7 +11,8 @@ import { fechaLocalISO } from '@/shared/utils/fecha';
 const POR_PAGINA = 15;
 
 export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
-  const { esAdmin } = useAuth();
+  const { esAdmin, puedo } = useAuth();
+  const puedeExportar = puedo('beneficiarios', 'exportar');
   const notificar   = useToast();
 
   const [inscripciones,  setInscripciones]  = useState([]);
@@ -141,6 +142,28 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
     }
   };
 
+  // El listado trae solo un resumen de cada beneficiario (sin salud, dirección ni fotos):
+  // el detalle y la edición piden la ficha completa por id.
+  const cargarFicha = useCallback(async (id, accion) => {
+    try {
+      const { data } = await apiClient.get(`/api/beneficiarios/${id}`);
+      return data;
+    } catch (err) {
+      notificar(mensajeErrorApi(err, { accion }), 'error');
+      return null;
+    }
+  }, [notificar]);
+
+  const verFicha = useCallback(async (id) => {
+    const ficha = await cargarFicha(id, 'abrir el detalle del beneficiario');
+    if (ficha) setSeleccionada(ficha);
+  }, [cargarFicha]);
+
+  const editarFicha = useCallback(async (id) => {
+    const ficha = await cargarFicha(id, 'abrir el beneficiario para editarlo');
+    if (ficha) setEditando(ficha);
+  }, [cargarFicha]);
+
   const handleGuardadoEdicion = () => {
     setEditando(null);
     setToast('Beneficiario actualizado correctamente');
@@ -157,11 +180,12 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
     setExportando(true);
     setToast('Preparando exportación completa…');
     try {
-      // La API entrega máximo 100 por página: se piden todas las páginas
+      // La API entrega máximo 100 por página: se piden todas las páginas.
+      // Endpoint propio (permiso beneficiarios:exportar): el listado normal no trae salud ni dirección.
       const POR_PAGINA = 100;
       const todos = [];
       for (let pagina = 1; ; pagina++) {
-        const { data } = await apiClient.get('/api/beneficiarios', {
+        const { data } = await apiClient.get('/api/beneficiarios/exportar', {
           params: { pagina, porPagina: POR_PAGINA, estado: 'todos', tipo },
         });
         todos.push(...data.data);
@@ -228,11 +252,11 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
     hayFiltrosAvanzados, limpiarFiltros,
     cargando, error, actualizando,
     toast, setToast,
-    exportando, exportarExcel: handleExportarExcel,
+    exportando, exportarExcel: handleExportarExcel, puedeExportar,
     stats, statsDetalle, cargandoStats,
     modalStats, setModalStats,
     seleccionada, setSeleccionada,
-    editando, setEditando,
+    editando, setEditando, verFicha, editarFicha,
     creando, setCreando,
     idBaja, setIdBaja, motivoBaja, setMotivoBaja, procesandoBaja,
     importDialog, setImportDialog,

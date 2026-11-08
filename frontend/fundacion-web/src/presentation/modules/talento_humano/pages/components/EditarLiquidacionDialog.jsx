@@ -9,13 +9,7 @@ import { mensajeErrorApi }  from '@/shared/utils/mensajeErrorApi';
 import { r }                from '@/shared/utils/validacion';
 import { useValidacion }    from '@/shared/hooks/useValidacion';
 import ResumenErrores       from '@/shared/components/ResumenErrores';
-import { fmtCOP }           from './nominaFormato';
-
-// Mismos valores que NominaConstants del servidor: solo para la vista previa, el servidor recalcula.
-const SMLMV = 1_423_500;
-const AUXILIO_TRANSPORTE = 200_000;
-const TASA_SALUD = 0.04;
-const TASA_PENSION = 0.04;
+import { fmtCOP, calcularLiquidacion as calcular } from './nominaFormato';
 
 const pesos = ejemplo => r.numero({ min: 0, unidad: 'pesos', ejemplo });
 
@@ -41,17 +35,6 @@ const formDesde = liq => ({
 });
 
 const n = v => Number(v) || 0;
-
-/** Vista previa con la misma fórmula que el servidor al liquidar. */
-function calcular(f) {
-  const salario   = n(f.salario);
-  const aux       = salario <= 2 * SMLMV ? AUXILIO_TRANSPORTE : 0;
-  const salud     = Math.round(salario * TASA_SALUD);
-  const pension   = Math.round(salario * TASA_PENSION);
-  const devengado = salario + aux + n(f.horasExtras) + n(f.bonificaciones);
-  const deduccion = salud + pension + n(f.retencionFuente) + n(f.otrasDeducciones);
-  return { aux, salud, pension, devengado, deduccion, neto: devengado - deduccion };
-}
 
 /** Edita una liquidación de un período en borrador. */
 export function EditarLiquidacionDialog({ liquidacion, onClose, onGuardada }) {
@@ -136,6 +119,8 @@ export function EditarLiquidacionDialog({ liquidacion, onClose, onGuardada }) {
         </Grid>
 
         <Box sx={{ mt: 2, p: 1.5, borderRadius: 2, bgcolor: 'superficie2', display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 0.5, columnGap: 2, fontSize: '0.82rem' }}>
+          <Typography sx={{ fontSize: 'inherit', color: 'text.secondary' }}>Salario del período ({n(form.diasTrabajados)} de 30 días)</Typography>
+          <Typography sx={{ fontSize: 'inherit', fontFamily: 'monospace', textAlign: 'right' }}>{fmtCOP(t.salario)}</Typography>
           <Typography sx={{ fontSize: 'inherit', color: 'text.secondary' }}>Auxilio de transporte</Typography>
           <Typography sx={{ fontSize: 'inherit', fontFamily: 'monospace', textAlign: 'right' }}>{fmtCOP(t.aux)}</Typography>
           <Typography sx={{ fontSize: 'inherit', color: 'text.secondary' }}>Salud (4%) + pensión (4%)</Typography>

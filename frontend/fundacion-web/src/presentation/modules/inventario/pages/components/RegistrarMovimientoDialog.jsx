@@ -112,8 +112,8 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
         <Grid container spacing={2}>
           <Grid size={12}>
             <FormControl fullWidth size="small" error={!!v.err('tipoMovimientoId')}>
-              <InputLabel>Tipo de movimiento *</InputLabel>
-              <Select value={form.tipoMovimientoId} label="Tipo de movimiento *"
+              <InputLabel id="registrar-movimiento-dialog-tipo-de-movimiento-label">Tipo de movimiento *</InputLabel>
+              <Select labelId="registrar-movimiento-dialog-tipo-de-movimiento-label" value={form.tipoMovimientoId} label="Tipo de movimiento *"
                 onBlur={() => v.tocar('tipoMovimientoId')}
                 onChange={e => set('tipoMovimientoId', e.target.value)}>
                 {tiposFiltrados.map(t => (

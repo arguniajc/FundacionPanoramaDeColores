@@ -11,7 +11,7 @@
 //  - Google Identity Services se reemplaza por un script falso que dibuja un
 //    botón "Iniciar sesión con Google"; las fuentes de Google se responden vacías.
 import { test as base, expect } from '@playwright/test';
-import { BENEFICIARIOS, CONFIG_PUBLICA, STATS_BENEFICIARIOS, USUARIO, crearJwt } from './datos.js';
+import { BENEFICIARIOS, CONFIG_PUBLICA, STATS_BENEFICIARIOS, USUARIO, crearJwt, resumenBeneficiario } from './datos.js';
 
 export const API = 'http://api.test';
 
@@ -114,13 +114,27 @@ export function listadoVacio({ url }) {
   } };
 }
 
-/** GET /api/beneficiarios con búsqueda simple por nombre o documento. */
+/**
+ * GET /api/beneficiarios (resumen) con búsqueda simple por nombre o documento,
+ * GET /api/beneficiarios/exportar (ficha completa) y GET /api/beneficiarios/{id} (detalle).
+ */
 export function mockListaBeneficiarios(api) {
-  api.on('GET', '/api/beneficiarios', ({ url }) => {
+  const filtrar = url => {
     const q = (url.searchParams.get('buscar') ?? '').toLowerCase();
-    const data = BENEFICIARIOS.filter(b =>
+    return BENEFICIARIOS.filter(b =>
       !q || b.nombreMenor.toLowerCase().includes(q) || b.numeroDocumento.includes(q));
+  };
+  api.on('GET', /^\/api\/beneficiarios\/\d+$/, ({ url }) => {
+    const id = Number(url.pathname.split('/').pop());
+    return { json: BENEFICIARIOS.find(b => b.id === id) ?? BENEFICIARIOS[0] };
+  });
+  api.on('GET', '/api/beneficiarios', ({ url }) => {
+    const data = filtrar(url).map(resumenBeneficiario);
     return { json: { data, total: data.length, pagina: Number(url.searchParams.get('pagina')), porPagina: 15 } };
+  });
+  api.on('GET', '/api/beneficiarios/exportar', ({ url }) => {
+    const data = filtrar(url);
+    return { json: { data, total: data.length, pagina: Number(url.searchParams.get('pagina')), porPagina: 100 } };
   });
   api.on('GET', '/api/beneficiarios/stats', STATS_BENEFICIARIOS);
 }

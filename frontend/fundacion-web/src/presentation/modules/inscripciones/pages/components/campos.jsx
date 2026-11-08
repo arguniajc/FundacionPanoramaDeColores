@@ -1,5 +1,5 @@
 ﻿// Helpers, constantes y componentes de campo compartidos del módulo de inscripciones.
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useId } from 'react';
 import {
   Alert, Autocomplete, Box, Button, Chip, FormControl, FormControlLabel, FormHelperText, Grid,
   InputAdornment, InputLabel, MenuItem, Select, Switch, TextField, Tooltip, Typography,
@@ -54,6 +54,7 @@ function getDocsPorPanelYPais(esTutor, pais) {
 const QUIEN_FIRMA_LABEL = { padre: 'Padre', madre: 'Madre', tutor: 'Tutor legal' };
 
 export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = [], disabled = false, sx = {}, errores = {} }) {
+  const uid = useId(); // enlaza etiquetas y selects (nombre accesible)
   const meta = parseMeta(datos.__firma_meta__);
 
   const campoPadre = campos.find(c => c.tipo === 'datos_padre');
@@ -172,8 +173,8 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
                 </Box>
               ) : (
                 <FormControl fullWidth size="small" error={!!errores.__firma_quien__}>
-                  <InputLabel>¿Quién firma? *</InputLabel>
-                  <Select value={meta.quien || ''} label="¿Quién firma? *"
+                  <InputLabel id={`${uid}-quien-firma-label`}>¿Quién firma? *</InputLabel>
+                  <Select labelId={`${uid}-quien-firma-label`} value={meta.quien || ''} label="¿Quién firma? *"
                     onChange={e => handleQuien(e.target.value)}>
                     {opcionesQuien.length > 0
                       ? opcionesQuien.map(q => (
@@ -249,6 +250,7 @@ export function CampoInput(props) {
 }
 
 function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error = '' }) {
+  const uid = useId(); // enlaza etiquetas y selects (nombre accesible)
   const [subiendo, setSubiendo] = useState(false);
   const toast = useToast();
 
@@ -265,8 +267,8 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
   if (campo.tipo === 'select') {
     return (
       <FormControl fullWidth size="small" required={campo.obligatorio} error={!!error}>
-        <InputLabel>{campo.etiqueta}</InputLabel>
-        <Select label={campo.etiqueta} value={value ?? ''} onChange={e => onChange(e.target.value)}>
+        <InputLabel id={`${uid}-select-label`}>{campo.etiqueta}</InputLabel>
+        <Select labelId={`${uid}-select-label`} label={campo.etiqueta} value={value ?? ''} onChange={e => onChange(e.target.value)}>
           {(campo.opciones ?? []).map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
         </Select>
       </FormControl>
@@ -393,8 +395,8 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <FormControl size="small" sx={{ width: 140, flexShrink: 0 }}>
-            <InputLabel>Tipo</InputLabel>
-            <Select label="Tipo" value={doc.tipo} onChange={e => setDoc('tipo', e.target.value)}>
+            <InputLabel id={`${uid}-tipo-label`}>Tipo</InputLabel>
+            <Select labelId={`${uid}-tipo-label`} label="Tipo" value={doc.tipo} onChange={e => setDoc('tipo', e.target.value)}>
               {TIPOS_DOCUMENTO.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
             </Select>
           </FormControl>
@@ -441,16 +443,16 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
         <Grid container spacing={1.5}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small" required={campo.obligatorio}>
-              <InputLabel>Grado</InputLabel>
-              <Select label="Grado" value={ge.grado} onChange={e => setGE('grado', e.target.value)}>
+              <InputLabel id={`${uid}-grado-label`}>Grado</InputLabel>
+              <Select labelId={`${uid}-grado-label`} label="Grado" value={ge.grado} onChange={e => setGE('grado', e.target.value)}>
                 {GRADOS_COLOMBIA.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
               </Select>
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Jornada</InputLabel>
-              <Select label="Jornada" value={ge.jornada} onChange={e => setGE('jornada', e.target.value)}>
+              <InputLabel id={`${uid}-jornada-label`}>Jornada</InputLabel>
+              <Select labelId={`${uid}-jornada-label`} label="Jornada" value={ge.jornada} onChange={e => setGE('jornada', e.target.value)}>
                 {JORNADAS_ESCOLARES.map(j => <MenuItem key={j} value={j}>{j}</MenuItem>)}
               </Select>
             </FormControl>
@@ -468,8 +470,8 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
     const listas = LISTAS_POR_TIPO;
     return (
       <FormControl fullWidth size="small" required={campo.obligatorio} error={!!error}>
-        <InputLabel>{campo.etiqueta + (campo.obligatorio ? ' *' : '')}</InputLabel>
-        <Select
+        <InputLabel id={`${uid}-lista-label`}>{campo.etiqueta + (campo.obligatorio ? ' *' : '')}</InputLabel>
+        <Select labelId={`${uid}-lista-label`}
           label={campo.etiqueta + (campo.obligatorio ? ' *' : '')}
           value={value ?? ''}
           onChange={e => onChange(e.target.value)}>
@@ -564,8 +566,8 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
               {esTutor && (
                 <Grid size={12}>
                   <FormControl fullWidth size="small" required>
-                    <InputLabel>Relación / Parentesco *</InputLabel>
-                    <Select label="Relación / Parentesco *" value={d.relacion ?? ''}
+                    <InputLabel id={`${uid}-relacion-parentesco-label`}>Relación / Parentesco *</InputLabel>
+                    <Select labelId={`${uid}-relacion-parentesco-label`} label="Relación / Parentesco *" value={d.relacion ?? ''}
                       onChange={e => setD('relacion', e.target.value)}>
                       {RELACIONES_TUTOR.map(r => <MenuItem key={r} value={r}>{r}</MenuItem>)}
                     </Select>
@@ -614,8 +616,8 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
                 <FormControl fullWidth size="small" required>
-                  <InputLabel>Tipo de doc. *</InputLabel>
-                  <Select label="Tipo de doc. *" value={d.tipoDoc ?? ''} onChange={e => setD('tipoDoc', e.target.value)}>
+                  <InputLabel id={`${uid}-tipo-de-doc-label`}>Tipo de doc. *</InputLabel>
+                  <Select labelId={`${uid}-tipo-de-doc-label`} label="Tipo de doc. *" value={d.tipoDoc ?? ''} onChange={e => setD('tipoDoc', e.target.value)}>
                     {tiposDocPanel.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                   </Select>
                 </FormControl>
@@ -651,8 +653,8 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControl fullWidth size="small" required>
-                  <InputLabel>Nivel de escolaridad *</InputLabel>
-                  <Select label="Nivel de escolaridad *" value={d.escolaridad ?? ''} onChange={e => setD('escolaridad', e.target.value)}>
+                  <InputLabel id={`${uid}-nivel-de-escolaridad-label`}>Nivel de escolaridad *</InputLabel>
+                  <Select labelId={`${uid}-nivel-de-escolaridad-label`} label="Nivel de escolaridad *" value={d.escolaridad ?? ''} onChange={e => setD('escolaridad', e.target.value)}>
                     {NIVELES_EDUCATIVOS.map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
                   </Select>
                 </FormControl>
@@ -667,8 +669,8 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
               </Grid>
               <Grid size={12}>
                 <FormControl fullWidth size="small" required>
-                  <InputLabel>Autoidentificación étnica *</InputLabel>
-                  <Select label="Autoidentificación étnica *" value={d.autoidentificacion ?? ''}
+                  <InputLabel id={`${uid}-autoidentificacion-etnica-label`}>Autoidentificación étnica *</InputLabel>
+                  <Select labelId={`${uid}-autoidentificacion-etnica-label`} label="Autoidentificación étnica *" value={d.autoidentificacion ?? ''}
                     onChange={e => setD('autoidentificacion', e.target.value)}>
                     {AUTOIDENTIFICACION.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
                   </Select>

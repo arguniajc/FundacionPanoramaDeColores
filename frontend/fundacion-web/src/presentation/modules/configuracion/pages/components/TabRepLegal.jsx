@@ -19,8 +19,8 @@ export function TabRepLegal({ form, set, setForm, v }) {
         </Grid>
         <Grid size={{ xs: 12, sm: 5 }}>
           <FormControl fullWidth size="small">
-            <InputLabel>Tipo de documento</InputLabel>
-            <Select label="Tipo de documento" value={form.tipoDocRep} onChange={set('tipoDocRep')}>
+            <InputLabel id="tab-rep-legal-tipo-de-documento-label">Tipo de documento</InputLabel>
+            <Select labelId="tab-rep-legal-tipo-de-documento-label" label="Tipo de documento" value={form.tipoDocRep} onChange={set('tipoDocRep')}>
               {TIPOS_DOC.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
             </Select>
           </FormControl>

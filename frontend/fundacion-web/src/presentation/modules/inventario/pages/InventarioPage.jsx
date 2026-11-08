@@ -188,8 +188,8 @@ export default function InventarioPage() {
       {/* Selector de sede */}
       <Box sx={{ mb: 2.5 }}>
         <FormControl size="small" sx={{ minWidth: 260 }}>
-          <InputLabel>Sede</InputLabel>
-          <Select value={sedeSel} label="Sede" onChange={e => { setSedeSel(e.target.value); setBuscar(''); setCategoriaFil(''); setTenenciaFil(''); }}>
+          <InputLabel id="inventario-page-sede-label">Sede</InputLabel>
+          <Select labelId="inventario-page-sede-label" value={sedeSel} label="Sede" onChange={e => { setSedeSel(e.target.value); setBuscar(''); setCategoriaFil(''); setTenenciaFil(''); }}>
             <MenuItem value="">Todas las sedes</MenuItem>
             {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
           </Select>

@@ -168,4 +168,50 @@ public class ActividadesServiceTests
         await _sut.CrearHorarioAsync(dto);
         _repo.Verify(r => r.CrearHorarioAsync(dto, It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    // ── Estado según la fecha (calculado al leer, sin UPDATE en el GET) ──────
+
+    static readonly DateTime Ahora = new(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
+
+    [Theory]
+    [InlineData("programada", -48, -46,   "realizada")]  // ya terminó
+    [InlineData("en_curso",   -48, -46,   "realizada")]
+    [InlineData("programada", -1,  1,     "en_curso")]   // empezó y no ha terminado
+    [InlineData("programada", -1,  null,  "en_curso")]   // sin fin: en curso desde que empieza
+    [InlineData("programada", 24,  26,    "programada")] // futura
+    [InlineData("en_curso",   -1,  null,  "en_curso")]
+    [InlineData("cancelada",  -48, -46,   "cancelada")]  // cancelada no cambia
+    [InlineData("realizada",  24,  26,    "realizada")]  // lo que el usuario marcó a mano se respeta
+    public void EstadoEfectivo_Segun_La_Fecha(string estado, int inicioHoras, int? finHoras, string esperado)
+        => Assert.Equal(esperado, ActividadesService.EstadoEfectivo(
+            estado, Ahora.AddHours(inicioHoras), finHoras is { } f ? Ahora.AddHours(f) : null, Ahora));
+
+    [Fact]
+    public async Task Listar_Muestra_El_Estado_Segun_La_Fecha_Sin_Escribir()
+    {
+        var pasada = DateTime.UtcNow.AddDays(-3);
+        var futura = DateTime.UtcNow.AddDays(3);
+        _repo.Setup(r => r.ListarAsync(null, null, null, It.IsAny<CancellationToken>())).ReturnsAsync([
+            new ActividadResumenDto(Guid.NewGuid(), "Pasada", null, null, null, pasada, pasada.AddHours(2), null, "programada", 0, []),
+            new ActividadResumenDto(Guid.NewGuid(), "Futura", null, null, null, futura, futura.AddHours(2), null, "programada", 0, []),
+        ]);
+
+        var lista = await _sut.ListarAsync(null, null, null);
+
+        Assert.Equal(["realizada", "programada"], lista.Select(a => a.Estado));
+        // Solo se leyó: el repositorio no recibió ninguna operación de escritura
+        _repo.Verify(r => r.ListarAsync(null, null, null, It.IsAny<CancellationToken>()), Times.Once);
+        _repo.Verify(r => r.ActualizarAsync(It.IsAny<Guid>(), It.IsAny<ActualizarActividadDto>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Obtener_Tambien_Calcula_El_Estado()
+    {
+        var id     = Guid.NewGuid();
+        var pasada = DateTime.UtcNow.AddDays(-3);
+        _repo.Setup(r => r.ObtenerAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(
+            new ActividadDto(id, "Pasada", null, null, null, pasada, pasada.AddHours(2), null, "en_curso", 0, 0, pasada, []));
+
+        Assert.Equal("realizada", (await _sut.ObtenerAsync(id))!.Estado);
+    }
 }

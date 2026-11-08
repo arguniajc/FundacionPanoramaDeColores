@@ -35,6 +35,32 @@ jobs:
       - name: Test
         run: dotnet test backend/FundacionPanorama.Tests/FundacionPanorama.Tests.csproj --no-build -c Release --logger "console;verbosity=minimal"
 
+  # Pruebas de integración contra un PostgreSQL TEMPORAL (Testcontainers levanta postgres:17-alpine en el
+  # Docker del runner y lo destruye al terminar). No usa secretos ni ninguna BD real.
+  backend-integracion:
+    name: Backend — integración (PostgreSQL temporal)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Sin Docker la suite falla en vez de omitirse en silencio
+      PANORAMA_IT_REQUERIR: '1'
+      PANORAMA_IT_FUENTE: docker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore backend/FundacionPanorama.IntegrationTests/FundacionPanorama.IntegrationTests.csproj
+
+      - name: Build
+        run: dotnet build backend/FundacionPanorama.IntegrationTests/FundacionPanorama.IntegrationTests.csproj --no-restore -c Release
+
+      - name: Test (integración)
+        run: dotnet test backend/FundacionPanorama.IntegrationTests/FundacionPanorama.IntegrationTests.csproj --no-build -c Release --logger "console;verbosity=normal"
+
   frontend:
     name: Frontend (React/Vite)
     runs-on: ubuntu-latest

@@ -20,10 +20,3 @@ public record LogExportacionDto(
 
 public record LogExportacionRegistroDto(Guid Id, string UsuarioEmail, string Archivo, string? Modulo, int Registros, DateTime ExportadoEn);
 
-public record LogExportacionesPaginaDto(IReadOnlyList<LogExportacionRegistroDto> Data, long Total, int Pagina, int PorPagina);
-
-public record LogDescargasPaginaDto(
-    IReadOnlyList<LogDescargaRegistroDto> Data,
-    long Total,
-    int  Pagina,
-    int  PorPagina);

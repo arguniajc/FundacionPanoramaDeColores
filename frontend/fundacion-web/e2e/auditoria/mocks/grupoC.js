@@ -380,6 +380,9 @@ const WEB_CONTENIDO = {
 };
 
 // ConfiguracionPage: lee todos estos campos (la clave SMTP nunca viaja: smtpClaveGuardada)
+// Parámetros de nómina guardados en la configuración (GET /api/nomina/parametros)
+const PARAMETROS_NOMINA = { smlmv: 1_423_500, auxilioTransporte: 200_000, tasaSalud: 0.04, tasaPension: 0.04 };
+
 const CONFIGURACION = {
   ...CONFIG_PUBLICA,
   nombreFundacion: 'Fundación Panorama de Colores — Entidad Sin Ánimo de Lucro para la Niñez y la Familia',
@@ -412,6 +415,11 @@ const CONFIGURACION = {
   smtpDeNombre: 'Fundación Panorama de Colores — Área de Donaciones y Certificados',
   smtpDeEmail: 'certificados.donaciones@fundacionpanoramadecolores.org',
   smtpSsl: true,
+  // Parámetros de nómina (Configuración → Nómina), mismos que GET /api/nomina/parametros
+  nominaSmlmv: PARAMETROS_NOMINA.smlmv,
+  nominaAuxilioTransporte: PARAMETROS_NOMINA.auxilioTransporte,
+  nominaTasaSalud: PARAMETROS_NOMINA.tasaSalud,
+  nominaTasaPension: PARAMETROS_NOMINA.tasaPension,
 };
 
 // ConfiguracionContext.actualizar: colores + textos públicos (compatible con CONFIG_PUBLICA)
@@ -555,6 +563,7 @@ export function registrar(api) {
   api.on('GET', /^\/api\/nomina\/periodos\/\d+\/liquidaciones$/, ({ url }) => ({
     json: liquidacionesDe(Number(url.pathname.split('/')[4])),
   }));
+  api.on('GET', '/api/nomina/parametros', PARAMETROS_NOMINA);
 
   // Reportes
   api.on('GET', '/api/reportes/beneficiarios', ({ url }) => ({ json: reporteBeneficiarios(Number(url.searchParams.get('anio')) || 2026) }));
@@ -568,6 +577,7 @@ export function registrar(api) {
 
   // Configuración
   api.on('GET', '/api/configuracion', CONFIGURACION);
+  api.on('GET', '/api/configuracion/resumen-diario', { activo: true, hora: 7, ultimoEnvio: '2026-11-06' });
 
   // Seguridad
   api.on('GET', '/api/permisos/roles', PERMISOS_ROLES);
@@ -597,7 +607,7 @@ export const RUTAS_C = [
   { nombre: 'Reportes', hash: '#/sede/reportes',
     tabs: ['Beneficiarios', 'Programas', 'Inventario', 'Actividades', 'Donaciones', 'Contabilidad ESAL'] },
   { nombre: 'Configuración', hash: '#/sede/configuracion',
-    tabs: ['Fundación', 'Representante Legal', 'Apariencia', 'Textos admin', 'Página Web', 'Correo'] },
+    tabs: ['Fundación', 'Representante Legal', 'Apariencia', 'Textos admin', 'Página Web', 'Correo', 'Nómina'] },
   { nombre: 'Seguridad', hash: '#/sede/seguridad', tabs: ['Permisos', 'Auditoría', 'Almacenamiento'] },
   { nombre: 'Equipo', hash: '#/sede/equipo' },
 ];

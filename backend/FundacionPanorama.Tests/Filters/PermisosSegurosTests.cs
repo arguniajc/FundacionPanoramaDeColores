@@ -220,3 +220,27 @@ public class AccionesDePermisoTests
         Assert.Equal(("beneficiarios", "exportar"), (p.Modulo, p.Accion));
     }
 }
+
+/// <summary>Editar documentos y leer los parámetros de nómina exigen el permiso que les corresponde.</summary>
+public class PermisosEdicionDocumentosYNominaTests
+{
+    static RequierePermisoAttribute Permiso(Type controlador, string metodo)
+        => Assert.Single(controlador.GetMethod(metodo)!.GetCustomAttributes<RequierePermisoAttribute>());
+
+    [Theory]
+    [InlineData(nameof(DocumentosController.Editar))]
+    [InlineData(nameof(DocumentosController.EditarArchivo))]
+    public void Put_De_Documentos_Exige_Documentos_Editar(string metodo)
+    {
+        var p = Permiso(typeof(DocumentosController), metodo);
+        Assert.Equal(("documentos", "editar"), (p.Modulo, p.Accion));
+        Assert.NotNull(typeof(DocumentosController).GetMethod(metodo)!.GetCustomAttribute<HttpPutAttribute>());
+    }
+
+    [Fact]
+    public void Parametros_De_Nomina_Exigen_Talento_Humano_Ver()
+    {
+        var p = Permiso(typeof(NominaController), nameof(NominaController.ObtenerParametros));
+        Assert.Equal(("talento_humano", "ver"), (p.Modulo, p.Accion));
+    }
+}

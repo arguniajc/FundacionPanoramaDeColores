@@ -129,10 +129,12 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
     public async Task<NominaLiquidacionDto?> ActualizarLiquidacionAsync(int id, LiquidarEmpleadoDto dto, CancellationToken ct)
     {
         var salario = dto.SalarioOverride ?? await ObtenerSalarioEmpleado(dto.EmpleadoId, ct);
-        var t = Calcular(salario, dto);   // salario_base guarda el salario MENSUAL; los totales van proporcionales a los días
-
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
+        // salario_base guarda el salario MENSUAL; los totales van proporcionales a los días,
+        // con los parámetros (SMLMV, auxilio, tasas) vigentes al momento de editar
+        var t = Calcular(await LeerParametrosAsync(conn, ct), salario, dto);
+
         await using var cmd = conn.CreateCommand();
         // Solo si el período sigue en borrador: un período cerrado ya se pagó
         cmd.CommandText = """
@@ -183,11 +185,12 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
             empleados.Add((rEmp.GetGuid(0), (decimal)rEmp[4]));
         await rEmp.DisposeAsync();
 
-        var result = new List<NominaLiquidacionDto>();
+        // Parámetros vigentes al momento de liquidar (una sola lectura para todo el lote)
+        var parametros = await LeerParametrosAsync(conn, ct);
         foreach (var (empId, salario) in empleados)
         {
             // Mes completo (30 días); el ajuste por días se hace al editar la liquidación
-            var (_, aux, salud, pension, devengado, deducciones, neto) = CalculoNomina.Calcular(salario, CalculoNomina.DiasMes);
+            var (_, aux, salud, pension, devengado, deducciones, neto) = CalculoNomina.Calcular(parametros, salario, CalculoNomina.DiasMes);
 
             await using var cmdIns = conn.CreateCommand();
             cmdIns.CommandText = """
@@ -224,10 +227,10 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
     public async Task<NominaLiquidacionDto> LiquidarEmpleadoAsync(int periodoId, LiquidarEmpleadoDto dto, CancellationToken ct)
     {
         var salario = dto.SalarioOverride ?? await ObtenerSalarioEmpleado(dto.EmpleadoId, ct);
-        var (_, aux, salud, pension, devengado, deducciones, neto) = Calcular(salario, dto);
-
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
+        var (_, aux, salud, pension, devengado, deducciones, neto) = Calcular(await LeerParametrosAsync(conn, ct), salario, dto);
+
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO nomina_liquidaciones
@@ -302,9 +305,34 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
         """;
 
     /// <summary>Totales de una liquidación manual (al liquidar y al editar): proporcionales a los días.</summary>
-    private static TotalesLiquidacion Calcular(decimal salarioMensual, LiquidarEmpleadoDto dto)
-        => CalculoNomina.Calcular(salarioMensual, dto.DiasTrabajados,
+    private static TotalesLiquidacion Calcular(ParametrosNomina parametros, decimal salarioMensual, LiquidarEmpleadoDto dto)
+        => CalculoNomina.Calcular(parametros, salarioMensual, dto.DiasTrabajados,
             dto.HorasExtras, dto.Bonificaciones, dto.RetencionFuente, dto.OtrasDeducciones);
+
+    public async Task<ParametrosNomina> ObtenerParametrosAsync(CancellationToken ct)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        return await LeerParametrosAsync(conn, ct);
+    }
+
+    /// <summary>SMLMV, auxilio y tasas guardados en la configuración; sin fila de configuración, los predeterminados.</summary>
+    private static async Task<ParametrosNomina> LeerParametrosAsync(NpgsqlConnection conn, CancellationToken ct)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT nomina_smlmv, nomina_auxilio_transporte, nomina_tasa_salud, nomina_tasa_pension
+            FROM configuracion LIMIT 1
+            """;
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return ParametrosNomina.Predeterminados;
+        var d = ParametrosNomina.Predeterminados;
+        return new(
+            r.IsDBNull(0) ? d.Smlmv             : r.GetDecimal(0),
+            r.IsDBNull(1) ? d.AuxilioTransporte : r.GetDecimal(1),
+            r.IsDBNull(2) ? d.TasaSalud         : r.GetDecimal(2),
+            r.IsDBNull(3) ? d.TasaPension       : r.GetDecimal(3));
+    }
 
     private async Task<decimal> ObtenerSalarioEmpleado(Guid id, CancellationToken ct)
     {

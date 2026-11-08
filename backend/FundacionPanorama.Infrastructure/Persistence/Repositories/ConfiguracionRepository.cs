@@ -1,5 +1,6 @@
 using FundacionPanorama.Application.Features.Configuracion.DTOs;
 using FundacionPanorama.Application.Features.Configuracion.Interfaces;
+using FundacionPanorama.Application.Features.Nomina.DTOs;
 using Npgsql;
 
 namespace FundacionPanorama.Infrastructure.Persistence.Repositories;
@@ -23,7 +24,8 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
                    smtp_host, smtp_puerto, smtp_usuario,
                    (smtp_clave IS NOT NULL AND smtp_clave <> '') AS smtp_clave_guardada,
                    smtp_de_nombre, smtp_de_email, COALESCE(smtp_ssl, true) AS smtp_ssl,
-                   updated_at
+                   updated_at,
+                   nomina_smlmv, nomina_auxilio_transporte, nomina_tasa_salud, nomina_tasa_pension
             FROM configuracion LIMIT 1";
 
         await using var r = await cmd.ExecuteReaderAsync(ct);
@@ -63,7 +65,11 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
             r.IsDBNull(30) ? null : r.GetString(30),  // SmtpDeNombre
             r.IsDBNull(31) ? null : r.GetString(31),  // SmtpDeEmail
             !r.IsDBNull(32) && r.GetBoolean(32),       // SmtpSsl
-            r.IsDBNull(33) ? null : r.GetDateTime(33));// UpdatedAt
+            r.IsDBNull(33) ? null : r.GetDateTime(33), // UpdatedAt
+            r.IsDBNull(34) ? ParametrosNomina.SmlmvPredeterminado             : r.GetDecimal(34),
+            r.IsDBNull(35) ? ParametrosNomina.AuxilioTransportePredeterminado : r.GetDecimal(35),
+            r.IsDBNull(36) ? ParametrosNomina.TasaSaludPredeterminada         : r.GetDecimal(36),
+            r.IsDBNull(37) ? ParametrosNomina.TasaPensionPredeterminada       : r.GetDecimal(37));
     }
 
     public async Task<ConfiguracionPublicaDto?> ObtenerPublicaAsync(CancellationToken ct = default)
@@ -186,6 +192,10 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
                 smtp_de_nombre       = @smtpDeNombre,
                 smtp_de_email        = @smtpDeEmail,
                 smtp_ssl             = @smtpSsl,
+                nomina_smlmv              = COALESCE(@nomSmlmv,   nomina_smlmv),
+                nomina_auxilio_transporte = COALESCE(@nomAuxilio, nomina_auxilio_transporte),
+                nomina_tasa_salud         = COALESCE(@nomSalud,   nomina_tasa_salud),
+                nomina_tasa_pension       = COALESCE(@nomPension, nomina_tasa_pension),
                 updated_at           = NOW()";
 
         cmd.Parameters.AddWithValue("nf",         (object?)dto.NombreFundacion?.Trim()    ?? DBNull.Value);
@@ -221,6 +231,11 @@ public class ConfiguracionRepository(DbConnectionFactory factory) : IConfiguraci
         cmd.Parameters.AddWithValue("smtpDeNombre",(object?)dto.SmtpDeNombre?.Trim()      ?? DBNull.Value);
         cmd.Parameters.AddWithValue("smtpDeEmail", (object?)dto.SmtpDeEmail?.Trim()       ?? DBNull.Value);
         cmd.Parameters.Add(new NpgsqlParameter("smtpSsl", NpgsqlTypes.NpgsqlDbType.Boolean) { Value = dto.SmtpSsl });
+        // null = conservar el valor guardado (COALESCE en el UPDATE)
+        cmd.Parameters.Add(new NpgsqlParameter("nomSmlmv",   NpgsqlTypes.NpgsqlDbType.Numeric) { Value = (object?)dto.NominaSmlmv             ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("nomAuxilio", NpgsqlTypes.NpgsqlDbType.Numeric) { Value = (object?)dto.NominaAuxilioTransporte ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("nomSalud",   NpgsqlTypes.NpgsqlDbType.Numeric) { Value = (object?)dto.NominaTasaSalud         ?? DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("nomPension", NpgsqlTypes.NpgsqlDbType.Numeric) { Value = (object?)dto.NominaTasaPension       ?? DBNull.Value });
 
         await cmd.ExecuteNonQueryAsync(ct);
         return (await ObtenerAsync(ct))!;

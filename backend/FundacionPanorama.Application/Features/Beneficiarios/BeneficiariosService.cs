@@ -3,6 +3,7 @@
 // (activo=false). El DELETE existe para limpieza de datos por admin.
 using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 using FundacionPanorama.Application.Features.Beneficiarios.Interfaces;
+using FundacionPanorama.Application.Shared;
 using FundacionPanorama.Domain.Shared;
 
 namespace FundacionPanorama.Application.Features.Beneficiarios;
@@ -12,13 +13,13 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
     // ── Lecturas ──────────────────────────────────────────────────────────────
 
     /// <summary>Listado para pantallas: resumen sin datos sensibles (ver BeneficiarioResumenDto).</summary>
-    public async Task<BeneficiarioResumenListDto> ListarAsync(
+    public async Task<ListaPaginada<BeneficiarioResumenDto>> ListarAsync(
         int pagina, int porPagina, string? buscar, string estado, string? genero,
         int? edadMin, int? edadMax, string? eps, string? tieneAlergia, string? tipo,
         CancellationToken ct = default)
     {
         var completo = await ListarCompletoAsync(pagina, porPagina, buscar, estado, genero, edadMin, edadMax, eps, tieneAlergia, tipo, ct);
-        return new BeneficiarioResumenListDto
+        return new ListaPaginada<BeneficiarioResumenDto>
         {
             Data      = completo.Data.Select(BeneficiarioResumenDto.Desde).ToList(),
             Total     = completo.Total,
@@ -28,7 +29,7 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
     }
 
     /// <summary>Listado con la ficha completa: solo para la exportación (permiso beneficiarios:exportar).</summary>
-    public Task<BeneficiarioListDto> ListarCompletoAsync(
+    public Task<ListaPaginada<BeneficiarioDto>> ListarCompletoAsync(
         int pagina, int porPagina, string? buscar, string estado, string? genero,
         int? edadMin, int? edadMax, string? eps, string? tieneAlergia, string? tipo,
         CancellationToken ct = default)

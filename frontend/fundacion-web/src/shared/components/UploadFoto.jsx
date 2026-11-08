@@ -96,7 +96,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
             component="button" type="button"
             onClick={abrirMenu}
             sx={{
-              mt: 0.5, display: 'block', width: '100%',
+              mt: 0.5, display: 'block', width: '100%', minHeight: { xs: 40, sm: 'auto' },
               fontSize: 11, color: 'var(--color-primario-texto)', background: 'none',
               border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0,
             }}

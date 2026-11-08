@@ -129,4 +129,56 @@ public class ConfiguracionServiceTests
 
         Assert.True(result.IsSuccess);
     }
+
+    // ── Parámetros de nómina ─────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(0, 200_000, 0.04, 0.04, "salario mínimo")]
+    [InlineData(-1, 200_000, 0.04, 0.04, "salario mínimo")]
+    [InlineData(1_423_500, 0, 0.04, 0.04, "auxilio de transporte")]
+    [InlineData(1_423_500, 200_000, -0.01, 0.04, "tasa de salud")]
+    [InlineData(1_423_500, 200_000, 0.21, 0.04, "tasa de salud")]
+    [InlineData(1_423_500, 200_000, 0.04, 0.5, "tasa de pensión")]
+    public async Task GuardarAsync_Parametros_De_Nomina_Invalidos(
+        double smlmv, double auxilio, double salud, double pension, string mensaje)
+    {
+        var dto = Guardar() with
+        {
+            NominaSmlmv = (decimal)smlmv, NominaAuxilioTransporte = (decimal)auxilio,
+            NominaTasaSalud = (decimal)salud, NominaTasaPension = (decimal)pension,
+        };
+
+        var result = await _sut.GuardarAsync(dto);
+
+        Assert.True(result.IsFailure);
+        Assert.Contains(mensaje, result.Error);
+        _repo.Verify(r => r.GuardarAsync(It.IsAny<GuardarConfiguracionDto>(), default), Times.Never);
+    }
+
+    [Fact]
+    public async Task GuardarAsync_Parametros_De_Nomina_Validos_Y_Limites()
+    {
+        var dto = Guardar() with
+        {
+            NominaSmlmv = 1_600_000, NominaAuxilioTransporte = 220_000, NominaTasaSalud = 0.2m, NominaTasaPension = 0,
+        };
+        _repo.Setup(r => r.GuardarAsync(dto, default)).ReturnsAsync(Config());
+
+        Assert.True((await _sut.GuardarAsync(dto)).IsSuccess);
+    }
+
+    [Fact]
+    public void Sin_Parametros_De_Nomina_No_Se_Validan_Y_El_Dto_Trae_Los_Predeterminados()
+    {
+        // Un cliente que no los envía (null) conserva lo guardado; la lectura sin datos usa los valores históricos
+        Assert.Null(Validar(Guardar()));
+        var cfg = Config();
+        Assert.Equal(1_423_500m, cfg.NominaSmlmv);
+        Assert.Equal(200_000m, cfg.NominaAuxilioTransporte);
+        Assert.Equal(0.04m, cfg.NominaTasaSalud);
+        Assert.Equal(0.04m, cfg.NominaTasaPension);
+
+        static string? Validar(GuardarConfiguracionDto d)
+            => FundacionPanorama.Application.Shared.Validar.PrimerError(() => ConfiguracionService.ValidarCampos(d));
+    }
 }

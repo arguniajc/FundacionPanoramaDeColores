@@ -185,6 +185,7 @@ export default function LoginPage() {
                 onError={() => setError('No se pudo conectar con Google. Intenta de nuevo.')}
                 text="signin_with"
                 shape="rectangular"
+                size="large" /* 40px de alto: zona táctil cómoda en celular */
                 logo_alignment="left"
                 width="300"
                 locale="es"

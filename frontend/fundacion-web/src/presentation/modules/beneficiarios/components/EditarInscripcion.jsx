@@ -278,7 +278,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
                     ...(op.value === 'adulto' ? { nombreColegio: '' } : {}),
                   }))}
                   sx={{
-                    px: 2, py: 0.75, borderRadius: 5, border: '2px solid',
+                    px: 2, py: 0.75, minHeight: { xs: 40, sm: 'auto' }, borderRadius: 5, border: '2px solid',
                     borderColor: form.tipo === op.value ? 'primary.main' : 'divider',
                     bgcolor: form.tipo === op.value ? 'primary.main' : 'transparent',
                     color: form.tipo === op.value ? 'primary.contrastText' : 'text.secondary',

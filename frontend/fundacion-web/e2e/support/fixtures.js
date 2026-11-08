@@ -23,15 +23,20 @@ const CORS = {
 
 // Sustituto de https://accounts.google.com/gsi/client: misma API mínima que usa
 // @react-oauth/google (initialize + renderButton). Al pulsar el botón entrega un
-// "credential" de prueba al callback, como haría Google.
+// "credential" de prueba al callback, como haría Google. Respeta size y width
+// para que la auditoría mida el botón con el tamaño que tendría en producción.
 const GSI_FALSO = `
   window.google = { accounts: { id: {
     initialize(cfg) { window.__gsiConfig = cfg; },
-    renderButton(el) {
+    renderButton(el, opciones = {}) {
       if (!el) return;
       el.innerHTML = '';
       const b = document.createElement('button');
       b.type = 'button';
+      // Mismo tamaño que el botón real: alto según size (large 40px, por defecto) y el ancho pedido
+      const alto = { large: 40, medium: 32, small: 20 }[opciones.size ?? 'large'] ?? 40;
+      b.style.height = alto + 'px';
+      if (opciones.width) b.style.width = opciones.width + 'px';
       b.textContent = 'Iniciar sesión con Google';
       b.setAttribute('data-testid', 'google-login');
       b.onclick = () => window.__gsiConfig.callback({ credential: 'credencial-google-falsa', select_by: 'btn' });

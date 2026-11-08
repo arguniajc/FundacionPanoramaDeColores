@@ -66,7 +66,7 @@ function LadoBox({ lado, label, inputRef, estado, menuEl, setMenuEl, onEliminar,
           </Tooltip>
           <Box component="button" type="button"
             onClick={(e) => { const el = e.currentTarget; setMenuEl(prev => ({ ...prev, [lado]: el })); }}
-            sx={{ mt: 0.5, display: 'block', width: '100%', fontSize: 11, color: 'var(--color-primario-texto)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0 }}>
+            sx={{ mt: 0.5, display: 'block', width: '100%', minHeight: { xs: 40, sm: 'auto' }, fontSize: 11, color: 'var(--color-primario-texto)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0 }}>
             Cambiar
           </Box>
         </Box>

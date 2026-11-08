@@ -1,11 +1,19 @@
 namespace FundacionPanorama.Application.Features.Nomina.DTOs;
 
-public static class NominaConstants
+/// <summary>
+/// Parámetros legales de la nómina, guardados en la configuración (se actualizan cada enero
+/// según el decreto del Gobierno). Las tasas son fracciones: 0,04 = 4 %.
+/// Predeterminados = valores con los que arrancó el sistema (DEFAULT de las columnas).
+/// </summary>
+public record ParametrosNomina(decimal Smlmv, decimal AuxilioTransporte, decimal TasaSalud, decimal TasaPension)
 {
-    public const decimal SMLMV            = 1_423_500m;
-    public const decimal AuxilioTransporte = 200_000m;
-    public const decimal TasaSalud         = 0.04m;
-    public const decimal TasaPension       = 0.04m;
+    public const decimal SmlmvPredeterminado             = 1_423_500m;
+    public const decimal AuxilioTransportePredeterminado = 200_000m;
+    public const decimal TasaSaludPredeterminada         = 0.04m;
+    public const decimal TasaPensionPredeterminada       = 0.04m;
+
+    public static readonly ParametrosNomina Predeterminados = new(
+        SmlmvPredeterminado, AuxilioTransportePredeterminado, TasaSaludPredeterminada, TasaPensionPredeterminada);
 }
 
 public record NominaPeriodoDto(

@@ -101,6 +101,10 @@ public class NominaService(INominaRepository repo)
         return editada;
     }
 
+    /// <summary>Parámetros vigentes para la vista previa del panel (el servidor recalcula al guardar).</summary>
+    public Task<ParametrosNomina> ObtenerParametrosAsync(CancellationToken ct = default)
+        => repo.ObtenerParametrosAsync(ct);
+
     public Task<bool> EliminarLiquidacionAsync(int id, CancellationToken ct = default)
         => repo.EliminarLiquidacionAsync(id, ct);
 }

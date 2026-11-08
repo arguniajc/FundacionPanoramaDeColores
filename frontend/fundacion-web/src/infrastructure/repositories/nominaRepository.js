@@ -11,4 +11,6 @@ export const nominaRepository = {
   liquidarEmpleado:  (periodoId, datos) => apiClient.post(`/api/nomina/periodos/${periodoId}/liquidaciones`, datos),
   editarLiquidacion: (id, datos)    => apiClient.put(`/api/nomina/liquidaciones/${id}`, datos),
   eliminarLiquidacion: (id)         => apiClient.delete(`/api/nomina/liquidaciones/${id}`),
+  /** SMLMV, auxilio de transporte y tasas vigentes (permiso talento_humano:ver). */
+  parametros:        ()             => apiClient.get('/api/nomina/parametros'),
 };

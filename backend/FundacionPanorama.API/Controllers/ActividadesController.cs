@@ -12,7 +12,7 @@ namespace FundacionPanorama.API.Controllers;
 [Authorize]
 public class ActividadesController(
     ActividadesService svc,
-    IServiceScopeFactory scopes,
+    EmailService email,
     ILogger<ActividadesController> logger) : ControllerBase
 {
     [HttpGet]
@@ -51,15 +51,21 @@ public class ActividadesController(
         var fechaCambio  = anterior?.FechaInicio != result.FechaInicio || anterior?.FechaFin != result.FechaFin;
         if (estadoCambio || fechaCambio)
         {
-            // El correo no demora la respuesta. Se envía con un scope propio (el del request se
-            // libera al responder) y si falla queda en el log con código.
-            var titulo         = result.Titulo;
+            // El aviso se ENCOLA (un INSERT rápido en cola_correos): sobrevive a un reinicio y la
+            // cola lo envía con reintentos. Si encolar falla, la actualización ya quedó hecha:
+            // se registra con código y no se le muestra error al usuario.
             var estadoAnterior = estadoCambio ? anterior?.Estado : null;
-            var estadoNuevo    = result.Estado;
             var fi = result.FechaInicio.ToString("yyyy-MM-dd HH:mm");
             var ff = result.FechaFin?.ToString("yyyy-MM-dd HH:mm");
-            _ = TrabajoEnSegundoPlano.Lanzar<EmailService>(scopes, logger, $"aviso de cambio en la actividad {id}",
-                (email, token) => email.NotificarCambioActividadAsync(titulo, estadoAnterior, estadoNuevo, fi, ff, token));
+            try
+            {
+                await email.NotificarCambioActividadAsync(result.Titulo, estadoAnterior, result.Estado, fi, ff, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                var codigo = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+                logger.LogError(ex, "❌ No se pudo encolar el aviso de cambio en la actividad {Id} [{Codigo}]", id, codigo);
+            }
         }
 
         return Ok(result);

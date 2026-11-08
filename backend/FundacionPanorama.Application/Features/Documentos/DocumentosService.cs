@@ -21,6 +21,8 @@ public class DocumentosService(IDocumentosRepository repo)
     // archivos.nombre_original VARCHAR(200)
     const int MaxTitulo = 200;
     const int MaxNombre = 200;
+    // descripcion es TEXT: el límite es del panel (evita textos desmedidos)
+    const int MaxDescripcion = 1000;
 
     public Task<IReadOnlyList<DocumentoInstitucionalDto>> ListarAsync(string? categoria, CancellationToken ct = default)
         => repo.ListarAsync(categoria, ct);
@@ -41,6 +43,28 @@ public class DocumentosService(IDocumentosRepository repo)
 
     public Task<DocumentoEliminado?> EliminarAsync(Guid id, CancellationToken ct = default)
         => repo.EliminarAsync(id, ct);
+
+    /// <summary>
+    /// Edita título, categoría y descripción con las mismas reglas que al crear. El archivo no
+    /// se cambia (para eso se sube otro). False si el documento no existe o fue eliminado.
+    /// </summary>
+    public Task<bool> EditarAsync(Guid id, EditarDocumentoDto dto, CancellationToken ct = default)
+    {
+        Obligatorio(dto.Titulo, "El título es obligatorio. Ejemplo: Acta de asamblea 2025");
+        Largo(dto.Titulo, MaxTitulo, "El título");
+        EnLista(dto.Categoria, Categorias, "La categoría no es válida (Actas, Políticas, Formularios, Informes, Certificados u Otros).");
+        Largo(dto.Descripcion, MaxDescripcion, "La descripción");
+        var descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim();
+        return repo.EditarAsync(id, new EditarDocumentoDto(dto.Titulo.Trim(), dto.Categoria.Trim(), descripcion), ct);
+    }
+
+    /// <summary>Cambia el nombre visible del archivo de un beneficiario. False si no existe o fue eliminado.</summary>
+    public Task<bool> EditarArchivoAsync(Guid id, EditarArchivoDto dto, CancellationToken ct = default)
+    {
+        Obligatorio(dto.Nombre, "El nombre del documento es obligatorio. Ejemplo: Certificado médico 2025.pdf");
+        Largo(dto.Nombre, MaxNombre, "El nombre del documento");
+        return repo.EditarArchivoAsync(id, new EditarArchivoDto(dto.Nombre.Trim()), ct);
+    }
 
     public Task<IReadOnlyList<ArchivoBeneficiarioDto>> ListarPorBeneficiarioAsync(Guid beneficiarioId, CancellationToken ct = default)
         => repo.ListarPorBeneficiarioAsync(beneficiarioId, ct);

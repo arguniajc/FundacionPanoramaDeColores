@@ -1,22 +1,28 @@
-using FundacionPanorama.Infrastructure.Persistence;
-using FundacionPanorama.API.Data;
 using FundacionPanorama.Application.Features.Configuracion.Interfaces;
+using FundacionPanorama.Application.Features.Correos.DTOs;
+using FundacionPanorama.Application.Features.Correos.Interfaces;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
-using Npgsql;
 
 namespace FundacionPanorama.API.Services;
 
 /// <summary>
 /// Servicio centralizado de correo. Todos los envíos del sistema pasan por aquí.
 /// Usa EnviarAsync como núcleo; los demás métodos construyen el contenido y lo delegan.
+/// Los avisos internos (a administradores, resumen diario) NO se envían en el momento: se
+/// encolan en cola_correos y los envía <see cref="ColaCorreosWorker"/> con reintentos.
+/// El recibo al donante y la prueba SMTP siguen siendo inmediatos (el usuario espera la respuesta).
 /// </summary>
-public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db, ILogger<EmailService> logger)
+public class EmailService(IConfiguracionRepository repo, IColaCorreosRepository cola, ILogger<EmailService> logger)
+    : IEnviadorCorreo
 {
     /// <summary>Mensaje para el usuario cuando falla el envío; el detalle técnico solo va al log.</summary>
     public const string MensajeErrorEnvio =
         "No se pudo enviar el correo. Verifica la configuración SMTP (servidor, puerto, usuario y clave) o inténtalo más tarde.";
+
+    /// <summary>Roles que reciben los avisos internos de cambios (p. ej. en actividades).</summary>
+    public static readonly string[] RolesAvisos = ["representante_legal", "sistemas"];
 
     static string H(string? texto) => System.Net.WebUtility.HtmlEncode(texto ?? "");
 
@@ -32,12 +38,42 @@ public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db,
         string htmlBody,
         CancellationToken ct = default)
     {
+        var (ok, detalle, _) = await EnviarConTipoAsync(destinatarios, asunto, htmlBody, ct);
+        return (ok, detalle);
+    }
+
+    /// <summary>Envío inmediato que usa la cola: devuelve solo el tipo de error (sin datos personales).</summary>
+    public async Task<ResultadoEnvio> EnviarAhoraAsync(
+        IReadOnlyList<string> destinatarios, string asunto, string html, CancellationToken ct = default)
+    {
+        var (ok, _, tipo) = await EnviarConTipoAsync(destinatarios.Select(e => (e, (string?)null)), asunto, html, ct);
+        return new ResultadoEnvio(ok, tipo);
+    }
+
+    /// <summary>
+    /// Tipo de error SMTP apto para guardar en la BD: nombre de la excepción y, si el servidor
+    /// respondió, el código SMTP. Nunca el mensaje (puede traer host, usuario o direcciones).
+    /// </summary>
+    public static string TipoError(Exception ex) => ex switch
+    {
+        SmtpCommandException s  => $"SmtpCommandException ({s.ErrorCode}, {(int)s.StatusCode})",
+        SmtpProtocolException   => "SmtpProtocolException",
+        AuthenticationException => "AuthenticationException",
+        _                       => ex.GetType().Name,
+    };
+
+    async Task<(bool Ok, string Detalle, string? TipoError)> EnviarConTipoAsync(
+        IEnumerable<(string Email, string? Nombre)> destinatarios,
+        string asunto,
+        string htmlBody,
+        CancellationToken ct)
+    {
         var smtp = await repo.ObtenerSmtpAsync(ct);
         if (smtp is null)
-            return (false, "SMTP no configurado. Revisa la pestaña de correo en Configuración.");
+            return (false, "SMTP no configurado. Revisa la pestaña de correo en Configuración.", "SmtpNoConfigurado");
 
         var lista = destinatarios.ToList();
-        if (lista.Count == 0) return (true, "Sin destinatarios.");
+        if (lista.Count == 0) return (true, "Sin destinatarios.", null);
 
         try
         {
@@ -61,7 +97,7 @@ public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db,
             }
 
             await client.DisconnectAsync(true, ct);
-            return (true, "");
+            return (true, "", null);
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
@@ -69,29 +105,38 @@ public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db,
             var codigo = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
             logger.LogError(ex, "❌ Falló el envío SMTP [{Codigo}] ({Destinatarios} destinatario(s), asunto: {Asunto})",
                 codigo, lista.Count, asunto);
-            return (false, $"{MensajeErrorEnvio} Código: {codigo}");
+            return (false, $"{MensajeErrorEnvio} Código: {codigo}", TipoError(ex));
         }
     }
 
     // ── NOTIFICAR ADMINISTRADORES (roles: representante_legal, sistemas) ─────
 
     /// <summary>
-    /// Envía una notificación a todos los administradores activos del sistema.
-    /// Se llama en segundo plano (ver <see cref="TrabajoEnSegundoPlano"/>): un envío fallido queda
-    /// en el log, y un error inesperado (p. ej. de BD) se propaga para que el llamador lo registre.
+    /// Encola un aviso para los administradores activos (roles <see cref="RolesAvisos"/>): un correo
+    /// por destinatario, así un fallo con uno no hace reenviar a los demás. Queda en la BD aunque el
+    /// servidor se reinicie y la cola lo reintenta. Sin SMTP configurado no se encola (solo log).
+    /// Un error de BD se propaga para que el llamador lo registre.
     /// </summary>
     public async Task NotificarAdminsAsync(string asunto, string htmlBody, CancellationToken ct = default)
     {
-        var admins = await ObtenerEmailsAdminsAsync(ct);
+        if (await repo.ObtenerSmtpAsync(ct) is null)
+        {
+            logger.LogWarning("⚠️ Aviso a administradores no encolado ({Asunto}): SMTP no configurado.", asunto);
+            return;
+        }
+        var admins = (await cola.ObtenerUsuariosActivosAsync(ct))
+            .Where(u => RolesAvisos.Contains(u.Rol))
+            .Select(u => u.Email.Trim())
+            .Where(e => e.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
         if (admins.Count == 0) return;
-        var (ok, detalle) = await EnviarAsync(admins.Select(e => (e, (string?)null)), asunto, htmlBody, ct);
-        if (!ok)
-            logger.LogWarning("⚠️ Aviso a administradores no enviado ({Asunto}): {Detalle}", asunto, detalle);
+        await cola.EncolarAsync(admins.Select(e => new CorreoNuevo(e, asunto, htmlBody)), ct);
     }
 
     // ── TEMPLATES ESPECÍFICOS ─────────────────────────────────────────────────
 
-    /// <summary>Envía el recibo PDF/HTML de una donación al donante.</summary>
+    /// <summary>Envía el recibo PDF/HTML de una donación al donante (inmediato).</summary>
     public Task<(bool Ok, string Detalle)> EnviarReciboAsync(
         string destinatarioEmail,
         string destinatarioNombre,
@@ -105,7 +150,7 @@ public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db,
             htmlBody,
             ct);
 
-    /// <summary>Envía un email de prueba para verificar la configuración SMTP.</summary>
+    /// <summary>Envía un email de prueba para verificar la configuración SMTP (inmediato).</summary>
     public Task<(bool Ok, string Detalle)> EnviarPruebaAsync(
         string destinatarioEmail,
         CancellationToken ct = default)
@@ -121,7 +166,7 @@ public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db,
             ct);
 
     /// <summary>
-    /// Notifica a los administradores sobre un cambio de estado o fecha en una actividad.
+    /// Encola el aviso a los administradores sobre un cambio de estado o fecha en una actividad.
     /// Obtiene los destinatarios automáticamente; el llamador solo provee los datos del cambio.
     /// </summary>
     public Task NotificarCambioActividadAsync(
@@ -164,25 +209,5 @@ public class EmailService(IConfiguracionRepository repo, DbConnectionFactory db,
               </p>
             </div>
             """;
-    }
-
-    // ── HELPERS INTERNOS ──────────────────────────────────────────────────────
-
-    private async Task<List<string>> ObtenerEmailsAdminsAsync(CancellationToken ct)
-    {
-        // Sin try/catch: un error de BD se propaga y queda en el log con código (no se traga).
-        var emails = new List<string>();
-        await using var conn = db.Create();
-        await conn.OpenAsync(ct);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            SELECT email FROM usuarios
-            WHERE activo = true
-              AND rol IN ('representante_legal','sistemas')
-              AND email IS NOT NULL AND email <> ''
-            """;
-        await using var r = await cmd.ExecuteReaderAsync(ct);
-        while (await r.ReadAsync(ct)) emails.Add(r.GetString(0));
-        return emails;
     }
 }

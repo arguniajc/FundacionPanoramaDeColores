@@ -7,4 +7,7 @@ export const configuracionRepository = {
   obtener:    ()       => apiClient.get('/api/configuracion'),
   guardar:    (datos)  => apiClient.put('/api/configuracion', datos),
   probarSmtp: ()       => apiClient.post('/api/configuracion/probar-smtp'),
+  // Resumen diario de alertas por correo: { activo, hora (0–23, Colombia), ultimoEnvio }
+  obtenerResumenDiario: ()      => apiClient.get('/api/configuracion/resumen-diario'),
+  guardarResumenDiario: (datos) => apiClient.put('/api/configuracion/resumen-diario', datos),
 };

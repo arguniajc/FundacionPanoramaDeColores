@@ -143,4 +143,26 @@ public class PaginacionListadosTests
 
         Assert.Equal(new FiltroEmpleados(false, sede, null, "coordinadora"), recibido);
     }
+
+    // ── Forma JSON única de los listados paginados ───────────────────────────
+
+    private static readonly System.Text.Json.JsonSerializerOptions Web = new(System.Text.Json.JsonSerializerDefaults.Web);
+
+    [Fact]
+    public void ListaPaginada_Serializa_Con_La_Forma_Del_Frontend()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            new ListaPaginada<string> { Data = ["a", "b"], Total = 12, Pagina = 2, PorPagina = 2 }, Web);
+        Assert.Equal("""{"data":["a","b"],"total":12,"pagina":2,"porPagina":2}""", json);
+    }
+
+    [Fact]
+    public void ListaMovimientos_Agrega_Totales_A_La_Misma_Forma()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            new ListaMovimientosDto { Total = 3, Pagina = 1, PorPagina = 50, TotalIngresos = 100m, CantidadEgresos = 1 }, Web);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        foreach (var campo in new[] { "data", "total", "pagina", "porPagina", "totalIngresos", "totalEgresos", "cantidadIngresos", "cantidadEgresos" })
+            Assert.True(doc.RootElement.TryGetProperty(campo, out _), $"falta {campo}");
+    }
 }

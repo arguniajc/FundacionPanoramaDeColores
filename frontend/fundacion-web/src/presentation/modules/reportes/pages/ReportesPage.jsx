@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Box, Button, CircularProgress, Tab, Tabs, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Tab, Tabs, Typography, useTheme } from '@mui/material';
 import DownloadIcon          from '@mui/icons-material/Download';
 import EventIcon             from '@mui/icons-material/Event';
 import FolderIcon            from '@mui/icons-material/Folder';
@@ -17,6 +17,9 @@ import { useToast } from '@/shared/context/useToast';
 import { fechaLocalISO } from '@/shared/utils/fecha';
 import { registrarExportacion } from '@/shared/utils/exportarExcel';
 import usePermisos from '@/shared/hooks/usePermisos';
+import { useConfiguracion } from '@/shared/context/useConfiguracion';
+import { PALETA } from '@/shared/theme/paleta';
+import { exportarReportePdf } from './pdfReporte';
 
 const TABS = [
   { label: 'Beneficiarios',     icon: <PeopleIcon />,            component: <TabBeneficiarios /> },
@@ -33,49 +36,23 @@ export default function ReportesPage() {
   const contentRef = useRef(null);
   const toast      = useToast();
   const { puedo }  = usePermisos();
+  const theme      = useTheme();
+  const { colorPrimario } = useConfiguracion();
 
   const exportarPDF = async () => {
     if (!contentRef.current) return;
     setExportando(true);
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF }   = await import('jspdf');
-
-      const canvas = await html2canvas(contentRef.current, {
-        scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf     = new jsPDF('p', 'mm', 'a4');
-      const pgW     = pdf.internal.pageSize.getWidth();
-      const pgH     = pdf.internal.pageSize.getHeight();
-      const HEADER  = 32;
-      const imgH    = (canvas.height * pgW) / canvas.width;
-
-      // Cabecera morada
-      pdf.setFillColor(78, 27, 149);
-      pdf.rect(0, 0, pgW, 10, 'F');
-      pdf.setFontSize(13); pdf.setTextColor(255, 255, 255);
-      pdf.text('Fundación Panorama de Colores', 8, 7);
-      pdf.setFontSize(11); pdf.setTextColor(50, 50, 50);
-      pdf.text(`Reporte: ${TABS[tab].label}`, 8, 18);
-      pdf.setFontSize(9);  pdf.setTextColor(120, 120, 120);
-      pdf.text(`Generado el ${new Date().toLocaleDateString('es-CO', { dateStyle: 'long' })}`, 8, 25);
-
-      // Contenido — paginar si excede la altura de la página
-      const espacioUtilPag = pgH - HEADER;
-      let cortado = 0;
-      let primera = true;
-
-      while (cortado < imgH) {
-        if (!primera) { pdf.addPage(); cortado += espacioUtilPag; }
-        pdf.addImage(imgData, 'PNG', 0, HEADER - cortado, pgW, imgH, '', 'FAST');
-        if (primera) cortado += espacioUtilPag;
-        primera = false;
-      }
-
       const archivo = `reporte_${TABS[tab].label.toLowerCase()}_${fechaLocalISO()}.pdf`;
-      pdf.save(archivo);
+      // En modo oscuro el PDF se recolorea en claro sobre el clon que captura
+      // html2canvas: la pantalla del usuario no cambia.
+      await exportarReportePdf({
+        elemento: contentRef.current,
+        titulo: TABS[tab].label,
+        archivo,
+        oscuro: theme.palette.mode === 'dark',
+        paresColor: [[theme.palette.primary.main, colorPrimario || PALETA.light.primario.main]],
+      });
       registrarExportacion(archivo, []); // reporte agregado: sin conteo de registros
     } catch (err) {
       console.error('Error exportando PDF:', err);

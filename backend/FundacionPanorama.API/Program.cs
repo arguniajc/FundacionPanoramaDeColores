@@ -113,6 +113,15 @@ builder.Services.AddScoped<SupabaseStorageService>();
 // ── Capas de arquitectura (Infrastructure + Application) ─────────────────────
 builder.Services.AddInfrastructure(connStr);
 
+// ── Cola persistente de correos + resumen diario de alertas ──────────────────
+// Los avisos internos se encolan en cola_correos; ColaCorreosWorker los envía con reintentos.
+// Correos:ColaActiva=false apaga el proceso (p. ej. en pruebas de integración).
+builder.Services.AddCorreos();
+builder.Services.AddScoped<FundacionPanorama.Application.Features.Correos.Interfaces.IEnviadorCorreo>(
+    sp => sp.GetRequiredService<FundacionPanorama.API.Services.EmailService>());
+if (builder.Configuration.GetValue("Correos:ColaActiva", true))
+    builder.Services.AddHostedService<ColaCorreosWorker>();
+
 // ── Controllers + OpenAPI ────────────────────────────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(o =>

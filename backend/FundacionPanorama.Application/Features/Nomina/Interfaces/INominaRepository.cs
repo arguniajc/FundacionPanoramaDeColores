@@ -17,4 +17,7 @@ public interface INominaRepository
     /// <summary>Reemplaza los valores y recalcula los totales; null si no existe o su período ya no está en borrador.</summary>
     Task<NominaLiquidacionDto?>               ActualizarLiquidacionAsync(int id, LiquidarEmpleadoDto dto, CancellationToken ct);
     Task<bool>                                EliminarLiquidacionAsync(int id, CancellationToken ct);
+
+    /// <summary>SMLMV, auxilio de transporte y tasas de salud/pensión vigentes (tabla configuracion).</summary>
+    Task<ParametrosNomina>                    ObtenerParametrosAsync(CancellationToken ct);
 }

@@ -66,7 +66,20 @@ public class ConfiguracionService(IConfiguracionRepository repo)
         Validar.Largo(dto.SmtpUsuario, 200, "El usuario del correo");
         Validar.Largo(dto.SmtpDeNombre, 200, "El nombre del remitente");
         Validar.Correo(dto.SmtpDeEmail, 200, "El correo del remitente", "notificaciones@fundacion.org");
+
+        // Nómina (null = no se cambia). Tasas como fracción: 0,04 = 4 %; columnas NUMERIC(15,2) y NUMERIC(6,4).
+        Validar.Exigir(dto.NominaSmlmv is null or > 0 and <= MaxPesosNomina,
+            "El salario mínimo (SMLMV) debe ser mayor que cero. Ejemplo: 1423500");
+        Validar.Exigir(dto.NominaAuxilioTransporte is null or > 0 and <= MaxPesosNomina,
+            "El auxilio de transporte debe ser mayor que cero. Ejemplo: 200000");
+        Validar.Exigir(dto.NominaTasaSalud is null or >= 0 and <= MaxTasaNomina,
+            "La tasa de salud del empleado debe estar entre 0 y 0,2 (0 % a 20 %). Ejemplo: 0,04");
+        Validar.Exigir(dto.NominaTasaPension is null or >= 0 and <= MaxTasaNomina,
+            "La tasa de pensión del empleado debe estar entre 0 y 0,2 (0 % a 20 %). Ejemplo: 0,04");
     }
+
+    const decimal MaxPesosNomina = 999_999_999_999m;
+    const decimal MaxTasaNomina  = 0.2m;
 
     static readonly System.Text.RegularExpressions.Regex EsquemaPeligroso =
         new(@"^(javascript|vbscript|data|file):", System.Text.RegularExpressions.RegexOptions.IgnoreCase);

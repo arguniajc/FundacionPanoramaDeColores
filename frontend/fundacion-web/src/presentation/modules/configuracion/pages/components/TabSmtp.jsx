@@ -7,6 +7,7 @@ import EmailIcon  from '@mui/icons-material/Email';
 import CheckIcon  from '@mui/icons-material/Check';
 import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
 import { COLOR } from './helpers';
+import { ResumenDiarioAlertas } from './ResumenDiarioAlertas';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function TabSmtp({ form, set, v }) {
@@ -115,6 +116,9 @@ export function TabSmtp({ form, set, v }) {
           {resultadoPrueba.msg}
         </Alert>
       )}
+
+      <Divider sx={{ my: 3 }} />
+      <ResumenDiarioAlertas />
     </Box>
   );
 }

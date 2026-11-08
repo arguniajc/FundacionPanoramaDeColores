@@ -1,5 +1,5 @@
 // DTOs del módulo Beneficiarios: salida (BeneficiarioDto), entrada (CrearBeneficiarioDto),
-// paginación (BeneficiarioListDto) y estadísticas (BeneficiarioStatsDto).
+// paginación (ListaPaginada<BeneficiarioDto>) y estadísticas (BeneficiarioStatsDto).
 using System.ComponentModel.DataAnnotations;
 namespace FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 
@@ -168,14 +168,6 @@ public class ImportarBeneficiarioRowDto
     public string? Tipo               { get; set; }
 }
 
-public class BeneficiarioListDto
-{
-    public List<BeneficiarioDto> Data      { get; set; } = [];
-    public int                   Total     { get; set; }
-    public int                   Pagina    { get; set; }
-    public int                   PorPagina { get; set; }
-}
-
 /// <summary>
 /// Fila del LISTADO de beneficiarios (GET api/beneficiarios): solo lo que muestran la tabla
 /// y los buscadores. Sin salud, dirección, acudiente ni rutas de fotos: esos datos de menores
@@ -240,14 +232,6 @@ public class BeneficiarioResumenDto
         TieneFotoDocumento = !string.IsNullOrWhiteSpace(b.FotoDocumentoUrl),
         Completitud        = CalcularCompletitud(b),
     };
-}
-
-public class BeneficiarioResumenListDto
-{
-    public List<BeneficiarioResumenDto> Data      { get; set; } = [];
-    public int                          Total     { get; set; }
-    public int                          Pagina    { get; set; }
-    public int                          PorPagina { get; set; }
 }
 
 public class BeneficiarioStatsDto

@@ -25,5 +25,10 @@ export function useDocumentosBeneficiario() {
     await cargar(beneficiarioId);
   };
 
-  return { archivos, cargando, error, cargar, guardar, eliminar };
+  const editar = async (id, beneficiarioId, dto) => {
+    await documentosRepository.editarArchivo(id, dto);
+    await cargar(beneficiarioId);
+  };
+
+  return { archivos, cargando, error, cargar, guardar, editar, eliminar };
 }

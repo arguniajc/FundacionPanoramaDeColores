@@ -16,6 +16,17 @@ public class NominaController(NominaService svc, DbConnectionFactory db) : BaseC
 {
     private NpgsqlConnection AbrirConexion() => db.Create();
 
+    // ── Parámetros (SMLMV, auxilio, tasas) ───────────────────────────────────
+
+    /// <summary>
+    /// Parámetros vigentes para la vista previa al editar una liquidación. Endpoint propio porque
+    /// GET api/configuracion exige permisos que el rol de nómina puede no tener.
+    /// </summary>
+    [HttpGet("parametros")]
+    [RequierePermiso("talento_humano", "ver")]
+    public async Task<IActionResult> ObtenerParametros(CancellationToken ct)
+        => Ok(await svc.ObtenerParametrosAsync(ct));
+
     // ── Períodos ──────────────────────────────────────────────────────────────
 
     [HttpGet("periodos")]

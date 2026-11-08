@@ -1280,6 +1280,46 @@ public static class DbMigrations
         ];
         foreach (var (tabla, columna) in obligatorios)
             await Migrar(SqlNotNullSiNoHayNulos(tabla, columna), $"{tabla}.{columna}.not_null");
+
+        // ── Parámetros de nómina configurables (SMLMV, auxilio, tasas del empleado) ──
+        // DEFAULT = valores que antes estaban fijos en el código (ParametrosNomina.Predeterminados)
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS nomina_smlmv              NUMERIC(15,2) NOT NULL DEFAULT 1423500", "configuracion.nomina_smlmv");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS nomina_auxilio_transporte NUMERIC(15,2) NOT NULL DEFAULT 200000",  "configuracion.nomina_auxilio_transporte");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS nomina_tasa_salud         NUMERIC(6,4)  NOT NULL DEFAULT 0.04",    "configuracion.nomina_tasa_salud");
+        await Migrar("ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS nomina_tasa_pension       NUMERIC(6,4)  NOT NULL DEFAULT 0.04",    "configuracion.nomina_tasa_pension");
+
+        // ── Cola persistente de correos y resumen diario de alertas ───────────
+        // ultimo_error guarda solo el tipo de error SMTP (nunca el mensaje ni el HTML).
+        // tomado_hasta: reserva mientras se envía; si el proceso muere, se retoma al vencer.
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS cola_correos (
+              id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+              destinatarios   TEXT         NOT NULL,
+              asunto          VARCHAR(300) NOT NULL,
+              html            TEXT         NOT NULL,
+              estado          VARCHAR(10)  NOT NULL DEFAULT 'pendiente'
+                                CHECK (estado IN ('pendiente','enviado','fallido')),
+              intentos        SMALLINT     NOT NULL DEFAULT 0,
+              proximo_intento TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+              tomado_hasta    TIMESTAMPTZ,
+              ultimo_error    VARCHAR(200),
+              creado_en       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+              enviado_en      TIMESTAMPTZ
+            )
+            """, "cola_correos.create");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_cola_correos_pendientes ON cola_correos (proximo_intento) WHERE estado = 'pendiente'", "cola_correos.idx_pendientes");
+        await Migrar("CREATE INDEX IF NOT EXISTS idx_cola_correos_enviados   ON cola_correos (enviado_en)      WHERE estado = 'enviado'",   "cola_correos.idx_enviados");
+        await Migrar("""
+            CREATE TABLE IF NOT EXISTS resumen_diario_alertas (
+              id             SMALLINT    PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+              -- Apagado hasta que un administrador lo active: no enviar correos al equipo sin decidirlo
+              activo         BOOLEAN     NOT NULL DEFAULT FALSE,
+              hora           SMALLINT    NOT NULL DEFAULT 7 CHECK (hora BETWEEN 0 AND 23),
+              ultimo_envio   DATE,
+              actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            INSERT INTO resumen_diario_alertas (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+            """, "resumen_diario_alertas.create");
     }
 
     /// <summary>

@@ -787,4 +787,13 @@ export const DIALOGOS_A = [
       await page.getByRole('dialog').first().waitFor();
     },
   },
+  {
+    nombre: 'Documentos · Editar documento institucional', hash: '#/sede/documentos',
+    abrir: async page => {
+      await irA(page, '#/sede/documentos');
+      await page.getByText(DOCUMENTOS[0].titulo).waitFor();
+      await page.getByRole('button', { name: `Editar ${DOCUMENTOS[0].titulo}` }).click();
+      await page.getByRole('dialog').first().waitFor();
+    },
+  },
 ];

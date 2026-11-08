@@ -7,6 +7,7 @@ import {
 import AddIcon            from '@mui/icons-material/Add';
 import DeleteIcon         from '@mui/icons-material/Delete';
 import DownloadIcon       from '@mui/icons-material/Download';
+import EditIcon           from '@mui/icons-material/Edit';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import PersonIcon         from '@mui/icons-material/Person';
 import VisibilityIcon     from '@mui/icons-material/Visibility';
@@ -16,6 +17,8 @@ import { mensajeErrorApi }              from '@/shared/utils/mensajeErrorApi';
 import { fmt }                          from './helpers';
 import { ModalSubirArchivoBeneficiario } from './ModalSubirArchivoBeneficiario';
 import { ConfirmarEliminar }             from './ConfirmarEliminar';
+import { ModalEditarDocumento }          from './ModalEditarDocumento';
+import usePermisos                       from '@/shared/hooks/usePermisos';
 import { abrirArchivo } from '@/shared/utils/archivos';
 
 export function TabPorBeneficiario({ onToast }) {
@@ -24,8 +27,10 @@ export function TabPorBeneficiario({ onToast }) {
   const [buscando,     setBuscando]     = useState(false);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [confirmar,    setConfirmar]    = useState(null);
+  const [editando,     setEditando]     = useState(null);
+  const puedeEditar = usePermisos().puedo('documentos', 'editar');
 
-  const { archivos, cargando, error, cargar, guardar, eliminar } = useDocumentosBeneficiario();
+  const { archivos, cargando, error, cargar, guardar, editar, eliminar } = useDocumentosBeneficiario();
 
   const buscarBeneficiarios = async (q) => {
     if (!q || q.length < 2) { setOpciones([]); return; }
@@ -128,6 +133,13 @@ export function TabPorBeneficiario({ onToast }) {
                               <DownloadIcon fontSize="small" sx={{ color: 'var(--color-primario-texto)' }} />
                             </IconButton>
                           </Tooltip>
+                          {puedeEditar && (
+                            <Tooltip title="Editar nombre">
+                              <IconButton size="small" aria-label={`Editar ${a.nombreOriginal ?? 'documento'}`} onClick={() => setEditando(a)}>
+                                <EditIcon fontSize="small" sx={{ color: 'var(--color-primario-texto)' }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           <Tooltip title="Eliminar">
                             <IconButton size="small" onClick={() => setConfirmar({ id: a.id, nombre: a.nombreOriginal ?? 'Documento' })}>
                               <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
@@ -150,6 +162,11 @@ export function TabPorBeneficiario({ onToast }) {
           onCerrar={() => setModalAbierto(false)}
           onSubido={(dto) => guardar(beneficiario.id, dto)}
           onToast={onToast} />
+      )}
+      {editando && beneficiario && (
+        <ModalEditarDocumento documento={editando} conCategoria={false}
+          onGuardar={dto => editar(editando.id, beneficiario.id, dto)}
+          onCerrar={() => setEditando(null)} onToast={onToast} />
       )}
       {confirmar && (
         <ConfirmarEliminar nombre={confirmar.nombre}

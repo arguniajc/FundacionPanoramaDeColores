@@ -1,6 +1,7 @@
 // SQL del módulo Beneficiarios (movido tal cual desde BeneficiariosController).
 using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 using FundacionPanorama.Application.Features.Beneficiarios.Interfaces;
+using FundacionPanorama.Application.Shared;
 using Npgsql;
 using NpgsqlTypes;
 using Microsoft.Extensions.Logging;
@@ -19,7 +20,7 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
     // =========================================================================
     // Listado con filtros y paginación
     // =========================================================================
-    public async Task<BeneficiarioListDto> ListarAsync(FiltroBeneficiarios f, int pagina, int porPagina, CancellationToken ct)
+    public async Task<ListaPaginada<BeneficiarioDto>> ListarAsync(FiltroBeneficiarios f, int pagina, int porPagina, CancellationToken ct)
     {
         var (buscar, estado, genero, edadMin, edadMax, eps, tieneAlergia, tipo) =
             (f.Buscar, f.Estado, f.Genero, f.EdadMin, f.EdadMax, f.Eps, f.TieneAlergia, f.Tipo);
@@ -104,13 +105,13 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
                 ids.Add(r.GetGuid(0));
 
         if (ids.Count == 0)
-            return new BeneficiarioListDto { Data = [], Total = total, Pagina = pagina, PorPagina = porPagina };
+            return new ListaPaginada<BeneficiarioDto> { Data = [], Total = total, Pagina = pagina, PorPagina = porPagina };
 
         var datos = await CargarDtosAsync(conn, ids, ct);
         // Preserve original order
         var ordered = ids.Select(id => datos.First(d => d.Id == id)).ToList();
 
-        return new BeneficiarioListDto { Data = ordered, Total = total, Pagina = pagina, PorPagina = porPagina };
+        return new ListaPaginada<BeneficiarioDto> { Data = ordered, Total = total, Pagina = pagina, PorPagina = porPagina };
     }
 
     // =========================================================================

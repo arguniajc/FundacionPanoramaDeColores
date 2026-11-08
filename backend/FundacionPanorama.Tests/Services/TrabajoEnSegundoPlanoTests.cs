@@ -5,7 +5,8 @@ using FundacionPanorama.Application.Features.Actividades.DTOs;
 using FundacionPanorama.Application.Features.Actividades.Interfaces;
 using FundacionPanorama.Application.Features.Configuracion.DTOs;
 using FundacionPanorama.Application.Features.Configuracion.Interfaces;
-using FundacionPanorama.Infrastructure.Persistence;
+using FundacionPanorama.Application.Features.Correos.DTOs;
+using FundacionPanorama.Application.Features.Correos.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -85,60 +86,82 @@ public class TrabajoEnSegundoPlanoTests
         VerificarError(logger);
     }
 
-    [Fact]
-    public async Task Actividades_Actualizar_Con_Cambio_De_Estado_Avisa_Desde_Un_Scope_Nuevo()
+    static (ActividadesController Sut, Mock<IColaCorreosRepository> Cola, Mock<ILogger<ActividadesController>> Logger)
+        ControllerConCola(Guid id, ActividadDto anterior, ActividadDto nueva)
     {
-        var id   = Guid.NewGuid();
-        var hoy  = DateTime.UtcNow.AddDays(10);
         var repo = new Mock<IActividadesRepository>();
+        repo.Setup(r => r.ObtenerAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(anterior);
+        repo.Setup(r => r.ActualizarAsync(id, It.IsAny<ActualizarActividadDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(nueva);
+        var cfg = new Mock<IConfiguracionRepository>();
+        cfg.Setup(c => c.ObtenerSmtpAsync(It.IsAny<CancellationToken>()))
+           .ReturnsAsync(new SmtpConfig("smtp.ejemplo.org", 587, "u", "c", "", "", true));
+        var cola = new Mock<IColaCorreosRepository>();
+        cola.Setup(c => c.ObtenerUsuariosActivosAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
+        [
+            new UsuarioDestinatario("rep@ejemplo.org", "Rep", "representante_legal"),
+            new UsuarioDestinatario("sis@ejemplo.org", "Sis", "sistemas"),
+            new UsuarioDestinatario("coord@ejemplo.org", "Coord", "coordinador"),
+        ]);
+        var email  = new EmailService(cfg.Object, cola.Object, Mock.Of<ILogger<EmailService>>());
+        var logger = new Mock<ILogger<ActividadesController>>();
+        return (new ActividadesController(new ActividadesService(repo.Object), email, logger.Object), cola, logger);
+    }
+
+    [Fact]
+    public async Task Actividades_Actualizar_Con_Cambio_De_Estado_Encola_Un_Aviso_Por_Administrador()
+    {
+        var id  = Guid.NewGuid();
+        var hoy = DateTime.UtcNow.AddDays(10);
         ActividadDto Dto(string estado) => new(id, "Taller", null, null, null, hoy, hoy.AddHours(2), null,
             estado, 0, 0, DateTime.UtcNow, []);
-        repo.Setup(r => r.ObtenerAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(Dto("programada"));
-        repo.Setup(r => r.ActualizarAsync(id, It.IsAny<ActualizarActividadDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Dto("cancelada"));
+        var (sut, cola, _) = ControllerConCola(id, Dto("programada"), Dto("cancelada"));
+        List<CorreoNuevo>? encolados = null;
+        cola.Setup(c => c.EncolarAsync(It.IsAny<IEnumerable<CorreoNuevo>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<CorreoNuevo>, CancellationToken>((c, _) => encolados = c.ToList())
+            .Returns(Task.CompletedTask);
 
-        // El scope nuevo se pide desde el trabajo en segundo plano; el proveedor simulado no tiene
-        // EmailService, así que el trabajo falla y el error debe llegar al log del controller.
-        var scopeCreado = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var logueado    = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var scope = new Mock<IServiceScope>();
-        scope.Setup(s => s.ServiceProvider).Returns(new ServiceCollection().BuildServiceProvider());
-        var scopes = new Mock<IServiceScopeFactory>();
-        scopes.Setup(s => s.CreateScope()).Callback(() => scopeCreado.TrySetResult()).Returns(scope.Object);
-        var logger = new Mock<ILogger<ActividadesController>>();
-        logger.Setup(l => l.Log(LogLevel.Error, It.IsAny<EventId>(), It.IsAny<It.IsAnyType>(), It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
-              .Callback(() => logueado.TrySetResult());
-
-        var sut = new ActividadesController(new ActividadesService(repo.Object), scopes.Object, logger.Object);
         var res = await sut.Actualizar(id,
             new ActualizarActividadDto("Taller", null, null, hoy, hoy.AddHours(2), null, "cancelada", null), default);
 
         Assert.IsType<OkObjectResult>(res);
-        await scopeCreado.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        await logueado.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.NotNull(encolados);
+        Assert.Equal(["rep@ejemplo.org", "sis@ejemplo.org"], encolados!.Select(c => c.Destinatarios));
+        Assert.All(encolados, c => Assert.Equal("[Actividad] Cambio en: Taller", c.Asunto));
     }
 
     [Fact]
-    public async Task Actividades_Actualizar_Sin_Cambios_No_Lanza_Aviso()
+    public async Task Actividades_Si_Falla_Encolar_Responde_Ok_Y_Lo_Registra()
     {
-        var id   = Guid.NewGuid();
-        var hoy  = DateTime.UtcNow.AddDays(10);
-        var repo = new Mock<IActividadesRepository>();
-        var dto  = new ActividadDto(id, "Taller", null, null, null, hoy, hoy.AddHours(2), null,
-            "programada", 0, 0, DateTime.UtcNow, []);
-        repo.Setup(r => r.ObtenerAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(dto);
-        repo.Setup(r => r.ActualizarAsync(id, It.IsAny<ActualizarActividadDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(dto with { Titulo = "Taller de pintura" });
-        var scopes = new Mock<IServiceScopeFactory>();
+        var id  = Guid.NewGuid();
+        var hoy = DateTime.UtcNow.AddDays(10);
+        ActividadDto Dto(string estado) => new(id, "Taller", null, null, null, hoy, hoy.AddHours(2), null,
+            estado, 0, 0, DateTime.UtcNow, []);
+        var (sut, cola, logger) = ControllerConCola(id, Dto("programada"), Dto("cancelada"));
+        cola.Setup(c => c.EncolarAsync(It.IsAny<IEnumerable<CorreoNuevo>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("BD caída"));
 
-        var sut = new ActividadesController(new ActividadesService(repo.Object), scopes.Object,
-            Mock.Of<ILogger<ActividadesController>>());
+        var res = await sut.Actualizar(id,
+            new ActualizarActividadDto("Taller", null, null, hoy, hoy.AddHours(2), null, "cancelada", null), default);
+
+        Assert.IsType<OkObjectResult>(res);
+        logger.Verify(l => l.Log(LogLevel.Error, It.IsAny<EventId>(), It.IsAny<It.IsAnyType>(),
+            It.IsAny<InvalidOperationException>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Actividades_Actualizar_Sin_Cambios_No_Encola_Aviso()
+    {
+        var id  = Guid.NewGuid();
+        var hoy = DateTime.UtcNow.AddDays(10);
+        var dto = new ActividadDto(id, "Taller", null, null, null, hoy, hoy.AddHours(2), null,
+            "programada", 0, 0, DateTime.UtcNow, []);
+        var (sut, cola, _) = ControllerConCola(id, dto, dto with { Titulo = "Taller de pintura" });
+
         await sut.Actualizar(id,
             new ActualizarActividadDto("Taller de pintura", null, null, hoy, hoy.AddHours(2), null, "programada", null), default);
 
-        await Task.Delay(100);
-        scopes.Verify(s => s.CreateScope(), Times.Never);
+        cola.Verify(c => c.EncolarAsync(It.IsAny<IEnumerable<CorreoNuevo>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -162,7 +185,7 @@ public class TrabajoEnSegundoPlanoTests
         cfg.Setup(c => c.ObtenerSmtpAsync(It.IsAny<CancellationToken>()))
            .ReturnsAsync(new SmtpConfig("127.0.0.1", 1, "usuario-secreto", "clave", "", "", false));
         var logger = new Mock<ILogger<EmailService>>();
-        var sut = new EmailService(cfg.Object, new DbConnectionFactory("Host=localhost"), logger.Object);
+        var sut = new EmailService(cfg.Object, Mock.Of<IColaCorreosRepository>(), logger.Object);
 
         var (ok, detalle) = await sut.EnviarPruebaAsync("ana@ejemplo.org");
 

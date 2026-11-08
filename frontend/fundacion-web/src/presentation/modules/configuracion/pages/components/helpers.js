@@ -1,4 +1,5 @@
 ﻿import { BRAND_COLOR } from '@/shared/constants/brand';
+import { nominaDesdeApi } from './nominaConfig';
 
 export const COLOR     = 'var(--color-primario)';
 export const TIPOS_DOC = ['CC', 'CE', 'PP', 'NIT', 'Otro'];
@@ -73,6 +74,7 @@ export const VACIO_FORM = {
   tagline: '', mision: '', vision: '',
   emailContacto: '', sitioWeb: '', mensajeBienvenida: '', footerTexto: '',
   webContenido: '',
+  ...nominaDesdeApi(null),
 };
 
 export function leerArchivoComoDataUrl(file) {

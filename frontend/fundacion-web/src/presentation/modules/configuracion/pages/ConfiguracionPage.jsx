@@ -13,6 +13,8 @@ import { TabApariencia }  from './components/TabApariencia';
 import { TabTextos }      from './components/TabTextos';
 import { TabPaginaWeb }   from './components/TabPaginaWeb';
 import { TabSmtp }        from './components/TabSmtp';
+import { TabNomina }      from './components/TabNomina';
+import { ESQUEMA_NOMINA, nominaDesdeApi, nominaParaApi } from './components/nominaConfig';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r, vacio } from '@/shared/utils/validacion';
@@ -60,6 +62,7 @@ const ESQUEMA = {
   smtpUsuario:     { tab: 5, etiqueta: 'Correo · Usuario / Email de envío', reglas: [r.si(configurandoSmtp, r.obligatorio('fundacion@gmail.com')), r.texto({ max: 200 })] }, // algunos proveedores usan un usuario que no es correo (p. ej. 'apikey')
   smtpDeNombre:    { tab: 5, etiqueta: 'Correo · Nombre del remitente',     reglas: [r.texto({ max: 200 })] },
   smtpDeEmail:     { tab: 5, etiqueta: 'Correo · Email del remitente',      reglas: [r.correo('donaciones@fundacion.org'), r.texto({ max: 200 })] },
+  ...ESQUEMA_NOMINA,
 };
 
 export default function ConfiguracionPage() {
@@ -126,6 +129,8 @@ export default function ConfiguracionPage() {
           smtpDeNombre:      data.smtpDeNombre       ?? '',
           smtpDeEmail:       data.smtpDeEmail        ?? '',
           smtpSsl:           data.smtpSsl            ?? true,
+          // Nómina (tasas en porcentaje para editarlas)
+          ...nominaDesdeApi(data),
         };
         setForm(loaded);
         setFormPrev(loaded);
@@ -192,6 +197,8 @@ export default function ConfiguracionPage() {
         smtpDeNombre:  form.smtpDeNombre  || null,
         smtpDeEmail:   form.smtpDeEmail   || null,
         smtpSsl:       form.smtpSsl       ?? true,
+        // Nómina (tasas como fracción: 4 % → 0.04)
+        ...nominaParaApi(form),
       });
       actualizarConfig(data);
       setFormPrev({ ...form });
@@ -204,7 +211,7 @@ export default function ConfiguracionPage() {
     }
   };
 
-  const TABS = ['Fundación', 'Representante Legal', 'Apariencia', 'Textos admin', 'Página Web', 'Correo'];
+  const TABS = ['Fundación', 'Representante Legal', 'Apariencia', 'Textos admin', 'Página Web', 'Correo', 'Nómina'];
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 860, mx: 'auto' }}>
@@ -244,6 +251,7 @@ export default function ConfiguracionPage() {
           {tab === 3 && <TabTextos      form={form} set={set} v={v} />}
           {tab === 4 && <TabPaginaWeb   webForm={webForm} setWebForm={setWebForm} v={v} />}
           {tab === 5 && <TabSmtp        form={form} set={set} v={v} />}
+          {tab === 6 && <TabNomina      form={form} set={set} v={v} />}
 
           <Divider sx={{ my: 3 }} />
           <ResumenErrores {...v.resumen} accion="guardar la configuración" sx={{ mx: 0, mt: 0, mb: 2 }} />

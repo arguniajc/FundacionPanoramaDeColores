@@ -1,9 +1,10 @@
 namespace FundacionPanorama.Application.Shared;
 
 /// <summary>
-/// Página de un listado paginado en el servidor. Tiene la misma forma JSON que el listado
-/// de beneficiarios (<c>{ data, total, pagina, porPagina }</c>) para que el frontend
-/// trate todos los listados igual.
+/// Página de un listado paginado en el servidor: ÚNICO tipo de paginación de la API.
+/// Forma JSON <c>{ data, total, pagina, porPagina }</c>, la que consume el frontend en
+/// todos los listados (ver <c>src/shared/utils/paginas.js</c>). Si un listado necesita
+/// datos extra (p. ej. totales de movimientos) hereda de este tipo.
 /// </summary>
 public class ListaPaginada<T>
 {

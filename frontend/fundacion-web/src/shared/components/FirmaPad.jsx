@@ -66,7 +66,7 @@ export default function FirmaPad({ label, value, onChange, obligatorio = false, 
                 Cambiar firma
               </Button>
               <Button size="small" color="error" onClick={() => onChange('')}
-                sx={{ p: 0, minWidth: 0, textDecoration: 'underline', fontSize: '0.75rem' }}>
+                sx={{ p: 0, minWidth: { xs: 40, sm: 0 }, textDecoration: 'underline', fontSize: '0.75rem' }}>
                 Quitar
               </Button>
             </Box>

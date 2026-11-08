@@ -1,3 +1,4 @@
+using FundacionPanorama.Application.Shared;
 using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 
 namespace FundacionPanorama.Application.Features.Beneficiarios.Interfaces;
@@ -5,7 +6,7 @@ namespace FundacionPanorama.Application.Features.Beneficiarios.Interfaces;
 public interface IBeneficiariosRepository
 {
     // Lecturas
-    Task<BeneficiarioListDto>        ListarAsync(FiltroBeneficiarios filtro, int pagina, int porPagina, CancellationToken ct);
+    Task<ListaPaginada<BeneficiarioDto>> ListarAsync(FiltroBeneficiarios filtro, int pagina, int porPagina, CancellationToken ct);
     Task<BeneficiarioStatsDto>       ObtenerStatsAsync(string? tipo, CancellationToken ct);
     Task<List<PerfilIncompletoFila>> ListarIncompletosAsync(string? tipo, CancellationToken ct);
     Task<StatsNinosDatos>            ObtenerStatsNinosAsync(CancellationToken ct);

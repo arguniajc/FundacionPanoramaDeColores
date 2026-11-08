@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert, Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle,
   Grid, InputAdornment, TextField, Typography,
@@ -9,7 +9,10 @@ import { mensajeErrorApi }  from '@/shared/utils/mensajeErrorApi';
 import { r }                from '@/shared/utils/validacion';
 import { useValidacion }    from '@/shared/hooks/useValidacion';
 import ResumenErrores       from '@/shared/components/ResumenErrores';
-import { fmtCOP, calcularLiquidacion as calcular } from './nominaFormato';
+import {
+  fmtCOP, fmtPorcentaje, calcularLiquidacion as calcular,
+  PARAMETROS_NOMINA_DEFECTO, normalizarParametrosNomina,
+} from './nominaFormato';
 
 const pesos = ejemplo => r.numero({ min: 0, unidad: 'pesos', ejemplo });
 
@@ -56,8 +59,21 @@ export function EditarLiquidacionDialog({ liquidacion, onClose, onGuardada }) {
     }
   }
 
+  // Parámetros vigentes (SMLMV, auxilio, tasas de Configuración → Nómina) para la vista previa;
+  // se leen al abrir: si fallan se usan los valores por defecto (el servidor recalcula al guardar)
+  const [parametros, setParametros] = useState(PARAMETROS_NOMINA_DEFECTO);
+  const [sinParametros, setSinParametros] = useState(false);
+  useEffect(() => {
+    if (!open) return undefined;
+    let vigente = true;
+    nominaRepository.parametros()
+      .then(({ data }) => { if (vigente) { setParametros(normalizarParametrosNomina(data)); setSinParametros(false); } })
+      .catch(() => { if (vigente) setSinParametros(true); });
+    return () => { vigente = false; };
+  }, [open]);
+
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-  const t = calcular(form);
+  const t = calcular(form, parametros);
 
   const guardar = async () => {
     if (!v.validarTodo()) return;
@@ -123,7 +139,7 @@ export function EditarLiquidacionDialog({ liquidacion, onClose, onGuardada }) {
           <Typography sx={{ fontSize: 'inherit', fontFamily: 'monospace', textAlign: 'right' }}>{fmtCOP(t.salario)}</Typography>
           <Typography sx={{ fontSize: 'inherit', color: 'text.secondary' }}>Auxilio de transporte</Typography>
           <Typography sx={{ fontSize: 'inherit', fontFamily: 'monospace', textAlign: 'right' }}>{fmtCOP(t.aux)}</Typography>
-          <Typography sx={{ fontSize: 'inherit', color: 'text.secondary' }}>Salud (4%) + pensión (4%)</Typography>
+          <Typography sx={{ fontSize: 'inherit', color: 'text.secondary' }}>Salud ({fmtPorcentaje(parametros.tasaSalud)}) + pensión ({fmtPorcentaje(parametros.tasaPension)})</Typography>
           <Typography sx={{ fontSize: 'inherit', fontFamily: 'monospace', textAlign: 'right' }}>{fmtCOP(t.salud + t.pension)}</Typography>
           <Typography sx={{ fontSize: 'inherit', color: 'text.secondary' }}>Total devengado</Typography>
           <Typography sx={{ fontSize: 'inherit', fontFamily: 'monospace', textAlign: 'right' }}>{fmtCOP(t.devengado)}</Typography>
@@ -132,6 +148,12 @@ export function EditarLiquidacionDialog({ liquidacion, onClose, onGuardada }) {
           <Typography sx={{ fontSize: 'inherit', fontWeight: 700 }}>Neto a pagar (estimado)</Typography>
           <Typography sx={{ fontSize: 'inherit', fontFamily: 'monospace', textAlign: 'right', fontWeight: 700, color: 'success.main' }}>{fmtCOP(t.neto)}</Typography>
         </Box>
+        {sinParametros && (
+          <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary' }}>
+            No se pudieron leer el salario mínimo y las tasas vigentes: la vista previa usa los valores por defecto.
+            Al guardar, el sistema recalcula con los valores de Configuración → Nómina.
+          </Typography>
+        )}
       </DialogContent>
       <ResumenErrores {...v.resumen} accion="guardar la liquidación" />
       <DialogActions>

@@ -89,6 +89,22 @@ public class DocumentosRepository(DbConnectionFactory factory) : IDocumentosRepo
         return new DocumentoEliminado(rd.IsDBNull(0) ? null : rd.GetString(0));
     }
 
+    public async Task<bool> EditarAsync(Guid id, EditarDocumentoDto dto, CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            UPDATE documentos_institucionales
+            SET titulo = @titulo, categoria = @cat, descripcion = @desc, fecha_modificacion = NOW()
+            WHERE id = @id AND activo = true";
+        cmd.Parameters.AddWithValue("id",     id);
+        cmd.Parameters.AddWithValue("titulo", dto.Titulo);
+        cmd.Parameters.AddWithValue("cat",    dto.Categoria);
+        cmd.Parameters.Add(new Npgsql.NpgsqlParameter("desc", NpgsqlTypes.NpgsqlDbType.Text) { Value = (object?)dto.Descripcion ?? DBNull.Value });
+        return await cmd.ExecuteNonQueryAsync(ct) > 0;
+    }
+
     // ── Por beneficiario (tabla archivos) ────────────────────────────────────
 
     public async Task<IReadOnlyList<ArchivoBeneficiarioDto>> ListarPorBeneficiarioAsync(Guid beneficiarioId, CancellationToken ct = default)
@@ -151,5 +167,20 @@ public class DocumentosRepository(DbConnectionFactory factory) : IDocumentosRepo
             RETURNING url";
         cmd.Parameters.AddWithValue("id", id);
         return await LeerEliminadoAsync(cmd, ct);
+    }
+
+    public async Task<bool> EditarArchivoAsync(Guid id, EditarArchivoDto dto, CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        // Solo los archivos adicionales de beneficiarios (la tabla archivos también guarda otras entidades)
+        cmd.CommandText = @"
+            UPDATE archivos
+            SET nombre_original = @nombre, fecha_modificacion = NOW()
+            WHERE id = @id AND entidad_tipo = 'beneficiario' AND activo = true";
+        cmd.Parameters.AddWithValue("id",     id);
+        cmd.Parameters.AddWithValue("nombre", dto.Nombre);
+        return await cmd.ExecuteNonQueryAsync(ct) > 0;
     }
 }

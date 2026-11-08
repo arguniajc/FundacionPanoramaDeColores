@@ -32,3 +32,12 @@ public record ArchivoBeneficiarioDto(
 
 /// <summary>Registro desactivado: Url es el archivo que hay que borrar del almacenamiento.</summary>
 public sealed record DocumentoEliminado(string? Url);
+
+/// <summary>PUT api/documentos/{id}: datos del documento institucional (el archivo no se cambia: se sube otro).</summary>
+public record EditarDocumentoDto(
+    string  Titulo,
+    string  Categoria,
+    string? Descripcion);
+
+/// <summary>PUT api/documentos/archivo/{id}: nombre visible del archivo de un beneficiario.</summary>
+public record EditarArchivoDto(string Nombre);

@@ -1,3 +1,5 @@
+using FundacionPanorama.Application.Features.Nomina.DTOs;
+
 namespace FundacionPanorama.Application.Features.Configuracion.DTOs;
 
 public record ConfiguracionDto(
@@ -34,7 +36,12 @@ public record ConfiguracionDto(
     string?   SmtpDeNombre,
     string?   SmtpDeEmail,
     bool      SmtpSsl,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    // Parámetros de nómina (ver ParametrosNomina): se actualizan cada enero según el decreto del Gobierno
+    decimal   NominaSmlmv             = ParametrosNomina.SmlmvPredeterminado,
+    decimal   NominaAuxilioTransporte = ParametrosNomina.AuxilioTransportePredeterminado,
+    decimal   NominaTasaSalud         = ParametrosNomina.TasaSaludPredeterminada,
+    decimal   NominaTasaPension       = ParametrosNomina.TasaPensionPredeterminada);
 
 public record GuardarConfiguracionDto(
     string?   NombreFundacion,
@@ -69,7 +76,12 @@ public record GuardarConfiguracionDto(
     string?   SmtpClave,
     string?   SmtpDeNombre,
     string?   SmtpDeEmail,
-    bool      SmtpSsl);
+    bool      SmtpSsl,
+    // Parámetros de nómina: null = conservar el valor guardado (clientes que no los envían)
+    decimal?  NominaSmlmv             = null,
+    decimal?  NominaAuxilioTransporte = null,
+    decimal?  NominaTasaSalud         = null,
+    decimal?  NominaTasaPension       = null);
 
 public record ConfiguracionPublicaDto(
     string? NombreFundacion,

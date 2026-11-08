@@ -2,6 +2,7 @@ using System.Collections;
 using FundacionPanorama.Application.Features.Beneficiarios;
 using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 using FundacionPanorama.Application.Features.Beneficiarios.Interfaces;
+using FundacionPanorama.Application.Shared;
 using Moq;
 
 namespace FundacionPanorama.Tests.Features;
@@ -46,7 +47,7 @@ public class BeneficiariosServiceTests
     public async Task ListarAsync_Ajusta_Pagina_Y_PorPagina(int pagina, int porPagina, int pEsperada, int ppEsperado)
     {
         _repo.Setup(r => r.ListarAsync(It.IsAny<FiltroBeneficiarios>(), It.IsAny<int>(), It.IsAny<int>(), default))
-             .ReturnsAsync(new BeneficiarioListDto());
+             .ReturnsAsync(new ListaPaginada<BeneficiarioDto>());
 
         await _sut.ListarAsync(pagina, porPagina, null, "activos", null, null, null, null, null, null);
 
@@ -59,7 +60,7 @@ public class BeneficiariosServiceTests
         FiltroBeneficiarios? recibido = null;
         _repo.Setup(r => r.ListarAsync(It.IsAny<FiltroBeneficiarios>(), It.IsAny<int>(), It.IsAny<int>(), default))
              .Callback<FiltroBeneficiarios, int, int, CancellationToken>((f, _, _, _) => recibido = f)
-             .ReturnsAsync(new BeneficiarioListDto());
+             .ReturnsAsync(new ListaPaginada<BeneficiarioDto>());
 
         await _sut.ListarAsync(1, 20, "ana", "todos", "F", 5, 10, "Sura", "si", "niño");
 

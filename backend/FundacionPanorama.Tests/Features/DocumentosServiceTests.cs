@@ -78,4 +78,46 @@ public class DocumentosServiceTests
         await _sut.GuardarArchivoBeneficiarioAsync(Guid.NewGuid(), ok, Origen);
         _repo.Verify(r => r.GuardarArchivoBeneficiarioAsync(It.IsAny<Guid>(), ok, It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    // ── Edición (título, categoría y descripción; nunca el archivo) ─────────
+
+    [Fact]
+    public async Task Editar_Valida_Igual_Que_Al_Crear()
+    {
+        var id = Guid.NewGuid();
+        Assert.Contains("título es obligatorio", await Falla(() => _sut.EditarAsync(id, new(" ", "Actas", null))));
+        Assert.Contains("200 caracteres", await Falla(() => _sut.EditarAsync(id, new(new string('a', 201), "Actas", null))));
+        Assert.Contains("categoría no es válida", await Falla(() => _sut.EditarAsync(id, new("Acta", "Contratos", null))));
+        Assert.Contains("1000 caracteres", await Falla(() => _sut.EditarAsync(id, new("Acta", "Actas", new string('d', 1001)))));
+        _repo.Verify(r => r.EditarAsync(It.IsAny<Guid>(), It.IsAny<EditarDocumentoDto>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Editar_Recorta_Espacios_Y_Descripcion_Vacia_Queda_Null()
+    {
+        var id = Guid.NewGuid();
+        _repo.Setup(r => r.EditarAsync(id, It.IsAny<EditarDocumentoDto>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        Assert.True(await _sut.EditarAsync(id, new("  Acta 2025 ", " Informes ", "   ")));
+        _repo.Verify(r => r.EditarAsync(id, new EditarDocumentoDto("Acta 2025", "Informes", null), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Editar_Documento_Inexistente_Devuelve_False()
+    {
+        _repo.Setup(r => r.EditarAsync(It.IsAny<Guid>(), It.IsAny<EditarDocumentoDto>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        Assert.False(await _sut.EditarAsync(Guid.NewGuid(), new("Acta", "Actas", "Asamblea ordinaria")));
+    }
+
+    [Fact]
+    public async Task Editar_Archivo_De_Beneficiario_Valida_El_Nombre()
+    {
+        var id = Guid.NewGuid();
+        Assert.Contains("obligatorio", await Falla(() => _sut.EditarArchivoAsync(id, new(""))));
+        Assert.Contains("200 caracteres", await Falla(() => _sut.EditarArchivoAsync(id, new(new string('a', 201)))));
+
+        _repo.Setup(r => r.EditarArchivoAsync(id, It.IsAny<EditarArchivoDto>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        Assert.True(await _sut.EditarArchivoAsync(id, new(" certificado.pdf ")));
+        _repo.Verify(r => r.EditarArchivoAsync(id, new EditarArchivoDto("certificado.pdf"), It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

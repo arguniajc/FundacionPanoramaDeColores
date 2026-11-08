@@ -28,5 +28,11 @@ export function useDocumentosInstitucionales() {
     setDocumentos(prev => prev.filter(d => d.id !== id));
   };
 
-  return { documentos, cargando, error, cargar, crear, eliminar };
+  // Solo cambian los datos (no el archivo): se actualiza la fila sin volver a cargar la lista
+  const editar = async (id, dto) => {
+    await documentosRepository.editarInstitucional(id, dto);
+    setDocumentos(prev => prev.map(d => (d.id === id ? { ...d, ...dto } : d)));
+  };
+
+  return { documentos, cargando, error, cargar, crear, editar, eliminar };
 }

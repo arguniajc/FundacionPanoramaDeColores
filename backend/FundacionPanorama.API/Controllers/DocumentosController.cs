@@ -45,6 +45,12 @@ public class DocumentosController(
         return Ok(new { Id = id });
     }
 
+    // PUT api/documentos/{id} — título, categoría y descripción (el archivo no cambia: se sube otro)
+    [HttpPut("{id:guid}")]
+    [RequierePermiso("documentos", "editar")]
+    public async Task<IActionResult> Editar(Guid id, [FromBody] EditarDocumentoDto dto)
+        => await svc.EditarAsync(id, dto) ? Ok() : NotFound(new { mensaje = "El documento no existe o fue eliminado." });
+
     // DELETE api/documentos/{id}
     [HttpDelete("{id:guid}")]
     [RequierePermiso("documentos", "eliminar")]
@@ -74,6 +80,12 @@ public class DocumentosController(
         if (id is null) return NotFound(new { mensaje = "Beneficiario no encontrado." });
         return Ok(new { Id = id.Value });
     }
+
+    // PUT api/documentos/archivo/{id} — nombre visible del archivo (el archivo no cambia)
+    [HttpPut("archivo/{id:guid}")]
+    [RequierePermiso("documentos", "editar")]
+    public async Task<IActionResult> EditarArchivo(Guid id, [FromBody] EditarArchivoDto dto)
+        => await svc.EditarArchivoAsync(id, dto) ? Ok() : NotFound(new { mensaje = "El documento no existe o fue eliminado." });
 
     // DELETE api/documentos/archivo/{id}
     [HttpDelete("archivo/{id:guid}")]

@@ -8,6 +8,7 @@ import { alpha } from '@mui/material/styles';
 import AddIcon        from '@mui/icons-material/Add';
 import DeleteIcon     from '@mui/icons-material/Delete';
 import DownloadIcon   from '@mui/icons-material/Download';
+import EditIcon       from '@mui/icons-material/Edit';
 import SearchIcon     from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useDocumentosInstitucionales } from '@/application/documentos/useDocumentosInstitucionales';
@@ -15,6 +16,8 @@ import { mensajeErrorApi }              from '@/shared/utils/mensajeErrorApi';
 import { CATEGORIAS, fmt }              from './helpers';
 import { ModalSubirInstitucional }      from './ModalSubirInstitucional';
 import { ConfirmarEliminar }            from './ConfirmarEliminar';
+import { ModalEditarDocumento }         from './ModalEditarDocumento';
+import usePermisos                      from '@/shared/hooks/usePermisos';
 import { abrirArchivo } from '@/shared/utils/archivos';
 
 export function TabInstitucionales({ onToast }) {
@@ -22,8 +25,10 @@ export function TabInstitucionales({ onToast }) {
   const [buscar,          setBuscar]          = useState('');
   const [modalAbierto,    setModalAbierto]    = useState(false);
   const [confirmar,       setConfirmar]       = useState(null);
+  const [editando,        setEditando]        = useState(null);
+  const puedeEditar = usePermisos().puedo('documentos', 'editar');
 
-  const { documentos, cargando, error, crear, eliminar } = useDocumentosInstitucionales();
+  const { documentos, cargando, error, crear, editar, eliminar } = useDocumentosInstitucionales();
 
   const conteo = useMemo(() => {
     const m = {};
@@ -132,6 +137,13 @@ export function TabInstitucionales({ onToast }) {
                           <DownloadIcon fontSize="small" sx={{ color: 'var(--color-primario-texto)' }} />
                         </IconButton>
                       </Tooltip>
+                      {puedeEditar && (
+                        <Tooltip title="Editar">
+                          <IconButton size="small" aria-label={`Editar ${doc.titulo}`} onClick={() => setEditando(doc)}>
+                            <EditIcon fontSize="small" sx={{ color: 'var(--color-primario-texto)' }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <Tooltip title="Eliminar">
                         <IconButton size="small" onClick={() => setConfirmar({ id: doc.id, nombre: doc.titulo })}>
                           <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
@@ -148,6 +160,11 @@ export function TabInstitucionales({ onToast }) {
 
       {modalAbierto && (
         <ModalSubirInstitucional onCerrar={() => setModalAbierto(false)} onSubido={crear} onToast={onToast} />
+      )}
+      {editando && (
+        <ModalEditarDocumento documento={editando} conCategoria
+          onGuardar={dto => editar(editando.id, dto)}
+          onCerrar={() => setEditando(null)} onToast={onToast} />
       )}
       {confirmar && (
         <ConfirmarEliminar nombre={confirmar.nombre}

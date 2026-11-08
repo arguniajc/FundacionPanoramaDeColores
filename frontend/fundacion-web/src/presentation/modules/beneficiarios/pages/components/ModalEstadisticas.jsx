@@ -272,7 +272,7 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
           <Box key={op.v} component="button" type="button"
             onClick={() => setTipoFiltro(op.v)}
             sx={{
-              px: 2, py: 0.5, borderRadius: 5, border: '2px solid',
+              px: 2, py: 0.5, minHeight: { xs: 40, sm: 'auto' }, borderRadius: 5, border: '2px solid',
               borderColor: tipoFiltro === op.v ? 'var(--color-primario)' : 'divider',
               bgcolor: tipoFiltro === op.v ? 'var(--color-primario)' : 'transparent',
               color: tipoFiltro === op.v ? '#fff' : 'text.secondary',

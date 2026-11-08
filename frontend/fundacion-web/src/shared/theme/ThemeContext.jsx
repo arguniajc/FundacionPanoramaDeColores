@@ -96,7 +96,7 @@ export function AppThemeProvider({ children }) {
         MuiButton: {
           defaultProps: { disableElevation: true },
           styleOverrides: {
-            root: { textTransform: 'none', fontWeight: 600, letterSpacing: '0.01em', borderRadius: 8 },
+            root: { textTransform: 'none', fontWeight: 600, letterSpacing: '0.01em', borderRadius: 8, [CELULAR]: { minHeight: 40 } },
             sizeSmall:  { padding: '5px 12px', [CELULAR]: { minHeight: 40 } },
             sizeMedium: { padding: '7px 16px' },
             sizeLarge:  { padding: '10px 22px' },
@@ -127,7 +127,31 @@ export function AppThemeProvider({ children }) {
           },
         },
         MuiAppBar: { defaultProps: { elevation: 0, color: 'inherit' } },
-        MuiChip: { styleOverrides: { root: { fontWeight: 600, borderRadius: 6 } } },
+        // Chips clicables (filtros, días, avisos con acción): 40px de alto en celular
+        MuiChip: {
+          styleOverrides: {
+            root: { fontWeight: 600, borderRadius: 6, [CELULAR]: { '&.MuiChip-clickable': { minHeight: 40 } } },
+          },
+        },
+        MuiPaginationItem: { styleOverrides: { root: { [CELULAR]: { minWidth: 40, height: 40 } } } },
+        // Autocomplete: el input (role=combobox) ocupa todo el alto del campo en celular,
+        // sin cambiar el alto total (el relleno pasa del contenedor al input).
+        MuiAutocomplete: {
+          styleOverrides: {
+            root: {
+              [CELULAR]: {
+                '& .MuiOutlinedInput-root': {
+                  paddingTop: 0, paddingBottom: 0,
+                  '& .MuiAutocomplete-input': { paddingTop: 16.5, paddingBottom: 16.5 },
+                },
+                '& .MuiOutlinedInput-root.MuiInputBase-sizeSmall': {
+                  paddingTop: 0, paddingBottom: 0,
+                  '& .MuiAutocomplete-input': { paddingTop: 8.5, paddingBottom: 8.5 },
+                },
+              },
+            },
+          },
+        },
         MuiAlert: { styleOverrides: { root: { borderRadius: 10 } } },
         MuiTableContainer: { styleOverrides: { root: { borderRadius: 12 } } },
         // El fondo va en la cabecera (no en cada celda) para que las páginas que pintan

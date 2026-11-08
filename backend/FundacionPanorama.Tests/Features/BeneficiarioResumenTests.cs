@@ -2,6 +2,7 @@ using System.Text.Json;
 using FundacionPanorama.Application.Features.Beneficiarios;
 using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 using FundacionPanorama.Application.Features.Beneficiarios.Interfaces;
+using FundacionPanorama.Application.Shared;
 using Moq;
 
 namespace FundacionPanorama.Tests.Features;
@@ -34,7 +35,7 @@ public class BeneficiarioResumenTests
 
     private void ListadoDevuelve(params BeneficiarioDto[] filas) =>
         _repo.Setup(r => r.ListarAsync(It.IsAny<FiltroBeneficiarios>(), It.IsAny<int>(), It.IsAny<int>(), default))
-             .ReturnsAsync(new BeneficiarioListDto { Data = [.. filas], Total = 42, Pagina = 2, PorPagina = 15 });
+             .ReturnsAsync(new ListaPaginada<BeneficiarioDto> { Data = [.. filas], Total = 42, Pagina = 2, PorPagina = 15 });
 
     [Fact]
     public void El_Resumen_No_Tiene_Campos_Sensibles()

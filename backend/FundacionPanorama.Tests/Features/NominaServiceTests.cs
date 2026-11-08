@@ -155,4 +155,13 @@ public class NominaServiceTests
         var ex = await Assert.ThrowsAsync<DatoInvalidoException>(() => _sut.CrearPeriodoAsync(new(5, 2026, null, null)));
         Assert.Contains("Ya existe", ex.Message);
     }
+
+    [Fact]
+    public async Task Parametros_Vienen_De_La_Configuracion()
+    {
+        var vigentes = new ParametrosNomina(1_600_000, 220_000, 0.04m, 0.04m);
+        _repo.Setup(r => r.ObtenerParametrosAsync(It.IsAny<CancellationToken>())).ReturnsAsync(vigentes);
+
+        Assert.Equal(vigentes, await _sut.ObtenerParametrosAsync());
+    }
 }

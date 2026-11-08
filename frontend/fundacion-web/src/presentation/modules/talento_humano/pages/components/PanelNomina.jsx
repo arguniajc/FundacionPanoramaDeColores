@@ -26,7 +26,7 @@ import ResumenErrores       from '@/shared/components/ResumenErrores';
 import { colorEstado }      from '@/shared/theme/paleta';
 import { useConfiguracion } from '@/shared/context/useConfiguracion';
 import { EditarLiquidacionDialog } from './EditarLiquidacionDialog';
-import { MESES, fmtCOP, salarioPeriodo } from './nominaFormato';
+import { MESES, fmtCOP, salarioPeriodo, mensajeAutoLiquidacion } from './nominaFormato';
 import { exportarNominaExcel, generarDesprendiblesPDF } from './exportarNomina';
 
 const ANIOS = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
@@ -139,7 +139,7 @@ function PeriodoCard({ periodo, puedeEditar, puedeEliminar, onCerrar, onEliminar
   };
 
   const handleAutoLiquidar = async () => {
-    if (!await confirm('¿Auto-liquidar todos los empleados activos con salario registrado?')) return;
+    if (!await confirm('¿Liquidar el mes completo de los empleados activos con salario que aún no tienen liquidación en este período? Las liquidaciones existentes no se modifican.')) return;
     const result = await onAutoLiquidar(periodo.id);
     if (result) setLiquidaciones(result);
   };
@@ -169,7 +169,7 @@ function PeriodoCard({ periodo, puedeEditar, puedeEliminar, onCerrar, onEliminar
         {(puedeEditar || puedeEliminar) && periodo.estado === 'borrador' && (
           <Box onClick={e => e.stopPropagation()} sx={{ display: 'flex', gap: 0.5 }}>
             {puedeEditar && (
-              <Tooltip title="Auto-liquidar empleados">
+              <Tooltip title="Auto-liquidar empleados sin liquidación">
                 <IconButton size="small" color="primary" onClick={handleAutoLiquidar}>
                   <AutorenewIcon fontSize="small" />
                 </IconButton>
@@ -388,9 +388,10 @@ export function PanelNomina({ puedo }) {
 
   const handleAutoLiquidar = async (periodoId) => {
     try {
+      const antes = periodos.find(p => p.id === periodoId)?.totalEmpleados ?? 0;
       const { data } = await nominaRepository.autoLiquidar(periodoId, { soloActivos: true });
       cargar();
-      ok(`${data.length} liquidaciones procesadas.`);
+      ok(mensajeAutoLiquidacion(antes, data.length));
       return data;
     } catch (e) { err(mensajeErrorApi(e, { accion: 'auto-liquidar la nómina' })); return null; }
   };

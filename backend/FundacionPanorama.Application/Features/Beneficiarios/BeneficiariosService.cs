@@ -43,39 +43,28 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
     public Task<BeneficiarioStatsDto> ObtenerStatsAsync(string? tipo, CancellationToken ct = default)
         => repo.ObtenerStatsAsync(tipo, ct);
 
-    // Hasta 60 beneficiarios activos con campos de calidad vacíos,
-    // ordenados por cantidad de campos faltantes (más incompleto primero).
+    // Hasta 60 beneficiarios activos con campos de calidad vacíos, del menos completo al más completo.
+    // La regla es la misma del resumen del listado (CompletitudPerfil).
+    public const int MaxIncompletos = 60;
+
     public async Task<List<PerfilIncompletoDto>> ListarIncompletosAsync(string? tipo, CancellationToken ct = default)
     {
-        var filas  = await repo.ListarIncompletosAsync(tipo, ct);
-        var result = new List<PerfilIncompletoDto>();
-        foreach (var f in filas)
-        {
-            var faltantes = new List<string>();
-            if (f.Flags[0] > 0) faltantes.Add("Foto del menor");
-            if (f.Flags[1] > 0) faltantes.Add("Foto documento");
-            if (f.Flags[2] > 0) faltantes.Add("WhatsApp");
-            if (f.Flags[3] > 0) faltantes.Add("Dirección");
-            if (f.Flags[4] > 0) faltantes.Add("Talla camisa");
-            if (f.Flags[5] > 0) faltantes.Add("Talla zapatos");
-            if (f.Flags[6] > 0) faltantes.Add("Peso");
-            if (f.Flags[7] > 0) faltantes.Add("Talla altura");
-            if (f.Flags[8] > 0) faltantes.Add("Colegio");
-            if (f.Flags[9] > 0) faltantes.Add("Grado escolar");
-
-            int totalFalt   = f.TotalFaltantes;
-            int completitud = (int)Math.Round((10.0 - totalFalt) / 10.0 * 100);
-
-            result.Add(new PerfilIncompletoDto
+        var filas = await repo.ListarIncompletosAsync(tipo, ct);
+        return filas
+            .Select(f => (Fila: f, Eval: CompletitudPerfil.Evaluar(f.Datos)))
+            .Where(x => x.Eval.Faltantes.Count > 0)
+            .OrderBy(x => x.Eval.Porcentaje)          // niños y adultos tienen distinto número de campos
+            .ThenBy(x => x.Fila.Nombre, StringComparer.CurrentCulture)
+            .Take(MaxIncompletos)
+            .Select(x => new PerfilIncompletoDto
             {
-                Id          = f.Id,
-                Nombre      = f.Nombre,
-                FotoUrl     = f.FotoUrl,
-                Faltantes   = faltantes,
-                Completitud = completitud,
-            });
-        }
-        return result;
+                Id          = x.Fila.Id,
+                Nombre      = x.Fila.Nombre,
+                FotoUrl     = x.Fila.Datos.FotoMenorUrl,
+                Faltantes   = [.. x.Eval.Faltantes],
+                Completitud = x.Eval.Porcentaje,
+            })
+            .ToList();
     }
 
     // La forma del objeto (anónimo) es el contrato JSON de GET stats-ninos: no cambiarla.

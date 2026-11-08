@@ -61,3 +61,15 @@ export function calcularLiquidacion(f, parametros = PARAMETROS_NOMINA_DEFECTO) {
 
 /** "Octubre 2026" */
 export const nombrePeriodo = p => `${MESES[(p?.mes ?? 1) - 1]} ${p?.anio ?? ''}`.trim();
+
+/**
+ * Mensaje tras auto-liquidar: el servidor solo crea las liquidaciones que faltan y no modifica las
+ * existentes (pueden tener días y novedades editados a mano).
+ */
+export function mensajeAutoLiquidacion(antes, despues) {
+  const nuevas = Math.max(0, (despues ?? 0) - (antes ?? 0));
+  if (nuevas === 0) return 'No había empleados por liquidar: las liquidaciones existentes no se modificaron.';
+  const n = nuevas === 1 ? '1 liquidación nueva' : `${nuevas} liquidaciones nuevas`;
+  if (!antes) return `${n}.`;
+  return antes === 1 ? `${n}. La existente no se modificó.` : `${n}. Las ${antes} existentes no se modificaron.`;
+}

@@ -189,7 +189,9 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
         var parametros = await LeerParametrosAsync(conn, ct);
         foreach (var (empId, salario) in empleados)
         {
-            // Mes completo (30 días); el ajuste por días se hace al editar la liquidación
+            // Mes completo (30 días); el ajuste por días se hace al editar la liquidación.
+            // Solo crea las que faltan: una liquidación existente (quizá ya editada con días y novedades)
+            // no se toca, para no dejarla con totales que no corresponden a sus propios datos.
             var (_, aux, salud, pension, devengado, deducciones, neto) = CalculoNomina.Calcular(parametros, salario, CalculoNomina.DiasMes);
 
             await using var cmdIns = conn.CreateCommand();
@@ -199,15 +201,7 @@ public class NominaRepository(DbConnectionFactory factory) : INominaRepository
                      horas_extras, bonificaciones, deduccion_salud, deduccion_pension,
                      retencion_fuente, otras_deducciones, total_devengado, total_deducciones, neto_pagar)
                 VALUES (@pid, @eid, 30, @sal, @aux, 0, 0, @salud, @pension, 0, 0, @dev, @ded, @neto)
-                ON CONFLICT (periodo_id, empleado_id) DO UPDATE SET
-                    salario_base = EXCLUDED.salario_base,
-                    auxilio_transporte = EXCLUDED.auxilio_transporte,
-                    deduccion_salud = EXCLUDED.deduccion_salud,
-                    deduccion_pension = EXCLUDED.deduccion_pension,
-                    total_devengado = EXCLUDED.total_devengado,
-                    total_deducciones = EXCLUDED.total_deducciones,
-                    neto_pagar = EXCLUDED.neto_pagar
-                RETURNING id
+                ON CONFLICT (periodo_id, empleado_id) DO NOTHING
                 """;
             cmdIns.Parameters.AddWithValue("pid",     periodoId);
             cmdIns.Parameters.AddWithValue("eid",     empId);

@@ -107,11 +107,20 @@ public class ContabilidadService(IContabilidadRepository repo)
     {
         await ValidarMovimiento(dto.Tipo, dto.Fecha, dto.Monto, dto.CuentaId, dto.CategoriaId,
             dto.RetencionPracticada, dto.TarifaRetencion, ct);
+        // Un anulado ya no cuenta en el saldo: editarlo lo haría volver a contar sin que nadie lo note
+        var actual = await repo.ObtenerMovimientoAsync(id, ct);
+        if (actual is null) return null;
+        Exigir(!actual.Anulado, "Este movimiento está anulado: no se puede editar.");
         return await repo.ActualizarMovimientoAsync(id, dto, ct);
     }
 
-    public Task<bool> EliminarMovimientoAsync(Guid id, CancellationToken ct = default)
-        => repo.EliminarMovimientoAsync(id, ct);
+    public async Task<bool> EliminarMovimientoAsync(Guid id, CancellationToken ct = default)
+    {
+        var actual = await repo.ObtenerMovimientoAsync(id, ct);
+        if (actual is null) return false;
+        Exigir(!actual.Anulado, "Este movimiento está anulado: no se puede eliminar; ya no afecta el saldo.");
+        return await repo.EliminarMovimientoAsync(id, ct);
+    }
 
     public Task<bool> AnularMovimientoAsync(Guid id, CancellationToken ct = default)
         => repo.AnularMovimientoAsync(id, ct);

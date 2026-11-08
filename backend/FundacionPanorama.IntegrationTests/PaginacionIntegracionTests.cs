@@ -121,7 +121,6 @@ public class PaginacionIntegracionTests(PostgresFixture pg)
     [SkippableFact]
     public async Task Beneficiarios_busqueda_trata_porcentaje_y_guion_bajo_como_literales()
     {
-        Bugs.Pendiente(Bugs.BeneficiariosBusquedaComodines);
         var db = await pg.CrearBaseAsync();
         var repo = new BeneficiariosRepository(db);
         await db.CrearBeneficiarioMinimoAsync("Ana", "Uno", "AB_1");

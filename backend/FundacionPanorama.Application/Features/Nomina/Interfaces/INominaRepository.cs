@@ -11,6 +11,7 @@ public interface INominaRepository
     Task<bool>                            EliminarPeriodoAsync(int id, CancellationToken ct);
 
     Task<IReadOnlyList<NominaLiquidacionDto>> ListarLiquidacionesAsync(int periodoId, CancellationToken ct);
+    /// <summary>Crea las liquidaciones de mes completo que faltan; las existentes (quizá editadas) no se modifican.</summary>
     Task<IReadOnlyList<NominaLiquidacionDto>> AutoLiquidarAsync(int periodoId, AutoLiquidarDto dto, CancellationToken ct);
     Task<NominaLiquidacionDto>                LiquidarEmpleadoAsync(int periodoId, LiquidarEmpleadoDto dto, CancellationToken ct);
     Task<NominaLiquidacionDto?>               ObtenerLiquidacionAsync(int id, CancellationToken ct);

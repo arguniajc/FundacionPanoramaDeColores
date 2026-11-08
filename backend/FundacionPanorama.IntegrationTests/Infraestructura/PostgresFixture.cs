@@ -25,6 +25,8 @@ public sealed class PostgresFixture : IAsyncLifetime
     NpgsqlConnectionStringBuilder? _base;   // host/puerto/usuario del servidor temporal
     readonly SemaphoreSlim _crearBd = new(1, 1);
 
+    /// <summary>Host del contenedor de Testcontainers (null con el clúster local); para la guarda.</summary>
+    public string? HostContenedor => _hostContenedor;
     public bool   Disponible { get; private set; }
     public string Motivo     { get; private set; } = "";
     public string Fuente     { get; private set; } = "ninguna";

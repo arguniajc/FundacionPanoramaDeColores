@@ -200,15 +200,7 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         await conn.OpenAsync(ct);
         await using var tx = await conn.BeginTransactionAsync(ct);
 
-        await using var cmdSeq = conn.CreateCommand();
-        cmdSeq.Transaction = tx;
-        cmdSeq.CommandText = """
-            SELECT COALESCE(MAX(consecutivo), 0) + 1
-            FROM movimientos_contables
-            WHERE EXTRACT(YEAR FROM fecha) = @anio
-            """;
-        cmdSeq.Parameters.AddWithValue("anio", dto.Fecha.Year);
-        var consecutivo = Convert.ToInt32(await cmdSeq.ExecuteScalarAsync(ct));
+        var consecutivo = await SiguienteConsecutivoAsync(conn, tx, dto.Fecha.Year, ct);
 
         await using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
@@ -239,11 +231,17 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
     {
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
+        await using var tx = await conn.BeginTransactionAsync(ct);
 
-        var original = await ObtenerMovimientoInternoAsync(conn, id, ct);
+        // Fila bloqueada: una anulación o edición simultánea espera a que esta termine
+        var original = await LeerParaModificarAsync(conn, tx, id, ct);
         if (original is null) return null;
 
-        await using var tx = await conn.BeginTransactionAsync(ct);
+        // Si cambia de año, el comprobante toma el siguiente consecutivo del año nuevo
+        // (conservar el número viejo podría chocar con otro comprobante de ese año)
+        int? consecutivo = original.Value.Consecutivo;
+        if (consecutivo is not null && dto.Fecha.Year != original.Value.Fecha.Year)
+            consecutivo = await SiguienteConsecutivoAsync(conn, tx, dto.Fecha.Year, ct);
 
         await using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
@@ -254,20 +252,26 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
                 tercero_nombre = @tercNombre, tercero_documento = @tercDoc,
                 numero_soporte = @numSoporte, descripcion = @desc,
                 tipo_soporte = @tipoSoporte, retencion_practicada = @retPracticada,
-                tarifa_retencion = @tarifaRet, concepto_retencion = @conceptoRet
+                tarifa_retencion = @tarifaRet, concepto_retencion = @conceptoRet,
+                consecutivo = @consecutivo
             WHERE id = @id
             """;
         AddMovimientoParams(cmd, dto.Tipo, dto.Fecha, dto.Concepto, dto.Monto, dto.CuentaId, dto.CategoriaId,
             dto.ProgramaId, dto.TerceroNombre, dto.TerceroDocumento, dto.NumeroSoporte, dto.Descripcion,
             dto.TipoSoporte, dto.RetencionPracticada, dto.TarifaRetencion, dto.ConceptoRetencion);
         cmd.Parameters.AddWithValue("id", id);
+        cmd.Parameters.Add(new NpgsqlParameter("consecutivo", NpgsqlTypes.NpgsqlDbType.Integer) { Value = (object?)consecutivo ?? DBNull.Value });
         await cmd.ExecuteNonQueryAsync(ct);
 
-        // Revertir efecto del movimiento original
-        var tipoInverso = original.Tipo == "ingreso" ? "egreso" : "ingreso";
-        await ActualizarSaldoAsync(conn, tx, original.CuentaId, tipoInverso, original.Monto, ct);
-        // Aplicar el nuevo efecto
-        await ActualizarSaldoAsync(conn, tx, dto.CuentaId, dto.Tipo, dto.Monto, ct);
+        // Un anulado ya no afecta el saldo (la anulación lo revirtió): no se toca.
+        // El servicio no deja editar anulados; esto es la defensa por si llega uno.
+        if (!original.Value.Anulado)
+        {
+            // Revertir efecto del movimiento original y aplicar el nuevo
+            var tipoInverso = original.Value.Tipo == "ingreso" ? "egreso" : "ingreso";
+            await ActualizarSaldoAsync(conn, tx, original.Value.CuentaId, tipoInverso, original.Value.Monto, ct);
+            await ActualizarSaldoAsync(conn, tx, dto.CuentaId, dto.Tipo, dto.Monto, ct);
+        }
 
         await tx.CommitAsync(ct);
         return await ObtenerMovimientoInternoAsync(conn, id, ct);
@@ -277,11 +281,10 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
     {
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
-
-        var mov = await ObtenerMovimientoInternoAsync(conn, id, ct);
-        if (mov is null) return false;
-
         await using var tx = await conn.BeginTransactionAsync(ct);
+
+        var mov = await LeerParaModificarAsync(conn, tx, id, ct);
+        if (mov is null) return false;
 
         await using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
@@ -289,22 +292,68 @@ public class ContabilidadRepository(DbConnectionFactory factory) : IContabilidad
         cmd.Parameters.AddWithValue("id", id);
         await cmd.ExecuteNonQueryAsync(ct);
 
-        var tipoInverso = mov.Tipo == "ingreso" ? "egreso" : "ingreso";
-        await ActualizarSaldoAsync(conn, tx, mov.CuentaId, tipoInverso, mov.Monto, ct);
+        // Un anulado ya no afecta el saldo: borrarlo no lo mueve (defensa; el servicio lo impide)
+        if (!mov.Value.Anulado)
+        {
+            var tipoInverso = mov.Value.Tipo == "ingreso" ? "egreso" : "ingreso";
+            await ActualizarSaldoAsync(conn, tx, mov.Value.CuentaId, tipoInverso, mov.Value.Monto, ct);
+        }
 
         await tx.CommitAsync(ct);
         return true;
+    }
+
+    /// <summary>Datos del movimiento que afectan el saldo, con la fila bloqueada hasta el fin de la transacción.</summary>
+    static async Task<(string Tipo, decimal Monto, Guid CuentaId, bool Anulado, DateOnly Fecha, int? Consecutivo)?> LeerParaModificarAsync(
+        NpgsqlConnection conn, NpgsqlTransaction tx, Guid id, CancellationToken ct)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = """
+            SELECT tipo, monto, cuenta_id, COALESCE(anulado, false), fecha, consecutivo
+            FROM movimientos_contables WHERE id = @id FOR UPDATE
+            """;
+        cmd.Parameters.AddWithValue("id", id);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return null;
+        return (r.GetString(0), r.GetDecimal(1), r.GetGuid(2), r.GetBoolean(3),
+                r.GetFieldValue<DateOnly>(4), r.IsDBNull(5) ? null : r.GetInt32(5));
+    }
+
+    /// <summary>
+    /// Siguiente consecutivo de comprobante del año. El bloqueo consultivo (por año, hasta el fin de la
+    /// transacción) serializa a quienes numeran en el mismo año: dos comprobantes simultáneos no reciben
+    /// el mismo número. Mismo patrón que el número de recibo de donaciones.
+    /// </summary>
+    static async Task<int> SiguienteConsecutivoAsync(NpgsqlConnection conn, NpgsqlTransaction tx, int anio, CancellationToken ct)
+    {
+        await using (var cmdLock = conn.CreateCommand())
+        {
+            cmdLock.Transaction = tx;
+            cmdLock.CommandText = "SELECT pg_advisory_xact_lock(hashtext('movimientos_contables.consecutivo'), @anio)";
+            cmdLock.Parameters.AddWithValue("anio", anio);
+            await cmdLock.ExecuteNonQueryAsync(ct);
+        }
+        await using var cmdSeq = conn.CreateCommand();
+        cmdSeq.Transaction = tx;
+        cmdSeq.CommandText = """
+            SELECT COALESCE(MAX(consecutivo), 0) + 1
+            FROM movimientos_contables
+            WHERE EXTRACT(YEAR FROM fecha) = @anio
+            """;
+        cmdSeq.Parameters.AddWithValue("anio", anio);
+        return Convert.ToInt32(await cmdSeq.ExecuteScalarAsync(ct));
     }
 
     public async Task<bool> AnularMovimientoAsync(Guid id, CancellationToken ct)
     {
         await using var conn = factory.Create();
         await conn.OpenAsync(ct);
-
-        var mov = await ObtenerMovimientoInternoAsync(conn, id, ct);
-        if (mov is null || mov.Anulado) return false;
-
         await using var tx = await conn.BeginTransactionAsync(ct);
+
+        // Fila bloqueada: dos anulaciones simultáneas no revierten el saldo dos veces
+        var leido = await LeerParaModificarAsync(conn, tx, id, ct);
+        if (leido is not { } mov || mov.Anulado) return false;
 
         await using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;

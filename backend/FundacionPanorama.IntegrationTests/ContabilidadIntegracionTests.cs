@@ -1,3 +1,5 @@
+using FundacionPanorama.Application.Features.Contabilidad;
+using FundacionPanorama.Domain.Shared;
 using FundacionPanorama.Application.Features.Contabilidad.DTOs;
 using FundacionPanorama.Infrastructure.Persistence;
 using FundacionPanorama.Infrastructure.Persistence.Repositories;
@@ -105,9 +107,8 @@ public class ContabilidadIntegracionTests(PostgresFixture pg)
     }
 
     [SkippableFact]
-    public async Task Editar_un_movimiento_anulado_no_descuadra_el_saldo()
+    public async Task Repositorio_editar_un_anulado_no_descuadra_el_saldo()
     {
-        Bugs.Pendiente(Bugs.EditarMovimientoAnulado);
         var c = await PrepararAsync();
         var cuenta = await CuentaAsync(c, "Banco", 1_000m);
         var ing = await c.Repo.CrearMovimientoAsync(Mov("ingreso", new(2020, 7, 1), 300m, cuenta.Id, c.CatIngreso), Ct);
@@ -124,9 +125,8 @@ public class ContabilidadIntegracionTests(PostgresFixture pg)
     }
 
     [SkippableFact]
-    public async Task Eliminar_un_movimiento_anulado_no_descuadra_el_saldo()
+    public async Task Repositorio_eliminar_un_anulado_no_descuadra_el_saldo()
     {
-        Bugs.Pendiente(Bugs.EliminarMovimientoAnulado);
         var c = await PrepararAsync();
         var cuenta = await CuentaAsync(c, "Banco", 1_000m);
         var ing = await c.Repo.CrearMovimientoAsync(Mov("ingreso", new(2020, 7, 1), 300m, cuenta.Id, c.CatIngreso), Ct);
@@ -135,6 +135,61 @@ public class ContabilidadIntegracionTests(PostgresFixture pg)
         await c.Repo.EliminarMovimientoAsync(ing.Id, Ct);
 
         Assert.Equal(1_000m, await SaldoAsync(c, cuenta.Id));
+    }
+
+    [SkippableFact]
+    public async Task Servicio_no_deja_editar_ni_eliminar_un_anulado()
+    {
+        var c = await PrepararAsync();
+        var svc = new ContabilidadService(c.Repo);
+        var cuenta = await CuentaAsync(c, "Banco", 1_000m);
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(-5)).AddDays(-1);
+        var ing = await svc.CrearMovimientoAsync(Mov("ingreso", hoy, 300m, cuenta.Id, c.CatIngreso), Ct);
+        Assert.True(await svc.AnularMovimientoAsync(ing.Id, Ct));
+
+        var edit = await Assert.ThrowsAsync<DatoInvalidoException>(() =>
+            svc.ActualizarMovimientoAsync(ing.Id, Edit("ingreso", hoy, 500m, cuenta.Id, c.CatIngreso), Ct));
+        Assert.Equal("Este movimiento está anulado: no se puede editar.", edit.Message);
+        var del = await Assert.ThrowsAsync<DatoInvalidoException>(() => svc.EliminarMovimientoAsync(ing.Id, Ct));
+        Assert.Equal("Este movimiento está anulado: no se puede eliminar; ya no afecta el saldo.", del.Message);
+
+        Assert.Equal(1_000m, await SaldoAsync(c, cuenta.Id));
+        Assert.NotNull(await c.Repo.ObtenerMovimientoAsync(ing.Id, Ct));
+    }
+
+    [SkippableFact]
+    public async Task Editar_a_otro_anio_toma_el_siguiente_consecutivo_de_ese_anio()
+    {
+        var c = await PrepararAsync();
+        var cuenta = await CuentaAsync(c, "Banco", 0m);
+        await c.Repo.CrearMovimientoAsync(Mov("ingreso", new(2017, 1, 1), 1m, cuenta.Id, c.CatIngreso), Ct);   // 2017 #1
+        await c.Repo.CrearMovimientoAsync(Mov("ingreso", new(2017, 2, 1), 1m, cuenta.Id, c.CatIngreso), Ct);   // 2017 #2
+        var m = await c.Repo.CrearMovimientoAsync(Mov("ingreso", new(2016, 5, 1), 1m, cuenta.Id, c.CatIngreso), Ct); // 2016 #1
+        Assert.Equal(1, m.Consecutivo);
+
+        var editado = await c.Repo.ActualizarMovimientoAsync(m.Id, Edit("ingreso", new(2017, 3, 1), 1m, cuenta.Id, c.CatIngreso), Ct);
+        Assert.Equal(3, editado!.Consecutivo);
+
+        // Cambiar fecha dentro del mismo año conserva el número
+        var mismoAnio = await c.Repo.ActualizarMovimientoAsync(m.Id, Edit("ingreso", new(2017, 4, 1), 1m, cuenta.Id, c.CatIngreso), Ct);
+        Assert.Equal(3, mismoAnio!.Consecutivo);
+    }
+
+    [SkippableFact]
+    public async Task El_indice_unico_impide_consecutivos_repetidos_en_el_mismo_anio()
+    {
+        var c = await PrepararAsync();
+        var cuenta = await CuentaAsync(c, "Banco", 0m);
+        var m = await c.Repo.CrearMovimientoAsync(Mov("ingreso", new(2015, 1, 1), 1m, cuenta.Id, c.CatIngreso), Ct);
+        var otro = await c.Repo.CrearMovimientoAsync(Mov("ingreso", new(2015, 2, 1), 1m, cuenta.Id, c.CatIngreso), Ct);
+
+        var ex = await Assert.ThrowsAsync<Npgsql.PostgresException>(() =>
+            c.Db.EjecutarAsync("UPDATE movimientos_contables SET consecutivo = @n WHERE id = @id", ("n", m.Consecutivo), ("id", otro.Id)));
+        Assert.Equal("23505", ex.SqlState);   // unique_violation
+        // Los traslados de caja menor no llevan consecutivo (NULL) y no chocan entre sí
+        var caja = await CuentaAsync(c, "Caja", 0m, "caja_menor");
+        await c.Repo.ReponerCajaAsync(new CrearReposicionDto(caja.Id, cuenta.Id, new(2015, 3, 1), 1m, null, null), Ct);
+        await c.Repo.ReponerCajaAsync(new CrearReposicionDto(caja.Id, cuenta.Id, new(2015, 3, 2), 1m, null, null), Ct);
     }
 
     [SkippableFact]
@@ -193,7 +248,6 @@ public class ContabilidadIntegracionTests(PostgresFixture pg)
     [SkippableFact]
     public async Task Consecutivo_no_se_repite_con_creaciones_simultaneas()
     {
-        Bugs.Pendiente(Bugs.ConsecutivoConcurrente);
         var c = await PrepararAsync();
         var cuenta = await CuentaAsync(c, "Banco", 0m);
 

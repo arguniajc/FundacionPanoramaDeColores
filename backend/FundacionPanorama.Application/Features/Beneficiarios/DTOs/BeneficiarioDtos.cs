@@ -191,30 +191,11 @@ public class BeneficiarioResumenDto
     public int      Completitud        { get; set; }
 
     /// <summary>
-    /// Misma regla que tenía el frontend: 10 campos para niños y 8 para adultos
-    /// (sin colegio ni grado). "No registra" cuenta como vacío.
+    /// Misma regla que tenía el frontend: 10 campos para niños y 8 para adultos (sin colegio ni grado).
+    /// La definición vive en CompletitudPerfil (también la usan los perfiles incompletos).
     /// </summary>
     public static int CalcularCompletitud(BeneficiarioDto b)
-    {
-        static bool Dato(string? v) => !string.IsNullOrWhiteSpace(v) && v != "No registra";
-        var checks = new List<bool>
-        {
-            !string.IsNullOrWhiteSpace(b.FotoMenorUrl),
-            !string.IsNullOrWhiteSpace(b.FotoDocumentoUrl),
-            Dato(b.Eps),
-            !string.IsNullOrWhiteSpace(b.Whatsapp),
-            Dato(b.Direccion),
-            Dato(b.TallaCamisa),
-            Dato(b.TallaZapatos),
-            b.PesoKg is > 0,
-        };
-        if (b.Tipo != "adulto")
-        {
-            checks.Add(Dato(b.NombreColegio));
-            checks.Add(!string.IsNullOrWhiteSpace(b.GradoEscolar));
-        }
-        return (int)Math.Round(checks.Count(c => c) * 100.0 / checks.Count, MidpointRounding.AwayFromZero);
-    }
+        => CompletitudPerfil.Evaluar(DatosPerfil.Desde(b)).Porcentaje;
 
     public static BeneficiarioResumenDto Desde(BeneficiarioDto b) => new()
     {
@@ -276,8 +257,8 @@ public sealed record FiltroBeneficiarios(
     string? Buscar, string Estado, string? Genero, int? EdadMin, int? EdadMax,
     string? Eps, string? TieneAlergia, string? Tipo);
 
-// Fila de "incompletos": Flags trae los 10 indicadores sin_* en el orden del SELECT.
-public sealed record PerfilIncompletoFila(Guid Id, string Nombre, string? FotoUrl, int[] Flags, int TotalFaltantes);
+// Fila de "incompletos": los datos de la ficha que cuentan para la completitud (la regla se aplica en C#).
+public sealed record PerfilIncompletoFila(Guid Id, string Nombre, DatosPerfil Datos);
 
 public sealed record StatsNinosDatos(
     int TotalActivos, int SinEdad, int Extranjeros, int OtraRegion,

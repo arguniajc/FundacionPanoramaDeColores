@@ -20,7 +20,7 @@ public class BeneficiariosIntegracionTests(PostgresFixture pg)
             FechaNacimiento = new DateOnly(2016, 4, 12), TipoDocumento = "TI", NumeroDocumento = doc,
             Eps = "Nueva EPS Secreta", TallaCamisa = "10", TallaPantalon = "10", TallaZapatos = "32",
             PesoKg = 31.5m, TallaCm = 134,
-            TieneAlergia = "no", DescripcionAlergia = null, ObservacionesSalud = "Asma secreta",
+            TieneAlergia = "si", DescripcionAlergia = "Alergia secreta al maní", ObservacionesSalud = "Asma secreta",
             TieneDiscapacidad = true, DescripcionDiscapacidad = "Discapacidad secreta",
             Tipo = "niño",
             NombreAcudiente = "Acudiente Secreto", Parentesco = "Madre", Whatsapp = "3001234567",
@@ -39,13 +39,17 @@ public class BeneficiariosIntegracionTests(PostgresFixture pg)
     [SkippableFact]
     public async Task Crear_beneficiario_con_alergia_guarda_la_alergia()
     {
-        Bugs.Pendiente(Bugs.AlergiaIdUuid);
         var db = await pg.CrearBaseAsync();
         var repo = new BeneficiariosRepository(db);
         var id = await repo.CrearAsync(Completo("ALG-1", d => { d.TieneAlergia = "si"; d.DescripcionAlergia = "Maní"; }), null, Ct);
         var ficha = await repo.ObtenerAsync(id!.Value, Ct);
         Assert.Equal("si", ficha!.TieneAlergia);
         Assert.Equal("Maní", ficha.DescripcionAlergia);
+
+        // Un segundo beneficiario reutiliza la alergia genérica del catálogo (rama "ya existe")
+        var otro = await repo.CrearAsync(Completo("ALG-2", d => d.DescripcionAlergia = "Polen"), null, Ct);
+        Assert.Equal("Polen", (await repo.ObtenerAsync(otro!.Value, Ct))!.DescripcionAlergia);
+        Assert.Equal(1L, await db.EscalarAsync<long>("SELECT COUNT(*) FROM alergias_catalogo"));
     }
 
     [SkippableFact]
@@ -56,18 +60,13 @@ public class BeneficiariosIntegracionTests(PostgresFixture pg)
         var svc = new BeneficiariosService(repo);
         var id = await repo.CrearAsync(Completo("SENS-1"), "prueba@local", Ct);
         Assert.NotNull(id);
-        // La alergia se siembra por SQL: crearla con TieneAlergia="si" falla (ver Bugs.AlergiaIdUuid)
-        await db.EjecutarAsync("""
-            WITH cat AS (INSERT INTO alergias_catalogo (nombre) VALUES ('Maní') RETURNING id)
-            INSERT INTO beneficiario_alergia (beneficiario_id, alergia_id, descripcion, activo)
-            SELECT @b, id, 'Alergia secreta al maní', true FROM cat
-            """, ("b", id!.Value));
 
         // La ficha completa sí tiene los datos (el SQL los carga)…
         var ficha = await repo.ObtenerAsync(id!.Value, Ct);
         Assert.Equal("Calle Secreta 123", ficha!.Direccion);
         Assert.Equal("Nueva EPS Secreta", ficha.Eps);
         Assert.Equal("beneficiarios/foto-secreta.jpg", ficha.FotoMenorUrl);
+        Assert.Equal("beneficiarios/doc-reverso-secreto.jpg", ficha.FotoDocumentoReversoUrl); // el reverso también se guarda
 
         // …pero el listado de pantallas no los deja salir
         var lista = await svc.ListarAsync(1, 20, null, "activos", null, null, null, null, null, null, Ct);
@@ -91,7 +90,6 @@ public class BeneficiariosIntegracionTests(PostgresFixture pg)
     [SkippableFact]
     public async Task Completitud_del_SQL_de_incompletos_coincide_con_la_regla_del_resumen()
     {
-        Bugs.Pendiente(Bugs.CompletitudDistinta);
         var db = await pg.CrearBaseAsync();
         var repo = new BeneficiariosRepository(db);
         var svc = new BeneficiariosService(repo);

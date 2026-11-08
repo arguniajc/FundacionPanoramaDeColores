@@ -1,4 +1,5 @@
 // SQL del módulo Beneficiarios (movido tal cual desde BeneficiariosController).
+using FundacionPanorama.Application.Features.Beneficiarios;
 using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
 using FundacionPanorama.Application.Features.Beneficiarios.Interfaces;
 using FundacionPanorama.Application.Shared;
@@ -75,11 +76,12 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
         // Agrega los parámetros de filtro avanzado a un comando dado
         void AgregarFiltrosAvanzados(NpgsqlCommand cmd)
         {
-            if (!string.IsNullOrWhiteSpace(buscar))  cmd.Parameters.AddWithValue("buscar",  $"%{buscar}%");
+            // SqlLike.Contiene: un % o _ escrito en el buscador se busca literal
+            if (!string.IsNullOrWhiteSpace(buscar))  cmd.Parameters.AddWithValue("buscar",  SqlLike.Contiene(buscar.Trim()));
             if (!string.IsNullOrWhiteSpace(genero))  cmd.Parameters.AddWithValue("genero",  genero.Trim());
             if (edadMin.HasValue)                    cmd.Parameters.AddWithValue("edadMin", edadMin.Value);
             if (edadMax.HasValue)                    cmd.Parameters.AddWithValue("edadMax", edadMax.Value);
-            if (!string.IsNullOrWhiteSpace(eps))     cmd.Parameters.AddWithValue("eps",     $"%{eps.Trim()}%");
+            if (!string.IsNullOrWhiteSpace(eps))     cmd.Parameters.AddWithValue("eps",     SqlLike.Contiene(eps.Trim()));
         }
 
         // Count
@@ -92,7 +94,7 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
         await using var cmdIds = conn.CreateCommand();
         cmdIds.CommandText = $"""
             SELECT b.id FROM beneficiarios b {where}
-            ORDER BY b.fecha_creacion DESC
+            ORDER BY b.fecha_creacion DESC, b.id
             LIMIT @pp OFFSET @off
             """;
         AgregarFiltrosAvanzados(cmdIds);
@@ -331,77 +333,72 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
 
         await using var conn = await AbrirAsync(ct);
 
+        // Solo trae los datos que cuentan para la completitud, de las mismas fuentes que la ficha
+        // (CargarDtosAsync); la regla (qué campos y sobre cuántos) se aplica en C# con CompletitudPerfil,
+        // la misma que usa el resumen del listado.
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
-            WITH flags AS (
-                SELECT
-                    b.id,
-                    TRIM(concat_ws(' ', b.primer_nombre, b.segundo_nombre,
-                                   b.primer_apellido, b.segundo_apellido))             AS nombre,
-                    af1.url                                                             AS foto,
-                    (af1.url IS NULL)::int                                              AS sin_foto,
-                    (af2.url IS NULL)::int                                              AS sin_foto_doc,
-                    (ac.whatsapp  IS NULL OR ac.whatsapp  = '')::int                    AS sin_whatsapp,
-                    (ac.direccion IS NULL OR ac.direccion = '')::int                    AS sin_direccion,
-                    (bt.talla_camisa  IS NULL OR bt.talla_camisa  IN ('No registra',''))::int  AS sin_camisa,
-                    (bt.talla_zapatos IS NULL OR bt.talla_zapatos IN ('No registra',''))::int  AS sin_zapatos,
-                    (bt.peso_kg IS NULL OR bt.peso_kg = 0)::int                        AS sin_peso,
-                    (bt.talla_cm IS NULL OR bt.talla_cm = 0)::int                      AS sin_talla,
-                    (b.tipo = 'niño' AND (b.nombre_colegio IS NULL
-                      OR b.nombre_colegio IN ('No registra','')))::int                 AS sin_colegio,
-                    (b.tipo = 'niño' AND (b.grado_escolar IS NULL
-                      OR b.grado_escolar = ''))::int                                   AS sin_grado
-                FROM beneficiarios b
-                LEFT JOIN beneficiario_acudiente bac
-                       ON bac.beneficiario_id = b.id AND bac.es_principal = true AND bac.activo = true
-                LEFT JOIN acudientes ac ON ac.id = bac.acudiente_id
-                LEFT JOIN beneficiario_talla bt
-                       ON bt.beneficiario_id = b.id AND bt.activo = true
-                LEFT JOIN LATERAL (
-                    SELECT url FROM archivos ar
-                    JOIN   cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
-                    WHERE  ar.entidad_tipo = 'beneficiario' AND ar.entidad_id = b.id
-                      AND  ar.activo = true AND cta.nombre = 'Foto del menor'
-                    LIMIT  1
-                ) af1 ON true
-                LEFT JOIN LATERAL (
-                    SELECT url FROM archivos ar
-                    JOIN   cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
-                    WHERE  ar.entidad_tipo = 'beneficiario' AND ar.entidad_id = b.id
-                      AND  ar.activo = true AND cta.nombre = 'Foto documento'
-                    LIMIT  1
-                ) af2 ON true
-                WHERE b.activo = true
-                {tipoEdadFiltro}
-            ),
-            scored AS (
-                SELECT *,
-                    (sin_foto + sin_foto_doc + sin_whatsapp + sin_direccion
-                     + sin_camisa + sin_zapatos + sin_peso + sin_talla
-                     + sin_colegio + sin_grado) AS total_faltantes
-                FROM flags
-            )
-            SELECT id, nombre, foto,
-                   sin_foto, sin_foto_doc, sin_whatsapp, sin_direccion,
-                   sin_camisa, sin_zapatos, sin_peso, sin_talla,
-                   sin_colegio, sin_grado, total_faltantes
-            FROM   scored
-            WHERE  total_faltantes > 0
-            ORDER  BY total_faltantes DESC, nombre
-            LIMIT  60
+            SELECT
+                b.id,
+                TRIM(concat_ws(' ', b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido)) AS nombre,
+                COALESCE(b.tipo, 'niño') AS tipo,
+                af1.url AS foto_menor, af2.url AS foto_doc,
+                ce.nombre AS eps,
+                acu.whatsapp, acu.direccion,
+                tl.talla_camisa, tl.talla_zapatos, tl.peso_kg,
+                b.nombre_colegio, b.grado_escolar
+            FROM beneficiarios b
+            LEFT JOIN beneficiario_salud bs ON bs.beneficiario_id = b.id
+            LEFT JOIN cat_eps ce ON ce.id = bs.eps_id
+            LEFT JOIN LATERAL (
+              SELECT a.whatsapp, a.direccion
+              FROM beneficiario_acudiente bac
+              JOIN acudientes a ON a.id = bac.acudiente_id
+              WHERE bac.beneficiario_id = b.id AND bac.es_principal = true AND bac.activo = true
+              LIMIT 1
+            ) acu ON true
+            LEFT JOIN LATERAL (
+              SELECT talla_camisa, talla_zapatos, peso_kg
+              FROM beneficiario_talla
+              WHERE beneficiario_id = b.id AND activo = true
+              ORDER BY fecha_medicion DESC
+              LIMIT 1
+            ) tl ON true
+            LEFT JOIN LATERAL (
+              SELECT ar.url FROM archivos ar
+              JOIN cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
+              WHERE ar.entidad_tipo = 'beneficiario' AND ar.entidad_id = b.id AND ar.activo = true AND cta.nombre = 'Foto del menor'
+              LIMIT 1
+            ) af1 ON true
+            LEFT JOIN LATERAL (
+              SELECT ar.url FROM archivos ar
+              JOIN cat_tipo_archivo cta ON cta.id = ar.tipo_archivo_id
+              WHERE ar.entidad_tipo = 'beneficiario' AND ar.entidad_id = b.id AND ar.activo = true AND cta.nombre = 'Foto documento'
+              LIMIT 1
+            ) af2 ON true
+            WHERE b.activo = true
+            {tipoEdadFiltro}
             """;
         var result = new List<PerfilIncompletoFila>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
+        string? Texto(int i) => r.IsDBNull(i) ? null : r.GetString(i);
         while (await r.ReadAsync(ct))
         {
-            var flags = new int[10];
-            for (int i = 0; i < 10; i++) flags[i] = r.GetInt32(3 + i);
             result.Add(new PerfilIncompletoFila(
                 r.GetGuid(0),
                 r.GetString(1),
-                r.IsDBNull(2) ? null : r.GetString(2),
-                flags,
-                r.GetInt32(13)));
+                new DatosPerfil(
+                    Tipo:             r.GetString(2),
+                    FotoMenorUrl:     Texto(3),
+                    FotoDocumentoUrl: Texto(4),
+                    Eps:              Texto(5),
+                    Whatsapp:         Texto(6),
+                    Direccion:        Texto(7),
+                    TallaCamisa:      Texto(8),
+                    TallaZapatos:     Texto(9),
+                    PesoKg:           r.IsDBNull(10) ? null : r.GetDecimal(10),
+                    NombreColegio:    Texto(11),
+                    GradoEscolar:     Texto(12))));
         }
         return result;
     }
@@ -1133,7 +1130,8 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
                 alIns.Transaction = tx;
                 alIns.CommandText = "INSERT INTO beneficiario_alergia (beneficiario_id, alergia_id, descripcion, activo) VALUES (@b, @al, @desc, true)";
                 alIns.Parameters.AddWithValue("b",    benId);
-                alIns.Parameters.AddWithValue("al",   Convert.ToInt32(catId));
+                // alergias_catalogo.id es UUID (antes se convertía a int y fallaba siempre)
+                alIns.Parameters.AddWithValue("al",   (Guid)catId!);
                 alIns.Parameters.AddWithValue("desc", string.IsNullOrWhiteSpace(dto.DescripcionAlergia) ? DBNull.Value : (object)dto.DescripcionAlergia.Trim());
                 await alIns.ExecuteNonQueryAsync();
             }
@@ -1317,7 +1315,7 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
               LIMIT 1
             ) af3 ON true
             WHERE b.id = ANY(@ids)
-            ORDER BY b.fecha_creacion DESC
+            ORDER BY b.fecha_creacion DESC, b.id
             """;
         cmd.Parameters.Add(new NpgsqlParameter("ids", NpgsqlDbType.Array | NpgsqlDbType.Uuid) { Value = ids.ToArray() });
 

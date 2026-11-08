@@ -197,7 +197,7 @@ const INCOMPLETOS = tipo => (tipo === 'adulto' ? ADULTOS : NINOS).slice(0, 4).ma
   faltantes: [
     ['Foto del menor', 'Foto documento', 'WhatsApp', 'Dirección', 'Talla camisa', 'Colegio'],
     ['Foto documento', 'WhatsApp', 'Talla zapatos', 'Peso'],
-    ['Talla altura', 'Grado escolar', 'Dirección'],
+    ['EPS', 'Grado escolar', 'Dirección'],
     ['Foto del menor'],
   ][i],
 }));

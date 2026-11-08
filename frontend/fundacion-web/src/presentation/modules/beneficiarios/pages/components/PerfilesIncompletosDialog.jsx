@@ -19,12 +19,12 @@ import { colorEstado } from '@/shared/theme/paleta';
 const CAMPO_COLOR = {
   'Foto del menor':  'error',
   'Foto documento':  'error',
+  'EPS':             'aviso',
   'WhatsApp':        'aviso',
   'Dirección':       'aviso',
   'Talla camisa':    'exito',
   'Talla zapatos':   'exito',
   'Peso':            'exito',
-  'Talla altura':    'exito',
   'Colegio':         'info',
   'Grado escolar':   'info',
 };

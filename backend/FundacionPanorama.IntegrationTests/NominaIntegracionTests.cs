@@ -117,9 +117,8 @@ public class NominaIntegracionTests(PostgresFixture pg)
     }
 
     [SkippableFact]
-    public async Task AutoLiquidar_sobre_una_liquidacion_editada_deja_totales_coherentes()
+    public async Task AutoLiquidar_no_modifica_una_liquidacion_existente_y_solo_crea_las_que_faltan()
     {
-        Bugs.Pendiente(Bugs.AutoLiquidarPisaEdicion);
         var db = await pg.CrearBaseAsync();
         var repo = new NominaRepository(db);
         var emp = await db.CrearEmpleadoAsync("Editado", 1_600_000m);
@@ -127,7 +126,15 @@ public class NominaIntegracionTests(PostgresFixture pg)
         var p = await repo.ObtenerParametrosAsync(Ct);
 
         await repo.LiquidarEmpleadoAsync(periodo.Id, Liq(emp, 12, he: 40_000m, rte: 7_000m), Ct);
-        var tras = (await repo.AutoLiquidarAsync(periodo.Id, new AutoLiquidarDto(), Ct)).Single();
+        var antes = (await repo.ListarLiquidacionesAsync(periodo.Id, Ct)).Single();
+        var nuevo = await db.CrearEmpleadoAsync("Nuevo", 1_423_500m);
+
+        var liqs = await repo.AutoLiquidarAsync(periodo.Id, new AutoLiquidarDto(), Ct);
+        Assert.Equal(2, liqs.Count);
+        var tras = liqs.Single(l => l.EmpleadoId == emp);
+        Assert.Equal(antes, tras);                 // la editada queda tal cual (12 días y sus novedades)
+        Assert.Equal(12, tras.DiasTrabajados);
+        AssertTotales(CalculoNomina.Calcular(p, 1_423_500m, 30), liqs.Single(l => l.EmpleadoId == nuevo));
 
         // Lo guardado debe ser coherente consigo mismo: totales = cálculo de SUS días y novedades
         var esperado = CalculoNomina.Calcular(p, tras.SalarioBase, tras.DiasTrabajados,

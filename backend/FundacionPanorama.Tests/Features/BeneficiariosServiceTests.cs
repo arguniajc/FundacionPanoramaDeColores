@@ -256,13 +256,18 @@ public class BeneficiariosServiceTests
 
     // ── Incompletos ──────────────────────────────────────────────────────────
 
+    static DatosPerfil PerfilNino(string tipo = "niño") => new(
+        Tipo: tipo, FotoMenorUrl: "foto.jpg", FotoDocumentoUrl: "doc.jpg", Eps: "Sura", Whatsapp: "3001234567",
+        Direccion: "Calle 1", TallaCamisa: "10", TallaZapatos: "32", PesoKg: 30m,
+        NombreColegio: tipo == "adulto" ? null : "Colegio", GradoEscolar: tipo == "adulto" ? null : "4");
+
     [Fact]
     public async Task ListarIncompletosAsync_Mapea_Faltantes_Y_Completitud()
     {
         var id = Guid.NewGuid();
         _repo.Setup(r => r.ListarIncompletosAsync("niño", default)).ReturnsAsync(
         [
-            new PerfilIncompletoFila(id, "Ana", "foto.jpg", [1, 0, 1, 0, 0, 0, 0, 0, 0, 1], 3),
+            new PerfilIncompletoFila(id, "Ana", PerfilNino() with { FotoMenorUrl = null, Whatsapp = "", GradoEscolar = null }),
         ]);
 
         var res = await _sut.ListarIncompletosAsync("niño");
@@ -270,29 +275,53 @@ public class BeneficiariosServiceTests
         var p = Assert.Single(res);
         Assert.Equal(id, p.Id);
         Assert.Equal("Ana", p.Nombre);
-        Assert.Equal("foto.jpg", p.FotoUrl);
+        Assert.Null(p.FotoUrl);
         Assert.Equal(["Foto del menor", "WhatsApp", "Grado escolar"], p.Faltantes);
         Assert.Equal(70, p.Completitud);
     }
 
     [Fact]
-    public async Task ListarIncompletosAsync_Todos_O_Ningun_Flag()
+    public async Task ListarIncompletosAsync_Omite_Completos_Y_Ordena_Del_Menos_Completo()
     {
+        var vacio = new DatosPerfil("niño", null, null, null, null, null, null, null, null, null, null);
         _repo.Setup(r => r.ListarIncompletosAsync(null, default)).ReturnsAsync(
         [
-            new PerfilIncompletoFila(Guid.NewGuid(), "B", null, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 10),
-            new PerfilIncompletoFila(Guid.NewGuid(), "C", null, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 0),
+            new PerfilIncompletoFila(Guid.NewGuid(), "Completo", PerfilNino()),
+            new PerfilIncompletoFila(Guid.NewGuid(), "Casi",     PerfilNino() with { Eps = "No registra" }),
+            new PerfilIncompletoFila(Guid.NewGuid(), "Vacío",    vacio),
+            new PerfilIncompletoFila(Guid.NewGuid(), "Adulto",   PerfilNino("adulto") with { PesoKg = 0 }),
         ]);
 
         var res = await _sut.ListarIncompletosAsync(null);
 
-        Assert.Equal(
-            ["Foto del menor", "Foto documento", "WhatsApp", "Dirección", "Talla camisa",
-             "Talla zapatos", "Peso", "Talla altura", "Colegio", "Grado escolar"],
-            res[0].Faltantes);
-        Assert.Equal(0, res[0].Completitud);
-        Assert.Empty(res[1].Faltantes);
-        Assert.Equal(100, res[1].Completitud);
+        Assert.Equal(["Vacío", "Adulto", "Casi"], res.Select(r => r.Nombre));
+        Assert.Equal(CompletitudPerfil.Etiquetas, res[0].Faltantes);
+        Assert.Equal([0, 88, 90], res.Select(r => r.Completitud));
+        Assert.Equal(["Peso"], res[1].Faltantes);   // al adulto no se le pide colegio ni grado
+    }
+
+    [Fact]
+    public async Task ListarIncompletosAsync_Devuelve_Maximo_60()
+    {
+        var vacio = new DatosPerfil("niño", null, null, null, null, null, null, null, null, null, null);
+        _repo.Setup(r => r.ListarIncompletosAsync(null, default)).ReturnsAsync(
+            Enumerable.Range(0, 80).Select(i => new PerfilIncompletoFila(Guid.NewGuid(), $"B{i:00}", vacio)).ToList());
+
+        Assert.Equal(BeneficiariosService.MaxIncompletos, (await _sut.ListarIncompletosAsync(null)).Count);
+    }
+
+    [Fact]
+    public void Incompletos_Y_Resumen_Usan_La_Misma_Regla()
+    {
+        // Mismo beneficiario visto por las dos rutas: la ficha (resumen) y los datos del SQL (incompletos)
+        var ficha = new BeneficiarioDto
+        {
+            Tipo = "adulto", FotoMenorUrl = "f.jpg", FotoDocumentoUrl = null, Eps = "No registra", Whatsapp = "300",
+            Direccion = "Calle", TallaCamisa = "M", TallaZapatos = "40", PesoKg = 70, TallaCm = 0,
+        };
+        Assert.Equal(BeneficiarioResumenDto.CalcularCompletitud(ficha),
+                     CompletitudPerfil.Evaluar(DatosPerfil.Desde(ficha)).Porcentaje);
+        Assert.Equal(75, BeneficiarioResumenDto.CalcularCompletitud(ficha));   // 6 de 8: sin foto doc ni EPS; talla en cm no cuenta
     }
 
     // ── Historial ────────────────────────────────────────────────────────────

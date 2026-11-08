@@ -1320,6 +1320,78 @@ public static class DbMigrations
             );
             INSERT INTO resumen_diario_alertas (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
             """, "resumen_diario_alertas.create");
+
+        // ── Correcciones de esquema para BD nueva (las encontraron las pruebas de integración) ──
+        // En una BD vacía, estos índices se intentan crear (más arriba) antes de que existan sus
+        // columnas. Aquí se repiten cuando las columnas ya existen; en producción son no-op (IF NOT EXISTS).
+        foreach (var (tabla, columna, indice) in new[]
+                 {
+                     ("donaciones", "fecha_donacion", "idx_donaciones_fecha"),
+                     ("donaciones", "programa_id",    "idx_donaciones_programa"),
+                     ("donaciones", "sede_id",        "idx_donaciones_sede"),
+                     ("empleados",  "sede_id",        "idx_empleados_sede"),
+                 })
+        {
+            await Migrar($"""
+                DO $$ BEGIN
+                    IF EXISTS (SELECT 1 FROM information_schema.columns
+                               WHERE table_name = '{tabla}' AND column_name = '{columna}') THEN
+                        CREATE INDEX IF NOT EXISTS {indice} ON {tabla} ({columna});
+                    END IF;
+                END $$
+                """, $"{tabla}.{indice}.bd_nueva");
+        }
+        // Nota: "beneficiarios.split_nombre_unico" también falla en BD nueva (no hay columna "nombre"),
+        // pero no hace falta: el esquema base ya crea primer_nombre/segundo_nombre/... por separado.
+
+        // inscripciones.datos TEXT → JSONB en BD nueva. La migración única "inscripciones.datos_jsonb"
+        // falla ahí (el DEFAULT '{}' de tipo text no se convierte solo) y queda marcada como ejecutada.
+        // Si la columna ya es jsonb (producción) no hace nada.
+        await Migrar("""
+            DO $$ BEGIN
+                IF (SELECT data_type FROM information_schema.columns
+                    WHERE table_name = 'inscripciones' AND column_name = 'datos') = 'text' THEN
+                    ALTER TABLE inscripciones ALTER COLUMN datos DROP DEFAULT;
+                    ALTER TABLE inscripciones ALTER COLUMN datos TYPE JSONB USING datos::jsonb;
+                    ALTER TABLE inscripciones ALTER COLUMN datos SET DEFAULT '{}'::jsonb;
+                END IF;
+                IF (SELECT data_type FROM information_schema.columns
+                    WHERE table_name = 'inscripciones' AND column_name = 'datos') = 'jsonb' THEN
+                    CREATE INDEX IF NOT EXISTS idx_inscripciones_datos_gin ON inscripciones USING GIN (datos jsonb_path_ops);
+                END IF;
+            END $$
+            """, "inscripciones.datos_jsonb_bd_nueva");
+
+        // El repositorio guarda el reverso del documento con el tipo 'Foto documento (reverso)', pero el
+        // catálogo solo sembraba 'Foto documento reverso': sin esta fila el reverso no se guardaba.
+        await Migrar("""
+            INSERT INTO cat_tipo_archivo (nombre) VALUES ('Foto documento (reverso)')
+            ON CONFLICT (nombre) DO NOTHING
+            """, "cat_tipo_archivo.foto_documento_reverso");
+
+        // Consecutivo de comprobantes único por año. Solo se crea si no hay duplicados: si los hay, la
+        // migración se omite con un aviso en el log (no rompe el despliegue) y se reintenta en cada arranque
+        // hasta que alguien los corrija.
+        await Migrar("""
+            DO $$
+            DECLARE dup INT;
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'uq_movimientos_consecutivo_anio') THEN
+                    SELECT COUNT(*) INTO dup FROM (
+                        SELECT 1 FROM movimientos_contables
+                        WHERE consecutivo IS NOT NULL
+                        GROUP BY EXTRACT(YEAR FROM fecha), consecutivo
+                        HAVING COUNT(*) > 1
+                    ) d;
+                    IF dup > 0 THEN
+                        RAISE EXCEPTION 'Hay % consecutivos de comprobante repetidos en el mismo año: no se crea el índice único hasta corregirlos', dup;
+                    END IF;
+                    CREATE UNIQUE INDEX uq_movimientos_consecutivo_anio
+                        ON movimientos_contables ((EXTRACT(YEAR FROM fecha)), consecutivo)
+                        WHERE consecutivo IS NOT NULL;
+                END IF;
+            END $$
+            """, "movimientos_contables.uq_consecutivo_anio");
     }
 
     /// <summary>

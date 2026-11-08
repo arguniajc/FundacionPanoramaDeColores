@@ -83,6 +83,52 @@ public class ContabilidadServiceTests
         Assert.Contains("mayor que cero", await Rechazo(() => _sut.ActualizarMovimientoAsync(Guid.NewGuid(), dto)));
     }
 
+    static MovimientoDto Guardado(Guid id, bool anulado) =>
+        new(id, "egreso", Hoy, "Compra", 50_000, Caja, "Caja menor", 2, "Gastos de personal", "5105",
+            null, null, null, null, null, null, DateTime.UtcNow, 1, null, null, null, null, anulado);
+
+    [Fact]
+    public async Task Editar_Movimiento_Anulado_Se_Rechaza_Sin_Tocar_La_Bd()
+    {
+        var id = Guid.NewGuid();
+        _repo.Setup(r => r.ObtenerMovimientoAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(Guardado(id, anulado: true));
+        var dto = new ActualizarMovimientoDto("egreso", Hoy, "X", 10_000, Caja, 2, null, null, null, null, null, null, null, null, null);
+
+        Assert.Equal("Este movimiento está anulado: no se puede editar.", await Rechazo(() => _sut.ActualizarMovimientoAsync(id, dto)));
+        _repo.Verify(r => r.ActualizarMovimientoAsync(It.IsAny<Guid>(), It.IsAny<ActualizarMovimientoDto>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Eliminar_Movimiento_Anulado_Se_Rechaza_Sin_Tocar_La_Bd()
+    {
+        var id = Guid.NewGuid();
+        _repo.Setup(r => r.ObtenerMovimientoAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(Guardado(id, anulado: true));
+
+        Assert.Equal("Este movimiento está anulado: no se puede eliminar; ya no afecta el saldo.",
+            await Rechazo(() => _sut.EliminarMovimientoAsync(id)));
+        _repo.Verify(r => r.EliminarMovimientoAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Editar_Y_Eliminar_Movimiento_Vigente_Llegan_Al_Repositorio()
+    {
+        var id = Guid.NewGuid();
+        _repo.Setup(r => r.ObtenerMovimientoAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(Guardado(id, anulado: false));
+        _repo.Setup(r => r.EliminarMovimientoAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var dto = new ActualizarMovimientoDto("egreso", Hoy, "X", 10_000, Caja, 2, null, null, null, null, null, null, null, null, null);
+
+        await _sut.ActualizarMovimientoAsync(id, dto);
+        Assert.True(await _sut.EliminarMovimientoAsync(id));
+        _repo.Verify(r => r.ActualizarMovimientoAsync(id, dto, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Eliminar_Movimiento_Inexistente_Devuelve_False()
+    {
+        Assert.False(await _sut.EliminarMovimientoAsync(Guid.NewGuid()));
+        _repo.Verify(r => r.EliminarMovimientoAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     // ── Cuentas, presupuesto y caja menor ────────────────────────────────────
 
     [Fact]

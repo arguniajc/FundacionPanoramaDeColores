@@ -174,7 +174,8 @@ export function TabMovimientos({
                       </Tooltip>
                     )}
                   </>}
-                  {puedeEliminar && (
+                  {/* Un anulado ya no afecta el saldo: el servidor no deja editarlo ni eliminarlo */}
+                  {puedeEliminar && !m.anulado && (
                     <Tooltip title="Eliminar">
                       <IconButton size="small" color="error" onClick={() => onEliminar(m.id)}>
                         <DeleteIcon fontSize="small" />

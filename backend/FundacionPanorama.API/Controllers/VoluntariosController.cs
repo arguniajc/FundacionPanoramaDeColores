@@ -12,6 +12,7 @@ namespace FundacionPanorama.API.Controllers;
 public class VoluntariosController(VoluntariosService svc) : ControllerBase
 {
     [HttpGet]
+    [RequierePermiso("voluntarios", "ver")]
     public async Task<IActionResult> Listar(
         [FromQuery] string? buscar      = null,
         [FromQuery] bool    soloActivos = true,
@@ -20,10 +21,12 @@ public class VoluntariosController(VoluntariosService svc) : ControllerBase
         => Ok(await svc.ListarAsync(buscar, soloActivos, pagina, porPagina));
 
     [HttpGet("stats")]
+    [RequierePermiso("voluntarios", "ver")]
     public async Task<IActionResult> Stats()
         => Ok(await svc.StatsAsync());
 
     [HttpGet("{id:guid}")]
+    [RequierePermiso("voluntarios", "ver")]
     public async Task<IActionResult> ObtenerPorId(Guid id)
     {
         var voluntario = await svc.ObtenerAsync(id);
@@ -68,6 +71,7 @@ public class VoluntariosController(VoluntariosService svc) : ControllerBase
     // ── Asignaciones a programas ──────────────────────────────────────────────
 
     [HttpGet("{id:guid}/asignaciones")]
+    [RequierePermiso("voluntarios", "ver")]
     public async Task<IActionResult> ListarAsignaciones(Guid id)
         => Ok(await svc.ListarAsignacionesAsync(id));
 

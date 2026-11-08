@@ -29,7 +29,7 @@ public class BeneficiariosController : BaseController
     // GET api/beneficiarios?pagina=1&porPagina=10&buscar=...&estado=activos|baja|todos
     // =========================================================================
     [HttpGet]
-    [Authorize]
+    [RequierePermiso("beneficiarios", "ver")]
     public async Task<IActionResult> Listar(
         [FromQuery] int     pagina       = 1,
         [FromQuery] int     porPagina    = 10,
@@ -66,7 +66,7 @@ public class BeneficiariosController : BaseController
     // ordenados por cantidad de campos faltantes (más incompleto primero).
     // =========================================================================
     [HttpGet("incompletos")]
-    [Authorize]
+    [RequierePermiso("beneficiarios", "ver")]
     public async Task<IActionResult> Incompletos([FromQuery] string? tipo = null, CancellationToken ct = default)
         => Ok(await _svc.ListarIncompletosAsync(tipo, ct));
 
@@ -88,7 +88,7 @@ public class BeneficiariosController : BaseController
     // GET api/beneficiarios/{id}
     // =========================================================================
     [HttpGet("{id:guid}")]
-    [Authorize]
+    [RequierePermiso("beneficiarios", "ver")]
     public async Task<IActionResult> ObtenerPorId(Guid id, CancellationToken ct = default)
     {
         var dto = await _svc.ObtenerAsync(id, ct);
@@ -99,7 +99,7 @@ public class BeneficiariosController : BaseController
     // GET api/beneficiarios/verificar-documento/{numero}
     // =========================================================================
     [HttpGet("verificar-documento/{numero}")]
-    [Authorize]
+    [RequiereAlgunPermiso("beneficiarios:crear", "beneficiarios:editar")]
     public async Task<IActionResult> VerificarDocumento(string numero, CancellationToken ct = default)
         => Ok(new { existe = await _svc.ExisteDocumentoAsync(numero, ct) });
 
@@ -190,7 +190,7 @@ public class BeneficiariosController : BaseController
     // GET api/beneficiarios/{id}/historial
     // =========================================================================
     [HttpGet("{id:guid}/historial")]
-    [Authorize]
+    [RequierePermiso("beneficiarios", "ver")]
     public async Task<IActionResult> Historial(Guid id, [FromQuery] int limite = 50, CancellationToken ct = default)
         => Ok(await _svc.HistorialAsync(id, limite, ct));
 

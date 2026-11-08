@@ -1,9 +1,28 @@
 import { BRAND_COLOR } from '../constants/brand';
 import { resolverArchivo } from './archivos';
 
+/** Escapa texto para insertarlo en HTML (evita que un dato del beneficiario ejecute código). */
+export function escaparHtml(valor) {
+  return String(valor)
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+}
+
+/** Copia del registro con todos los textos escapados; números y booleanos quedan igual. */
+export function escaparCampos(registro) {
+  return Object.fromEntries(Object.entries(registro ?? {}).map(([k, v]) =>
+    [k, typeof v === 'string' ? escaparHtml(v) : v]));
+}
+
+/** Solo enlaces https (los firmados de Supabase): bloquea javascript:, data: y similares. */
+export const urlImagenSegura = url => (typeof url === 'string' && /^https:\/\//i.test(url) ? url : null);
+
 // Genera la hoja de vida del beneficiario como HTML y la abre en una nueva
 // pestaña para impresión. Usa window.open para evitar depender de jsPDF.
-export async function abrirHojaDeVida(ins, edad) {
+// La pestaña comparte origen con el panel: todo dato insertado va escapado.
+export async function abrirHojaDeVida(datos, edadTexto) {
+  const ins  = escaparCampos(datos);
+  const edad = escaparHtml(edadTexto ?? '');
   const fechaInsc = ins.createdAt
     ? new Date(ins.createdAt).toLocaleDateString('es-CO', {
         year: 'numeric', month: 'long', day: 'numeric',
@@ -52,7 +71,7 @@ export async function abrirHojaDeVida(ins, edad) {
   const ventana = window.open('', '_blank');
   if (!ventana) return;
   // foto privada → enlace temporal (la pestaña ya está abierta para que el navegador no la bloquee)
-  const fotoUrl = await resolverArchivo(ins.fotoMenorUrl).catch(() => null);
+  const fotoUrl = urlImagenSegura(await resolverArchivo(datos.fotoMenorUrl).catch(() => null));
 
   ventana.document.write(`<!DOCTYPE html>
 <html lang="es">

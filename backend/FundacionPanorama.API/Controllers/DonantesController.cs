@@ -12,6 +12,7 @@ namespace FundacionPanorama.API.Controllers;
 public class DonantesController(DonantesService svc) : ControllerBase
 {
     [HttpGet]
+    [RequiereAlgunPermiso("donantes:ver", "donaciones:ver")]
     public async Task<IActionResult> Listar(
         [FromQuery] string? buscar      = null,
         [FromQuery] bool    soloActivos = false,
@@ -20,6 +21,7 @@ public class DonantesController(DonantesService svc) : ControllerBase
         => Ok(await svc.ListarAsync(buscar, soloActivos, pagina, porPagina));
 
     [HttpGet("{id:guid}")]
+    [RequiereAlgunPermiso("donantes:ver", "donaciones:ver")]
     public async Task<IActionResult> ObtenerPorId(Guid id)
     {
         var donante = await svc.ObtenerAsync(id);

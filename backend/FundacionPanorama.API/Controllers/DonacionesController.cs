@@ -18,6 +18,7 @@ public class DonacionesController(DonacionesService svc, DbConnectionFactory db)
     private NpgsqlConnection AbrirConexion() => db.Create();
 
     [HttpGet]
+    [RequierePermiso("donaciones", "ver")]
     public async Task<IActionResult> Listar(
         [FromQuery] Guid?     donanteId  = null,
         [FromQuery] string?   tipo       = null,
@@ -28,6 +29,7 @@ public class DonacionesController(DonacionesService svc, DbConnectionFactory db)
         => Ok(await svc.ListarAsync(donanteId, tipo, sedeId, programaId, desde, hasta));
 
     [HttpGet("{id:guid}")]
+    [RequierePermiso("donaciones", "ver")]
     public async Task<IActionResult> ObtenerPorId(Guid id)
     {
         var don = await svc.ObtenerAsync(id);
@@ -74,6 +76,7 @@ public class DonacionesController(DonacionesService svc, DbConnectionFactory db)
     }
 
     [HttpGet("stats")]
+    [RequierePermiso("donaciones", "ver")]
     public async Task<IActionResult> ObtenerStats()
         => Ok(await svc.ObtenerStatsAsync());
 
@@ -111,7 +114,8 @@ public class DonacionesController(DonacionesService svc, DbConnectionFactory db)
     // POST api/donaciones/{id}/enviar-recibo
     // =========================================================================
     [HttpPost("{id:guid}/enviar-recibo")]
-    [RequierePermiso("donaciones", "ver")]
+    // Envía un correo al donante en nombre de la fundación: no basta con poder ver
+    [RequiereAlgunPermiso("donaciones:crear", "donaciones:editar")]
     public async Task<IActionResult> EnviarRecibo(
         Guid id,
         [FromServices] FundacionPanorama.API.Services.EmailService emailSvc,

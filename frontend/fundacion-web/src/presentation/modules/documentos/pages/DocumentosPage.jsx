@@ -5,12 +5,15 @@ import { useToast }           from './components/helpers';
 import { ToastGlobal }        from './components/ToastGlobal';
 import { TabInstitucionales } from './components/TabInstitucionales';
 import { TabPorBeneficiario } from './components/TabPorBeneficiario';
+import usePermisos            from '@/shared/hooks/usePermisos';
 
 const HEADER_GRADIENT = 'linear-gradient(135deg, var(--color-primario), var(--color-secundario))';
 
 export default function DocumentosPage() {
   const [tabValue, setTabValue] = useState(0);
   const { toast, show: showToast, close: closeToast } = useToast();
+  // Los documentos de un menor solo los ve quien puede ver beneficiarios (Ley 1581)
+  const verMenores = usePermisos().puedo('beneficiarios', 'ver');
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
@@ -31,12 +34,12 @@ export default function DocumentosPage() {
           sx={{ px: 2, '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', minWidth: 160 },
                 '& .Mui-selected': { color: 'var(--color-primario-texto)' }, '& .MuiTabs-indicator': { bgcolor: 'var(--color-primario)' } }}>
           <Tab label="Institucionales" />
-          <Tab label="Por beneficiario" />
+          {verMenores && <Tab label="Por beneficiario" />}
         </Tabs>
       </Paper>
 
       {tabValue === 0 && <TabInstitucionales onToast={showToast} />}
-      {tabValue === 1 && <TabPorBeneficiario onToast={showToast} />}
+      {tabValue === 1 && verMenores && <TabPorBeneficiario onToast={showToast} />}
 
       <ToastGlobal toast={toast} onClose={closeToast} />
     </Box>

@@ -46,6 +46,7 @@ public class ConfiguracionController(ConfiguracionService svc, IMemoryCache cach
     }
 
     [HttpGet]
+    [RequiereAlgunPermiso("configuracion:ver", "donaciones:ver", "programas:ver")]
     public async Task<IActionResult> Obtener(CancellationToken ct)
     {
         var data = await svc.ObtenerAsync(ct);

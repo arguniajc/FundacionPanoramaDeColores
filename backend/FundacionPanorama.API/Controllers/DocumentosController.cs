@@ -17,6 +17,7 @@ public class DocumentosController(DocumentosService svc) : ControllerBase
 
     // GET api/documentos?categoria=Actas
     [HttpGet]
+    [RequierePermiso("documentos", "ver")]
     public async Task<IActionResult> Listar([FromQuery] string? categoria)
         => Ok(await svc.ListarAsync(categoria));
 
@@ -43,6 +44,7 @@ public class DocumentosController(DocumentosService svc) : ControllerBase
 
     // GET api/documentos/beneficiario/{id}
     [HttpGet("beneficiario/{beneficiarioId:guid}")]
+    [RequierePermiso("beneficiarios", "ver")]
     public async Task<IActionResult> ListarPorBeneficiario(Guid beneficiarioId)
         => Ok(await svc.ListarPorBeneficiarioAsync(beneficiarioId));
 

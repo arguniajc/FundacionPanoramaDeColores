@@ -1,5 +1,6 @@
 // Sube archivos a Supabase Storage y lleva auditoría de descargas de documentos.
 using System.Security.Claims;
+using FundacionPanorama.API.Filters;
 using FundacionPanorama.API.Services;
 using FundacionPanorama.Application.Features.Archivos;
 using FundacionPanorama.Application.Features.Archivos.DTOs;
@@ -53,6 +54,10 @@ public class ArchivosController : ControllerBase
         if (!SupabaseStorageService.CarpetaPermitida(carpeta))
             return BadRequest(new { mensaje = "Carpeta de destino no válida." });
 
+        // Cada carpeta exige el permiso de su módulo (p. ej. "web" —bucket público— solo Configuración)
+        if (!await Permisos.TieneAlgunoAsync(HttpContext, PermisosArchivos.ParaSubir(carpeta)))
+            return StatusCode(403, new { mensaje = "No tienes permiso para subir archivos en esta sección." });
+
         // Un fallo de Supabase Storage llega al manejador global: queda en el log
         // con código y el cliente recibe un mensaje sin detalles internos.
         // Devuelve una URL pública (carpeta web) o una referencia "privado://…".
@@ -63,7 +68,8 @@ public class ArchivosController : ControllerBase
     public record FirmarDto(List<string> Referencias);
 
     // POST api/archivos/firmar — enlaces temporales (1 h) para archivos privados.
-    // Solo con sesión iniciada; las URLs que no son "privado://" se devuelven igual.
+    // Las URLs que no son "privado://" se devuelven igual. Una referencia privada solo
+    // se firma si el rol puede ver el módulo de su carpeta; si no, queda fuera de la respuesta.
     [HttpPost("firmar")]
     [Authorize]
     public async Task<IActionResult> Firmar([FromBody] FirmarDto dto, CancellationToken ct)
@@ -71,7 +77,21 @@ public class ArchivosController : ControllerBase
         var refs = (dto.Referencias ?? []).Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList();
         if (refs.Count > 200)
             return BadRequest(new { mensaje = "Máximo 200 archivos por solicitud." });
-        return Ok(new { urls = await _storage.FirmarAsync(refs, 3600, ct) });
+        var permitidas = new List<string>();
+        var cache = new Dictionary<string, bool>();   // un chequeo por carpeta, no por archivo
+        foreach (var r in refs)
+        {
+            if (!r.StartsWith(SupabaseStorageService.PrefijoPrivado, StringComparison.Ordinal)) { permitidas.Add(r); continue; }
+            var ruta = r[SupabaseStorageService.PrefijoPrivado.Length..];
+            var necesarios = PermisosArchivos.ParaLeer(ruta);
+            var clave = string.Join(',', necesarios);
+            if (!cache.TryGetValue(clave, out var ok))
+                cache[clave] = ok = necesarios.Length > 0
+                    ? await Permisos.TieneAlgunoAsync(HttpContext, necesarios)
+                    : Permisos.EsAdministrador(User) && PermisosArchivos.RutaSegura(ruta);
+            if (ok) permitidas.Add(r);
+        }
+        return Ok(new { urls = await _storage.FirmarAsync(permitidas, 3600, ct) });
     }
 
     // ── Migración de archivos personales al bucket privado (solo administrador) ──
@@ -170,7 +190,7 @@ public class ArchivosController : ControllerBase
 
     // GET api/archivos/log-descargas?pagina=1&porPagina=20
     [HttpGet("log-descargas")]
-    [Authorize]
+    [RequierePermiso("log_descargas", "ver")]
     public async Task<IActionResult> ObtenerLog(
         [FromQuery] int pagina    = 1,
         [FromQuery] int porPagina = 20)

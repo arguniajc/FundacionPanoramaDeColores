@@ -1,4 +1,5 @@
 using FundacionPanorama.API.Filters;
+using FundacionPanorama.Application.Features.Permisos;
 using FundacionPanorama.Application.Features.Usuarios;
 using FundacionPanorama.Application.Features.Usuarios.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +12,8 @@ namespace FundacionPanorama.API.Controllers;
 [Authorize]
 public class EquipoController(UsuariosService svc) : ControllerBase
 {
+    const string SoloAdminAsignaAdmin = "Solo un administrador puede asignar el rol de administrador.";
+
     [HttpGet]
     [RequierePermiso("equipo", "ver")]
     public async Task<IActionResult> Listar(CancellationToken ct)
@@ -20,6 +23,8 @@ public class EquipoController(UsuariosService svc) : ControllerBase
     [RequierePermiso("equipo", "crear")]
     public async Task<IActionResult> Crear([FromBody] CrearUsuarioDto dto, CancellationToken ct)
     {
+        if (dto.Rol == CatalogoPermisos.Administrador && !Permisos.EsAdministrador(User))
+            return StatusCode(403, new { mensaje = SoloAdminAsignaAdmin });
         var result = await svc.CrearAsync(dto, ct);
         return result.IsFailure
             ? BadRequest(new { mensaje = result.Error })
@@ -30,9 +35,11 @@ public class EquipoController(UsuariosService svc) : ControllerBase
     [RequierePermiso("equipo", "editar")]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] ActualizarUsuarioDto dto, CancellationToken ct)
     {
+        if (dto.Rol == CatalogoPermisos.Administrador && !Permisos.EsAdministrador(User))
+            return StatusCode(403, new { mensaje = SoloAdminAsignaAdmin });
         var result = await svc.ActualizarAsync(id, dto, ct);
         return result.IsFailure
-            ? NotFound(new { mensaje = result.Error })
+            ? (result.Error == "Usuario no encontrado." ? NotFound(new { mensaje = result.Error }) : BadRequest(new { mensaje = result.Error }))
             : Ok(result.Value);
     }
 

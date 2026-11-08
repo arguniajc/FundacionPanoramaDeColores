@@ -27,8 +27,9 @@ public class HealthController : ControllerBase
         return Ok(new { status = "ok", timestamp = DateTime.UtcNow, db = "connected", registros = total });
     }
 
-    // GET api/health/tables — diagnóstico: lista todas las tablas y columnas clave
-    [Authorize]
+    // GET api/health/tables — diagnóstico: lista todas las tablas y columnas clave.
+    // Muestra el esquema de la BD: solo administrador.
+    [Authorize(Roles = "administrador,Admin")]
     [HttpGet("tables")]
     public async Task<IActionResult> Tables()
     {

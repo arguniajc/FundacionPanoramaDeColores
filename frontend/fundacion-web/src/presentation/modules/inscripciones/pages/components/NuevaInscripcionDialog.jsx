@@ -6,6 +6,7 @@ import {
   Grid, Step, StepLabel, Stepper, TextField, Typography,
   useMediaQuery, useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import CheckIcon from '@mui/icons-material/Check';
 import { beneficiariosRepository } from '@/infrastructure/repositories/beneficiariosRepository';
 import { sedesRepository }         from '@/infrastructure/repositories/sedesRepository';
@@ -215,8 +216,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const PASOS = ['Beneficiario', 'Programa', 'Formulario'];
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle sx={{ bgcolor: COLOR, color: 'white', fontWeight: 700 }}>
         Nueva Inscripción
       </DialogTitle>
@@ -230,7 +230,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
 
         {paso === 0 && (
           <Box>
-            <Typography fontWeight={700} mb={2}>Busca el beneficiario</Typography>
+            <Typography sx={{ fontWeight: 700, mb: 2 }}>Busca el beneficiario</Typography>
             <Autocomplete
               options={beneficiarios}
               loading={buscando}
@@ -245,8 +245,8 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
               renderOption={(props, o) => (
                 <li {...props} key={o.id}>
                   <Box>
-                    <Typography variant="body2" fontWeight={700}>{o.nombreMenor ?? o.nombre}</Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography sx={{ fontWeight: 700 }} variant="body2">{o.nombreMenor ?? o.nombre}</Typography>
+                    <Typography sx={{ color: 'text.secondary' }} variant="caption">
                       {o.tipoDocumento} {o.numeroDocumento ?? 'Sin documento'}
                     </Typography>
                   </Box>
@@ -258,9 +258,9 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
               )}
             />
             {selBenef && (
-              <Box sx={{ mt: 2, p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '1px solid #d0c4f7' }}>
-                <Typography fontWeight={700}>{selBenef.nombreMenor ?? selBenef.nombre}</Typography>
-                <Typography variant="caption" color="text.secondary">
+              <Box sx={{ mt: 2, p: 2, bgcolor: (t) => alpha(t.palette.primary.main, 0.08), borderRadius: 2, border: '1px solid', borderColor: (t) => alpha(t.palette.primary.main, 0.3) }}>
+                <Typography sx={{ fontWeight: 700 }}>{selBenef.nombreMenor ?? selBenef.nombre}</Typography>
+                <Typography sx={{ color: 'text.secondary' }} variant="caption">
                   {selBenef.tipoDocumento} · {selBenef.numeroDocumento ?? 'Sin documento'}
                 </Typography>
               </Box>
@@ -270,9 +270,9 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
 
         {paso === 1 && (
           <Box>
-            <Typography fontWeight={700} mb={errCampo('programa') ? 0.5 : 2}>Selecciona el programa</Typography>
+            <Typography sx={{ fontWeight: 700, mb: errCampo('programa') ? 0.5 : 2 }}>Selecciona el programa</Typography>
             {errCampo('programa') && (
-              <Typography variant="caption" color="error" display="block" mb={1.5}>{errCampo('programa')}</Typography>
+              <Typography sx={{ display: 'block', mb: 1.5 }} variant="caption" color="error">{errCampo('programa')}</Typography>
             )}
             {programas.length === 0 ? (
               <Alert severity="warning">No hay programas activos disponibles.</Alert>
@@ -281,14 +281,14 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                 {programas.map(p => (
                   <Grid key={p.id} size={{ xs: 12, sm: 6 }}>
                     <Box onClick={() => setSelPrograma(p)} sx={{
-                      border: `2px solid ${selPrograma?.id === p.id ? COLOR : '#e2d9f3'}`,
+                      border: '2px solid', borderColor: selPrograma?.id === p.id ? COLOR : 'divider',
                       borderRadius: 2, p: 1.5, cursor: 'pointer',
-                      bgcolor: selPrograma?.id === p.id ? '#f3f0ff' : '#fdfbff',
+                      bgcolor: (t) => (selPrograma?.id === p.id ? alpha(t.palette.primary.main, 0.08) : t.palette.background.paper),
                       transition: 'all 0.15s',
-                      '&:hover': { borderColor: COLOR, bgcolor: '#f3f0ff' },
+                      '&:hover': { borderColor: COLOR, bgcolor: (t) => alpha(t.palette.primary.main, 0.08) },
                     }}>
-                      <Typography fontWeight={700} color={COLOR}>{p.nombre}</Typography>
-                      <Typography variant="caption" color="text.secondary">{p.nombreSede}</Typography>
+                      <Typography sx={{ fontWeight: 700, color: COLOR }}>{p.nombre}</Typography>
+                      <Typography sx={{ color: 'text.secondary' }} variant="caption">{p.nombreSede}</Typography>
                       {selPrograma?.id === p.id && (
                         <CheckIcon sx={{ float: 'right', color: COLOR, fontSize: 20 }} />
                       )}
@@ -302,11 +302,11 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
 
         {paso === 2 && (
           <Box>
-            <Typography fontWeight={700} mb={2}>
+            <Typography sx={{ fontWeight: 700, mb: 2 }}>
               Completa el formulario de {selPrograma?.nombre}
             </Typography>
             {cargandoCampos ? (
-              <Box display="flex" justifyContent="center" py={3}>
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
                 <CircularProgress sx={{ color: COLOR }} />
               </Box>
             ) : campos.length === 0 ? (
@@ -364,7 +364,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         {paso > 0 && (
           <Button onClick={() => cambiarPaso(-1)} disabled={guardando}>Atrás</Button>
         )}
-        <Box flex={1} />
+        <Box sx={{ flex: 1 }} />
         {paso < 2 ? (
           <Button variant="contained" onClick={() => cambiarPaso(1)} sx={{ bgcolor: COLOR }}>
             Siguiente

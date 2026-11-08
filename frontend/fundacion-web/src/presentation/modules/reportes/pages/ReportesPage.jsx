@@ -84,8 +84,8 @@ export default function ReportesPage() {
     <Box sx={{ p: { xs: 2, md: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Reportes y Estadísticas</Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography sx={{ fontWeight: 700 }} variant="h5">Reportes y Estadísticas</Typography>
+          <Typography sx={{ color: 'text.secondary' }} variant="body2">
             Visualización de datos e indicadores clave por módulo
           </Typography>
         </Box>

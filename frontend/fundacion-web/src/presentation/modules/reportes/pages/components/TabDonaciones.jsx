@@ -11,9 +11,10 @@ import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
 import { COLORES } from './colores';
-import { BRAND_COLOR } from '@/shared/constants/brand';
+import { useTheme } from '@mui/material/styles';
 
 export function TabDonaciones() {
+  const theme = useTheme();
   const hoy   = new Date();
   const [anio,  setAnio]  = useState(hoy.getFullYear());
   const [data,  setData]  = useState(null);
@@ -69,13 +70,13 @@ export function TabDonaciones() {
 
       {!data ? <Grid size={{ xs: 12 }}><SkeletonSection /></Grid> : <>
         <Grid size={{ xs: 6, sm: 4 }}>
-          <KpiCard label="Total donaciones"      value={resumen.total}             icon={<VolunteerActivismIcon fontSize="inherit" />} color={BRAND_COLOR} />
+          <KpiCard label="Total donaciones"      value={resumen.total}             icon={<VolunteerActivismIcon fontSize="inherit" />} color="primary.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4 }}>
-          <KpiCard label="Monto recaudado"       value={fmtCop(resumen.totalMonto)}    icon={<VolunteerActivismIcon fontSize="inherit" />} color="#10B981" />
+          <KpiCard label="Monto recaudado"       value={fmtCop(resumen.totalMonto)}    icon={<VolunteerActivismIcon fontSize="inherit" />} color="success.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4 }}>
-          <KpiCard label="Promedio por donación" value={fmtCop(resumen.promedioMonto)} icon={<VolunteerActivismIcon fontSize="inherit" />} color="#F59E0B" />
+          <KpiCard label="Promedio por donación" value={fmtCop(resumen.promedioMonto)} icon={<VolunteerActivismIcon fontSize="inherit" />} color="warning.main" />
         </Grid>
 
         <Grid size={{ xs: 12 }}>
@@ -87,7 +88,7 @@ export function TabDonaciones() {
                   <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
               <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
               <Tooltip content={<TooltipCustom prefix="$" />} />

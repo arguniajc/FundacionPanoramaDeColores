@@ -34,7 +34,7 @@ export function TabCajaMenor({
 
   return (
     <Box>
-      <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'superficie2', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Cuenta de caja</InputLabel>
@@ -68,18 +68,18 @@ export function TabCajaMenor({
           </Alert>
         : (
           <>
-            <Grid container spacing={2} mb={3}>
+            <Grid sx={{ mb: 3 }} container spacing={2}>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <KpiCard label="Saldo actual" value={fmt(cuenta?.saldoActual)}
                   icon={<AccountBalanceWalletIcon fontSize="inherit" />} color={BRAND_COLOR} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <KpiCard label={`Ingresos${cajaMes ? ` ${MESES[cajaMes - 1]}` : ''}`}
-                  value={fmt(totalIng)} icon={<TrendingUpIcon fontSize="inherit" />} color="#16a34a" />
+                  value={fmt(totalIng)} icon={<TrendingUpIcon fontSize="inherit" />} color="success.main" />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <KpiCard label={`Egresos${cajaMes ? ` ${MESES[cajaMes - 1]}` : ''}`}
-                  value={fmt(totalEgr)} icon={<TrendingDownIcon fontSize="inherit" />} color="#dc2626" />
+                  value={fmt(totalEgr)} icon={<TrendingDownIcon fontSize="inherit" />} color="error.main" />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <KpiCard
@@ -87,8 +87,8 @@ export function TabCajaMenor({
                   value={ultimoArqueo ? fmtFecha(ultimoArqueo.fecha) : 'Sin arqueos'}
                   icon={<BalanceIcon fontSize="inherit" />}
                   color={ultimoArqueo
-                    ? (ultimoArqueo.diferencia === 0 ? '#16a34a' : '#dc2626')
-                    : '#64748b'}
+                    ? (ultimoArqueo.diferencia === 0 ? 'success.main' : 'error.main')
+                    : 'text.disabled'}
                 />
               </Grid>
             </Grid>
@@ -122,7 +122,7 @@ export function TabCajaMenor({
                 <TableContainer component={Paper} sx={{ mb: 4 }}>
                   <Table size="small">
                     <TableHead>
-                      <TableRow sx={{ bgcolor: 'grey.50' }}>
+                      <TableRow sx={{ bgcolor: 'superficie2' }}>
                         <TableCell>Fecha</TableCell>
                         <TableCell>Tipo</TableCell>
                         <TableCell>Concepto</TableCell>
@@ -154,7 +154,7 @@ export function TabCajaMenor({
                               <Typography variant="body2">{row.terceroNombre}</Typography>
                             )}
                             {row.numeroSoporte && (
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography sx={{ color: 'text.secondary' }} variant="caption">
                                 {row.numeroSoporte}
                               </Typography>
                             )}
@@ -170,8 +170,7 @@ export function TabCajaMenor({
                             </Typography>
                           </TableCell>
                           <TableCell align="right">
-                            <Typography fontWeight="bold"
-                              color={row.saldoAcumulado >= 0 ? 'success.main' : 'error.main'}>
+                            <Typography sx={{ fontWeight: 'bold', color: row.saldoAcumulado >= 0 ? 'success.main' : 'error.main' }}>
                               {fmt(row.saldoAcumulado)}
                             </Typography>
                           </TableCell>
@@ -180,7 +179,7 @@ export function TabCajaMenor({
                       {libroAuxiliar.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
-                            <Typography color="text.secondary">No hay movimientos en este período</Typography>
+                            <Typography sx={{ color: 'text.secondary' }}>No hay movimientos en este período</Typography>
                           </TableCell>
                         </TableRow>
                       )}
@@ -195,7 +194,7 @@ export function TabCajaMenor({
             <TableContainer component={Paper}>
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ bgcolor: 'grey.50' }}>
+                  <TableRow sx={{ bgcolor: 'superficie2' }}>
                     <TableCell>Fecha</TableCell>
                     <TableCell align="right">Saldo Sistema</TableCell>
                     <TableCell align="right">Conteo Físico</TableCell>
@@ -212,8 +211,7 @@ export function TabCajaMenor({
                       <TableCell align="right">{fmt(a.saldoSistema)}</TableCell>
                       <TableCell align="right">{fmt(a.saldoFisico)}</TableCell>
                       <TableCell align="right">
-                        <Typography fontWeight="bold"
-                          color={a.diferencia === 0 ? 'success.main' : a.diferencia > 0 ? 'primary.main' : 'error.main'}>
+                        <Typography sx={{ fontWeight: 'bold', color: a.diferencia === 0 ? 'success.main' : a.diferencia > 0 ? 'primary.main' : 'error.main' }}>
                           {a.diferencia > 0 ? '+' : ''}{fmt(a.diferencia)}
                           {a.diferencia === 0 && ' ✓'}
                           {a.diferencia > 0 && ' (Sobrante)'}
@@ -236,7 +234,7 @@ export function TabCajaMenor({
                   {arqueos.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={puedeEditar ? 7 : 6} align="center" sx={{ py: 3 }}>
-                        <Typography color="text.secondary">
+                        <Typography sx={{ color: 'text.secondary' }}>
                           No hay arqueos registrados para esta cuenta
                         </Typography>
                       </TableCell>

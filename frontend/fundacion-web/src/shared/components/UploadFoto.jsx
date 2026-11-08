@@ -3,6 +3,7 @@ import {
   Box, Typography, CircularProgress, IconButton,
   Tooltip, Menu, MenuItem, ListItemIcon, ListItemText,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import CloudUploadIcon  from '@mui/icons-material/CloudUpload';
 import DeleteIcon       from '@mui/icons-material/Delete';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
@@ -58,7 +59,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
 
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
+      <Typography sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 0.5 }} variant="caption">
         {label}
       </Typography>
 
@@ -71,7 +72,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
             onClick={abrirMenu}
             sx={{
               width: 120, height: 90, objectFit: 'cover',
-              borderRadius: 2, border: '2px solid #e0e0e0',
+              borderRadius: 2, border: '2px solid', borderColor: 'divider',
               display: 'block', cursor: 'pointer',
             }}
           />
@@ -81,8 +82,8 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
               onClick={handleEliminar}
               sx={{
                 position: 'absolute', top: -8, right: -8,
-                bgcolor: '#d32f2f', color: '#fff', width: 22, height: 22,
-                '&:hover': { bgcolor: '#b71c1c' },
+                bgcolor: 'error.main', color: 'error.contrastText', width: 22, height: 22,
+                '&:hover': { bgcolor: 'error.dark' },
               }}
             >
               <DeleteIcon sx={{ fontSize: 14 }} />
@@ -93,7 +94,7 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
             onClick={abrirMenu}
             sx={{
               mt: 0.5, display: 'block', width: '100%',
-              fontSize: 11, color: 'var(--color-primario)', background: 'none',
+              fontSize: 11, color: 'var(--color-primario-texto)', background: 'none',
               border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0,
             }}
           >
@@ -106,25 +107,25 @@ export default function UploadFoto({ label, carpeta = 'fotos', value, onChange }
           onClick={abrirMenu}
           sx={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            width: 120, height: 90, border: '2px dashed #bdbdbd', borderRadius: 2,
-            bgcolor: '#fafafa', cursor: subiendo ? 'default' : 'pointer',
+            width: 120, height: 90, border: '2px dashed', borderColor: (t) => alpha(t.palette.text.primary, 0.25), borderRadius: 2,
+            bgcolor: 'superficie2', cursor: subiendo ? 'default' : 'pointer',
             transition: 'border-color .2s, background .2s',
-            '&:hover': !subiendo ? { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' } : {},
+            '&:hover': !subiendo ? { borderColor: 'var(--color-primario-texto)', bgcolor: (t) => alpha(t.palette.primary.main, 0.06) } : {},
             gap: 0.5, p: 0,
           }}
         >
           {subiendo
-            ? <CircularProgress size={22} sx={{ color: 'var(--color-primario)' }} />
-            : <CloudUploadIcon sx={{ color: '#bdbdbd', fontSize: 28 }} />
+            ? <CircularProgress size={22} sx={{ color: 'var(--color-primario-texto)' }} />
+            : <CloudUploadIcon sx={{ color: 'text.disabled', fontSize: 28 }} />
           }
-          <Typography variant="caption" color="text.disabled" fontSize={10}>
+          <Typography sx={{ color: 'text.disabled', fontSize: 10 }} variant="caption">
             {subiendo ? 'Subiendo…' : 'Subir / Tomar foto'}
           </Typography>
         </Box>
       )}
 
       {errorMsg && (
-        <Typography variant="caption" color="error" display="block" mt={0.5} maxWidth={160}>
+        <Typography sx={{ display: 'block', mt: 0.5, maxWidth: 160 }} variant="caption" color="error">
           {errorMsg}
         </Typography>
       )}

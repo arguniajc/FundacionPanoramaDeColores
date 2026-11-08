@@ -64,12 +64,11 @@ export default function CamaraFoto({ open, onCerrar, onCaptura }) {
   };
 
   return (
-    <Dialog
+    <Dialog slotProps={{ paper: { sx: { borderRadius: 3, bgcolor: '#111' } } }}
       open={open}
       onClose={handleCerrar}
       maxWidth="sm"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3, bgcolor: '#111' } }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 1.5, pt: 1.5 }}>
         <IconButton onClick={handleCerrar} sx={{ color: '#fff' }} size="small">
@@ -81,11 +80,11 @@ export default function CamaraFoto({ open, onCerrar, onCaptura }) {
         {iniciando && (
           <Box sx={{ py: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <CircularProgress sx={{ color: '#B4E8E8' }} />
-            <Typography color="rgba(255,255,255,0.5)" fontSize={13}>Iniciando cámara…</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Iniciando cámara…</Typography>
           </Box>
         )}
         {error && (
-          <Typography color="#ff6b6b" sx={{ p: 4, whiteSpace: 'pre-line', fontSize: 14, lineHeight: 1.7 }}>
+          <Typography sx={{ color: '#ff6b6b', p: 4, whiteSpace: 'pre-line', fontSize: 14, lineHeight: 1.7 }}>
             {error}
           </Typography>
         )}

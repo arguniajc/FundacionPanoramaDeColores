@@ -4,6 +4,7 @@ import {
    DialogTitle, DialogContent, DialogActions, Alert,
   FormControl, InputLabel, Select, MenuItem, Autocomplete, TextField, CircularProgress,
 } from '@mui/material';
+import { useTheme, alpha, lighten } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon          from '@mui/icons-material/Add';
 import EditIcon         from '@mui/icons-material/Edit';
@@ -69,7 +70,10 @@ function HBranch({ children }) {
 const PersonCard = memo(function PersonCard({ persona, depth, canEdit, onEdit, onDelete, draggingId, onDragStart, onDragEnd, onDropOnto }) {
   const nombre = persona.empleadoNombre ?? persona.nombreExterno ?? '—';
   const fotoPersona = useArchivoUrl(persona.fotoUrl);
+  const theme  = useTheme();
   const color  = depthColor(depth);
+  // En modo oscuro los tonos más oscuros de la jerarquía se aclaran para que se lean
+  const colorVisible = theme.palette.mode === 'dark' ? lighten(color, 0.45) : color;
   const isDragging   = draggingId === persona.id;
   const isDropTarget = draggingId && draggingId !== persona.id;
 
@@ -93,8 +97,8 @@ const PersonCard = memo(function PersonCard({ persona, depth, canEdit, onEdit, o
       sx={{
         width: 148, flexShrink: 0,
         borderRadius: '12px',
-        border: isDropTarget ? `2.5px dashed ${color}` : `2.5px solid ${color}`,
-        bgcolor: 'white',
+        border: isDropTarget ? `2.5px dashed ${colorVisible}` : `2.5px solid ${colorVisible}`,
+        bgcolor: 'background.paper',
         boxShadow: isDragging ? 0 : 3,
         opacity: isDragging ? 0.4 : 1,
         cursor: canEdit ? 'grab' : 'default',
@@ -120,14 +124,14 @@ const PersonCard = memo(function PersonCard({ persona, depth, canEdit, onEdit, o
           <Box sx={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 0.25 }}>
             <IconButton size="small"
               onClick={(e) => { e.stopPropagation(); onEdit(persona); }}
-              sx={{ bgcolor: 'rgba(255,255,255,0.92)', p: 0.4, boxShadow: 1,
-                    '&:hover': { bgcolor: 'primary.main', color: 'white' } }}>
+              sx={{ bgcolor: alpha(theme.palette.background.paper, 0.92), p: 0.4, boxShadow: 1,
+                    '&:hover': { bgcolor: 'primary.main', color: 'primary.contrastText' } }}>
               <EditIcon sx={{ fontSize: 12 }} />
             </IconButton>
             <IconButton size="small"
               onClick={(e) => { e.stopPropagation(); onDelete(persona.id); }}
-              sx={{ bgcolor: 'rgba(255,255,255,0.92)', p: 0.4, boxShadow: 1,
-                    '&:hover': { bgcolor: 'error.main', color: 'white' } }}>
+              sx={{ bgcolor: alpha(theme.palette.background.paper, 0.92), p: 0.4, boxShadow: 1,
+                    '&:hover': { bgcolor: 'error.main', color: 'error.contrastText' } }}>
               <DeleteIcon sx={{ fontSize: 12 }} />
             </IconButton>
           </Box>
@@ -135,10 +139,10 @@ const PersonCard = memo(function PersonCard({ persona, depth, canEdit, onEdit, o
       </Box>
 
       {/* Info — 30% */}
-      <Box sx={{ px: 1, py: 0.75, bgcolor: 'white' }}>
+      <Box sx={{ px: 1, py: 0.75, bgcolor: 'background.paper' }}>
         <Typography sx={{
           fontSize: 11, fontWeight: 800, textTransform: 'uppercase',
-          color, letterSpacing: 0.4, lineHeight: 1.2,
+          color: colorVisible, letterSpacing: 0.4, lineHeight: 1.2,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {persona.cargo}
@@ -151,7 +155,7 @@ const PersonCard = memo(function PersonCard({ persona, depth, canEdit, onEdit, o
         </Typography>
       </Box>
 
-      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, bgcolor: color }} />
+      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, bgcolor: colorVisible }} />
     </Box>
   );
 });
@@ -273,7 +277,7 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
           <Box sx={{
             width: 110, height: 110, borderRadius: '12px', overflow: 'hidden',
-            border: '3px solid', borderColor: 'primary.main', mb: 1.5, bgcolor: 'grey.100',
+            border: '3px solid', borderColor: 'primary.main', mb: 1.5, bgcolor: 'superficie2',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {fotoPreview
@@ -477,8 +481,8 @@ export function OrgChartTab({ puedoEditar, empleados }) {
       {/* Cabecera */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Box>
-          <Typography variant="h6" fontWeight={700}>Organigrama Institucional</Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography sx={{ fontWeight: 700 }} variant="h6">Organigrama Institucional</Typography>
+          <Typography sx={{ color: 'text.secondary' }} variant="body2">
             {puedoEditar
               ? 'Arrastra una card sobre otra para definir quién reporta a quién. Usa el botón "+" para agregar.'
               : 'Visualización del organigrama institucional.'}
@@ -486,7 +490,7 @@ export function OrgChartTab({ puedoEditar, empleados }) {
         </Box>
         {puedoEditar && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => openAdd(null)}
-            sx={{ bgcolor: BRAND_COLOR, '&:hover': { bgcolor: '#3b1470' } }}>
+            sx={{ bgcolor: BRAND_COLOR, '&:hover': { bgcolor: 'primary.dark' } }}>
             Agregar persona
           </Button>
         )}
@@ -513,7 +517,7 @@ export function OrgChartTab({ puedoEditar, empleados }) {
       {/* Árbol */}
       <Box sx={{
         overflowX: 'auto',
-        background: 'linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%)',
+        background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.06)} 0%, ${alpha(t.palette.info.main, 0.06)} 100%)`,
         borderRadius: 3, p: { xs: 2, sm: 3, md: 4 },
         border: '1px solid', borderColor: 'divider',
         minHeight: 200,
@@ -521,7 +525,7 @@ export function OrgChartTab({ puedoEditar, empleados }) {
         {personas.length === 0 ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6, opacity: 0.5 }}>
             <AccountTreeIcon sx={{ fontSize: 48, mb: 1, color: 'text.disabled' }} />
-            <Typography color="text.secondary">
+            <Typography sx={{ color: 'text.secondary' }}>
               El organigrama está vacío. Haz clic en "Agregar persona" para comenzar.
             </Typography>
           </Box>

@@ -74,7 +74,7 @@ export default function TabAlmacenamiento() {
 
       {resultado && (
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-          <Typography fontWeight={700} mb={1}>
+          <Typography sx={{ fontWeight: 700, mb: 1 }}>
             {resultado.simulacion
               ? `Análisis: ${resultado.archivos} archivos personales están en el almacenamiento público.`
               : `Migración: ${resultado.copiados} de ${resultado.archivos} archivos copiados · ${resultado.filasActualizadas} registros actualizados.`}

@@ -137,7 +137,7 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, color: COLOR }}>Editar actividad</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700, color: 'primary.main' }}>Editar actividad</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
 
         <TextField label="Título *" fullWidth size="small"
@@ -183,18 +183,18 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
         {/* Días adicionales */}
         <Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-            <Typography variant="caption" fontWeight={700} color="text.secondary"
-              sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <Typography variant="caption"
+              sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Días adicionales
             </Typography>
             <Button size="small" startIcon={<AddIcon />} onClick={agregarDia}
-              sx={{ color: COLOR, textTransform: 'none', fontWeight: 600 }}>
+              sx={{ color: 'primary.main', textTransform: 'none', fontWeight: 600 }}>
               Agregar día
             </Button>
           </Box>
 
           {form.diasAdicionales.length === 0 && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography sx={{ color: 'text.secondary' }} variant="caption">
               Esta actividad ocurre en un solo día. Agrega días si se extiende a más fechas.
             </Typography>
           )}

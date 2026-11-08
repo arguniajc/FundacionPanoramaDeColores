@@ -88,7 +88,7 @@ export default function ContabilidadPage() {
             <AccountBalanceWalletIcon sx={{ fontSize: 32 }} />
           </Box>
           <Box>
-            <Typography variant="h5" fontWeight="bold">Contabilidad</Typography>
+            <Typography sx={{ fontWeight: 'bold' }} variant="h5">Contabilidad</Typography>
             <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
               Registra ingresos y egresos con categorías PUC. Los datos quedan organizados para entregar al contador.
             </Typography>
@@ -96,31 +96,31 @@ export default function ContabilidadPage() {
         </Box>
       </Paper>
 
-      <Grid container spacing={3} mb={3}>
+      <Grid sx={{ mb: 3 }} container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <KpiCard label="Saldo total" value={fmt(stats?.saldoTotal)}
             icon={<AccountBalanceWalletIcon fontSize="inherit" />} color={BRAND_COLOR} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <KpiCard label="Ingresos este mes" value={fmt(stats?.ingresosMes)}
-            icon={<TrendingUpIcon fontSize="inherit" />} color="#16a34a" />
+            icon={<TrendingUpIcon fontSize="inherit" />} color="success.main" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <KpiCard label="Egresos este mes" value={fmt(stats?.egresosMes)}
-            icon={<TrendingDownIcon fontSize="inherit" />} color="#dc2626" />
+            icon={<TrendingDownIcon fontSize="inherit" />} color="error.main" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <KpiCard
             label="Balance este mes"
             value={fmt(stats?.balanceMes)}
             icon={<BalanceIcon fontSize="inherit" />}
-            color={(stats?.balanceMes ?? 0) >= 0 ? '#2563eb' : '#dc2626'}
+            color={(stats?.balanceMes ?? 0) >= 0 ? 'info.main' : 'error.main'}
           />
         </Grid>
       </Grid>
 
       {puedeCrear && (
-        <Paper variant="outlined" sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', p: 2, borderRadius: 2, bgcolor: 'grey.50' }}>
+        <Paper variant="outlined" sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', p: 2, borderRadius: 2, bgcolor: 'superficie2' }}>
           <Button variant="contained" color="success" startIcon={<AddIcon />} onClick={abrirCrearIngreso}>
             Registrar Ingreso
           </Button>

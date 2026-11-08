@@ -5,6 +5,7 @@ import {
   MenuItem, Paper, Select, Snackbar, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
+import { useTheme, alpha } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon          from '@mui/icons-material/Add';
 import AutorenewIcon    from '@mui/icons-material/Autorenew';
@@ -19,6 +20,7 @@ import { mensajeErrorApi }  from '@/shared/utils/mensajeErrorApi';
 import { r }                from '@/shared/utils/validacion';
 import { useValidacion }    from '@/shared/hooks/useValidacion';
 import ResumenErrores       from '@/shared/components/ResumenErrores';
+import { colorEstado }      from '@/shared/theme/paleta';
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -29,14 +31,16 @@ function fmtCOP(n) {
 }
 
 function EstadoChip({ estado }) {
+  const theme = useTheme();
+  const tono  = colorEstado(estado === 'cerrado' ? 'exito' : 'aviso', theme.palette.mode);
   return (
     <Chip
       label={estado === 'cerrado' ? 'Cerrado' : 'Borrador'}
       size="small"
       sx={{
         fontWeight: 700, fontSize: '0.7rem',
-        bgcolor: estado === 'cerrado' ? '#d1fae5' : '#fef3c7',
-        color:   estado === 'cerrado' ? '#065f46' : '#92400e',
+        bgcolor: tono.fondo,
+        color:   tono.texto,
       }}
     />
   );
@@ -46,14 +50,14 @@ function FilaLiquidacion({ liq, puedeEditar, onEliminar }) {
   return (
     <TableRow hover>
       <TableCell sx={{ fontSize: '0.8rem' }}>
-        <Typography fontWeight={600} fontSize="inherit">{liq.empleadoNombre}</Typography>
-        {liq.cargo && <Typography fontSize="0.72rem" color="text.secondary">{liq.cargo}</Typography>}
+        <Typography sx={{ fontWeight: 600, fontSize: 'inherit' }}>{liq.empleadoNombre}</Typography>
+        {liq.cargo && <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>{liq.cargo}</Typography>}
       </TableCell>
       <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{fmtCOP(liq.salarioBase)}</TableCell>
       <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{fmtCOP(liq.auxilioTransporte)}</TableCell>
       <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{fmtCOP(liq.totalDevengado)}</TableCell>
-      <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace', color: '#EF4444' }}>{fmtCOP(liq.totalDeducciones)}</TableCell>
-      <TableCell align="right" sx={{ fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: 700, color: '#10B981' }}>{fmtCOP(liq.netoPagar)}</TableCell>
+      <TableCell align="right" sx={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'error.main' }}>{fmtCOP(liq.totalDeducciones)}</TableCell>
+      <TableCell align="right" sx={{ fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: 700, color: 'success.main' }}>{fmtCOP(liq.netoPagar)}</TableCell>
       <TableCell align="right">
         {puedeEditar && (
           <Tooltip title="Eliminar liquidación">
@@ -113,16 +117,16 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
       <Box
         sx={{
           display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1.5,
-          bgcolor: periodo.estado === 'cerrado' ? '#f0fdf4' : '#fffbf0',
-          cursor: 'pointer', '&:hover': { bgcolor: periodo.estado === 'cerrado' ? '#dcfce7' : '#fef3c7' },
+          bgcolor: (t) => alpha(periodo.estado === 'cerrado' ? t.palette.success.main : t.palette.warning.main, 0.07),
+          cursor: 'pointer', '&:hover': { bgcolor: (t) => alpha(periodo.estado === 'cerrado' ? t.palette.success.main : t.palette.warning.main, 0.15) },
         }}
         onClick={() => setExpandido(e => !e)}
       >
-        <Box flex={1}>
-          <Typography fontWeight={700}>
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontWeight: 700 }}>
             {MESES[periodo.mes - 1]} {periodo.anio}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography sx={{ color: 'text.secondary' }} variant="caption">
             {periodo.totalEmpleados} empleado{periodo.totalEmpleados !== 1 ? 's' : ''} · {fmtCOP(periodo.totalNeto)} neto
           </Typography>
         </Box>
@@ -157,14 +161,14 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
           {cargandoLiq ? (
             <Box sx={{ textAlign: 'center', py: 3 }}><CircularProgress size={24} /></Box>
           ) : liquidaciones.length === 0 ? (
-            <Typography color="text.secondary" fontSize="0.85rem" sx={{ py: 2, textAlign: 'center' }}>
+            <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', py: 2, textAlign: 'center' }}>
               Sin liquidaciones. Usa el botón <AutorenewIcon fontSize="inherit" /> para auto-liquidar.
             </Typography>
           ) : (
             <TableContainer>
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ bgcolor: 'grey.50' }}>
+                  <TableRow sx={{ bgcolor: 'superficie2' }}>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Empleado</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Salario</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Aux. Transp.</TableCell>
@@ -183,9 +187,9 @@ function PeriodoCard({ periodo, puedeEditar, onCerrar, onEliminar, onAutoLiquida
                       onEliminar={handleEliminarLiq}
                     />
                   ))}
-                  <TableRow sx={{ bgcolor: 'grey.50' }}>
+                  <TableRow sx={{ bgcolor: 'superficie2' }}>
                     <TableCell colSpan={5} sx={{ fontWeight: 700, fontSize: '0.8rem' }}>Total nómina</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.82rem', fontFamily: 'monospace', color: '#10B981' }}>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.82rem', fontFamily: 'monospace', color: 'success.main' }}>
                       {fmtCOP(totalNeto)}
                     </TableCell>
                     <TableCell />
@@ -342,7 +346,7 @@ export function PanelNomina({ puedo }) {
             Nuevo período
           </Button>
         )}
-        <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', ml: 'auto' }}>
           {periodos.length} período{periodos.length !== 1 ? 's' : ''}
         </Typography>
       </Box>
@@ -353,7 +357,7 @@ export function PanelNomina({ puedo }) {
 
       {!cargando && periodos.length === 0 && (
         <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed', borderColor: 'divider', borderRadius: 2 }}>
-          <Typography color="text.secondary">No hay períodos de nómina para {anioFiltro}</Typography>
+          <Typography sx={{ color: 'text.secondary' }}>No hay períodos de nómina para {anioFiltro}</Typography>
           {puedo('talento_humano', 'editar') && (
             <Button variant="contained" startIcon={<AddIcon />} sx={{ mt: 2 }} onClick={() => setDialOpen(true)}>
               Crear primer período

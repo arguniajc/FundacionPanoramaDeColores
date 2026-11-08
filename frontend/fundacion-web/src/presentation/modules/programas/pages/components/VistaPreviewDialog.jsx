@@ -11,10 +11,9 @@ export function VistaPreviewDialog({ campos, programa, onCerrar }) {
   const secciones = seccionesOrdenadas(campos);
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle sx={{ bgcolor: COLOR, color: 'white', py: 1.5 }}>
-        <Typography fontWeight={700}>Vista previa del formulario</Typography>
+        <Typography sx={{ fontWeight: 700 }}>Vista previa del formulario</Typography>
         <Typography variant="caption" sx={{ opacity: 0.8 }}>{programa.nombre} · {programa.nombreSede}</Typography>
       </DialogTitle>
       <DialogContent dividers sx={{ p: 3 }}>
@@ -27,7 +26,7 @@ export function VistaPreviewDialog({ campos, programa, onCerrar }) {
             {secciones.map((sec, si) => {
               const grp = camposDeSeccion(campos, sec);
               return (
-                <Box key={sec || '_root'} mb={si < secciones.length - 1 ? 3 : 0}>
+                <Box sx={{ mb: si < secciones.length - 1 ? 3 : 0 }} key={sec || '_root'}>
                   {sec && (
                     <Box sx={{
                       borderLeft: `5px solid ${COLOR}`,
@@ -35,8 +34,8 @@ export function VistaPreviewDialog({ campos, programa, onCerrar }) {
                       borderRadius: '0 8px 8px 0',
                       px: 1.5, py: 0.9, mb: 2,
                     }}>
-                      <Typography fontWeight={800} color={COLOR}
-                        sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      <Typography
+                        sx={{ fontWeight: 800, color: COLOR, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                         {sec}
                       </Typography>
                     </Box>

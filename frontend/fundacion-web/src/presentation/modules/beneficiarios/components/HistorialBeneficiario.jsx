@@ -4,19 +4,21 @@ import {
   Alert, Box, Button, Chip, CircularProgress, Collapse,
   Tooltip, Typography,
 } from '@mui/material';
+import { useTheme }    from '@mui/material/styles';
 import ExpandMoreIcon  from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon  from '@mui/icons-material/ExpandLess';
 import HistoryIcon     from '@mui/icons-material/History';
 import { beneficiariosRepository } from '@/infrastructure/repositories/beneficiariosRepository';
+import { colorEstado } from '@/shared/theme/paleta';
 
 const COLOR = 'var(--color-primario)';
 
 const ACCION_META = {
-  creado:      { label: 'Inscrito',      color: '#166534', bg: '#dcfce7', border: '#86efac' },
-  editado:     { label: 'Editado',       color: '#1e40af', bg: '#dbeafe', border: '#93c5fd' },
-  baja:        { label: 'Dado de baja',  color: '#7c2d12', bg: '#fee2e2', border: '#fca5a5' },
-  reactivado:  { label: 'Reactivado',    color: '#065f46', bg: '#d1fae5', border: '#6ee7b7' },
-  eliminado:   { label: 'Eliminado',     color: '#6b21a8', bg: '#f3e8ff', border: '#d8b4fe' },
+  creado:      { label: 'Inscrito',      tono: 'exito' },
+  editado:     { label: 'Editado',       tono: 'info'  },
+  baja:        { label: 'Dado de baja',  tono: 'error' },
+  reactivado:  { label: 'Reactivado',    tono: 'exito' },
+  eliminado:   { label: 'Eliminado',     tono: 'marca' },
 };
 
 function fmtFecha(iso) {
@@ -28,6 +30,7 @@ function fmtFecha(iso) {
 }
 
 export default function HistorialBeneficiario({ beneficiarioId }) {
+  const theme = useTheme();
   const [open, setOpen] = useState(false);
 
   const { data: items, cargando, error, ejecutar: cargar } = useAsyncData(
@@ -67,7 +70,7 @@ export default function HistorialBeneficiario({ beneficiarioId }) {
           borderRadius: 2, p: 1.5, maxHeight: 260, overflowY: 'auto',
         }}>
           {cargando && (
-            <Box display="flex" justifyContent="center" py={2}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
               <CircularProgress size={22} sx={{ color: COLOR }} />
             </Box>
           )}
@@ -77,13 +80,14 @@ export default function HistorialBeneficiario({ beneficiarioId }) {
           )}
 
           {!cargando && items?.length === 0 && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography sx={{ color: 'text.secondary' }} variant="caption">
               Sin registros de cambios aún.
             </Typography>
           )}
 
           {!cargando && items?.map((item, idx) => {
-            const meta = ACCION_META[item.accion] ?? { label: item.accion, color: '#374151', bg: '#f3f4f6', border: '#d1d5db' };
+            const meta = ACCION_META[item.accion] ?? { label: item.accion, tono: 'neutro' };
+            const tono = colorEstado(meta.tono, theme.palette.mode);
             return (
               <Box
                 key={item.id}
@@ -97,14 +101,14 @@ export default function HistorialBeneficiario({ beneficiarioId }) {
                   label={meta.label}
                   size="small"
                   sx={{
-                    bgcolor: meta.bg, color: meta.color, fontWeight: 700,
-                    border: `1px solid ${meta.border}`, fontSize: '0.72rem',
+                    bgcolor: tono.fondo, color: tono.texto, fontWeight: 700,
+                    border: '1px solid', borderColor: 'divider', fontSize: '0.72rem',
                     height: 22, flexShrink: 0, mt: 0.2,
                   }}
                 />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                    <Typography variant="caption" fontWeight={600} color="text.secondary">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Typography sx={{ fontWeight: 600, color: 'text.secondary' }} variant="caption">
                       {fmtFecha(item.fecha)}
                     </Typography>
                     {item.usuarioEmail && (
@@ -123,7 +127,7 @@ export default function HistorialBeneficiario({ beneficiarioId }) {
                     )}
                   </Box>
                   {item.detalle && (
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">
                       {item.detalle}
                     </Typography>
                   )}

@@ -130,14 +130,14 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
           <Box sx={{ py: 3, textAlign: 'center' }}><CircularProgress /></Box>
         ) : asignaciones.length === 0 ? (
           <Box sx={{ py: 3, textAlign: 'center', color: 'text.secondary' }}>
-            <AssignmentIcon sx={{ fontSize: 40, color: '#ede9fe', mb: 1 }} />
-            <Typography fontSize="0.9rem">Sin asignaciones aún</Typography>
+            <AssignmentIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
+            <Typography sx={{ fontSize: '0.9rem' }}>Sin asignaciones aún</Typography>
           </Box>
         ) : (
           <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, mb: 3 }}>
             <Table size="small">
               <TableHead>
-                <TableRow sx={{ bgcolor: '#faf5ff' }}>
+                <TableRow sx={{ bgcolor: 'superficie2' }}>
                   <TableCell sx={{ fontWeight: 700 }}>Sede</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Programa</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Horas/sem</TableCell>
@@ -173,11 +173,11 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
           </TableContainer>
         )}
 
-        <Typography fontWeight={700} sx={{ mb: 1.5, color: COLOR, fontSize: '0.85rem' }}>
+        <Typography sx={{ fontWeight: 700, mb: 1.5, color: COLOR, fontSize: '0.85rem' }}>
           {editandoId ? 'Editando asignación' : 'Agregar asignación'}
         </Typography>
         {error && <Alert severity="error" sx={{ mb: 1.5 }}>{error}</Alert>}
-        <Grid container spacing={2} alignItems="center">
+        <Grid sx={{ alignItems: 'center' }} container spacing={2}>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small" error={!!v.err('sedeId')}>
               <InputLabel>Sede</InputLabel>
@@ -218,7 +218,7 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
             <Button variant="contained"
               startIcon={guardando ? <CircularProgress size={16} color="inherit" /> : editandoId ? <EditIcon /> : <AddIcon />}
               onClick={guardar} disabled={guardando}
-              sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: '#5b21b6' } }}>
+              sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: 'primary.dark' } }}>
               {guardando ? '…' : editandoId ? 'Guardar cambios' : 'Agregar'}
             </Button>
             {editandoId && <Button onClick={cancelarEdicion} disabled={guardando}>Cancelar</Button>}

@@ -5,6 +5,7 @@ import {
   MenuItem, Select, Snackbar, Switch, TextField, Tooltip, Typography,
   useMediaQuery, useTheme,
 } from '@mui/material';
+import { alpha }        from '@mui/material/styles';
 import AddIcon          from '@mui/icons-material/Add';
 import CheckCircleIcon  from '@mui/icons-material/CheckCircle';
 import EditIcon         from '@mui/icons-material/Edit';
@@ -142,7 +143,7 @@ export default function ProgramasPage() {
           }}>
             Módulo
           </Typography>
-          <Typography variant="h5" fontWeight={800} color={COLOR}>Proyectos</Typography>
+          <Typography sx={{ fontWeight: 800, color: COLOR }} variant="h5">Proyectos</Typography>
         </Box>
         <Button variant="contained" startIcon={<AddIcon />}
           onClick={abrirNuevoPrograma} disabled={sedes.length === 0}
@@ -154,8 +155,8 @@ export default function ProgramasPage() {
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
       {cargando ? (
-        <Box display="flex" justifyContent="center" py={8}>
-          <Typography color="text.secondary">Cargando proyectos…</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <Typography sx={{ color: 'text.secondary' }}>Cargando proyectos…</Typography>
         </Box>
       ) : todosLosProgramas.length === 0 ? (
         <Alert severity="info">
@@ -166,20 +167,20 @@ export default function ProgramasPage() {
           {todosLosProgramas.map(p => (
             <Grid key={p.id} size={{ xs: 12, sm: 6, md: 4 }}>
               <Box sx={{
-                border: '1.5px solid #e2d9f3', borderRadius: 3,
-                p: 2.5, bgcolor: '#fdfbff', height: '100%',
+                border: '1.5px solid', borderColor: 'divider', borderRadius: 3,
+                p: 2.5, bgcolor: 'background.paper', height: '100%',
                 display: 'flex', flexDirection: 'column', gap: 1.5,
               }}>
-                <Box display="flex" alignItems="flex-start" gap={1}>
-                  <Box flex={1}>
-                    <Typography fontWeight={800} sx={{ color: COLOR }}>{p.nombre}</Typography>
-                    <Typography variant="caption" color="text.secondary">{p.nombreSede}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 800, color: COLOR }}>{p.nombre}</Typography>
+                    <Typography sx={{ color: 'text.secondary' }} variant="caption">{p.nombreSede}</Typography>
                   </Box>
                   {chipEstado(p.activo)}
                 </Box>
 
                 {p.descripcion && (
-                  <Typography variant="body2" color="text.secondary" sx={{
+                  <Typography variant="body2" sx={{ color: 'text.secondary',
                     display: '-webkit-box', WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical', overflow: 'hidden',
                   }}>
@@ -197,14 +198,15 @@ export default function ProgramasPage() {
 
                 {/* ── Rep. Legal de la Fundación ── */}
                 <Box sx={{
-                  border: `1px solid ${p.repAutorizado ? '#c8e6c9' : '#e2d9f3'}`,
+                  border: '1px solid',
+                  borderColor: (t) => (p.repAutorizado ? alpha(t.palette.success.main, 0.35) : t.palette.divider),
                   borderRadius: 2, p: 1.2,
-                  bgcolor: p.repAutorizado ? '#f1f8e9' : '#fdfbff',
+                  bgcolor: (t) => (p.repAutorizado ? alpha(t.palette.success.main, 0.08) : t.palette.superficie2),
                 }}>
-                  <Box display="flex" alignItems="center" gap={0.8} mb={p.repAutorizado ? 0.5 : 0}>
-                    <GavelIcon sx={{ fontSize: 15, color: p.repAutorizado ? '#388e3c' : '#aaa' }} />
-                    <Typography variant="caption" fontWeight={700}
-                      sx={{ color: p.repAutorizado ? '#388e3c' : 'text.secondary', flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: p.repAutorizado ? 0.5 : 0 }}>
+                    <GavelIcon sx={{ fontSize: 15, color: p.repAutorizado ? 'success.main' : 'text.disabled' }} />
+                    <Typography variant="caption"
+                      sx={{ fontWeight: 700, color: p.repAutorizado ? 'success.main' : 'text.secondary', flex: 1 }}>
                       Rep. Legal
                     </Typography>
                     {p.repAutorizado ? (
@@ -228,16 +230,16 @@ export default function ProgramasPage() {
                   </Box>
                   {p.repAutorizado && (
                     <Box>
-                      <Typography variant="caption" sx={{ color: '#2e7d32', display: 'block', fontWeight: 600 }}>
+                      <Typography variant="caption" sx={{ color: 'success.main', display: 'block', fontWeight: 600 }}>
                         {p.repNombre ?? '—'}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.62rem' }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.62rem' }}>
                         {p.repDocumento ? `${p.repDocumento}` : ''}
                         {p.repCargo ? ` · ${p.repCargo}` : ''}
                       </Typography>
                       {p.repAutorizacionFecha && (
-                        <Typography variant="caption" color="text.secondary"
-                          sx={{ display: 'block', fontSize: '0.6rem' }}>
+                        <Typography variant="caption"
+                          sx={{ color: 'text.secondary', display: 'block', fontSize: '0.6rem' }}>
                           Desde {new Date(p.repAutorizacionFecha).toLocaleDateString('es-CO',
                             { day: '2-digit', month: 'short', year: 'numeric' })}
                         </Typography>
@@ -249,14 +251,15 @@ export default function ProgramasPage() {
                 {/* ── Entidad ejecutora (tercero) ── */}
                 {p.tieneTercero && (
                   <Box sx={{
-                    border: `1px solid ${p.terceroRepNombre ? '#b3c6f7' : '#e2d9f3'}`,
+                    border: '1px solid',
+                    borderColor: (t) => (p.terceroRepNombre ? alpha(t.palette.info.main, 0.35) : t.palette.divider),
                     borderRadius: 2, p: 1.2,
-                    bgcolor: p.terceroRepNombre ? '#f0f4ff' : '#fdfbff',
+                    bgcolor: (t) => (p.terceroRepNombre ? alpha(t.palette.info.main, 0.08) : t.palette.superficie2),
                   }}>
-                    <Box display="flex" alignItems="center" gap={0.8} mb={p.terceroRepNombre ? 0.5 : 0}>
-                      <HandshakeIcon sx={{ fontSize: 15, color: p.terceroRepNombre ? '#1565c0' : '#aaa' }} />
-                      <Typography variant="caption" fontWeight={700}
-                        sx={{ color: p.terceroRepNombre ? '#1565c0' : 'text.secondary', flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: p.terceroRepNombre ? 0.5 : 0 }}>
+                      <HandshakeIcon sx={{ fontSize: 15, color: p.terceroRepNombre ? 'info.main' : 'text.disabled' }} />
+                      <Typography variant="caption"
+                        sx={{ fontWeight: 700, color: p.terceroRepNombre ? 'info.main' : 'text.secondary', flex: 1 }}>
                         Entidad ejecutora
                       </Typography>
                     </Box>
@@ -265,27 +268,27 @@ export default function ProgramasPage() {
                     </Typography>
                     {p.terceroRepNombre && (
                       <>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.62rem' }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.62rem' }}>
                           Rep: {p.terceroRepNombre}
                           {p.terceroRepDocumento ? ` · ${p.terceroRepTipoDoc} ${p.terceroRepDocumento}` : ''}
                         </Typography>
                         {p.terceroRepCargo && (
-                          <Typography variant="caption" color="text.secondary"
-                            sx={{ display: 'block', fontSize: '0.6rem' }}>
+                          <Typography variant="caption"
+                            sx={{ color: 'text.secondary', display: 'block', fontSize: '0.6rem' }}>
                             {p.terceroRepCargo}
                           </Typography>
                         )}
                         {p.terceroRepFirma && (
                           <Box component="img" src={p.terceroRepFirma} alt="Firma entidad"
                             sx={{ mt: 0.5, height: 32, maxWidth: '100%', objectFit: 'contain',
-                                  border: '1px solid #d0dcf7', borderRadius: 1, bgcolor: 'white' }} />
+                                  border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'white' }} />
                         )}
                       </>
                     )}
                   </Box>
                 )}
 
-                <Box display="flex" gap={1} flexWrap="wrap">
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   <Button size="small" variant="outlined" startIcon={<TuneIcon />}
                     onClick={() => setCamposPrograma(p)}
                     sx={{ color: COLOR, borderColor: COLOR, flex: 1 }}>
@@ -317,15 +320,14 @@ export default function ProgramasPage() {
       )}
 
       {formPrograma && (
-        <Dialog open onClose={() => setFormPrograma(null)}
+        <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 2 } } }} open onClose={() => setFormPrograma(null)}
           maxWidth={formPrograma.tieneTercero ? 'sm' : 'xs'} fullWidth
-          fullScreen={isMobile}
-          PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2 } }}>
+          fullScreen={isMobile}>
           <DialogTitle sx={{ fontWeight: 700 }}>
             {formPrograma.id ? 'Editar proyecto' : 'Nuevo proyecto'}
           </DialogTitle>
           <DialogContent dividers>
-            <Grid container spacing={2.5} mt={0}>
+            <Grid sx={{ mt: 0 }} container spacing={2.5}>
               <Grid size={12}>
                 <FormControl fullWidth size="small" error={!!v.err('sedeId')}>
                   <InputLabel>Sede *</InputLabel>
@@ -381,8 +383,8 @@ export default function ProgramasPage() {
                   <Grid size={12}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                       <HandshakeIcon sx={{ fontSize: 16, color: COLOR }} />
-                      <Typography variant="caption" fontWeight={700} color={COLOR}
-                        sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      <Typography variant="caption"
+                        sx={{ fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         Representante de la entidad ejecutora
                       </Typography>
                     </Box>
@@ -420,8 +422,8 @@ export default function ProgramasPage() {
 
                   {/* Firma de la entidad */}
                   <Grid size={12}>
-                    <Typography variant="caption" fontWeight={700} color="text.secondary"
-                      sx={{ textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
+                    <Typography variant="caption"
+                      sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
                       Firma de la entidad ejecutora
                     </Typography>
                     <FirmaPad
@@ -429,7 +431,7 @@ export default function ProgramasPage() {
                       value={formPrograma.terceroRepFirma}
                       onChange={v => setFormPrograma(p => ({ ...p, terceroRepFirma: v }))}
                     />
-                    <Box display="flex" alignItems="center" gap={1} mt={1}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
                       <Button size="small" variant="outlined" startIcon={<UploadFileIcon />}
                         onClick={() => fileRef.current?.click()}
                         sx={{ color: COLOR, borderColor: COLOR, fontSize: '0.75rem' }}>

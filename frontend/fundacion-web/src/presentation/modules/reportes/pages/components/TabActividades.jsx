@@ -12,9 +12,10 @@ import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
 import { COLORES } from './colores';
-import { BRAND_COLOR } from '@/shared/constants/brand';
+import { useTheme } from '@mui/material/styles';
 
 export function TabActividades() {
+  const theme = useTheme();
   const hoy   = new Date();
   const [anio,  setAnio]  = useState(hoy.getFullYear());
   const [data,  setData]  = useState(null);
@@ -74,32 +75,32 @@ export function TabActividades() {
 
       {!data ? <Grid size={{ xs: 12 }}><SkeletonSection /></Grid> : <>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-          <KpiCard label="Total actividades"  value={resumen.total}              icon={<EventIcon fontSize="inherit" />}  color={BRAND_COLOR} />
+          <KpiCard label="Total actividades"  value={resumen.total}              icon={<EventIcon fontSize="inherit" />}  color="primary.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-          <KpiCard label="Completadas"        value={resumen.completadas}        icon={<EventIcon fontSize="inherit" />}  color="#10B981" />
+          <KpiCard label="Completadas"        value={resumen.completadas}        icon={<EventIcon fontSize="inherit" />}  color="success.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-          <KpiCard label="En curso"           value={resumen.enCurso}            icon={<EventIcon fontSize="inherit" />}  color="#F59E0B" />
+          <KpiCard label="En curso"           value={resumen.enCurso}            icon={<EventIcon fontSize="inherit" />}  color="warning.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-          <KpiCard label="Planificadas"       value={resumen.planificadas}       icon={<EventIcon fontSize="inherit" />}  color="#2563EB" />
+          <KpiCard label="Planificadas"       value={resumen.planificadas}       icon={<EventIcon fontSize="inherit" />}  color="info.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-          <KpiCard label="Total asistencias"  value={resumen.totalAsistencia}    icon={<PeopleIcon fontSize="inherit" />} color="#7C3AED" />
+          <KpiCard label="Total asistencias"  value={resumen.totalAsistencia}    icon={<PeopleIcon fontSize="inherit" />} color="primary.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-          <KpiCard label="Prom. asistencia"   value={resumen.promedioAsistencia} icon={<PeopleIcon fontSize="inherit" />} color="#06B6D4" />
+          <KpiCard label="Prom. asistencia"   value={resumen.promedioAsistencia} icon={<PeopleIcon fontSize="inherit" />} color="info.main" />
         </Grid>
 
         <Grid size={{ xs: 12, md: 8 }}>
           <GraficaCard titulo={`Actividades por mes — ${anio}`} height={240}>
             <BarChart data={porMes}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
               <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
               <Tooltip content={<TooltipCustom />} />
-              <Bar dataKey="cantidad" name="Actividades" fill={BRAND_COLOR} radius={[4,4,0,0]}>
+              <Bar dataKey="cantidad" name="Actividades" fill={theme.palette.primary.main} radius={[4,4,0,0]}>
                 {porMes.map((_, i) => <Cell key={i} fill={COLORES[i % COLORES.length]} />)}
               </Bar>
             </BarChart>
@@ -123,7 +124,7 @@ export function TabActividades() {
           <Grid size={{ xs: 12 }}>
             <GraficaCard titulo={`Asistencia en actividades completadas — ${anio} (últimas 10)`} height={280}>
               <BarChart data={asistenciaPorActividad}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
                 <XAxis dataKey="titulo" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip content={<TooltipCustom />} />

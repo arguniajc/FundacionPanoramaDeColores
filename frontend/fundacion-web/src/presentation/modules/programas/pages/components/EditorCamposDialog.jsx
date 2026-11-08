@@ -5,6 +5,7 @@ import {
   InputLabel, ListSubheader, MenuItem, Select, Snackbar, Switch, TextField,
   ToggleButton, ToggleButtonGroup, Tooltip, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
+import { alpha }        from '@mui/material/styles';
 import AddIcon          from '@mui/icons-material/Add';
 import VisibilityIcon   from '@mui/icons-material/Visibility';
 import ArrowUpwardIcon  from '@mui/icons-material/ArrowUpward';
@@ -271,12 +272,11 @@ export function EditorCamposDialog({ programa, onCerrar }) {
 
   return (
     <>
-      <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
-        PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
+      <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
         <DialogTitle sx={{ bgcolor: COLOR, color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center' }}>
-          <Box flex={1}>
+          <Box sx={{ flex: 1 }}>
             Campos: {programa.nombre}
-            <Typography variant="caption" display="block" sx={{ opacity: 0.75, fontWeight: 400 }}>
+            <Typography variant="caption" sx={{ display: 'block', opacity: 0.75, fontWeight: 400 }}>
               {programa.nombreSede}
             </Typography>
           </Box>
@@ -296,11 +296,11 @@ export function EditorCamposDialog({ programa, onCerrar }) {
           )}
 
           {cargando ? (
-            <Box display="flex" justifyContent="center" py={4}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress sx={{ color: COLOR }} />
             </Box>
           ) : camposLocal.length === 0 ? (
-            <Typography color="text.secondary" textAlign="center" py={3}>
+            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>
               Este programa no tiene campos configurados.
             </Typography>
           ) : (
@@ -311,8 +311,8 @@ export function EditorCamposDialog({ programa, onCerrar }) {
                   <Box key={sec || '_root'} sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5,
                                bgcolor: COLOR, borderRadius: '8px 8px 0 0', px: 1.5, py: 0.8 }}>
-                      <Typography variant="caption" fontWeight={800} color="white"
-                        sx={{ textTransform: 'uppercase', letterSpacing: 1, flex: 1 }}>
+                      <Typography variant="caption"
+                        sx={{ fontWeight: 800, color: 'white', textTransform: 'uppercase', letterSpacing: 1, flex: 1 }}>
                         {sec || '(sin sección)'}
                       </Typography>
                       <Tooltip title="Subir sección"><span>
@@ -331,7 +331,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
                       </span></Tooltip>
                     </Box>
 
-                    <Box sx={{ border: '1px solid #e2d9f3', borderTop: 'none',
+                    <Box sx={{ border: '1px solid', borderColor: 'divider', borderTop: 'none',
                                borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
                       <DndContext sensors={sensors} collisionDetection={closestCenter}
                         onDragEnd={(e) => handleDragEnd(e, sec)}>
@@ -363,8 +363,8 @@ export function EditorCamposDialog({ programa, onCerrar }) {
               <Button fullWidth variant="outlined" startIcon={<AddIcon />}
                 onClick={agregarBloqueResponsables}
                 disabled={todosResponsablesExisten}
-                sx={{ borderStyle: 'dashed', color: '#7B3FC4', borderColor: '#7B3FC4',
-                      bgcolor: '#faf6ff', '&:hover': { bgcolor: '#f3ecff' },
+                sx={{ borderStyle: 'dashed', color: 'primary.main', borderColor: 'primary.main',
+                      bgcolor: (t) => alpha(t.palette.primary.main, 0.04), '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.1) },
                       '&.Mui-disabled': { borderStyle: 'dashed' } }}>
                 Agregar bloque de responsables (padre · madre · tutor)
               </Button>
@@ -383,7 +383,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
             sx={{ color: COLOR, borderColor: COLOR }}>
             Vista previa
           </Button>
-          <Box flex={1} />
+          <Box sx={{ flex: 1 }} />
           <Button onClick={onCerrar} disabled={guardando}>Cerrar</Button>
           <Button variant="contained" onClick={handleGuardarTodo}
             disabled={guardando || !hayPendientes}
@@ -402,7 +402,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
           {editando ? 'Editar campo' : 'Nuevo campo'}
         </DialogTitle>
         <DialogContent dividers>
-          <Grid container spacing={2.5} mt={0}>
+          <Grid sx={{ mt: 0 }} container spacing={2.5}>
             <Grid size={12}>
               <Autocomplete freeSolo options={seccionesExistentes}
                 value={form.seccion}
@@ -447,7 +447,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
               </Grid>
             )}
             <Grid size={12}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+              <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5 }} variant="caption">
                 Ancho en el formulario
               </Typography>
               <ToggleButtonGroup exclusive size="small"

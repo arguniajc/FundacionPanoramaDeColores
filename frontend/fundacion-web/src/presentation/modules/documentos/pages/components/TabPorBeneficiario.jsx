@@ -57,7 +57,7 @@ export function TabPorBeneficiario({ onToast }) {
 
   return (
     <Box>
-      <Box display="flex" alignItems="flex-start" flexWrap="wrap" gap={2} mb={2}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 2 }}>
         <Autocomplete sx={{ width: { xs: '100%', sm: 380 } }}
           options={opciones}
           getOptionLabel={o => o.nombreMenor ?? o.nombre ?? ''}
@@ -79,7 +79,7 @@ export function TabPorBeneficiario({ onToast }) {
       {!beneficiario ? (
         <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, py: 6, textAlign: 'center' }}>
           <PersonIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-          <Typography variant="body2" color="text.secondary">
+          <Typography sx={{ color: 'text.secondary' }} variant="body2">
             Busca un beneficiario para ver sus documentos.
           </Typography>
         </Paper>
@@ -88,15 +88,15 @@ export function TabPorBeneficiario({ onToast }) {
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
             {cargando ? (
-              <Box display="flex" justifyContent="center" py={5}><CircularProgress sx={{ color: 'var(--color-primario)' }} /></Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress sx={{ color: 'var(--color-primario-texto)' }} /></Box>
             ) : (
               <TableContainer>
                 <Table size="small">
                   <TableHead>
-                    <TableRow sx={{ bgcolor: '#fdfbff' }}>
-                      <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Nombre del archivo</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Fecha</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Acciones</TableCell>
+                    <TableRow sx={{ bgcolor: 'superficie2' }}>
+                      <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario-texto)' }}>Nombre del archivo</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario-texto)' }}>Fecha</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'var(--color-primario-texto)' }}>Acciones</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -109,9 +109,9 @@ export function TabPorBeneficiario({ onToast }) {
                     ) : archivos.map(a => (
                       <TableRow key={a.id} hover>
                         <TableCell>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <InsertDriveFileIcon fontSize="small" sx={{ color: 'var(--color-primario)' }} />
-                            <Typography variant="body2" fontWeight={600}>{a.nombreOriginal ?? 'Documento'}</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <InsertDriveFileIcon fontSize="small" sx={{ color: 'var(--color-primario-texto)' }} />
+                            <Typography sx={{ fontWeight: 600 }} variant="body2">{a.nombreOriginal ?? 'Documento'}</Typography>
                           </Box>
                         </TableCell>
                         <TableCell sx={{ fontSize: '0.78rem', color: 'text.secondary', whiteSpace: 'nowrap' }}>
@@ -125,12 +125,12 @@ export function TabPorBeneficiario({ onToast }) {
                           </Tooltip>
                           <Tooltip title="Descargar">
                             <IconButton size="small" onClick={() => abrirArchivo(a.url)}>
-                              <DownloadIcon fontSize="small" sx={{ color: 'var(--color-primario)' }} />
+                              <DownloadIcon fontSize="small" sx={{ color: 'var(--color-primario-texto)' }} />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Eliminar">
                             <IconButton size="small" onClick={() => setConfirmar({ id: a.id, nombre: a.nombreOriginal ?? 'Documento' })}>
-                              <DeleteIcon fontSize="small" sx={{ color: '#d32f2f' }} />
+                              <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
                             </IconButton>
                           </Tooltip>
                         </TableCell>

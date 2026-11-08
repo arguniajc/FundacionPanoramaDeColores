@@ -7,10 +7,10 @@ export default function SinAcceso({ modulo }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 2 }}>
       <LockIcon sx={{ fontSize: 64, color: 'text.disabled' }} />
-      <Typography variant="h6" color="text.secondary">
+      <Typography sx={{ color: 'text.secondary' }} variant="h6">
         Sin acceso{modulo ? ` a ${modulo}` : ''}
       </Typography>
-      <Typography variant="body2" color="text.disabled" textAlign="center" maxWidth={320}>
+      <Typography sx={{ color: 'text.disabled', textAlign: 'center', maxWidth: 320 }} variant="body2">
         No tienes permiso para ver esta sección. Contacta al administrador si crees que es un error.
       </Typography>
       <Button variant="outlined" onClick={() => navigate('/sede')}>Ir al inicio</Button>

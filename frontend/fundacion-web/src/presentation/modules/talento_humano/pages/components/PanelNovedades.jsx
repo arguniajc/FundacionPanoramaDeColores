@@ -4,6 +4,7 @@ import {
   IconButton, DialogTitle, DialogContent, DialogActions, Alert,
   Skeleton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon    from '@mui/icons-material/Add';
 import EditIcon   from '@mui/icons-material/Edit';
@@ -15,17 +16,19 @@ import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
+import { colorEstado } from '@/shared/theme/paleta';
 
 const TIPOS_NOVEDAD   = ['vacaciones','incapacidad','permiso_remunerado','permiso_no_remunerado','comision','otro'];
 const ESTADOS_NOVEDAD = ['pendiente','aprobada','rechazada'];
 
+// Tono de la paleta central por tipo de novedad (fondo suave + texto, legible en ambos modos)
 const NOVEDAD_COLORS = {
-  vacaciones:            '#10B981',
-  incapacidad:           '#EF4444',
-  permiso_remunerado:    '#F59E0B',
-  permiso_no_remunerado: '#9CA3AF',
-  comision:              '#2563EB',
-  otro:                  '#7C3AED',
+  vacaciones:            'exito',
+  incapacidad:           'error',
+  permiso_remunerado:    'aviso',
+  permiso_no_remunerado: 'neutro',
+  comision:              'info',
+  otro:                  'marca',
 };
 const ESTADO_NOVEDAD_COLORS = { pendiente: 'warning', aprobada: 'success', rechazada: 'error' };
 const NOVEDAD_VACIA = { tipo: 'vacaciones', fechaInicio: '', fechaFin: '', dias: '', descripcion: '', estado: 'pendiente' };
@@ -134,6 +137,7 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
 
 /** @param {{ empleado: object, puedo: (mod: string, acc: string) => boolean }} props */
 export function PanelNovedades({ empleado, puedo }) {
+  const theme = useTheme();
   const confirm = useConfirm();
   const [novedades, setNovedades]   = useState([]);
   const [loading,   setLoading]     = useState(true);
@@ -170,7 +174,7 @@ export function PanelNovedades({ empleado, puedo }) {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-        <Typography variant="subtitle2" fontWeight={700}>
+        <Typography sx={{ fontWeight: 700 }} variant="subtitle2">
           Novedades — {empleado.nombres} {empleado.apellidos}
         </Typography>
         {puedo('talento_humano', 'crear') && (
@@ -185,7 +189,7 @@ export function PanelNovedades({ empleado, puedo }) {
       {loading ? (
         <Skeleton height={120} />
       ) : novedades.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', py: 3, textAlign: 'center' }}>
           Sin novedades registradas para este empleado
         </Typography>
       ) : (
@@ -206,8 +210,8 @@ export function PanelNovedades({ empleado, puedo }) {
                 <TableRow key={n.id} hover>
                   <TableCell>
                     <Chip label={n.tipo.replace(/_/g, ' ')} size="small"
-                      sx={{ bgcolor: (NOVEDAD_COLORS[n.tipo] ?? '#888') + '22',
-                            color:   NOVEDAD_COLORS[n.tipo] ?? '#888', fontWeight: 600 }} />
+                      sx={{ bgcolor: colorEstado(NOVEDAD_COLORS[n.tipo] ?? 'neutro', theme.palette.mode).fondo,
+                            color:   colorEstado(NOVEDAD_COLORS[n.tipo] ?? 'neutro', theme.palette.mode).texto, fontWeight: 600 }} />
                   </TableCell>
                   <TableCell>{fmtFecha(n.fechaInicio)}</TableCell>
                   <TableCell>{fmtFecha(n.fechaFin)}</TableCell>

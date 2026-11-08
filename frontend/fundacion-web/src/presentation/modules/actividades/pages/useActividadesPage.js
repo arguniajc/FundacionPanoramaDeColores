@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTheme, alpha } from '@mui/material/styles';
 import { useConfirm } from '@/shared/components/useConfirm';
 import { actividadesRepository }  from '@/infrastructure/repositories/actividadesRepository';
 import { sedesRepository }        from '@/infrastructure/repositories/sedesRepository';
@@ -23,7 +24,7 @@ const COLORES_PROGRAMA = [
 
 // Expande los horarios recurrentes en eventos del calendario para un rango dado,
 // respetando las fechas de vigencia configuradas en cada horario.
-function expandirHorarios(horarios, start, end) {
+function expandirHorarios(horarios, start, end, estilo) {
   const eventos = [];
   for (const h of horarios) {
     if (!h.activo) continue;
@@ -42,9 +43,9 @@ function expandirHorarios(horarios, start, end) {
           title:           h.programaNombre,
           start:           `${fecha}T${h.horaInicio}`,
           end:             `${fecha}T${h.horaFin}`,
-          backgroundColor: '#e8def8',
-          borderColor:     COLOR,
-          textColor:       COLOR,
+          backgroundColor: estilo.fondo,
+          borderColor:     estilo.borde,
+          textColor:       estilo.borde,
           extendedProps:   { tipo: 'horario', horario: h },
         });
       }
@@ -58,6 +59,11 @@ export function useActividadesPage() {
   const { puedo } = usePermisos();
   const confirm   = useConfirm();
   const toast     = useToast();
+  const theme     = useTheme();
+  // Sesiones recurrentes del calendario: fondo suave que se adapta al modo claro/oscuro
+  const estiloHorario = theme.palette.mode === 'dark'
+    ? { fondo: alpha(theme.palette.primary.main, 0.18), borde: theme.palette.primary.main }
+    : { fondo: '#e8def8', borde: COLOR };
 
   const [tab,             setTab]             = useState(0);
   const [actividades,     setActividades]     = useState([]);
@@ -131,7 +137,7 @@ export function useActividadesPage() {
 
   const eventos = [
     ...eventosUnicos,
-    ...(rangoCalendario ? expandirHorarios(horarios, rangoCalendario.start, rangoCalendario.end) : []),
+    ...(rangoCalendario ? expandirHorarios(horarios, rangoCalendario.start, rangoCalendario.end, estiloHorario) : []),
   ];
 
   const abrirNueva  = (dateInfo) => {

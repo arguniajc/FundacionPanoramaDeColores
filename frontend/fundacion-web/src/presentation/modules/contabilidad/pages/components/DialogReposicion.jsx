@@ -85,9 +85,8 @@ export function DialogReposicion({ open, cuentaCajaId, cuentas, guardando, onClo
               {...v.props('fecha')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Monto a reponer *" type="number" size="small"
-              value={form.monto} onChange={set('monto')} {...v.props('monto')}
-              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
+            <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Monto a reponer *" type="number" size="small"
+              value={form.monto} onChange={set('monto')} {...v.props('monto')} />
           </Grid>
           <Grid size={12}>
             <TextField fullWidth label="N° transferencia / comprobante" size="small"

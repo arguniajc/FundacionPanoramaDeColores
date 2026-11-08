@@ -114,7 +114,7 @@ export function DonanteDialog({ open, donante, onClose, onGuardado }) {
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}
-          sx={{ bgcolor: COLOR_DONANTES, fontWeight: 700, '&:hover': { bgcolor: '#1e7a38' } }}>
+          sx={{ bgcolor: COLOR_DONANTES, fontWeight: 700, '&:hover': { bgcolor: 'secondary.dark' } }}>
           {guardando ? <CircularProgress size={20} color="inherit" /> : editando ? 'Guardar' : 'Crear donante'}
         </Button>
       </DialogActions>

@@ -7,8 +7,9 @@ import listPlugin        from '@fullcalendar/list';
 import esLocale          from '@fullcalendar/core/locales/es';
 import {
   Box, Button, Chip, Divider, IconButton, ListItemIcon, ListItemText,
-  Menu, MenuItem, Stack, Tab, Tabs, Tooltip, Typography,
+  Menu, MenuItem, Stack, Tab, Tabs, Tooltip, Typography, useMediaQuery,
 } from '@mui/material';
+import { useTheme, alpha } from '@mui/material/styles';
 import AddIcon           from '@mui/icons-material/Add';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import DeleteIcon        from '@mui/icons-material/Delete';
@@ -31,6 +32,11 @@ function EstadoChip({ estado }) {
 
 export default function ActividadesPage() {
   const calendarRef = useRef(null);
+  const theme = useTheme();
+  // En celular la vista de mes corta los títulos: se abre en lista (se puede cambiar)
+  const movil = useMediaQuery(theme.breakpoints.down('sm'));
+  // Sesiones recurrentes: fondo suave de la marca (en oscuro, translúcido sobre el fondo)
+  const fondoHorario = theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.18) : '#e8def8';
   const {
     puedo,
     tab, setTab,
@@ -55,7 +61,7 @@ export default function ActividadesPage() {
           }}>
             Módulo
           </Typography>
-          <Typography variant="h5" fontWeight={800} color={COLOR}>Actividades</Typography>
+          <Typography sx={{ fontWeight: 800, color: 'primary.main' }} variant="h5">Actividades</Typography>
         </Box>
         {puedo('actividades', 'crear') && (
           <Button variant="contained" startIcon={<AddIcon />}
@@ -70,8 +76,8 @@ export default function ActividadesPage() {
         <Tabs value={tab} onChange={(_, v) => setTab(v)}
           sx={{
             '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: '0.88rem' },
-            '& .Mui-selected': { color: COLOR },
-            '& .MuiTabs-indicator': { backgroundColor: COLOR },
+            '& .Mui-selected': { color: 'primary.main' },
+            '& .MuiTabs-indicator': { backgroundColor: 'primary.main' },
           }}>
           <Tab label="Calendario" icon={<CalendarMonthIcon fontSize="small" />} iconPosition="start" />
           <Tab label="Horarios de programas" icon={<ScheduleIcon fontSize="small" />} iconPosition="start" />
@@ -83,16 +89,21 @@ export default function ActividadesPage() {
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2, alignItems: 'center' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
               <Box sx={{ width: 14, height: 14, borderRadius: 1, bgcolor: COLOR }} />
-              <Typography variant="caption" color="text.secondary">Actividad única</Typography>
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">Actividad única</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
-              <Box sx={{ width: 14, height: 14, borderRadius: 1, bgcolor: '#e8def8', border: `2px solid ${COLOR}` }} />
-              <Typography variant="caption" color="text.secondary">Sesión recurrente</Typography>
+              <Box sx={{ width: 14, height: 14, borderRadius: 1, bgcolor: fondoHorario, border: '2px solid', borderColor: 'primary.main' }} />
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">Sesión recurrente</Typography>
             </Box>
           </Box>
 
           <Box sx={{
             '& .fc': { fontFamily: 'inherit' },
+            // Colores base de FullCalendar tomados del tema (bordes, fondo de lista, cabeceras)
+            '--fc-border-color': theme.palette.divider,
+            '--fc-page-bg-color': theme.palette.background.paper,
+            '--fc-neutral-bg-color': theme.palette.superficie2,
+            '--fc-list-event-hover-bg-color': theme.palette.action.hover,
             '& .fc-toolbar-title': { fontSize: { xs: '1rem', sm: '1.1rem' }, fontWeight: 700 },
             // En móvil la barra del calendario (navegación / título / vistas) pasa a varias líneas
             '& .fc-header-toolbar': { flexWrap: { xs: 'wrap', sm: 'nowrap' }, gap: 1 },
@@ -103,7 +114,7 @@ export default function ActividadesPage() {
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-              initialView="dayGridMonth"
+              initialView={movil ? 'listMonth' : 'dayGridMonth'}
               locale={esLocale}
               headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listMonth' }}
               buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', list: 'Lista' }}
@@ -127,10 +138,10 @@ export default function ActividadesPage() {
                 if (props.tipo === 'horario') {
                   return (
                     <Box sx={{ px: '2px', py: '1px', overflow: 'hidden' }}>
-                      <Typography variant="caption" sx={{ display: 'block', fontWeight: 600, lineHeight: 1.2, color: COLOR }}>
+                      <Typography variant="caption" sx={{ display: 'block', fontWeight: 600, lineHeight: 1.2, color: 'primary.main' }}>
                         {event.title}
                       </Typography>
-                      <Typography variant="caption" sx={{ fontSize: '0.6rem', color: COLOR, opacity: 0.8 }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'primary.main', opacity: 0.8 }}>
                         {props.horario.horaInicio}–{props.horario.horaFin}
                       </Typography>
                     </Box>
@@ -158,7 +169,7 @@ export default function ActividadesPage() {
 
           {actividades.length > 0 && (
             <Box sx={{ mt: 3 }}>
-              <Typography variant="subtitle2" fontWeight={700} mb={1}>
+              <Typography sx={{ fontWeight: 700, mb: 1 }} variant="subtitle2">
                 Actividades del mes ({actividades.length})
               </Typography>
               <Stack spacing={1}>
@@ -170,7 +181,7 @@ export default function ActividadesPage() {
                   }}>
                     <Box sx={{ flex: 1, minWidth: 0, flexBasis: { xs: '100%', sm: 0 } }}>
                       <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>{a.titulo}</Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography sx={{ color: 'text.secondary' }} variant="caption">
                         {new Date(a.fechaInicio).toLocaleString('es-CO', {
                           day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
                         })}
@@ -179,7 +190,7 @@ export default function ActividadesPage() {
                       </Typography>
                     </Box>
                     <EstadoChip estado={a.estado} />
-                    <Typography variant="caption" color="text.secondary" sx={{ minWidth: 60 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', minWidth: 60 }}>
                       {a.totalInscritos} personas
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -194,7 +205,7 @@ export default function ActividadesPage() {
                       {puedo('actividades', 'editar') && (
                         <Tooltip title="Editar">
                           <IconButton size="small" onClick={() => abrirEditar(a)}>
-                            <EditIcon fontSize="small" sx={{ color: COLOR }} />
+                            <EditIcon fontSize="small" sx={{ color: 'primary.main' }} />
                           </IconButton>
                         </Tooltip>
                       )}
@@ -256,13 +267,13 @@ export default function ActividadesPage() {
         <MenuItem disabled sx={{ opacity: 1, pb: 0 }}>
           <ListItemText
             primary={ctxMenu?.actividad?.titulo}
-            slotProps={{ primary: { sx: { fontWeight: 700, fontSize: '0.82rem', color: COLOR } } }}
+            slotProps={{ primary: { sx: { fontWeight: 700, fontSize: '0.82rem', color: 'primary.main' } } }}
           />
         </MenuItem>
         <Divider />
         {puedo('actividades', 'editar') && (
           <MenuItem onClick={() => { abrirEditar(ctxMenu.actividad); cerrarCtxMenu(); }}>
-            <ListItemIcon><EditIcon fontSize="small" sx={{ color: COLOR }} /></ListItemIcon>
+            <ListItemIcon><EditIcon fontSize="small" sx={{ color: 'primary.main' }} /></ListItemIcon>
             <ListItemText primary="Editar" />
           </MenuItem>
         )}

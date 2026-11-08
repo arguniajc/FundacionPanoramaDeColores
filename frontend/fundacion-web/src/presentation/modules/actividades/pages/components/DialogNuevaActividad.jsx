@@ -4,6 +4,7 @@ import {
   DialogTitle, Divider, FormHelperText, Grid, IconButton, MenuItem, Paper,
   TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
 import AccessTimeIcon    from '@mui/icons-material/AccessTime';
 import AddIcon           from '@mui/icons-material/Add';
@@ -161,7 +162,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, pb: 1, color: COLOR }}>
+      <DialogTitle sx={{ fontWeight: 700, pb: 1, color: 'primary.main' }}>
         Nueva actividad
       </DialogTitle>
 
@@ -231,18 +232,18 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
             {/* Días adicionales */}
             <Grid size={12}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                <Typography variant="caption" fontWeight={700} color="text.secondary"
-                  sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <Typography variant="caption"
+                  sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Días adicionales
                 </Typography>
                 <Button size="small" startIcon={<AddIcon />}
                   onClick={() => setUnico(p => ({ ...p, diasAdicionales: [...p.diasAdicionales, { fecha: '', horaInicio: '', horaFin: '' }] }))}
-                  sx={{ color: COLOR, textTransform: 'none', fontWeight: 600 }}>
+                  sx={{ color: 'primary.main', textTransform: 'none', fontWeight: 600 }}>
                   Agregar día
                 </Button>
               </Box>
               {unico.diasAdicionales.length === 0 && (
-                <Typography variant="caption" color="text.secondary">
+                <Typography sx={{ color: 'text.secondary' }} variant="caption">
                   Esta actividad ocurre en un solo día. Agrega días si se extiende a más fechas.
                 </Typography>
               )}
@@ -285,8 +286,8 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
             </Grid>
 
             <Grid size={12}>
-              <Typography variant="caption" fontWeight={800} color="text.secondary"
-                sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', mb: 1 }}>
+              <Typography variant="caption"
+                sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', mb: 1 }}>
                 Días de la semana *
               </Typography>
               <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap' }}>
@@ -299,16 +300,16 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
                         cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem',
                         bgcolor: sel ? COLOR : 'transparent',
                         color:   sel ? 'white' : 'text.secondary',
-                        border:  `2px solid ${sel ? COLOR : '#ddd'}`,
+                        border:  '2px solid', borderColor: sel ? COLOR : 'divider',
                         transition: 'all 0.15s',
-                        '&:hover': { bgcolor: sel ? COLOR : '#f3f0ff', border: `2px solid ${COLOR}`, color: sel ? 'white' : COLOR },
+                        '&:hover': { bgcolor: sel ? COLOR : (t) => alpha(t.palette.primary.main, 0.08), borderColor: 'primary.main', color: sel ? 'white' : 'primary.main' },
                       }}
                     />
                   );
                 })}
               </Box>
               {vR.err('diasSemana') && <FormHelperText error>{vR.err('diasSemana')}</FormHelperText>}
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, display: 'block' }}>
                 Selecciona uno o varios días. Se crea un horario por cada día seleccionado.
               </Typography>
             </Grid>
@@ -332,7 +333,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
 
             <Grid size={12}>
               <Divider>
-                <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', px: 1 }}>
                   Período de vigencia (opcional)
                 </Typography>
               </Divider>
@@ -354,35 +355,35 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
             {/* Preview */}
             {recur.programaId && recur.diasSemana.length > 0 && recur.horaInicio && recur.horaFin && (
               <Grid size={12}>
-                <Paper elevation={0} sx={{ bgcolor: '#f3f0ff', borderRadius: 2, p: 1.8 }}>
-                  <Typography variant="caption" fontWeight={800} color={COLOR}
-                    sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', mb: 0.8 }}>
+                <Paper elevation={0} sx={{ bgcolor: (t) => alpha(t.palette.primary.main, 0.08), borderRadius: 2, p: 1.8 }}>
+                  <Typography variant="caption"
+                    sx={{ fontWeight: 800, color: 'primary.main', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', mb: 0.8 }}>
                     Vista previa
                   </Typography>
-                  <Box display="flex" alignItems="center" gap={0.8} flexWrap="wrap">
-                    <Box display="flex" gap={0.4}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap' }}>
+                    <Box sx={{ display: 'flex', gap: 0.4 }}>
                       {recur.diasSemana.map(d => (
                         <Chip key={d} label={DIAS_CORTO[d]} size="small"
                           sx={{ bgcolor: COLOR, color: 'white', fontWeight: 800, fontSize: '0.7rem' }} />
                       ))}
                     </Box>
-                    <Box display="flex" alignItems="center" gap={0.4}>
-                      <AccessTimeIcon sx={{ fontSize: 14, color: COLOR }} />
-                      <Typography variant="body2" fontWeight={700} color={COLOR}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                      <AccessTimeIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                      <Typography sx={{ fontWeight: 700, color: 'primary.main' }} variant="body2">
                         {recur.horaInicio} – {recur.horaFin}
                       </Typography>
                     </Box>
                     {recur.lugar && (
-                      <Box display="flex" alignItems="center" gap={0.4}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
                         <PlaceIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
-                        <Typography variant="caption" color="text.secondary">{recur.lugar}</Typography>
+                        <Typography sx={{ color: 'text.secondary' }} variant="caption">{recur.lugar}</Typography>
                       </Box>
                     )}
                   </Box>
                   {(recur.fechaInicioVigencia || recur.fechaFinVigencia) && (
-                    <Box display="flex" alignItems="center" gap={0.4} mt={0.5}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mt: 0.5 }}>
                       <CalendarTodayIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography sx={{ color: 'text.secondary' }} variant="caption">
                         {recur.fechaInicioVigencia
                           ? new Date(recur.fechaInicioVigencia + 'T00:00:00').toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })
                           : '—'}
@@ -394,7 +395,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
                     </Box>
                   )}
                   {recur.diasSemana.length > 1 && (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.3, display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.3, display: 'block' }}>
                       Se crearán <strong>{recur.diasSemana.length} horarios</strong> (uno por día).
                     </Typography>
                   )}

@@ -9,21 +9,23 @@ import EmailIcon             from '@mui/icons-material/Email';
 import PhoneIcon             from '@mui/icons-material/Phone';
 import LocationOnIcon        from '@mui/icons-material/LocationOn';
 import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
+import { useTheme } from '@mui/material/styles';
 import { COLOR_DONANTES, fmtMoney, fmtFecha } from './helpers';
 
 export function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) {
+  const theme = useTheme();
   const esEmpresa = donante.tipo === 'empresa';
-  const color = esEmpresa ? '#0ea5e9' : COLOR_DONANTES;
+  const color = esEmpresa ? theme.palette.info.main : COLOR_DONANTES;
 
   return (
-    <Box sx={{ border: '1.5px solid #c8e6c9', borderRadius: 2, overflow: 'hidden',
-        bgcolor: '#f9fdf9', display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ border: '1.5px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden',
+        bgcolor: 'background.paper', display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ px: 2, pt: 2, pb: 1.5, display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
         <Avatar sx={{ bgcolor: color, width: 42, height: 42, fontWeight: 800, fontSize: '0.85rem', flexShrink: 0 }}>
           {donante.nombre.slice(0, 2).toUpperCase()}
         </Avatar>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography fontWeight={800} sx={{ fontSize: '0.92rem', lineHeight: 1.3 }} noWrap title={donante.nombre}>
+          <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', lineHeight: 1.3 }} noWrap title={donante.nombre}>
             {donante.nombre}
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.5, mt: 0.3 }}>
@@ -101,15 +103,15 @@ export function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) 
         </Box>
       </Box>
 
-      <Box sx={{ px: 1.5, py: 1, bgcolor: 'rgba(45,152,79,0.04)', borderTop: '1.5px solid #c8e6c9',
+      <Box sx={{ px: 1.5, py: 1, bgcolor: 'rgba(45,152,79,0.04)', borderTop: '1.5px solid', borderTopColor: 'divider',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Button size="small" variant="contained" startIcon={<VolunteerActivismIcon />}
           onClick={() => onNuevaDonacion(donante)}
           sx={{ bgcolor: COLOR_DONANTES, fontWeight: 700, fontSize: '0.7rem', px: 1,
-              '&:hover': { bgcolor: '#1e7a38' } }}>
+              '&:hover': { bgcolor: 'secondary.dark' } }}>
           Donación
         </Button>
-        <Box display="flex" gap={0.3}>
+        <Box sx={{ display: 'flex', gap: 0.3 }}>
           <Tooltip title="Editar">
             <IconButton size="small" onClick={() => onEditar(donante)}><EditIcon fontSize="small" /></IconButton>
           </Tooltip>

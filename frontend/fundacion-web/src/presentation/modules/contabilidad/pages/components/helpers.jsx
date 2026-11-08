@@ -4,7 +4,7 @@ import { BRAND_COLOR } from '@/shared/constants/brand';
 export function KpiCard({ label, value, icon, color }) {
   return (
     <Card sx={{
-      borderLeft: `4px solid ${color}`,
+      borderLeft: '4px solid', borderLeftColor: color,
       height: '100%',
       transition: 'box-shadow 0.2s',
       '&:hover': { boxShadow: 4 },
@@ -16,11 +16,11 @@ export function KpiCard({ label, value, icon, color }) {
           alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>{icon}</Box>
         <Box>
-          <Typography variant="caption" color="text.secondary"
-            sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
+          <Typography variant="caption"
+            sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
             {label}
           </Typography>
-          <Typography variant="h6" fontWeight="bold" lineHeight={1.2} sx={{ mt: 0.25 }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.2, mt: 0.25 }}>
             {value}
           </Typography>
         </Box>
@@ -33,7 +33,7 @@ export function SectionHeader({ title }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
       <Box sx={{ width: 4, height: 20, bgcolor: BRAND_COLOR, borderRadius: 1 }} />
-      <Typography variant="subtitle1" fontWeight="bold">{title}</Typography>
+      <Typography sx={{ fontWeight: 'bold' }} variant="subtitle1">{title}</Typography>
     </Box>
   );
 }

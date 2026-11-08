@@ -118,10 +118,10 @@ export default function SedesPage() {
         borderRadius: 3, p: { xs: 2, sm: 3 }, mb: 3, color: 'white',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2,
       }}>
-        <Box display="flex" alignItems="center" gap={1.5}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <LocationOnIcon sx={{ fontSize: 32, opacity: 0.85 }} />
           <Box>
-            <Typography variant="h5" fontWeight={800} sx={{ lineHeight: 1.2 }}>Sedes y Programas</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1.2 }}>Sedes y Programas</Typography>
             <Typography variant="body2" sx={{ opacity: 0.75, mt: 0.3 }}>
               Gestiona las sedes y los programas de la fundación
             </Typography>
@@ -137,13 +137,13 @@ export default function SedesPage() {
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       {cargando ? (
-        <Box display="flex" justifyContent="center" py={6}>
-          <CircularProgress sx={{ color: 'var(--color-primario)' }} />
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress sx={{ color: 'var(--color-primario-texto)' }} />
         </Box>
       ) : sedes.length === 0 ? (
         <Paper elevation={0} sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 2, p: 5, textAlign: 'center' }}>
-          <LocationOnIcon sx={{ fontSize: 48, color: '#ccc', mb: 1 }} />
-          <Typography color="text.secondary">No hay sedes registradas.</Typography>
+          <LocationOnIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+          <Typography sx={{ color: 'text.secondary' }}>No hay sedes registradas.</Typography>
           <Button variant="contained" startIcon={<AddIcon />}
             onClick={() => setDialogSede({ abierto: true, inicial: null })}
             sx={{ mt: 2, bgcolor: 'var(--color-primario)' }}>
@@ -151,7 +151,7 @@ export default function SedesPage() {
           </Button>
         </Paper>
       ) : (
-        <Grid container spacing={2} alignItems="flex-start">
+        <Grid sx={{ alignItems: 'flex-start' }} container spacing={2}>
           {sedes.map(sede => (
             <Grid key={sede.id} size={{ xs: 12, lg: 6 }}>
               <TarjetaSede sede={sede}
@@ -176,7 +176,7 @@ export default function SedesPage() {
         onGuardado={handleGuardadoPrograma} />
 
       <Dialog open={!!confirmEliminar} onClose={() => setConfirmEliminar(null)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ color: '#c62828', fontWeight: 700 }}>
+        <DialogTitle sx={{ color: 'error.main', fontWeight: 700 }}>
           ¿Eliminar {confirmEliminar?.tipo === 'sede' ? 'sede' : 'programa'}?
         </DialogTitle>
         <DialogContent>

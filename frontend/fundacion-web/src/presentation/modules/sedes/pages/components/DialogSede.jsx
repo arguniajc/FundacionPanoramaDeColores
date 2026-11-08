@@ -55,14 +55,13 @@ export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   };
 
   return (
-    <Dialog open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2 } }}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 2 } } }} open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle sx={{ bgcolor: 'var(--color-primario)', color: 'white', fontWeight: 700 }}>
         {inicial?.id ? 'Editar sede' : 'Nueva sede'}
       </DialogTitle>
       <DialogContent dividers>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Grid container spacing={2.5} mt={0}>
+        <Grid sx={{ mt: 0 }} container spacing={2.5}>
           <Grid size={12}>
             <TextField fullWidth label="Nombre *" size="small" value={form.nombre} onChange={set('nombre')}
               {...v.props('nombre')} />

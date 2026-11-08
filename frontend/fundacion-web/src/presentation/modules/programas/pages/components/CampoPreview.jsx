@@ -2,6 +2,7 @@
   Autocomplete, Box, Button, Chip, FormControl, FormControlLabel,
   InputAdornment, InputLabel, MenuItem, Select, Switch, TextField, Typography,
 } from '@mui/material';
+import { lighten } from '@mui/material/styles';
 import {
   PAISES, DEPARTAMENTOS_COLOMBIA, CIUDADES_COLOMBIA,
   TIPOS_DOCUMENTO, GENEROS, TIPOS_SANGRE, ESTRATOS, NIVELES_EDUCATIVOS,
@@ -33,12 +34,12 @@ export function CampoPreview({ campo }) {
 
   if (campo.tipo === 'document') return (
     <Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+      <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5 }} variant="caption">
         {label}
       </Typography>
-      <Box display="flex" alignItems="center" gap={1}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Chip label="Pendiente" color="warning" size="small" variant="outlined" />
-        <Button variant="outlined" size="small" disabled sx={{ borderColor: '#ddd', color: '#aaa' }}>
+        <Button variant="outlined" size="small" disabled sx={{ borderColor: 'divider', color: 'text.disabled' }}>
           Seleccionar PDF
         </Button>
       </Box>
@@ -47,13 +48,13 @@ export function CampoPreview({ campo }) {
 
   if (campo.tipo === 'daterange') return (
     <Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+      <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5 }} variant="caption">
         {label}
       </Typography>
-      <Box display="flex" gap={1} alignItems="center">
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
         <TextField size="small" label="Desde" type="date" disabled value=""
           slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
-        <Typography variant="body2" color="text.secondary">—</Typography>
+        <Typography sx={{ color: 'text.secondary' }} variant="body2">—</Typography>
         <TextField size="small" label="Hasta" type="date" disabled value=""
           slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
       </Box>
@@ -94,10 +95,10 @@ export function CampoPreview({ campo }) {
 
   if (campo.tipo === 'documento_id') return (
     <Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+      <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5 }} variant="caption">
         {label}
       </Typography>
-      <Box display="flex" gap={1}>
+      <Box sx={{ display: 'flex', gap: 1 }}>
         <FormControl size="small" disabled sx={{ width: 130 }}>
           <InputLabel shrink>Tipo</InputLabel>
           <Select label="Tipo" value="" displayEmpty>
@@ -111,10 +112,10 @@ export function CampoPreview({ campo }) {
 
   if (campo.tipo === 'grado_escolar') return (
     <Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+      <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5 }} variant="caption">
         {label}
       </Typography>
-      <Box display="flex" gap={1.5}>
+      <Box sx={{ display: 'flex', gap: 1.5 }}>
         <FormControl size="small" disabled sx={{ flex: 2 }}>
           <InputLabel shrink>Grado</InputLabel>
           <Select label="Grado" value="" displayEmpty>
@@ -133,6 +134,8 @@ export function CampoPreview({ campo }) {
 
   if (campo.tipo === 'datos_padre' || campo.tipo === 'datos_madre' || campo.tipo === 'datos_tutor') {
     const SC = '#7B3FC4';
+    // Texto del panel: el violeta se aclara en modo oscuro para mantener contraste
+    const colorSC = (t) => (t.palette.mode === 'dark' ? lighten(SC, 0.4) : SC);
     const subcampos = campo.tipo === 'datos_tutor' ? '17 sub-campos' : '16 sub-campos';
     return (
       <Box sx={{
@@ -144,15 +147,15 @@ export function CampoPreview({ campo }) {
           borderLeft: `5px solid ${SC}`, px: 2, py: 1,
           display: 'flex', alignItems: 'center', gap: 1.5,
         }}>
-          <Typography sx={{ fontSize: '0.88rem', fontWeight: 800, color: SC, flex: 1 }}>
+          <Typography sx={{ fontSize: '0.88rem', fontWeight: 800, color: colorSC, flex: 1 }}>
             {label}
           </Typography>
           <Chip label={subcampos} size="small"
-            sx={{ bgcolor: `${SC}18`, color: SC, fontWeight: 700, fontSize: '0.68rem',
+            sx={{ bgcolor: `${SC}18`, color: colorSC, fontWeight: 700, fontSize: '0.68rem',
                   border: `1px solid ${SC}40`, height: 22 }} />
         </Box>
-        <Box sx={{ bgcolor: '#f9f6ff', px: 2, py: 1.5 }}>
-          <Typography variant="caption" color="text.secondary">
+        <Box sx={{ bgcolor: `${SC}0A`, px: 2, py: 1.5 }}>
+          <Typography sx={{ color: 'text.secondary' }} variant="caption">
             {campo.tipo === 'datos_tutor' && 'Relación / Parentesco · '}
             Nombres · Apellidos · Fecha nac. · País · Dpto. · Ciudad · Tipo doc. · N° doc. · Dirección · Barrio · EPS · Celular · Escolaridad · Empresa · Ocupación · Autoidentificación
           </Typography>

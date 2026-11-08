@@ -19,10 +19,9 @@ export default class ErrorBoundary extends Component {
   render() {
     if (!this.state.hasError) return this.props.children;
     return (
-      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center"
-        minHeight="60vh" gap={2} p={4}>
-        <Typography variant="h6" color="error" fontWeight={700}>Algo salió mal</Typography>
-        <Typography variant="body2" color="text.secondary" textAlign="center">
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 2, p: 4 }}>
+        <Typography sx={{ fontWeight: 700 }} variant="h6" color="error">Algo salió mal</Typography>
+        <Typography sx={{ color: 'text.secondary', textAlign: 'center' }} variant="body2">
           {this.state.message}
         </Typography>
         <Button variant="outlined" onClick={() => this.setState({ hasError: false, message: '' })}>

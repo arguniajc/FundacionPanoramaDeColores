@@ -15,10 +15,10 @@ export default function DocumentosPage() {
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       <Box sx={{ background: HEADER_GRADIENT, borderRadius: 3, p: { xs: 2, sm: 3 }, mb: 3, color: 'white' }}>
-        <Box display="flex" alignItems="center" gap={1.5}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <FolderIcon sx={{ fontSize: 32, opacity: 0.85 }} />
           <Box>
-            <Typography variant="h5" fontWeight={800} sx={{ lineHeight: 1.2 }}>Documentos</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1.2 }}>Documentos</Typography>
             <Typography variant="body2" sx={{ opacity: 0.75, mt: 0.3 }}>
               Gestión de documentos institucionales y por beneficiario
             </Typography>
@@ -29,7 +29,7 @@ export default function DocumentosPage() {
       <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, mb: 3 }}>
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}
           sx={{ px: 2, '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', minWidth: 160 },
-                '& .Mui-selected': { color: 'var(--color-primario)' }, '& .MuiTabs-indicator': { bgcolor: 'var(--color-primario)' } }}>
+                '& .Mui-selected': { color: 'var(--color-primario-texto)' }, '& .MuiTabs-indicator': { bgcolor: 'var(--color-primario)' } }}>
           <Tab label="Institucionales" />
           <Tab label="Por beneficiario" />
         </Tabs>

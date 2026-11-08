@@ -37,7 +37,9 @@ import CheckCircleIcon          from '@mui/icons-material/CheckCircle';
 import CancelIcon               from '@mui/icons-material/Cancel';
 import HistoryIcon              from '@mui/icons-material/History';
 
+import { alpha }                from '@mui/material/styles';
 import apiClient                from '@/infrastructure/http/apiClient';
+import { colorEstado }          from '@/shared/theme/paleta';
 import { calcularEdad }         from '@/shared/utils/fecha';
 import { abrirHojaDeVida }      from '@/shared/utils/pdf';
 import HistorialBeneficiario    from './HistorialBeneficiario';
@@ -45,14 +47,14 @@ import { useArchivoUrl, resolverArchivo } from '@/shared/utils/archivos';
 
 const COLOR_PRIMARIO = 'var(--color-primario)';
 const COLOR_HOVER    = 'var(--color-gradiente)';
+// Etiquetas de campo: violeta oscuro en modo claro, violeta claro en oscuro
+const COLOR_ETIQUETA = (t) => (t.palette.mode === 'dark' ? t.palette.primary.light : t.palette.primary.dark);
 
 function Seccion({ titulo, icono, mt = 1 }) {
   return (
     <Grid size={12}>
       <Box
-        display="flex" alignItems="center" gap={1.5}
-        mt={mt}
-        sx={{
+        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: mt,
           borderLeft: `5px solid ${COLOR_PRIMARIO}`,
           bgcolor: 'rgba(78,27,149,0.07)',
           borderRadius: '0 8px 8px 0',
@@ -66,13 +68,12 @@ function Seccion({ titulo, icono, mt = 1 }) {
         )}
         <Typography
           variant="subtitle1"
-          fontWeight={800}
-          sx={{ color: COLOR_PRIMARIO, letterSpacing: '0.03em', lineHeight: 1 }}
+          sx={{ fontWeight: 800, color: COLOR_PRIMARIO, letterSpacing: '0.03em', lineHeight: 1 }}
         >
           {titulo}
         </Typography>
       </Box>
-      <Box mb={2} />
+      <Box sx={{ mb: 2 }} />
     </Grid>
   );
 }
@@ -113,17 +114,15 @@ function calcularImc(pesoKg, tallaCm, fechaNacimiento) {
 
 function Campo({ label, value, children }) {
   return (
-    <Box mb={2}>
+    <Box sx={{ mb: 2 }}>
       <Typography
         variant="body2"
-        display="block"
-        fontWeight={800}
-        sx={{ color: '#2d1566', mb: 0.5 }}
+        sx={{ display: 'block', fontWeight: 800, color: COLOR_ETIQUETA, mb: 0.5 }}
       >
         {label}
       </Typography>
       {children ?? (
-        <Typography variant="body2" fontWeight={400} color="text.primary">
+        <Typography sx={{ fontWeight: 400, color: 'text.primary' }} variant="body2">
           {value || '—'}
         </Typography>
       )}
@@ -134,12 +133,12 @@ function Campo({ label, value, children }) {
 function TallaCard({ icono, valor, etiqueta }) {
   return (
     <Box
-      textAlign="center"
-      sx={{
+      sx={{ textAlign: 'center',
         flex: 1,
         minWidth: 0,
-        bgcolor: '#fdfbff',
-        border: '1px solid #f0eaff',
+        bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+        border: '1px solid',
+        borderColor: 'divider',
         borderRadius: 2,
         py: { xs: 1.5, sm: 2 },
         px: { xs: 1, sm: 1.5 },
@@ -147,8 +146,7 @@ function TallaCard({ icono, valor, etiqueta }) {
     >
       <Typography sx={{ fontSize: { xs: '1.1rem', sm: '1.4rem' } }}>{icono}</Typography>
       <Typography
-        fontWeight={800}
-        sx={{ color: '#000', fontSize: { xs: '0.9rem', sm: '1.25rem' }, lineHeight: 1.2 }}
+        sx={{ fontWeight: 800, color: 'text.primary', fontSize: { xs: '0.9rem', sm: '1.25rem' }, lineHeight: 1.2 }}
       >
         {valor || '—'}
       </Typography>
@@ -211,13 +209,12 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
     .filter(Boolean).join(', ');
 
   return (
-    <Dialog
+    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }}
       open
       onClose={onCerrar}
       maxWidth="md"
       fullWidth
       fullScreen={isMobile}
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}
     >
       <DialogTitle
         sx={{
@@ -242,14 +239,14 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
         </Avatar>
 
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-          <Typography fontWeight={800} noWrap
-            sx={{ color: 'white', lineHeight: 1.3, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+          <Typography noWrap
+            sx={{ fontWeight: 800, color: 'white', lineHeight: 1.3, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
             {ins.nombreMenor}
           </Typography>
-          <Typography variant="caption" display="block" sx={{ opacity: 0.75, mt: 0.2 }}>
+          <Typography variant="caption" sx={{ display: 'block', opacity: 0.75, mt: 0.2 }}>
             {ins.tipoDocumento}&nbsp;·&nbsp;{ins.numeroDocumento || 'Sin documento'}
           </Typography>
-          <Typography variant="caption" display="block" sx={{ opacity: 0.6 }}>
+          <Typography variant="caption" sx={{ display: 'block', opacity: 0.6 }}>
             {edad}
           </Typography>
         </Box>
@@ -262,7 +259,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
       </DialogTitle>
 
       <DialogContent dividers sx={{ px: { xs: 2, sm: 3 } }}>
-        <Grid container spacing={{ xs: 1.5, sm: 2 }} mt={0}>
+        <Grid sx={{ mt: 0 }} container spacing={{ xs: 1.5, sm: 2 }}>
 
           {/* ── Datos del menor ─────────────────────────────────────────────── */}
           <Seccion titulo="Datos del menor" mt={0} />
@@ -286,9 +283,9 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           {lugarNacimiento && (
             <Grid size={12}>
               <Campo label="Lugar de nacimiento">
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <LocationOnIcon sx={{ fontSize: 15, color: COLOR_PRIMARIO }} />
-                  <Typography variant="body2" fontWeight={500}>{lugarNacimiento}</Typography>
+                  <Typography sx={{ fontWeight: 500 }} variant="body2">{lugarNacimiento}</Typography>
                 </Box>
               </Campo>
             </Grid>
@@ -342,8 +339,8 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
 
             {/* ── IMC ────────────────────────────────────────────────────────── */}
             {imc && (
-              <Box mt={2} display="flex" alignItems="center" gap={1.5}>
-                <Typography variant="body2" fontWeight={800} sx={{ color: '#2d1566' }}>
+              <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 800, color: COLOR_ETIQUETA }}>
                   IMC:
                 </Typography>
                 <Chip
@@ -354,8 +351,8 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
               </Box>
             )}
 
-            <Box mt={2} display="flex" alignItems="center" gap={1.5}>
-              <Typography variant="body2" fontWeight={800} sx={{ color: '#2d1566' }}>
+            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: COLOR_ETIQUETA }}>
                 Tiene alergia:
               </Typography>
               <Chip
@@ -378,12 +375,13 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           {ins.tieneAlergia === 'si' && (
             <Grid size={{ xs: 12, sm: ins.eps ? 6 : 12 }}>
               <Box sx={{
-                bgcolor: '#fff5f5', border: '1.5px solid #fed7d7', borderRadius: 2, p: 1.5,
+                bgcolor: colorEstado('error', theme.palette.mode).fondo,
+                border: '1.5px solid', borderColor: alpha(theme.palette.error.main, 0.3), borderRadius: 2, p: 1.5,
               }}>
-                <Typography variant="caption" color="error" fontWeight={700} display="block">
+                <Typography sx={{ fontWeight: 700, display: 'block' }} variant="caption" color="error">
                   DESCRIPCIÓN DE LA ALERGIA
                 </Typography>
-                <Typography variant="body2" color="error.dark">
+                <Typography sx={{ color: 'error.dark' }} variant="body2">
                   {ins.descripcionAlergia || '—'}
                 </Typography>
               </Box>
@@ -397,8 +395,8 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           )}
 
           <Grid size={12}>
-            <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
-              <Typography variant="body2" fontWeight={800} sx={{ color: '#2d1566' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: COLOR_ETIQUETA }}>
                 Discapacidad / condición especial:
               </Typography>
               <Chip
@@ -412,9 +410,10 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           {ins.tieneDiscapacidad && ins.descripcionDiscapacidad && (
             <Grid size={12}>
               <Box sx={{
-                bgcolor: '#fffde7', border: '1.5px solid #ffe082', borderRadius: 2, p: 1.5, mt: 1,
+                bgcolor: colorEstado('aviso', theme.palette.mode).fondo,
+                border: '1.5px solid', borderColor: alpha(theme.palette.warning.main, 0.35), borderRadius: 2, p: 1.5, mt: 1,
               }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
+                <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block' }} variant="caption">
                   DESCRIPCIÓN DE LA DISCAPACIDAD / CONDICIÓN
                 </Typography>
                 <Typography variant="body2">
@@ -451,21 +450,21 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           <Grid size={{ xs: 12, sm: 6 }}>
             <Campo label="WhatsApp">
               {ins.whatsapp ? (
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <IconButton size="small" component="a"
                     href={`https://wa.me/${ins.whatsapp.replace(/\D/g, '')}`}
                     target="_blank"
                     sx={{ color: '#25D366', p: 0.5, flexShrink: 0 }}>
                     <WhatsAppIcon fontSize="small" />
                   </IconButton>
-                  <Typography variant="body2" fontWeight={600}>{ins.whatsapp}</Typography>
+                  <Typography sx={{ fontWeight: 600 }} variant="body2">{ins.whatsapp}</Typography>
                 </Box>
               ) : (
                 <Typography variant="body2">—</Typography>
               )}
             </Campo>
             <Campo label="¿Vive con el niño?">
-              <Typography variant="body2" fontWeight={500}>
+              <Typography sx={{ fontWeight: 500 }} variant="body2">
                 {ins.viveConNino === true ? 'Sí'
                   : ins.viveConNino === false ? 'No'
                   : '—'}
@@ -475,12 +474,11 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
 
           {/* ── Autorización ────────────────────────────────────────────────── */}
           <Grid size={12}>
-            <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
               {ins.autorizacion
-                ? <CheckCircleIcon sx={{ color: '#2e7d32', fontSize: 20 }} />
-                : <CancelIcon      sx={{ color: '#c62828', fontSize: 20 }} />}
-              <Typography variant="body2" fontWeight={600}
-                color={ins.autorizacion ? '#2e7d32' : '#c62828'}>
+                ? <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
+                : <CancelIcon      sx={{ color: 'error.main', fontSize: 20 }} />}
+              <Typography sx={{ fontWeight: 600, color: ins.autorizacion ? 'success.main' : 'error.main' }} variant="body2">
                 {ins.autorizacion
                   ? 'Autorización firmada'
                   : 'Sin autorización registrada'}
@@ -496,7 +494,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                 <Box sx={{
                   position: 'relative',
                   display: 'flex', alignItems: 'center', gap: 2,
-                  bgcolor: '#fdfbff', border: '1.5px solid #e2d9f3',
+                  bgcolor: alpha(theme.palette.primary.main, 0.04), border: '1.5px solid', borderColor: 'divider',
                   borderRadius: 2, p: 2, overflow: 'hidden',
                 }}>
                   {descargando && (
@@ -506,18 +504,16 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
                       '& .MuiLinearProgress-bar': { bgcolor: COLOR_PRIMARIO },
                     }} />
                   )}
-                  <PictureAsPdfOutlinedIcon sx={{ color: '#c62828', fontSize: 36, flexShrink: 0 }} />
-                  <Box flex={1}>
-                    <Typography variant="body2" fontWeight={700}>PDF del documento</Typography>
-                    <Typography variant="caption"
-                      color={descargando ? COLOR_PRIMARIO : 'text.secondary'}
-                      fontWeight={descargando ? 600 : 400}>
+                  <PictureAsPdfOutlinedIcon sx={{ color: 'error.main', fontSize: 36, flexShrink: 0 }} />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 700 }} variant="body2">PDF del documento</Typography>
+                    <Typography sx={{ color: descargando ? COLOR_PRIMARIO : 'text.secondary', fontWeight: descargando ? 600 : 400 }} variant="caption">
                       {descargando
                         ? 'Descargando, por favor espera…'
                         : 'Haz clic en Descargar para abrir el documento. La descarga queda registrada.'}
                     </Typography>
                     {errorDescarga && (
-                      <Typography variant="caption" color="error" display="block" mt={0.5}>
+                      <Typography sx={{ display: 'block', mt: 0.5 }} variant="caption" color="error">
                         {errorDescarga}
                       </Typography>
                     )}
@@ -546,18 +542,18 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           {!ins.activo && (
             <Grid size={12}>
               <Alert severity="warning" sx={{ mt: 1 }}>
-                <Typography variant="caption" fontWeight={700} display="block">
+                <Typography sx={{ fontWeight: 700, display: 'block' }} variant="caption">
                   BENEFICIARIO INACTIVO
                 </Typography>
                 {ins.motivoBaja
                   ? <Typography variant="body2">Motivo: {ins.motivoBaja}</Typography>
-                  : <Typography variant="body2" color="text.secondary">Sin motivo registrado.</Typography>}
+                  : <Typography sx={{ color: 'text.secondary' }} variant="body2">Sin motivo registrado.</Typography>}
               </Alert>
             </Grid>
           )}
 
           <Grid size={12}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography sx={{ color: 'text.secondary' }} variant="caption">
               Inscrito el: {new Date(ins.createdAt).toLocaleString('es-CO')}
             </Typography>
           </Grid>

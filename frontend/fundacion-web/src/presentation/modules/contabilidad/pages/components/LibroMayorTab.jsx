@@ -8,11 +8,14 @@ import {
 import SearchIcon    from '@mui/icons-material/Search';
 import MenuBookIcon  from '@mui/icons-material/MenuBook';
 import apiClient     from '@/infrastructure/http/apiClient';
+import { useTheme } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 import { fmt, fmtFecha, MESES, ANIOS } from './formato';
 
 const COLS_HEAD = ['Fecha', 'Tipo', 'Concepto', 'Soporte', 'Tercero', 'Ingreso', 'Egreso', 'Saldo'];
 
 export function LibroMayorTab() {
+  const theme = useTheme();
   const anioActual = new Date().getFullYear();
   const [anio,       setAnio]       = useState(anioActual);
   const [mes,        setMes]        = useState('');
@@ -79,7 +82,7 @@ export function LibroMayorTab() {
       {!cargando && rows !== null && rows.length === 0 && (
         <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed', borderColor: 'divider', borderRadius: 2 }}>
           <MenuBookIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-          <Typography color="text.secondary">No hay movimientos para los filtros seleccionados</Typography>
+          <Typography sx={{ color: 'text.secondary' }}>No hay movimientos para los filtros seleccionados</Typography>
         </Box>
       )}
 
@@ -92,16 +95,16 @@ export function LibroMayorTab() {
           <Box key={grupo.codigo} sx={{ mb: 4 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
               <Chip label={grupo.codigo} size="small" sx={{ fontWeight: 700, fontFamily: 'monospace' }} />
-              <Typography fontWeight={700} variant="subtitle2">{grupo.nombre}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
-                Saldo: <strong style={{ color: saldoFinal >= 0 ? '#10B981' : '#EF4444' }}>{fmt(saldoFinal)}</strong>
+              <Typography sx={{ fontWeight: 700 }} variant="subtitle2">{grupo.nombre}</Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', ml: 'auto' }}>
+                Saldo: <strong style={{ color: saldoFinal >= 0 ? 'success.main' : 'error.main' }}>{fmt(saldoFinal)}</strong>
               </Typography>
             </Box>
 
             <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ bgcolor: 'grey.50' }}>
+                  <TableRow sx={{ bgcolor: 'superficie2' }}>
                     {COLS_HEAD.map(h => (
                       <TableCell key={h} sx={{ fontWeight: 700, fontSize: '0.75rem' }}
                         align={['Ingreso','Egreso','Saldo'].includes(h) ? 'right' : 'left'}>
@@ -120,48 +123,48 @@ export function LibroMayorTab() {
                           size="small"
                           sx={{
                             fontSize: '0.65rem', fontWeight: 700,
-                            bgcolor: r.tipo === 'ingreso' ? '#d1fae5' : '#fee2e2',
-                            color:   r.tipo === 'ingreso' ? '#065f46' : '#991b1b',
+                            bgcolor: colorEstado(r.tipo === 'ingreso' ? 'exito' : 'error', theme.palette.mode).fondo,
+                            color:   colorEstado(r.tipo === 'ingreso' ? 'exito' : 'error', theme.palette.mode).texto,
                           }}
                         />
                       </TableCell>
                       <TableCell sx={{ fontSize: '0.78rem', maxWidth: 200 }}>
-                        <Typography fontSize="inherit" noWrap>{r.concepto}</Typography>
+                        <Typography sx={{ fontSize: 'inherit' }} noWrap>{r.concepto}</Typography>
                         {r.programaNombre && (
-                          <Typography fontSize="0.7rem" color="text.secondary" noWrap>{r.programaNombre}</Typography>
+                          <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }} noWrap>{r.programaNombre}</Typography>
                         )}
                       </TableCell>
                       <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
                         {r.numeroSoporte ?? '—'}
                       </TableCell>
                       <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary', maxWidth: 120 }}>
-                        <Typography fontSize="inherit" noWrap>{r.terceroNombre ?? '—'}</Typography>
+                        <Typography sx={{ fontSize: 'inherit' }} noWrap>{r.terceroNombre ?? '—'}</Typography>
                       </TableCell>
-                      <TableCell align="right" sx={{ fontSize: '0.78rem', color: '#10B981', fontFamily: 'monospace' }}>
+                      <TableCell align="right" sx={{ fontSize: '0.78rem', color: 'success.main', fontFamily: 'monospace' }}>
                         {r.ingreso > 0 ? fmt(r.ingreso) : ''}
                       </TableCell>
-                      <TableCell align="right" sx={{ fontSize: '0.78rem', color: '#EF4444', fontFamily: 'monospace' }}>
+                      <TableCell align="right" sx={{ fontSize: '0.78rem', color: 'error.main', fontFamily: 'monospace' }}>
                         {r.egreso > 0 ? fmt(r.egreso) : ''}
                       </TableCell>
                       <TableCell align="right" sx={{
                         fontSize: '0.78rem', fontFamily: 'monospace', fontWeight: 600,
-                        color: r.saldoAcumulado >= 0 ? '#10B981' : '#EF4444',
+                        color: r.saldoAcumulado >= 0 ? 'success.main' : 'error.main',
                       }}>
                         {fmt(r.saldoAcumulado)}
                       </TableCell>
                     </TableRow>
                   ))}
                   {/* Totals row */}
-                  <TableRow sx={{ bgcolor: 'grey.50' }}>
+                  <TableRow sx={{ bgcolor: 'superficie2' }}>
                     <TableCell colSpan={5} sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Totales</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.78rem', color: '#10B981', fontFamily: 'monospace' }}>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.78rem', color: 'success.main', fontFamily: 'monospace' }}>
                       {fmt(totalIngreso)}
                     </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.78rem', color: '#EF4444', fontFamily: 'monospace' }}>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.78rem', color: 'error.main', fontFamily: 'monospace' }}>
                       {fmt(totalEgreso)}
                     </TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.78rem', fontFamily: 'monospace',
-                      color: saldoFinal >= 0 ? '#10B981' : '#EF4444' }}>
+                      color: saldoFinal >= 0 ? 'success.main' : 'error.main' }}>
                       {fmt(saldoFinal)}
                     </TableCell>
                   </TableRow>

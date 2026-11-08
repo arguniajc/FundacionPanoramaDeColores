@@ -171,9 +171,9 @@ function moduloActual(pathname) {
 function AlertasPanel({ alertas, onNavegar, onClose, modo }) {
   return (
     <Box sx={{ p: 1.5, width: 320, maxWidth: '90vw' }}>
-      <Typography fontWeight={700} fontSize="0.85rem" mb={1}>Alertas</Typography>
+      <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', mb: 1 }}>Alertas</Typography>
       {alertas.length === 0 ? (
-        <Typography fontSize="0.8rem" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+        <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', py: 2, textAlign: 'center' }}>
           No hay alertas activas
         </Typography>
       ) : alertas.map((a, i) => {
@@ -188,7 +188,7 @@ function AlertasPanel({ alertas, onNavegar, onClose, modo }) {
               '&:hover': ruta ? { filter: 'brightness(0.97)' } : {},
             }}>
             <Box sx={{ mt: '1px', flexShrink: 0 }}>{NIVEL_ICON[a.nivel]}</Box>
-            <Typography fontSize="0.8rem" sx={{ flex: 1 }}>{a.mensaje}</Typography>
+            <Typography sx={{ fontSize: '0.8rem', flex: 1 }}>{a.mensaje}</Typography>
           </Box>
         );
       })}
@@ -279,10 +279,14 @@ function SidebarContent({ compacto, sc, pathname, alertas, onNavegar, onAlternar
           sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: '#fff', p: '3px', objectFit: 'contain', flexShrink: 0 }} />
         {!compacto && (
           <Box sx={{ minWidth: 0 }}>
-            <Typography noWrap sx={{ fontWeight: 800, fontSize: '0.92rem', lineHeight: 1.2, color: sc.activoTexto }}>
+            {/* Hasta dos líneas: el nombre completo de la fundación se lee sin cortarse */}
+            <Typography sx={{
+              fontWeight: 800, fontSize: '0.85rem', lineHeight: 1.2, color: sc.activoTexto,
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+            }}>
               {nombreFundacion || 'Fundación Panorama de Colores'}
             </Typography>
-            <Typography noWrap sx={{ fontSize: '0.7rem', color: sc.textoTenue }}>Sistema de gestión</Typography>
+            <Typography noWrap sx={{ fontSize: '0.68rem', color: sc.textoTenue }}>Sistema de gestión</Typography>
           </Box>
         )}
       </Box>
@@ -486,7 +490,7 @@ export default function AdminLayout({ children }) {
         }}>
           <Toolbar sx={{ minHeight: { xs: 56, md: 64 }, gap: 1, px: { xs: 1, sm: 2 } }}>
             <Tooltip title={escritorio ? (vista === 'oculto' ? 'Mostrar menú (Ctrl+B)' : 'Ocultar menú (Ctrl+B)') : 'Menú'}>
-              <IconButton onClick={alternarMenu} aria-label="Mostrar u ocultar el menú" edge="start">
+              <IconButton onClick={alternarMenu} aria-label="Mostrar u ocultar el menú">
                 {escritorio && vista !== 'oculto' ? <MenuOpenIcon /> : <MenuIcon />}
               </IconButton>
             </Tooltip>
@@ -543,8 +547,8 @@ export default function AdminLayout({ children }) {
           slotProps={{ paper: { sx: { mt: 1, minWidth: 240, borderRadius: 2 } } }}
         >
           <Box sx={{ px: 2, py: 1.25 }}>
-            <Typography fontWeight={700} fontSize="0.9rem" noWrap>{user?.nombre}</Typography>
-            <Typography fontSize="0.78rem" color="text.secondary" noWrap>{user?.email}</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.9rem' }} noWrap>{user?.nombre}</Typography>
+            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary' }} noWrap>{user?.email}</Typography>
             {rol && <Chip size="small" label={ROL_LABEL[rol] ?? rol} sx={{ mt: 1, height: 22 }} />}
           </Box>
           <Divider />

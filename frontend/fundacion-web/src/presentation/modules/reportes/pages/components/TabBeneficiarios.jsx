@@ -11,9 +11,10 @@ import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
 import { COLORES } from './colores';
-import { BRAND_COLOR } from '@/shared/constants/brand';
+import { useTheme } from '@mui/material/styles';
 
 export function TabBeneficiarios() {
+  const theme = useTheme();
   const hoy   = new Date();
   const [anio,  setAnio]  = useState(hoy.getFullYear());
   const [data,  setData]  = useState(null);
@@ -72,19 +73,19 @@ export function TabBeneficiarios() {
 
       {!data ? <Grid size={{ xs: 12 }}><SkeletonSection /></Grid> : <>
         <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-          <KpiCard label="Total registrados" value={resumen.total} icon={<PeopleIcon fontSize="inherit" />} color={BRAND_COLOR} />
+          <KpiCard label="Total registrados" value={resumen.total} icon={<PeopleIcon fontSize="inherit" />} color="primary.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-          <KpiCard label="Activos" value={resumen.activos} icon={<PeopleIcon fontSize="inherit" />} color="#10B981" />
+          <KpiCard label="Activos" value={resumen.activos} icon={<PeopleIcon fontSize="inherit" />} color="success.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-          <KpiCard label="Inactivos / baja" value={resumen.inactivos} icon={<PeopleIcon fontSize="inherit" />} color="#EF4444" />
+          <KpiCard label="Inactivos / baja" value={resumen.inactivos} icon={<PeopleIcon fontSize="inherit" />} color="error.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-          <KpiCard label="Con discapacidad" value={resumen.conDiscapacidad} icon={<PeopleIcon fontSize="inherit" />} color="#F59E0B" />
+          <KpiCard label="Con discapacidad" value={resumen.conDiscapacidad} icon={<PeopleIcon fontSize="inherit" />} color="warning.main" />
         </Grid>
         <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-          <KpiCard label="Con autorización" value={resumen.conAutorizacion} icon={<PeopleIcon fontSize="inherit" />} color="#2563EB" />
+          <KpiCard label="Con autorización" value={resumen.conAutorizacion} icon={<PeopleIcon fontSize="inherit" />} color="info.main" />
         </Grid>
 
         <Grid size={{ xs: 12 }}>
@@ -92,15 +93,15 @@ export function TabBeneficiarios() {
             <AreaChart data={nuevosPorMes}>
               <defs>
                 <linearGradient id="gradBen" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor={BRAND_COLOR} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={BRAND_COLOR} stopOpacity={0}/>
+                  <stop offset="5%"  stopColor={theme.palette.primary.main} stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
               <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
               <Tooltip content={<TooltipCustom />} />
-              <Area type="monotone" dataKey="cantidad" name="Nuevos" stroke={BRAND_COLOR} fill="url(#gradBen)" strokeWidth={2} />
+              <Area type="monotone" dataKey="cantidad" name="Nuevos" stroke={theme.palette.primary.main} fill="url(#gradBen)" strokeWidth={2} />
             </AreaChart>
           </GraficaCard>
         </Grid>
@@ -112,7 +113,7 @@ export function TabBeneficiarios() {
               <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
               <YAxis type="category" dataKey="etiqueta" width={80} tick={{ fontSize: 11 }} />
               <Tooltip content={<TooltipCustom />} />
-              <Bar dataKey="cantidad" name="Beneficiarios" fill={BRAND_COLOR} radius={[0,4,4,0]}>
+              <Bar dataKey="cantidad" name="Beneficiarios" fill={theme.palette.primary.main} radius={[0,4,4,0]}>
                 {porEdad.map((_, i) => <Cell key={i} fill={COLORES[i % COLORES.length]} />)}
               </Bar>
             </BarChart>
@@ -147,7 +148,7 @@ export function TabBeneficiarios() {
         <Grid size={{ xs: 12 }}>
           <GraficaCard titulo="Beneficiarios por programa (top 10)" height={260}>
             <BarChart data={porPrograma}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
               <XAxis dataKey="etiqueta" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
               <Tooltip content={<TooltipCustom />} />

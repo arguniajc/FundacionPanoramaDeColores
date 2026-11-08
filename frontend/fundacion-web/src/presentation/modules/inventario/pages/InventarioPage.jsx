@@ -17,6 +17,7 @@ import { exportarExcel } from '@/shared/utils/exportarExcel';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { sedesRepository }      from '@/infrastructure/repositories/sedesRepository';
 import { COLOR, CATEGORIAS, CAT_COLOR } from './components/helpers';
+import { useTheme, alpha } from '@mui/material/styles';
 import { StatCard }               from './components/StatCard';
 import { ItemCard }               from './components/ItemCard';
 import { NuevoItemDialog }        from './components/NuevoItemDialog';
@@ -26,6 +27,7 @@ import { HistorialDialog }        from './components/HistorialDialog';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export default function InventarioPage() {
+  const theme = useTheme();
   const confirm = useConfirm();
   const [sedes,           setSedes]           = useState([]);
   const [sedeSel,         setSedeSel]         = useState('');
@@ -176,7 +178,7 @@ export default function InventarioPage() {
           <Button
             variant="contained" startIcon={<AddIcon />}
             onClick={() => setDialItem({ open: true, item: null })}
-            sx={{ bgcolor: COLOR, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#3b1270' } }}
+            sx={{ bgcolor: COLOR, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: 'var(--color-gradiente)' } }}
           >
             Nuevo artículo
           </Button>
@@ -200,13 +202,13 @@ export default function InventarioPage() {
           <StatCard icon={<Inventory2Icon />} label="Total artículos" value={stats.totalItems} color={COLOR} loading={cargando} />
         </Grid>
         <Grid size={{ xs: 6, sm: 3 }}>
-          <StatCard icon={<WarningAmberIcon />} label="Stock bajo" value={stats.stockBajo} color="#d97706" loading={cargando} />
+          <StatCard icon={<WarningAmberIcon />} label="Stock bajo" value={stats.stockBajo} color={theme.palette.warning.main} loading={cargando} />
         </Grid>
         <Grid size={{ xs: 6, sm: 3 }}>
-          <StatCard icon={<RemoveCircleIcon />} label="Sin stock" value={stats.sinStock} color="#dc2626" loading={cargando} />
+          <StatCard icon={<RemoveCircleIcon />} label="Sin stock" value={stats.sinStock} color={theme.palette.error.main} loading={cargando} />
         </Grid>
         <Grid size={{ xs: 6, sm: 3 }}>
-          <StatCard icon={<TrendingUpIcon />} label="Movimientos mes" value={stats.movimientosMes} color="#16a34a" loading={cargando} />
+          <StatCard icon={<TrendingUpIcon />} label="Movimientos mes" value={stats.movimientosMes} color={theme.palette.success.main} loading={cargando} />
         </Grid>
       </Grid>
 
@@ -226,15 +228,14 @@ export default function InventarioPage() {
 
       {/* Filtros */}
       <Box sx={{ mb: 2.5, display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-        <TextField
+        <TextField slotProps={{ input: {
+            startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment>,
+            endAdornment: buscar ? <InputAdornment position="end"><IconButton size="small" onClick={() => setBuscar('')}><CloseIcon fontSize="small" /></IconButton></InputAdornment> : null,
+          } }}
           size="small"
           placeholder="Buscar por nombre o código…"
           value={buscar}
           onChange={e => setBuscar(e.target.value)}
-          InputProps={{
-            startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment>,
-            endAdornment: buscar ? <InputAdornment position="end"><IconButton size="small" onClick={() => setBuscar('')}><CloseIcon fontSize="small" /></IconButton></InputAdornment> : null,
-          }}
           sx={{ width: { xs: '100%', sm: 300 } }}
         />
         <Box sx={{ display: 'flex', gap: 0.7, flexWrap: 'wrap' }}>
@@ -242,7 +243,7 @@ export default function InventarioPage() {
             label="Todas"
             onClick={() => setCategoriaFil('')}
             variant={categoriaFil === '' ? 'filled' : 'outlined'}
-            sx={{ fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', ...(categoriaFil === '' ? { bgcolor: COLOR, color: '#fff' } : {}) }}
+            sx={{ fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', ...(categoriaFil === '' ? { bgcolor: COLOR, color: 'common.white' } : {}) }}
           />
           {CATEGORIAS.map(cat => (
             <Chip
@@ -252,7 +253,7 @@ export default function InventarioPage() {
               variant={categoriaFil === cat ? 'filled' : 'outlined'}
               sx={{
                 fontWeight: 600, fontSize: '0.72rem', cursor: 'pointer',
-                ...(categoriaFil === cat ? { bgcolor: CAT_COLOR[cat] ?? COLOR, color: '#fff' } : { borderColor: `${CAT_COLOR[cat]}80`, color: CAT_COLOR[cat] }),
+                ...(categoriaFil === cat ? { bgcolor: CAT_COLOR[cat] ?? COLOR, color: 'common.white' } : { borderColor: `${CAT_COLOR[cat]}80`, color: CAT_COLOR[cat] }),
               }}
             />
           ))}
@@ -272,7 +273,7 @@ export default function InventarioPage() {
               sx={{
                 fontWeight: 600, fontSize: '0.72rem', cursor: 'pointer',
                 ...(tenenciaFil === t.value
-                  ? { bgcolor: t.value === 'comodato' ? '#b45309' : COLOR, color: '#fff' }
+                  ? { bgcolor: t.value === 'comodato' ? '#b45309' : COLOR, color: 'common.white' }
                   : {}),
               }}
             />
@@ -284,9 +285,9 @@ export default function InventarioPage() {
       {cargando && items.length === 0 ? (
         <Box sx={{ py: 8, textAlign: 'center' }}><CircularProgress /></Box>
       ) : items.length === 0 ? (
-        <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed #e2d9f3', borderRadius: 2, bgcolor: '#fdfbff' }}>
-          <Inventory2Icon sx={{ fontSize: 48, color: '#c8b4e8', mb: 1.5 }} />
-          <Typography fontWeight={700} color="text.secondary">
+        <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed', borderColor: 'divider', borderRadius: 2, bgcolor: 'background.paper' }}>
+          <Inventory2Icon sx={{ fontSize: 48, color: alpha(theme.palette.primary.main, 0.4), mb: 1.5 }} />
+          <Typography sx={{ fontWeight: 700, color: 'text.secondary' }}>
             {buscar || categoriaFil ? 'No se encontraron artículos con ese filtro' : 'No hay artículos en esta sede'}
           </Typography>
           {!buscar && !categoriaFil && (
@@ -298,7 +299,7 @@ export default function InventarioPage() {
           )}
         </Box>
       ) : (
-        <Grid container spacing={2} alignItems="stretch">
+        <Grid sx={{ alignItems: 'stretch' }} container spacing={2}>
           {items.map(item => (
             <Grid key={item.id} size={{ xs: 12, sm: 6, lg: 4 }}>
               <ItemCard

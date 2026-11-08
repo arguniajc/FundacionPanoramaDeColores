@@ -20,11 +20,11 @@ export function PanelEmpleado({ empleado }) {
         <Avatar sx={{ width: 56, height: 56, bgcolor: 'primary.main', fontSize: 20 }}>
           {iniciales(empleado.nombres, empleado.apellidos)}
         </Avatar>
-        <Box flex={1}>
-          <Typography variant="h6" fontWeight={700}>
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontWeight: 700 }} variant="h6">
             {empleado.nombres} {empleado.apellidos}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography sx={{ color: 'text.secondary' }} variant="body2">
             {empleado.cargo ?? 'Sin cargo'} · {empleado.area ?? 'Sin área'}
           </Typography>
         </Box>
@@ -49,8 +49,8 @@ export function PanelEmpleado({ empleado }) {
           ['Pensión',      empleado.pension  ?? '—'],
         ].map(([k, v]) => (
           <Grid key={k} size={{ xs: 6, sm: 4 }}>
-            <Typography variant="caption" color="text.secondary" display="block">{k}</Typography>
-            <Typography variant="body2" fontWeight={500}>{v}</Typography>
+            <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">{k}</Typography>
+            <Typography sx={{ fontWeight: 500 }} variant="body2">{v}</Typography>
           </Grid>
         ))}
       </Grid>

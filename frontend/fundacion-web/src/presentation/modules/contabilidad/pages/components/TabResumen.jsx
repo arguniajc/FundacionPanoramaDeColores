@@ -15,7 +15,7 @@ export function TabResumen({ stats, cuentas, movimientos }) {
         <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
-              <Typography variant="subtitle2" fontWeight="bold" mb={2}>Últimos 2 meses</Typography>
+              <Typography sx={{ fontWeight: 'bold', mb: 2 }} variant="subtitle2">Últimos 2 meses</Typography>
               <ResponsiveContainer width="100%" height={190}>
                 <BarChart data={stats.ultimosDosMeses} margin={{ top: 0, right: 8, left: 8, bottom: 0 }}>
                   <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
@@ -34,9 +34,9 @@ export function TabResumen({ stats, cuentas, movimientos }) {
       <Grid size={{ xs: 12, md: 6 }}>
         <Card>
           <CardContent>
-            <Typography variant="subtitle2" fontWeight="bold" mb={1.5}>Saldos por cuenta</Typography>
+            <Typography sx={{ fontWeight: 'bold', mb: 1.5 }} variant="subtitle2">Saldos por cuenta</Typography>
             {cuentas.length === 0
-              ? <Typography variant="body2" color="text.secondary">
+              ? <Typography sx={{ color: 'text.secondary' }} variant="body2">
                   No hay cuentas. Agrégalas en la pestaña "Cuentas".
                 </Typography>
               : cuentas.map(c => (
@@ -44,14 +44,13 @@ export function TabResumen({ stats, cuentas, movimientos }) {
                     borderBottom: '1px solid', borderColor: 'divider' }}>
                   <Box>
                     <Typography variant="body2">{c.nombre}</Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography sx={{ color: 'text.secondary' }} variant="caption">
                       {c.tipo === 'cuenta_bancaria'
                         ? `${c.banco ?? ''} · ${c.numeroCuenta ?? ''}`
                         : c.tipo === 'caja_menor' ? 'Caja menor' : 'Caja efectivo'}
                     </Typography>
                   </Box>
-                  <Typography variant="body2" fontWeight="bold"
-                    color={(c.saldoActual ?? 0) >= 0 ? 'success.main' : 'error.main'}>
+                  <Typography sx={{ fontWeight: 'bold', color: (c.saldoActual ?? 0) >= 0 ? 'success.main' : 'error.main' }} variant="body2">
                     {fmt(c.saldoActual)}
                   </Typography>
                 </Box>
@@ -64,7 +63,7 @@ export function TabResumen({ stats, cuentas, movimientos }) {
       <Grid size={12}>
         <Card>
           <CardContent>
-            <Typography variant="subtitle2" fontWeight="bold" mb={1.5}>
+            <Typography sx={{ fontWeight: 'bold', mb: 1.5 }} variant="subtitle2">
               Últimos movimientos — {MESES[now.getMonth()]} {now.getFullYear()}
             </Typography>
             <TableContainer>
@@ -95,8 +94,7 @@ export function TabResumen({ stats, cuentas, movimientos }) {
                       </TableCell>
                       <TableCell>{m.cuentaNombre}</TableCell>
                       <TableCell align="right">
-                        <Typography fontWeight="bold"
-                          color={m.tipo === 'ingreso' ? 'success.main' : 'error.main'}>
+                        <Typography sx={{ fontWeight: 'bold', color: m.tipo === 'ingreso' ? 'success.main' : 'error.main' }}>
                           {m.tipo === 'ingreso' ? '+' : '−'}{fmt(m.monto)}
                         </Typography>
                       </TableCell>
@@ -105,7 +103,7 @@ export function TabResumen({ stats, cuentas, movimientos }) {
                   {movimientos.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                        <Typography color="text.secondary">Sin movimientos este mes</Typography>
+                        <Typography sx={{ color: 'text.secondary' }}>Sin movimientos este mes</Typography>
                       </TableCell>
                     </TableRow>
                   )}

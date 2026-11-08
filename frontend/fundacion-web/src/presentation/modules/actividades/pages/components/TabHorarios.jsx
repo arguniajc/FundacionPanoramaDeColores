@@ -3,6 +3,7 @@ import {
   Alert, Box, Chip, CircularProgress, Divider,
   IconButton, Tooltip, Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import DeleteIcon     from '@mui/icons-material/Delete';
 import EditIcon       from '@mui/icons-material/Edit';
 import PauseIcon      from '@mui/icons-material/Pause';
@@ -74,15 +75,15 @@ export function TabHorarios({ programas, puedo, onCambio }) {
     <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      <Box mb={2}>
-        <Typography variant="subtitle2" color="text.secondary">
+      <Box sx={{ mb: 2 }}>
+        <Typography sx={{ color: 'text.secondary' }} variant="subtitle2">
           Horarios recurrentes semanales por programa. Para agregar uno nuevo, usa el botón <strong>"Nueva actividad"</strong> arriba.
         </Typography>
       </Box>
 
       {cargando ? (
-        <Box display="flex" justifyContent="center" py={6}>
-          <CircularProgress sx={{ color: COLOR }} />
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress sx={{ color: 'primary.main' }} />
         </Box>
       ) : Object.keys(porPrograma).length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 6, color: 'text.secondary' }}>
@@ -96,16 +97,16 @@ export function TabHorarios({ programas, puedo, onCambio }) {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {Object.entries(porPrograma).map(([pid, grupo]) => (
             <Box key={pid} sx={{
-              border: '1.5px solid #e2d9f3', borderRadius: 3,
-              overflow: 'hidden', bgcolor: '#fdfbff',
+              border: '1.5px solid', borderColor: (t) => alpha(t.palette.primary.main, 0.2), borderRadius: 3,
+              overflow: 'hidden', bgcolor: 'background.paper',
             }}>
               {/* Cabecera del programa */}
               <Box sx={{
                 bgcolor: COLOR, px: 2.5, py: 1.5,
                 display: 'flex', alignItems: 'center', gap: 1,
               }}>
-                <Box flex={1}>
-                  <Typography fontWeight={800} color="white" variant="body1">
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontWeight: 800, color: 'white' }} variant="body1">
                     {grupo.nombre}
                   </Typography>
                   <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)' }}>
@@ -141,23 +142,23 @@ export function TabHorarios({ programas, puedo, onCambio }) {
                       />
 
                       {/* Hora y vigencia */}
-                      <Box flex={1}>
-                        <Box display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
                           <AccessTimeIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
-                          <Typography variant="body2" fontWeight={700}>
+                          <Typography sx={{ fontWeight: 700 }} variant="body2">
                             {h.horaInicio} – {h.horaFin}
                           </Typography>
                           {h.lugar && (
                             <>
                               <PlaceIcon sx={{ fontSize: 14, color: 'text.secondary', ml: 0.5 }} />
-                              <Typography variant="caption" color="text.secondary">{h.lugar}</Typography>
+                              <Typography sx={{ color: 'text.secondary' }} variant="caption">{h.lugar}</Typography>
                             </>
                           )}
                         </Box>
                         {(h.fechaInicioVigencia || h.fechaFinVigencia) && (
-                          <Box display="flex" alignItems="center" gap={0.4} mt={0.3}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mt: 0.3 }}>
                             <CalendarTodayIcon sx={{ fontSize: 11, color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
                               {h.fechaInicioVigencia
                                 ? new Date(h.fechaInicioVigencia + 'T00:00:00').toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })
                                 : '—'}
@@ -177,20 +178,20 @@ export function TabHorarios({ programas, puedo, onCambio }) {
                       )}
 
                       {/* Acciones */}
-                      <Box display="flex" gap={0.5}>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
                         {puedo('actividades', 'editar') && (
                           <Tooltip title={h.activo ? 'Pausar' : 'Activar'}>
                             <IconButton size="small" onClick={() => toggleActivo(h)}>
                               {h.activo
                                 ? <PauseIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                                : <PlayArrowIcon fontSize="small" sx={{ color: COLOR }} />}
+                                : <PlayArrowIcon fontSize="small" sx={{ color: 'primary.main' }} />}
                             </IconButton>
                           </Tooltip>
                         )}
                         {puedo('actividades', 'editar') && (
                           <Tooltip title="Editar">
                             <IconButton size="small" onClick={() => { setEditando(h); setDialogOpen(true); }}>
-                              <EditIcon fontSize="small" sx={{ color: COLOR }} />
+                              <EditIcon fontSize="small" sx={{ color: 'primary.main' }} />
                             </IconButton>
                           </Tooltip>
                         )}

@@ -7,6 +7,7 @@ import {
   DialogContentText, DialogActions, Tooltip, Button, Snackbar, Tabs, Tab,
   Divider, Stack, Collapse, MenuItem, Select, FormControl, InputLabel,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
 import SearchIcon           from '@mui/icons-material/Search';
 import FilterListIcon       from '@mui/icons-material/FilterList';
@@ -29,6 +30,7 @@ import UploadFileIcon       from '@mui/icons-material/UploadFile';
 import DeleteForeverIcon    from '@mui/icons-material/DeleteForever';
 import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning';
 import { calcularEdad }     from '@/shared/utils/fecha';
+import { colorEstado }      from '@/shared/theme/paleta';
 
 function calcularCompletitudAdulto(ins) {
   const checks = [
@@ -55,19 +57,23 @@ import apiClient from '@/infrastructure/http/apiClient';
 import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
-const HOVER_SX_ADULTOS = {
-  bgcolor: '#e8f5e9 !important',
-  '& .MuiTableCell-root': { color: '#1a1a1a !important' },
-  '& .MuiTableCell-root:first-of-type': { borderLeft: '3px solid #2e7d32' },
-  '& a': { color: '#1a6b35 !important' },
-};
+const HOVER_SX_ADULTOS = (t) => ({
+  bgcolor: `${alpha(t.palette.success.main, 0.1)} !important`,
+  '& .MuiTableCell-root': { color: 'text.primary' },
+  '& .MuiTableCell-root:first-of-type': { borderLeft: `3px solid ${t.palette.success.main}` },
+  '& a': { color: `${t.palette.success.main} !important` },
+});
 
 const AdultoFila = memo(function AdultoFila({
   ins, idx, esAdmin, onVer, onEditar, onBaja, onReactivar, onEliminar,
 }) {
   const pct      = calcularCompletitudAdulto(ins);
-  const pctColor = pct >= 80 ? '#2e7d32' : pct >= 50 ? '#e65100' : '#c62828';
-  const pctBg    = pct >= 80 ? '#e8f5e9' : pct >= 50 ? '#fff3e0' : '#fce4ec';
+  const theme    = useTheme();
+  const modo     = theme.palette.mode;
+  const pctTono  = colorEstado(pct >= 80 ? 'exito' : pct >= 50 ? 'aviso' : 'error', modo);
+  const pctColor = pctTono.texto;
+  const pctBg    = pctTono.fondo;
+  const tonoEstado = colorEstado(ins.activo ? 'exito' : 'error', modo);
 
   return (
     <TableRow
@@ -83,20 +89,20 @@ const AdultoFila = memo(function AdultoFila({
       }}
     >
       <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'text.primary' }}>
-        <Box display="flex" alignItems="center" gap={0.8} flexWrap="wrap">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap' }}>
           {ins.nombreMenor}
           {!ins.fotoMenorUrl && (
             <Tooltip title="Foto pendiente — haz clic en Editar para cargarla">
               <Chip label="📷 Foto" size="small"
                 onClick={e => { e.stopPropagation(); onEditar(ins); }}
-                sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: '#fff3e0', color: '#e65100', cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }} />
+                sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: colorEstado('aviso', modo).fondo, color: colorEstado('aviso', modo).texto, cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }} />
             </Tooltip>
           )}
           {!ins.fotoDocumentoUrl && (
             <Tooltip title="Documento de identidad pendiente — haz clic en Editar para cargarlo">
               <Chip label="📄 Doc." size="small"
                 onClick={e => { e.stopPropagation(); onEditar(ins); }}
-                sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: '#fce4ec', color: '#c62828', cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }} />
+                sx={{ fontSize: '0.65rem', fontWeight: 700, bgcolor: colorEstado('error', modo).fondo, color: colorEstado('error', modo).texto, cursor: 'pointer', height: 18, '& .MuiChip-label': { px: 0.8 } }} />
             </Tooltip>
           )}
         </Box>
@@ -139,35 +145,35 @@ const AdultoFila = memo(function AdultoFila({
       </TableCell>
       <TableCell sx={{ whiteSpace: 'nowrap' }}>
         <Chip label={ins.activo ? 'Activo' : 'Baja'} size="small"
-          sx={{ fontSize: '0.72rem', fontWeight: 700, bgcolor: ins.activo ? '#e8f5e9' : '#fce4ec', color: ins.activo ? '#2e7d32' : '#c62828' }} />
+          sx={{ fontSize: '0.72rem', fontWeight: 700, bgcolor: tonoEstado.fondo, color: tonoEstado.texto }} />
       </TableCell>
       <TableCell onClick={e => e.stopPropagation()} sx={{ whiteSpace: 'nowrap', pr: 0.5 }}>
         <IconButton size="small" title="Ver detalle"
-          sx={{ color: '#2e7d32', '&:hover': { bgcolor: 'rgba(46,125,50,0.1)' } }}
+          sx={{ color: 'success.main', '&:hover': { bgcolor: 'rgba(46,125,50,0.1)' } }}
           onClick={() => onVer(ins)}>
           <VisibilityIcon fontSize="small" />
         </IconButton>
         <IconButton size="small" title="Editar"
-          sx={{ color: '#1976d2', '&:hover': { bgcolor: 'rgba(25,118,210,0.1)' } }}
+          sx={{ color: 'info.main', '&:hover': { bgcolor: 'rgba(25,118,210,0.1)' } }}
           onClick={() => onEditar(ins)}>
           <EditIcon fontSize="small" />
         </IconButton>
         {esAdmin && (ins.activo ? (
           <IconButton size="small" title="Dar de baja"
-            sx={{ color: '#e65100', '&:hover': { bgcolor: 'rgba(230,81,0,0.1)' } }}
+            sx={{ color: 'warning.main', '&:hover': { bgcolor: 'rgba(230,81,0,0.1)' } }}
             onClick={() => onBaja(ins.id)}>
             <BlockIcon fontSize="small" />
           </IconButton>
         ) : (
           <IconButton size="small" title="Reactivar"
-            sx={{ color: '#2e7d32', '&:hover': { bgcolor: 'rgba(46,125,50,0.1)' } }}
+            sx={{ color: 'success.main', '&:hover': { bgcolor: 'rgba(46,125,50,0.1)' } }}
             onClick={() => onReactivar(ins.id)}>
             <CheckCircleIcon fontSize="small" />
           </IconButton>
         ))}
         {esAdmin && (
           <IconButton size="small" title="Eliminar de la BD (irreversible)"
-            sx={{ color: '#c62828', '&:hover': { bgcolor: 'rgba(198,40,40,0.1)' } }}
+            sx={{ color: 'error.main', '&:hover': { bgcolor: 'rgba(198,40,40,0.1)' } }}
             onClick={() => onEliminar({ id: ins.id, nombre: ins.nombreMenor })}>
             <DeleteForeverIcon fontSize="small" />
           </IconButton>
@@ -292,7 +298,7 @@ export default function AdultosPage() {
       <Box sx={{ flex: 1 }}>
         <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
 
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', md: 'center' }} sx={{ mb: 1 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ alignItems: { xs: 'stretch', md: 'center' }, mb: 1 }}>
             <TextField
               placeholder="Buscar nombre, documento, acudiente…"
               size="small" fullWidth
@@ -303,7 +309,7 @@ export default function AdultosPage() {
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon fontSize="small" sx={{ color: '#9e9e9e' }} />
+                      <SearchIcon fontSize="small" sx={{ color: 'text.disabled' }} />
                     </InputAdornment>
                   ),
                 },
@@ -351,7 +357,7 @@ export default function AdultosPage() {
                   variant="outlined" size="small"
                   startIcon={<AssignmentLateIcon />}
                   onClick={() => setPendientesOpen(true)}
-                  sx={{ borderColor: '#f59e0b', color: '#b45309', '&:hover': { bgcolor: '#fffbeb', borderColor: '#d97706' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
+                  sx={{ borderColor: 'warning.main', color: 'warning.dark', '&:hover': { bgcolor: (t) => alpha(t.palette.warning.main, 0.08), borderColor: 'warning.dark' }, whiteSpace: 'nowrap', fontWeight: 700, borderRadius: 2, flexShrink: 0 }}
                 >
                   Pendientes
                 </Button>
@@ -360,7 +366,7 @@ export default function AdultosPage() {
           </Stack>
 
           <Collapse in={filtrosOpen}>
-            <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: '#f1f8e9', borderColor: '#c5e1a5' }}>
+            <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: (t) => alpha(t.palette.success.main, 0.05), borderColor: (t) => alpha(t.palette.success.main, 0.3) }}>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                   <InputLabel>Género</InputLabel>
@@ -371,12 +377,10 @@ export default function AdultosPage() {
                     <MenuItem value="Otro">Otro</MenuItem>
                   </Select>
                 </FormControl>
-                <TextField size="small" label="Edad mínima" type="number" value={fEdadMin}
-                  onChange={e => setFEdadMin(e.target.value)} sx={{ width: 130 }}
-                  inputProps={{ min: 0, max: 100 }} />
-                <TextField size="small" label="Edad máxima" type="number" value={fEdadMax}
-                  onChange={e => setFEdadMax(e.target.value)} sx={{ width: 130 }}
-                  inputProps={{ min: 0, max: 100 }} />
+                <TextField slotProps={{ htmlInput: { min: 0, max: 100 } }} size="small" label="Edad mínima" type="number" value={fEdadMin}
+                  onChange={e => setFEdadMin(e.target.value)} sx={{ width: 130 }} />
+                <TextField slotProps={{ htmlInput: { min: 0, max: 100 } }} size="small" label="Edad máxima" type="number" value={fEdadMax}
+                  onChange={e => setFEdadMax(e.target.value)} sx={{ width: 130 }} />
                 <TextField size="small" label="EPS" value={fEps}
                   onChange={e => setFEps(e.target.value)} sx={{ width: 180 }}
                   placeholder="Ej: Sanitas, Sura…" />
@@ -404,8 +408,8 @@ export default function AdultosPage() {
             sx={{
               mb: 2,
               '& .MuiTab-root':       { fontWeight: 600, textTransform: 'none', minHeight: 40, fontSize: '0.85rem' },
-              '& .Mui-selected':      { color: '#2e7d32' },
-              '& .MuiTabs-indicator': { bgcolor: '#2e7d32', height: 3, borderRadius: 2 },
+              '& .Mui-selected':      { color: 'success.main' },
+              '& .MuiTabs-indicator': { bgcolor: 'success.main', height: 3, borderRadius: 2 },
             }}
           >
             {TABS.map(t => <Tab key={t.value} value={t.value} label={t.label} />)}
@@ -415,9 +419,9 @@ export default function AdultosPage() {
 
           {actualizando && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 1, opacity: 0.6 }}>
-              <SyncIcon sx={{ fontSize: '0.85rem', color: '#2e7d32', animation: 'spin 1.2s linear infinite',
+              <SyncIcon sx={{ fontSize: '0.85rem', color: 'success.main', animation: 'spin 1.2s linear infinite',
                 '@keyframes spin': { '100%': { transform: 'rotate(360deg)' } } }} />
-              <Typography variant="caption" color="text.secondary">Actualizando…</Typography>
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">Actualizando…</Typography>
             </Box>
           )}
 
@@ -442,7 +446,7 @@ export default function AdultosPage() {
 
               <TableBody>
                 {cargando ? (
-                  <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6 }}><CircularProgress size={32} sx={{ color: '#2e7d32' }} /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6 }}><CircularProgress size={32} sx={{ color: 'success.main' }} /></TableCell></TableRow>
                 ) : inscripciones.length === 0 ? (
                   <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>No se encontraron adultos.</TableCell></TableRow>
                 ) : (
@@ -460,7 +464,7 @@ export default function AdultosPage() {
           </TableContainer>
 
           {totalPaginas > 1 && (
-            <Box display="flex" justifyContent="center" mt={3}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
               <Pagination count={totalPaginas} page={pagina} onChange={(_, v) => setPagina(v)} size="small"
                 sx={{ '& .Mui-selected': { bgcolor: '#2e7d32 !important', color: '#fff' }, '& .MuiPaginationItem-root': { fontWeight: 600 } }}
               />
@@ -469,10 +473,10 @@ export default function AdultosPage() {
 
           <Box sx={{ mt: 5, pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
-              <LockIcon sx={{ fontSize: '1rem', color: '#2e7d32', mt: '2px', flexShrink: 0 }} />
+              <LockIcon sx={{ fontSize: '1rem', color: 'success.main', mt: '2px', flexShrink: 0 }} />
               <Box>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#2e7d32', display: 'block', mb: 0.3 }}>Aviso de confidencialidad</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'success.main', display: 'block', mb: 0.3 }}>Aviso de confidencialidad</Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
                   La información contenida en este panel es de carácter <strong>estrictamente confidencial</strong> y de uso exclusivo del personal autorizado de la fundación.
                   Queda prohibida su reproducción, divulgación o uso no autorizado. El acceso indebido a estos datos puede constituir una infracción a la <strong>Ley 1581 de 2012</strong>.
                 </Typography>
@@ -480,10 +484,10 @@ export default function AdultosPage() {
             </Box>
             <Divider sx={{ my: 1.5 }} />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">
                 <strong>Fundación Panorama de Colores</strong> · Entidad sin ánimo de lucro · NIT registrado ante la DIAN
               </Typography>
-              <Typography variant="caption" color="text.secondary">Panel Administrativo · {new Date().getFullYear()}</Typography>
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">Panel Administrativo · {new Date().getFullYear()}</Typography>
             </Box>
           </Box>
 
@@ -525,7 +529,7 @@ export default function AdultosPage() {
       )}
 
       <Dialog open={!!idBaja} onClose={() => { setIdBaja(null); setMotivoBaja(''); }} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ color: '#e65100', fontWeight: 700, pb: 1 }}>¿Dar de baja al adulto?</DialogTitle>
+        <DialogTitle sx={{ color: 'warning.dark', fontWeight: 700, pb: 1 }}>¿Dar de baja al adulto?</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>El adulto quedará inactivo pero su información se conservará. Podrás reactivarlo en cualquier momento.</DialogContentText>
           <TextField
@@ -545,7 +549,7 @@ export default function AdultosPage() {
       </Dialog>
 
       <Dialog open={!!eliminar} onClose={() => { if (!eliminando) { setEliminar(null); setErrorEliminar(''); } }} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ color: '#c62828', fontWeight: 700, pb: 1 }}>
+        <DialogTitle sx={{ color: 'error.main', fontWeight: 700, pb: 1 }}>
           Eliminar adulto de la BD
         </DialogTitle>
         <DialogContent>

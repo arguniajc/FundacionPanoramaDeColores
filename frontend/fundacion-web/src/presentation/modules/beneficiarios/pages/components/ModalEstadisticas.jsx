@@ -10,6 +10,7 @@ import WhatsAppIcon       from '@mui/icons-material/WhatsApp';
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate';
 import apiClient          from '@/infrastructure/http/apiClient';
 import { useAsyncData }   from '@/shared/hooks/useAsyncData';
+import { colorEstado }    from '@/shared/theme/paleta';
 
 function StatCard({ icon, label, value, color }) {
   return (
@@ -42,10 +43,10 @@ function BaraStat({ label, count, total, color = 'var(--color-primario)', icon }
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
           {icon && <Box sx={{ color, display: 'flex', fontSize: '1rem' }}>{icon}</Box>}
-          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.82rem' }}>{label}</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.82rem' }}>{label}</Typography>
         </Box>
-        <Typography variant="caption" fontWeight={700} sx={{ color, minWidth: 60, textAlign: 'right' }}>
-          {count} <Typography component="span" variant="caption" color="text.secondary">/ {total}</Typography>
+        <Typography variant="caption" sx={{ fontWeight: 700, color, minWidth: 60, textAlign: 'right' }}>
+          {count} <Typography sx={{ color: 'text.secondary' }} component="span" variant="caption">/ {total}</Typography>
         </Typography>
       </Box>
       <LinearProgress
@@ -53,7 +54,7 @@ function BaraStat({ label, count, total, color = 'var(--color-primario)', icon }
         value={pct}
         sx={{
           height: 8, borderRadius: 4,
-          bgcolor: 'rgba(0,0,0,0.06)',
+          bgcolor: 'action.hover',
           '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 4 },
         }}
       />
@@ -70,8 +71,8 @@ function StatSection({ title, children }) {
       borderRadius: 3,
       height: '100%',
     }}>
-      <Typography variant="subtitle2" fontWeight={700} color="var(--color-primario)"
-        sx={{ mb: 1.8, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 0.7 }}>
+      <Typography variant="subtitle2"
+        sx={{ fontWeight: 700, color: 'var(--color-primario-texto)', mb: 1.8, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 0.7 }}>
         {title}
       </Typography>
       {children}
@@ -88,6 +89,8 @@ const TIPOS_FILTRO = [
 export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
   const theme    = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  // Fondo suave + texto del tono, según modo claro/oscuro
+  const tono = (t) => { const c = colorEstado(t, theme.palette.mode); return { bg: c.fondo, color: c.texto }; };
 
   const [tipoFiltro, setTipoFiltro] = useState(tipoInicial);
 
@@ -115,10 +118,10 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
     items.map(({ key, val }) => (
       <Box key={key} sx={{ mb: 1 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.3 }}>
-          <Typography variant="caption" fontWeight={600}>{key}</Typography>
-          <Typography variant="caption" fontWeight={700} color={color}>{val}</Typography>
+          <Typography sx={{ fontWeight: 600 }} variant="caption">{key}</Typography>
+          <Typography sx={{ fontWeight: 700, color: color }} variant="caption">{val}</Typography>
         </Box>
-        <Box sx={{ bgcolor: 'rgba(0,0,0,0.06)', borderRadius: 4, height: 10, overflow: 'hidden' }}>
+        <Box sx={{ bgcolor: 'action.hover', borderRadius: 4, height: 10, overflow: 'hidden' }}>
           <Box sx={{
             height: '100%', borderRadius: 4,
             width: `${maxVal > 0 ? (val / maxVal) * 100 : 0}%`,
@@ -133,14 +136,14 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
   const content = () => {
     if (cargando) return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8, gap: 2 }}>
-        <CircularProgress size={32} sx={{ color: 'var(--color-primario)' }} />
-        <Typography color="text.secondary">Calculando estadísticas…</Typography>
+        <CircularProgress size={32} sx={{ color: 'var(--color-primario-texto)' }} />
+        <Typography sx={{ color: 'text.secondary' }}>Calculando estadísticas…</Typography>
       </Box>
     );
     if (error) return <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>;
     if (!stats) return (
       <Box sx={{ py: 6, textAlign: 'center' }}>
-        <Typography color="text.secondary">No hay estadísticas disponibles.</Typography>
+        <Typography sx={{ color: 'text.secondary' }}>No hay estadísticas disponibles.</Typography>
       </Box>
     );
 
@@ -170,10 +173,10 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
         <StatSection title="📊 Resumen general">
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 1 }}>
             {[
-              { label: 'Total',    val: total,      bg: '#ede7f6', color: 'var(--color-primario)' },
-              { label: 'Activos',  val: activos,    bg: '#e8f5e9', color: '#2e7d32' },
-              { label: 'En baja',  val: baja,       bg: '#fce4ec', color: '#c62828' },
-              { label: 'Alergias', val: conAlergia, bg: '#fff3e0', color: '#e65100' },
+              { label: 'Total',    val: total,      ...tono('marca') },
+              { label: 'Activos',  val: activos,    ...tono('exito') },
+              { label: 'En baja',  val: baja,       ...tono('error') },
+              { label: 'Alergias', val: conAlergia, ...tono('aviso') },
             ].map(({ label, val, bg, color }) => (
               <Box key={label} sx={{ bgcolor: bg, borderRadius: 2, p: 1.2, textAlign: 'center' }}>
                 <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color, lineHeight: 1 }}>{val}</Typography>
@@ -200,14 +203,14 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', height: 90, mt: 1 }}>
             {mesItems.map(m => (
               <Box key={m.key} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                <Typography variant="caption" fontWeight={700} color="var(--color-primario)">{m.val}</Typography>
+                <Typography sx={{ fontWeight: 700, color: 'var(--color-primario-texto)' }} variant="caption">{m.val}</Typography>
                 <Box sx={{
                   width: '100%', borderRadius: '4px 4px 0 0',
                   height: `${Math.max((m.val / maxMes) * 60, m.val > 0 ? 8 : 2)}px`,
-                  background: m.val > 0 ? 'linear-gradient(180deg, #7C3AED, var(--color-primario))' : 'rgba(0,0,0,0.08)',
+                  background: m.val > 0 ? 'linear-gradient(180deg, #7C3AED, var(--color-primario))' : theme.palette.divider,
                   transition: 'height 0.5s ease',
                 }} />
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textAlign: 'center' }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem', textAlign: 'center' }}>
                   {m.key}
                 </Typography>
               </Box>
@@ -218,32 +221,31 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
         <StatSection title="👕 Talla camisa más frecuente">
           {topCamisaItems.length
             ? renderBarras(topCamisaItems, maxCamisa, 'var(--color-secundario)')
-            : <Typography variant="caption" color="text.secondary">Sin datos</Typography>}
+            : <Typography sx={{ color: 'text.secondary' }} variant="caption">Sin datos</Typography>}
         </StatSection>
 
         <StatSection title="👟 Talla zapatos / pantalón">
-          <Typography variant="caption" fontWeight={700} color="#1976d2" sx={{ mb: 1, display: 'block' }}>Zapatos</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#1976d2', mb: 1, display: 'block' }}>Zapatos</Typography>
           {topZapatosItems.length
             ? renderBarras(topZapatosItems, maxZapatos, '#1976d2')
-            : <Typography variant="caption" color="text.secondary">Sin datos</Typography>}
+            : <Typography sx={{ color: 'text.secondary' }} variant="caption">Sin datos</Typography>}
           <Divider sx={{ my: 1.2 }} />
-          <Typography variant="caption" fontWeight={700} color="#5c6bc0" sx={{ mb: 1, display: 'block' }}>Pantalón</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#5c6bc0', mb: 1, display: 'block' }}>Pantalón</Typography>
           {topPantalonItems.length
             ? renderBarras(topPantalonItems, maxPantalon, '#5c6bc0')
-            : <Typography variant="caption" color="text.secondary">Sin datos</Typography>}
+            : <Typography sx={{ color: 'text.secondary' }} variant="caption">Sin datos</Typography>}
         </StatSection>
       </Box>
     );
   };
 
   return (
-    <Dialog
+    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3, maxHeight: '90vh' } } }}
       open={open}
       onClose={onClose}
       fullScreen={isMobile}
       maxWidth="lg"
       fullWidth
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3, maxHeight: '90vh' } }}
     >
       <DialogTitle sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -252,7 +254,7 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <BarChartIcon />
-          <Typography fontWeight={800} sx={{ fontSize: '1.05rem' }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.05rem' }}>
             Estadísticas de beneficiarios
           </Typography>
         </Box>
@@ -262,8 +264,8 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
       </DialogTitle>
 
       {/* ── Filtro tipo ── */}
-      <Box sx={{ display: 'flex', gap: 1, px: 3, py: 1.5, bgcolor: '#faf5ff', borderBottom: '1px solid', borderColor: 'divider', flexWrap: 'wrap' }}>
-        <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ alignSelf: 'center', mr: 0.5 }}>
+      <Box sx={{ display: 'flex', gap: 1, px: 3, py: 1.5, bgcolor: 'superficie2', borderBottom: '1px solid', borderColor: 'divider', flexWrap: 'wrap' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, alignSelf: 'center', mr: 0.5 }}>
           Ver estadísticas de:
         </Typography>
         {TIPOS_FILTRO.map(op => (
@@ -271,7 +273,7 @@ export function ModalEstadisticas({ open, onClose, tipoInicial = 'todos' }) {
             onClick={() => setTipoFiltro(op.v)}
             sx={{
               px: 2, py: 0.5, borderRadius: 5, border: '2px solid',
-              borderColor: tipoFiltro === op.v ? 'var(--color-primario)' : '#ddd',
+              borderColor: tipoFiltro === op.v ? 'var(--color-primario)' : 'divider',
               bgcolor: tipoFiltro === op.v ? 'var(--color-primario)' : 'transparent',
               color: tipoFiltro === op.v ? '#fff' : 'text.secondary',
               cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,

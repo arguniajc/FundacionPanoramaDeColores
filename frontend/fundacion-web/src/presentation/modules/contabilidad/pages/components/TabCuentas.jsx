@@ -22,16 +22,16 @@ export function TabCuentas({ cuentas, puedeCrear, puedeEditar, onCrear, onEditar
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <Box>
-                    <Typography variant="subtitle1" fontWeight="bold">{c.nombre}</Typography>
+                    <Typography sx={{ fontWeight: 'bold' }} variant="subtitle1">{c.nombre}</Typography>
                     <Chip
                       label={c.tipo === 'cuenta_bancaria' ? 'Banco' : c.tipo === 'caja_menor' ? 'Caja Menor' : 'Caja'}
                       color={c.tipo === 'caja_menor' ? 'warning' : 'default'}
                       size="small" sx={{ mt: .5 }} />
                     {c.banco && (
-                      <Typography variant="caption" display="block" color="text.secondary">{c.banco}</Typography>
+                      <Typography sx={{ display: 'block', color: 'text.secondary' }} variant="caption">{c.banco}</Typography>
                     )}
                     {c.numeroCuenta && (
-                      <Typography variant="caption" display="block" color="text.secondary">
+                      <Typography sx={{ display: 'block', color: 'text.secondary' }} variant="caption">
                         Cta: {c.numeroCuenta}
                       </Typography>
                     )}
@@ -49,13 +49,12 @@ export function TabCuentas({ cuentas, puedeCrear, puedeEditar, onCrear, onEditar
                 </Box>
                 <Divider sx={{ my: 1 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="caption" color="text.secondary">Saldo inicial</Typography>
+                  <Typography sx={{ color: 'text.secondary' }} variant="caption">Saldo inicial</Typography>
                   <Typography variant="caption">{fmt(c.saldoInicial)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: .5 }}>
-                  <Typography variant="body2" fontWeight="bold">Saldo actual</Typography>
-                  <Typography variant="body2" fontWeight="bold"
-                    color={(c.saldoActual ?? 0) >= 0 ? 'success.main' : 'error.main'}>
+                  <Typography sx={{ fontWeight: 'bold' }} variant="body2">Saldo actual</Typography>
+                  <Typography sx={{ fontWeight: 'bold', color: (c.saldoActual ?? 0) >= 0 ? 'success.main' : 'error.main' }} variant="body2">
                     {fmt(c.saldoActual)}
                   </Typography>
                 </Box>
@@ -65,7 +64,7 @@ export function TabCuentas({ cuentas, puedeCrear, puedeEditar, onCrear, onEditar
         ))}
         {cuentas.length === 0 && (
           <Grid size={12}>
-            <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
+            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>
               No hay cuentas. Crea una cuenta de caja o bancaria para empezar a registrar movimientos.
             </Typography>
           </Grid>

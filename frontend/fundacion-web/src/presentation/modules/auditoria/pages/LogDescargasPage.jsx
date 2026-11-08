@@ -10,10 +10,14 @@ import DownloadIcon  from '@mui/icons-material/Download';
 import apiClient     from '@/infrastructure/http/apiClient';
 import SkeletonTabla from '@/shared/components/SkeletonTabla';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
+import { useTheme } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 
 const POR_PAGINA = 20;
 
 export default function LogDescargasPage() {
+  const theme = useTheme();
+  const tonoTipo = colorEstado('marca', theme.palette.mode);
   const [pagina, setPagina] = useState(1);
   const [buscar, setBuscar] = useState('');
 
@@ -50,10 +54,10 @@ export default function LogDescargasPage() {
           borderRadius: 3, p: { xs: 2, sm: 3 }, mb: 3, color: 'white',
         }}
       >
-        <Box display="flex" alignItems="center" gap={1.5}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <DownloadIcon sx={{ fontSize: 32, opacity: 0.85 }} />
           <Box>
-            <Typography variant="h5" fontWeight={800} sx={{ lineHeight: 1.2 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
               Log de Descargas
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.75, mt: 0.3 }}>
@@ -83,11 +87,11 @@ export default function LogDescargasPage() {
           <TableContainer sx={{ overflowX: 'auto' }}>
             <Table size="small">
               <TableHead>
-                <TableRow sx={{ bgcolor: '#fdfbff' }}>
-                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Usuario</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Beneficiario</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)', display: { xs: 'none', sm: 'table-cell' } }}>Tipo</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Fecha y hora</TableCell>
+                <TableRow sx={{ bgcolor: 'superficie2' }}>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario-texto)' }}>Usuario</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario-texto)' }}>Beneficiario</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario-texto)', display: { xs: 'none', sm: 'table-cell' } }}>Tipo</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario-texto)' }}>Fecha y hora</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -104,7 +108,7 @@ export default function LogDescargasPage() {
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{r.nombreBeneficiario}</TableCell>
                     <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                      <Chip label={r.tipoArchivo} size="small" sx={{ bgcolor: '#f0eaff', color: 'var(--color-primario)', fontWeight: 600, fontSize: '0.72rem' }} />
+                      <Chip label={r.tipoArchivo} size="small" sx={{ bgcolor: tonoTipo.fondo, color: tonoTipo.texto, fontWeight: 600, fontSize: '0.72rem' }} />
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.78rem', color: 'text.secondary', whiteSpace: 'nowrap' }}>
                       {new Date(r.descargadoEn).toLocaleString('es-CO', {
@@ -120,7 +124,7 @@ export default function LogDescargasPage() {
         )}
 
         {totalPaginas > 1 && (
-          <Box display="flex" justifyContent="center" py={2}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
             <Pagination
               count={totalPaginas}
               page={pagina}

@@ -3,6 +3,7 @@ import {
   Alert, Box, Button, CircularProgress, Grid, IconButton,
   InputAdornment, Snackbar, TextField, Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import AddIcon    from '@mui/icons-material/Add';
 import CloseIcon  from '@mui/icons-material/Close';
 import PeopleIcon from '@mui/icons-material/People';
@@ -84,7 +85,7 @@ export default function VoluntariosPage() {
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
             <Box sx={{ width: 4, height: 26, borderRadius: 1, bgcolor: COLOR }} />
-            <Typography variant="h5" fontWeight={800}>Voluntarios</Typography>
+            <Typography sx={{ fontWeight: 800 }} variant="h5">Voluntarios</Typography>
           </Box>
           <Typography sx={{ color: 'text.secondary', fontSize: '0.875rem', pl: 0.5 }}>
             Personas que dedican su tiempo a la fundación
@@ -92,7 +93,7 @@ export default function VoluntariosPage() {
         </Box>
         <Button variant="contained" startIcon={<AddIcon />}
           onClick={() => setDialVol({ open: true, voluntario: null })}
-          sx={{ bgcolor: COLOR, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#5b21b6' } }}>
+          sx={{ bgcolor: COLOR, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: 'primary.dark' } }}>
           Nuevo voluntario
         </Button>
       </Box>
@@ -102,34 +103,33 @@ export default function VoluntariosPage() {
           <StatCard icon={<PeopleIcon />}     label="Total voluntarios"    value={stats?.totalVoluntarios ?? '—'}               color={COLOR}     loading={!stats} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard icon={<PersonIcon />}     label="Nuevos este mes"      value={stats?.nuevosEsteMes ?? '—'}                  color="#059669"   loading={!stats} />
+          <StatCard icon={<PersonIcon />}     label="Nuevos este mes"      value={stats?.nuevosEsteMes ?? '—'}                  color="success.main" loading={!stats} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard icon={<AssignmentIcon />} label="Programas cubiertos"  value={stats?.programasCubiertos ?? '—'}             color="#d97706"   loading={!stats} />
+          <StatCard icon={<AssignmentIcon />} label="Programas cubiertos"  value={stats?.programasCubiertos ?? '—'}             color="warning.main" loading={!stats} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard icon={<AccessTimeIcon />} label="Horas/semana (total)" value={stats ? `${stats.totalHorasSemanales}h` : '—'} color="#0ea5e9" loading={!stats} />
+          <StatCard icon={<AccessTimeIcon />} label="Horas/semana (total)" value={stats ? `${stats.totalHorasSemanales}h` : '—'} color="info.main" loading={!stats} />
         </Grid>
       </Grid>
 
       <Box sx={{ mb: 2.5 }}>
-        <TextField size="small" placeholder="Buscar por nombre, documento, email o profesión…"
-          value={buscar} onChange={e => setBuscar(e.target.value)}
-          InputProps={{
+        <TextField slotProps={{ input: {
             startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment>,
             endAdornment: buscar
               ? <InputAdornment position="end"><IconButton size="small" onClick={() => setBuscar('')}><CloseIcon fontSize="small" /></IconButton></InputAdornment>
               : null,
-          }}
+          } }} size="small" placeholder="Buscar por nombre, documento, email o profesión…"
+          value={buscar} onChange={e => setBuscar(e.target.value)}
           sx={{ width: { xs: '100%', sm: 380 } }} />
       </Box>
 
       {cargando && voluntarios.length === 0 ? (
         <Box sx={{ py: 8, textAlign: 'center' }}><CircularProgress /></Box>
       ) : voluntarios.length === 0 ? (
-        <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed #ede9fe', borderRadius: 2, bgcolor: '#faf5ff' }}>
-          <PeopleIcon sx={{ fontSize: 48, color: '#c4b5fd', mb: 1.5 }} />
-          <Typography fontWeight={700} color="text.secondary">
+        <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed', borderColor: (t) => alpha(t.palette.primary.main, 0.15), borderRadius: 2, bgcolor: (t) => alpha(t.palette.primary.main, 0.04) }}>
+          <PeopleIcon sx={{ fontSize: 48, color: 'primary.light', mb: 1.5 }} />
+          <Typography sx={{ fontWeight: 700, color: 'text.secondary' }}>
             {buscar ? 'No se encontraron voluntarios' : 'No hay voluntarios registrados'}
           </Typography>
           {!buscar && (
@@ -141,7 +141,7 @@ export default function VoluntariosPage() {
           )}
         </Box>
       ) : (
-        <Grid container spacing={2} alignItems="stretch">
+        <Grid sx={{ alignItems: 'stretch' }} container spacing={2}>
           {voluntarios.map(v => (
             <Grid key={v.id} size={{ xs: 12, sm: 6, lg: 4 }}>
               <VoluntarioCard voluntario={v}

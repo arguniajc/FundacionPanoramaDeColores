@@ -13,7 +13,7 @@ export function DialogComprobante({ mov, onClose, config }) {
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
-          <Typography fontWeight={700}>
+          <Typography sx={{ fontWeight: 700 }}>
             {mov.consecutivo
               ? 'Comprobante #' + mov.consecutivo + '-' + new Date(mov.fecha).getFullYear()
               : 'Detalle del movimiento'}
@@ -46,14 +46,14 @@ export function DialogComprobante({ mov, onClose, config }) {
             ] : []),
           ].map(([k, v]) => (
             <Grid size={6} key={k}>
-              <Typography variant="caption" color="text.secondary" display="block">{k}</Typography>
-              <Typography variant="body2" fontWeight={500}>{v}</Typography>
+              <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">{k}</Typography>
+              <Typography sx={{ fontWeight: 500 }} variant="body2">{v}</Typography>
             </Grid>
           ))}
         </Grid>
         {mov.descripcion && (
           <Box sx={{ mt: 2 }}>
-            <Typography variant="caption" color="text.secondary">Descripcion</Typography>
+            <Typography sx={{ color: 'text.secondary' }} variant="caption">Descripcion</Typography>
             <Typography variant="body2">{mov.descripcion}</Typography>
           </Box>
         )}

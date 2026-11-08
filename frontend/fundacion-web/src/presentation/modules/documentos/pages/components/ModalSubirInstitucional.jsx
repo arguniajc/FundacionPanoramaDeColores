@@ -4,6 +4,7 @@ import {
   DialogTitle, FormControl, FormHelperText, IconButton, InputLabel, LinearProgress,
   MenuItem, Select, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import CloseIcon          from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import UploadFileIcon     from '@mui/icons-material/UploadFile';
@@ -92,10 +93,9 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
   };
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle sx={{ background: HEADER_GRADIENT, color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box display="flex" alignItems="center" gap={1}><UploadFileIcon /> Subir documentos</Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><UploadFileIcon /> Subir documentos</Box>
         <IconButton onClick={onCerrar} size="small" sx={{ color: 'rgba(255,255,255,0.8)' }}><CloseIcon /></IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ py: 2.5, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -115,17 +115,17 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
           sx={{
             border: '2px dashed', borderColor: v.err('archivos') ? 'error.main' : archivos.length ? 'var(--color-primario)' : 'divider',
             borderRadius: 2, p: 2.5, textAlign: 'center', cursor: 'pointer',
-            bgcolor: archivos.length ? '#f5f0ff' : 'transparent',
-            '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f5f0ff' },
+            bgcolor: (t) => (archivos.length ? alpha(t.palette.primary.main, 0.06) : 'transparent'),
+            '&:hover': { borderColor: 'var(--color-primario-texto)', bgcolor: (t) => alpha(t.palette.primary.main, 0.06) },
           }}>
           <InsertDriveFileIcon sx={{ fontSize: 36, color: archivos.length ? 'var(--color-primario)' : 'text.disabled', mb: 0.5 }} />
-          <Typography variant="body2" color={archivos.length ? 'var(--color-primario)' : 'text.secondary'} fontWeight={600}>
+          <Typography sx={{ color: archivos.length ? 'var(--color-primario)' : 'text.secondary', fontWeight: 600 }} variant="body2">
             {archivos.length
               ? `${archivos.length} archivo${archivos.length > 1 ? 's' : ''} seleccionado${archivos.length > 1 ? 's' : ''}`
               : 'Haz clic o arrastra PDFs aquí (máx. 10 MB c/u)'}
           </Typography>
           {archivos.length === 0 && (
-            <Typography variant="caption" color="text.disabled">Puedes seleccionar varios a la vez</Typography>
+            <Typography sx={{ color: 'text.disabled' }} variant="caption">Puedes seleccionar varios a la vez</Typography>
           )}
           <input ref={inputRef} type="file" accept="application/pdf" multiple hidden
             onChange={e => agregarArchivos(e.target.files)} />
@@ -135,13 +135,13 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
         {archivos.length > 0 && (
           <Box sx={{ maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             {archivos.map(f => (
-              <Box key={f.name} display="flex" alignItems="center" justifyContent="space-between"
-                sx={{ bgcolor: '#f5f0ff', borderRadius: 1, px: 1.5, py: 0.5 }}>
-                <Typography variant="caption" sx={{ color: 'var(--color-primario)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 320 }}>
+              <Box key={f.name}
+                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: (t) => alpha(t.palette.primary.main, 0.06), borderRadius: 1, px: 1.5, py: 0.5 }}>
+                <Typography variant="caption" sx={{ color: 'var(--color-primario-texto)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 320 }}>
                   {f.name}
                 </Typography>
                 <IconButton size="small" onClick={() => quitarArchivo(f.name)} disabled={subiendo}>
-                  <CloseIcon sx={{ fontSize: 14, color: 'var(--color-primario)' }} />
+                  <CloseIcon sx={{ fontSize: 14, color: 'var(--color-primario-texto)' }} />
                 </IconButton>
               </Box>
             ))}
@@ -150,7 +150,7 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
 
         {subiendo && (
           <Box>
-            <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
+            <Typography sx={{ color: 'text.secondary', mb: 0.5, display: 'block' }} variant="caption">
               Subiendo… {progreso}%
             </Typography>
             <LinearProgress variant="determinate" value={progreso}

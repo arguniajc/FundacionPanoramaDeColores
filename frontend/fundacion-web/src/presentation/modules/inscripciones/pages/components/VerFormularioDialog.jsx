@@ -5,6 +5,7 @@ import {
   Dialog, DialogActions, DialogContent, DialogTitle,
   Grid, IconButton, TextField, Tooltip, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
+import { alpha }          from '@mui/material/styles';
 import EditIcon           from '@mui/icons-material/Edit';
 import GavelIcon          from '@mui/icons-material/Gavel';
 import PictureAsPdfIcon   from '@mui/icons-material/PictureAsPdf';
@@ -166,17 +167,17 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       if (v) return (
         <Box component="img" src={v} alt="Firma"
           sx={{ display: 'block', height: 56, maxWidth: 240, objectFit: 'contain',
-                border: '1px solid #e0d9f3', borderRadius: 1, bgcolor: 'white' }} />
+                border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'white' }} />
       );
       return <Chip label="Sin firma" color="warning" size="small" variant="outlined" />;
     }
     if (campo.tipo === 'documento_id') {
-      if (!v) return <em style={{ color: '#aaa' }}>—</em>;
+      if (!v) return <Box component="em" sx={{ color: 'text.disabled' }}>—</Box>;
       try { const doc = JSON.parse(v); return `${doc.tipo || '—'} · ${doc.numero || '—'}`; } catch { return String(v); }
     }
     if (campo.tipo === 'document') {
       if (v) return (
-        <Box display="flex" alignItems="center" gap={1}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Chip label="✓ Entregado" color="success" size="small" />
           <Button size="small" sx={{ color: COLOR, p: 0, minWidth: 0, textDecoration: 'underline' }}
             onClick={() => abrirArchivo(v)}>Ver PDF</Button>
@@ -184,7 +185,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       );
       return <Chip label="Pendiente" color="warning" size="small" variant="outlined" />;
     }
-    if (v === undefined || v === null || v === '') return <em style={{ color: '#aaa' }}>—</em>;
+    if (v === undefined || v === null || v === '') return <Box component="em" sx={{ color: 'text.disabled' }}>—</Box>;
     if (campo.tipo === 'boolean') return (v === 'true' || v === true) ? 'Sí' : 'No';
     if (campo.tipo === 'daterange') {
       try { const rng = JSON.parse(v); return `${fmtFechaCorta(rng.desde)} — ${fmtFechaCorta(rng.hasta)}`; } catch { return String(v); }
@@ -218,11 +219,10 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   });
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle sx={{ bgcolor: COLOR, color: 'white', py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
-          <Typography fontWeight={700} component="div">Formulario de inscripción</Typography>
+          <Typography sx={{ fontWeight: 700 }} component="div">Formulario de inscripción</Typography>
           <Typography variant="caption" sx={{ opacity: .85 }}>
             {inscripcion.nombreBeneficiario} · {inscripcion.nombrePrograma}
           </Typography>
@@ -239,32 +239,32 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       </DialogTitle>
 
       <DialogContent dividers sx={{ p: 3 }}>
-        <Box sx={{ mb: 2.5, p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '1px solid #d0c4f7' }}>
+        <Box sx={{ mb: 2.5, p: 2, bgcolor: (t) => alpha(t.palette.primary.main, 0.08), borderRadius: 2, border: '1px solid', borderColor: (t) => alpha(t.palette.primary.main, 0.3) }}>
           <Grid container spacing={2}>
             <Grid size={{ xs: 6 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}>Programa</Typography>
-              <Typography variant="body2" fontWeight={700} color={COLOR}>{inscripcion.nombrePrograma}</Typography>
+              <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4 }} variant="caption">Programa</Typography>
+              <Typography sx={{ fontWeight: 700, color: COLOR }} variant="body2">{inscripcion.nombrePrograma}</Typography>
             </Grid>
             <Grid size={{ xs: 6 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}>Sede</Typography>
+              <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4 }} variant="caption">Sede</Typography>
               <Typography variant="body2">{inscripcion.nombreSede}</Typography>
             </Grid>
             <Grid size={{ xs: 6 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}>Fecha de inscripción</Typography>
+              <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4 }} variant="caption">Fecha de inscripción</Typography>
               <Typography variant="body2">{fecha}</Typography>
             </Grid>
             <Grid size={{ xs: 6 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}>Estado</Typography>
+              <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4 }} variant="caption">Estado</Typography>
               <Box>{chipEstado(inscripcion.estado)}</Box>
             </Grid>
           </Grid>
         </Box>
 
         {beneficiario && (
-          <Box sx={{ mb: 2.5, p: 2, bgcolor: '#fdfbff', borderRadius: 2, border: '1px solid #e2d9f3' }}>
+          <Box sx={{ mb: 2.5, p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ borderLeft: `4px solid ${COLOR}`, pl: 1.5, mb: 1.5 }}>
-              <Typography fontWeight={800} color={COLOR}
-                sx={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              <Typography
+                sx={{ fontWeight: 800, color: COLOR, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 Datos del Beneficiario
               </Typography>
             </Box>
@@ -272,7 +272,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               {beneficiario.fotoMenorUrl ? (
                 <Box component="img" src={fotoBeneficiario || undefined} alt="Foto beneficiario"
                   sx={{ width: 72, height: 88, objectFit: 'contain', borderRadius: 1.5,
-                        border: `2px solid ${COLOR}`, flexShrink: 0, bgcolor: '#f3f0ff' }} />
+                        border: `2px solid ${COLOR}`, flexShrink: 0, bgcolor: (t) => alpha(t.palette.primary.main, 0.08) }} />
               ) : (
                 <Avatar sx={{ bgcolor: COLOR, width: 72, height: 72, flexShrink: 0,
                               borderRadius: 1.5, fontSize: '1.5rem' }}>
@@ -281,18 +281,18 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               )}
               <Grid container spacing={1.5} sx={{ flex: 1 }}>
                 <Grid size={12}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
-                    sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Nombre completo</Typography>
-                  <Typography variant="body2" fontWeight={700}>{beneficiario.nombreMenor}</Typography>
+                  <Typography variant="caption"
+                    sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4, textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Nombre completo</Typography>
+                  <Typography sx={{ fontWeight: 700 }} variant="body2">{beneficiario.nombreMenor}</Typography>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
-                    sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Documento</Typography>
+                  <Typography variant="caption"
+                    sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4, textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Documento</Typography>
                   <Typography variant="body2">{beneficiario.tipoDocumento} {beneficiario.numeroDocumento ?? '—'}</Typography>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
-                    sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Edad / Nacimiento</Typography>
+                  <Typography variant="caption"
+                    sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4, textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Edad / Nacimiento</Typography>
                   <Typography variant="body2">
                     {calcEdad(beneficiario.fechaNacimiento) != null ? `${calcEdad(beneficiario.fechaNacimiento)} años` : '—'}
                     {beneficiario.fechaNacimiento ? ` · ${fmtFechaCorta(beneficiario.fechaNacimiento)}` : ''}
@@ -302,30 +302,30 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             </Box>
             <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
               <Grid size={{ xs: 12, sm: 5 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
-                  sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Acudiente</Typography>
+                <Typography variant="caption"
+                  sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4, textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Acudiente</Typography>
                 <Typography variant="body2">{beneficiario.nombreAcudiente || '—'}</Typography>
               </Grid>
               <Grid size={{ xs: 6, sm: 3 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
-                  sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Parentesco</Typography>
+                <Typography variant="caption"
+                  sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4, textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Parentesco</Typography>
                 <Typography variant="body2">{beneficiario.parentesco || '—'}</Typography>
               </Grid>
               <Grid size={{ xs: 6, sm: 4 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
-                  sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>WhatsApp / Teléfono</Typography>
+                <Typography variant="caption"
+                  sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4, textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>WhatsApp / Teléfono</Typography>
                 <Typography variant="body2">{beneficiario.whatsapp || '—'}</Typography>
               </Grid>
             </Grid>
             <Grid container spacing={1.5}>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
-                  sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>EPS / Aseguradora</Typography>
+                <Typography variant="caption"
+                  sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4, textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>EPS / Aseguradora</Typography>
                 <Typography variant="body2">{beneficiario.eps || '—'}</Typography>
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
-                  sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Alergia</Typography>
+                <Typography variant="caption"
+                  sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4, textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Alergia</Typography>
                 <Typography variant="body2">
                   {beneficiario.tieneAlergia === 'si'
                     ? `Sí — ${beneficiario.descripcionAlergia || 'sin descripción'}`
@@ -334,8 +334,8 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
               </Grid>
               {beneficiario.observacionesSalud && (
                 <Grid size={12}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.4}
-                    sx={{ textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Observaciones de salud</Typography>
+                  <Typography variant="caption"
+                    sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.4, textTransform: 'uppercase', fontSize: '0.63rem', letterSpacing: '0.07em' }}>Observaciones de salud</Typography>
                   <Typography variant="body2">{beneficiario.observacionesSalud}</Typography>
                 </Grid>
               )}
@@ -344,7 +344,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         )}
 
         {cargando ? (
-          <Box display="flex" justifyContent="center" py={4}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress sx={{ color: COLOR }} />
           </Box>
         ) : editando ? (
@@ -393,20 +393,20 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                   <Box key={sec || '_root'} sx={{ mb: 2.5 }}>
                     {sec && (
                       <Box sx={{ bgcolor: COLOR, borderRadius: 1.5, px: 2, py: 1.1, mb: 1.2 }}>
-                        <Typography fontWeight={800} color="white"
-                          sx={{ fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                        <Typography
+                          sx={{ fontWeight: 800, color: 'white', fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                           {sec}
                         </Typography>
                       </Box>
                     )}
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
                       {grp.map((c) => (
-                        <Box key={c.id} sx={{ bgcolor: '#fdfbff', borderRadius: 2, border: '1px solid #ede7f6', px: 2, py: 1.1 }}>
-                          <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#2d1566',
+                        <Box key={c.id} sx={{ bgcolor: 'superficie2', borderRadius: 2, border: '1px solid', borderColor: 'divider', px: 2, py: 1.1 }}>
+                          <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: (t) => (t.palette.mode === 'dark' ? t.palette.primary.light : t.palette.primary.dark),
                             textTransform: 'uppercase', letterSpacing: '0.07em', mb: 0.35, display: 'block' }}>
                             {c.etiqueta}{c.obligatorio ? ' *' : ''}
                           </Typography>
-                          <Typography variant="body2" color="text.primary" sx={{ wordBreak: 'break-word', lineHeight: 1.5 }}>
+                          <Typography variant="body2" sx={{ color: 'text.primary', wordBreak: 'break-word', lineHeight: 1.5 }}>
                             {valorVista(c)}
                           </Typography>
                         </Box>
@@ -421,16 +421,16 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
 
             {/* ── Firma del Representante Legal ──────────────────── */}
             <Box sx={{ mt: 2, p: 2, borderRadius: 2, border: '1px solid',
-              borderColor: programa?.repAutorizado && programa?.repFirma ? '#d0c4f7' : 'warning.light',
-              bgcolor: programa?.repAutorizado && programa?.repFirma ? '#fdfbff' : '#fffde7' }}>
+              borderColor: (t) => (programa?.repAutorizado && programa?.repFirma ? alpha(t.palette.primary.main, 0.3) : alpha(t.palette.warning.main, 0.5)),
+              bgcolor: (t) => (programa?.repAutorizado && programa?.repFirma ? t.palette.background.paper : alpha(t.palette.warning.main, 0.08)) }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5,
-                borderLeft: `4px solid ${programa?.repAutorizado && programa?.repFirma ? COLOR : '#f59e0b'}`,
+                borderLeft: '4px solid', borderLeftColor: programa?.repAutorizado && programa?.repFirma ? COLOR : 'warning.main',
                 pl: 1.5 }}>
                 {programa?.repAutorizado && programa?.repFirma
                   ? <GavelIcon fontSize="small" sx={{ color: COLOR }} />
                   : <WarningAmberIcon fontSize="small" sx={{ color: 'warning.main' }} />}
-                <Typography fontWeight={800} color={programa?.repAutorizado && programa?.repFirma ? COLOR : 'warning.dark'}
-                  sx={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                <Typography
+                  sx={{ fontWeight: 800, color: programa?.repAutorizado && programa?.repFirma ? COLOR : 'warning.dark', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                   Firma Representante Legal — Fundación
                 </Typography>
               </Box>
@@ -438,21 +438,21 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                 <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   <Box component="img" src={programa.repFirma} alt="Firma representante"
                     sx={{ height: 64, maxWidth: 200, objectFit: 'contain',
-                          border: '1px solid #e0d9f3', borderRadius: 1, bgcolor: 'white', p: 0.5 }} />
+                          border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'white', p: 0.5 }} />
                   <Box>
-                    <Typography fontWeight={700} variant="body2">{programa.repNombre ?? '—'}</Typography>
+                    <Typography sx={{ fontWeight: 700 }} variant="body2">{programa.repNombre ?? '—'}</Typography>
                     {programa.repDocumento && (
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">
                         Doc: {programa.repDocumento}
                       </Typography>
                     )}
                     {programa.repCargo && (
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">
                         {programa.repCargo}
                       </Typography>
                     )}
                     {programa.repAutorizacionFecha && (
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">
                         Autorizado: {new Date(programa.repAutorizacionFecha).toLocaleDateString('es-CO', { dateStyle: 'medium' })}
                       </Typography>
                     )}
@@ -460,14 +460,14 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
                 </Box>
               ) : programa?.repAutorizado && !programa?.repFirma ? (
                 <Box>
-                  <Typography variant="body2" fontWeight={600}>{programa.repNombre ?? '—'}</Typography>
-                  {programa.repCargo && <Typography variant="caption" color="text.secondary">{programa.repCargo}</Typography>}
-                  <Typography variant="caption" color="warning.dark" display="block" sx={{ mt: 0.5 }}>
+                  <Typography sx={{ fontWeight: 600 }} variant="body2">{programa.repNombre ?? '—'}</Typography>
+                  {programa.repCargo && <Typography sx={{ color: 'text.secondary' }} variant="caption">{programa.repCargo}</Typography>}
+                  <Typography variant="caption" sx={{ color: 'warning.dark', display: 'block', mt: 0.5 }}>
                     No hay firma capturada. Ve a Configuración → Representante Legal, sube la firma y luego re-autoriza el programa.
                   </Typography>
                 </Box>
               ) : (
-                <Typography variant="body2" color="warning.dark">
+                <Typography sx={{ color: 'warning.dark' }} variant="body2">
                   Este programa no tiene representante legal autorizado. Ve a <strong>Programas</strong> y haz clic en "Autorizar representante" para vincularlo.
                 </Typography>
               )}
@@ -476,11 +476,11 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
             {observaciones && (
               <Box sx={{ borderLeft: `5px solid ${COLOR}`, bgcolor: 'rgba(78,27,149,0.07)',
                           borderRadius: '0 8px 8px 0', px: 1.5, py: 1, mt: 1 }}>
-                <Typography fontWeight={800} color={COLOR}
-                  sx={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.5, display: 'block' }}>
+                <Typography
+                  sx={{ fontWeight: 800, color: COLOR, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.5, display: 'block' }}>
                   Observaciones
                 </Typography>
-                <Typography variant="body2" color="text.primary">{observaciones}</Typography>
+                <Typography sx={{ color: 'text.primary' }} variant="body2">{observaciones}</Typography>
               </Box>
             )}
           </Box>
@@ -497,7 +497,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       )}
       <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
         <Button onClick={onCerrar} disabled={guardando}>Cerrar</Button>
-        <Box flex={1} />
+        <Box sx={{ flex: 1 }} />
         {editando ? (
           <>
             <Button onClick={cancelarEdicion} disabled={guardando}>

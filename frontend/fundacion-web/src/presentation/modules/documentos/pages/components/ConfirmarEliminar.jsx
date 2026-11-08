@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Button, CircularProgress, DialogActions, DialogContent,
+  Box, Button, CircularProgress, DialogActions, DialogContent,
   DialogTitle, Typography,
 } from '@mui/material';
 import Dialog from '@/shared/components/DialogResponsive';
@@ -15,15 +15,15 @@ export function ConfirmarEliminar({ nombre, onConfirmar, onCerrar }) {
     onCerrar();
   };
   return (
-    <Dialog open onClose={onCerrar} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: 3 } } }} open onClose={onCerrar} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pt: 3, pb: 1 }}>
-        <WarningAmberIcon sx={{ color: '#d32f2f', fontSize: 28 }} />
-        <Typography fontWeight={700} fontSize="1.05rem">Eliminar documento</Typography>
+        <WarningAmberIcon sx={{ color: 'error.main', fontSize: 28 }} />
+        <Typography sx={{ fontWeight: 700, fontSize: '1.05rem' }}>Eliminar documento</Typography>
       </DialogTitle>
       <DialogContent sx={{ pb: 1 }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography sx={{ color: 'text.secondary' }} variant="body2">
           ¿Estás seguro de que quieres eliminar{' '}
-          <strong style={{ color: '#111' }}>{nombre}</strong>?
+          <Box component="strong" sx={{ color: 'text.primary' }}>{nombre}</Box>?
           Esta acción no se puede deshacer.
         </Typography>
       </DialogContent>

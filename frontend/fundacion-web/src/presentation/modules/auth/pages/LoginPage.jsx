@@ -87,8 +87,7 @@ export default function LoginPage() {
         />
         <Typography
           variant="h6"
-          fontWeight={700}
-          sx={{
+          sx={{ fontWeight: 700,
             color: '#fff',
             fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
             textShadow: '0 2px 8px rgba(0,0,0,0.3)',
@@ -142,16 +141,13 @@ export default function LoginPage() {
             </Box>
             <Typography
               variant="h5"
-              fontWeight={800}
-              color="var(--color-primario)"
-              sx={{ fontSize: { xs: '1.15rem', sm: '1.35rem' } }}
+              sx={{ fontWeight: 800, color: 'var(--color-primario-texto)', fontSize: { xs: '1.15rem', sm: '1.35rem' } }}
             >
               Panel Administrativo
             </Typography>
             <Typography
               variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' }, textAlign: 'center' }}
+              sx={{ color: 'text.secondary', fontSize: { xs: '0.8rem', sm: '0.875rem' }, textAlign: 'center' }}
             >
               Ingresa con tu cuenta autorizada de Google
             </Typography>
@@ -171,8 +167,8 @@ export default function LoginPage() {
 
           {/* Botón Google */}
           {cargando ? (
-            <Box display="flex" justifyContent="center" py={2}>
-              <CircularProgress size={32} sx={{ color: 'var(--color-primario)' }} />
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+              <CircularProgress size={32} sx={{ color: 'var(--color-primario-texto)' }} />
             </Box>
           ) : (
             <Box
@@ -199,9 +195,7 @@ export default function LoginPage() {
           {/* Aviso de acceso restringido */}
           <Typography
             variant="caption"
-            color="text.disabled"
-            display="block"
-            sx={{
+            sx={{ color: 'text.disabled', display: 'block',
               mt: { xs: 2.5, sm: 3 },
               textAlign: 'center',
               fontSize: { xs: '0.7rem', sm: '0.75rem' },

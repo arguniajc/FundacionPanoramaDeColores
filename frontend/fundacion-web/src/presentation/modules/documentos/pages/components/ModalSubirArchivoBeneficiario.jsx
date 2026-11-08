@@ -3,6 +3,7 @@ import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogTitle, FormHelperText, IconButton, TextField, Typography, useMediaQuery, useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import CloseIcon          from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import UploadFileIcon     from '@mui/icons-material/UploadFile';
@@ -57,15 +58,14 @@ export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido
   };
 
   return (
-    <Dialog open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle sx={{ background: HEADER_GRADIENT, color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box display="flex" alignItems="center" gap={1}><UploadFileIcon /> Subir documento</Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><UploadFileIcon /> Subir documento</Box>
         <IconButton onClick={onCerrar} size="small" sx={{ color: 'rgba(255,255,255,0.8)' }}><CloseIcon /></IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ py: 2.5, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
         {error && <Alert severity="error">{error}</Alert>}
-        <Typography variant="body2" color="text.secondary">
+        <Typography sx={{ color: 'text.secondary' }} variant="body2">
           Beneficiario: <strong>{beneficiario.nombreMenor ?? beneficiario.nombre}</strong>
         </Typography>
         <TextField label="Nombre del documento *" size="small" fullWidth
@@ -75,11 +75,11 @@ export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido
           sx={{
             border: '2px dashed', borderColor: v.err('archivo') ? 'error.main' : archivo ? 'var(--color-primario)' : 'divider',
             borderRadius: 2, p: 2.5, textAlign: 'center', cursor: 'pointer',
-            bgcolor: archivo ? '#f5f0ff' : 'transparent',
-            '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f5f0ff' },
+            bgcolor: (t) => (archivo ? alpha(t.palette.primary.main, 0.06) : 'transparent'),
+            '&:hover': { borderColor: 'var(--color-primario-texto)', bgcolor: (t) => alpha(t.palette.primary.main, 0.06) },
           }}>
           <InsertDriveFileIcon sx={{ fontSize: 36, color: archivo ? 'var(--color-primario)' : 'text.disabled', mb: 0.5 }} />
-          <Typography variant="body2" color={archivo ? 'var(--color-primario)' : 'text.secondary'} fontWeight={archivo ? 600 : 400}>
+          <Typography sx={{ color: archivo ? 'var(--color-primario)' : 'text.secondary', fontWeight: archivo ? 600 : 400 }} variant="body2">
             {archivo ? archivo.name : 'Haz clic para seleccionar un PDF (máx. 10 MB)'}
           </Typography>
           <input ref={inputRef} type="file" accept="application/pdf" hidden

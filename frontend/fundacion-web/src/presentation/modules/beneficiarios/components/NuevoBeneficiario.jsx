@@ -7,6 +7,7 @@ import {
   InputAdornment, IconButton, Autocomplete, Checkbox, FormControlLabel, Chip,
   Stepper, Step, StepLabel,
 } from '@mui/material';
+import { alpha, lighten } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
 import PersonAddIcon      from '@mui/icons-material/PersonAdd';
 import CloseIcon          from '@mui/icons-material/Close';
@@ -72,8 +73,8 @@ function SeccionTitulo({ children }) {
         bgcolor: 'secondary.main', borderRadius: 1.5, px: 2, py: 1, mt: 1,
         display: 'flex', alignItems: 'center', borderLeft: '5px solid rgba(0,0,0,0.15)',
       }}>
-        <Typography fontWeight={800} color="white"
-          sx={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+        <Typography
+          sx={{ fontWeight: 800, color: 'secondary.contrastText', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
           {children}
         </Typography>
       </Box>
@@ -197,7 +198,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
     <Grid container spacing={2.5}>
       <Grid size={12}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Typography variant="body2" color="text.secondary" fontWeight={600}>Tipo:</Typography>
+          <Typography sx={{ color: 'text.secondary', fontWeight: 600 }} variant="body2">Tipo:</Typography>
           {[
             { value: 'niño',   label: '👦 Niño / Adolescente  (menor de 18)' },
             { value: 'adulto', label: '🧑 Adulto  (18 años en adelante)' },
@@ -209,9 +210,9 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
               }))}
               sx={{
                 px: 2, py: 0.75, borderRadius: 5, border: '2px solid',
-                borderColor: form.tipo === op.value ? 'primary.main' : '#ccc',
+                borderColor: form.tipo === op.value ? 'primary.main' : 'divider',
                 bgcolor: form.tipo === op.value ? 'primary.main' : 'transparent',
-                color: form.tipo === op.value ? '#fff' : 'text.secondary',
+                color: form.tipo === op.value ? 'primary.contrastText' : 'text.secondary',
                 cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, transition: 'all 0.15s',
               }}>
               {op.label}
@@ -281,7 +282,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
               endAdornment: verificandoDoc
                 ? <InputAdornment position="end"><CircularProgress size={14} /></InputAdornment>
                 : (docExiste === false && form.numeroDocumento
-                  ? <InputAdornment position="end"><CheckCircleIcon sx={{ fontSize: 16, color: '#2e7d32' }} /></InputAdornment>
+                  ? <InputAdornment position="end"><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /></InputAdornment>
                   : null),
             },
           }}
@@ -291,8 +292,14 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
         <Grid size={12}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Chip label={`${categoria.label} · ${categoria.rango}`} size="small"
-              sx={{ bgcolor: categoria.color, color: categoria.tc, fontWeight: 700, fontSize: '0.78rem', border: '1px solid', borderColor: `${categoria.tc}55` }} />
-            <Typography variant="caption" color="text.secondary">Categoría detectada automáticamente</Typography>
+              sx={{
+                // Modo oscuro: tinte translúcido del tono de la categoría + texto aclarado
+                bgcolor: (t) => (t.palette.mode === 'dark' ? alpha(categoria.tc, 0.3) : categoria.color),
+                color:   (t) => (t.palette.mode === 'dark' ? lighten(categoria.tc, 0.6) : categoria.tc),
+                fontWeight: 700, fontSize: '0.78rem', border: '1px solid',
+                borderColor: (t) => alpha(t.palette.mode === 'dark' ? lighten(categoria.tc, 0.4) : categoria.tc, 0.33),
+              }} />
+            <Typography sx={{ color: 'text.secondary' }} variant="caption">Categoría detectada automáticamente</Typography>
           </Box>
         </Grid>
       )}
@@ -449,7 +456,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
               onBlur={touch('eps')}
               error={!!err('eps')}
               helperText={err('eps') || nr('eps')}
-              inputProps={{ ...params.inputProps, ...(form.eps === 'No registra' ? { readOnly: true } : {}) }} />
+              slotProps={{ ...params.slotProps, htmlInput: { ...params.slotProps.htmlInput, ...(form.eps === 'No registra' ? { readOnly: true } : {}) } }} />
           )} />
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
@@ -676,7 +683,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
 
   return (
     <>
-      <Dialog open onClose={handleCerrar} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog slotProps={{ paper: { sx: { borderRadius: 3 } } }} open onClose={handleCerrar} maxWidth="md" fullWidth>
         <DialogTitle sx={{
           background: 'linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%)',
           color: '#fff', fontWeight: 700, py: 2, px: 3,
@@ -704,7 +711,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
               <Step key={label} completed={i < paso}>
                 <StepLabel sx={{
                   '& .MuiStepLabel-label': { fontSize: { xs: '0.66rem', sm: '0.73rem' }, overflowWrap: 'anywhere' },
-                  '& .MuiStepIcon-root.Mui-active':    { color: 'var(--color-primario)' },
+                  '& .MuiStepIcon-root.Mui-active':    { color: 'var(--color-primario-texto)' },
                   '& .MuiStepIcon-root.Mui-completed': { color: 'var(--color-secundario)' },
                 }}>
                   {label}
@@ -718,7 +725,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
 
         {resumenPaso && Object.keys(errsPaso).length > 0 && (
           <Alert severity="warning" onClose={() => setResumenPaso(false)} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
-            <Typography fontWeight={700} fontSize="0.85rem" mb={0.5}>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', mb: 0.5 }}>
               Corrige estos datos para continuar:
             </Typography>
             <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: '0.8rem' }}>
@@ -763,7 +770,7 @@ export default function NuevoBeneficiario({ onCerrar, onCreado, tipoDefault = 'n
       <Dialog open={confirmCerrar} onClose={() => setConfirmCerrar(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>¿Salir sin guardar?</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary">
+          <Typography sx={{ color: 'text.secondary' }} variant="body2">
             Los datos ingresados se mantendrán como borrador y se restaurarán la próxima vez que abras el formulario.
           </Typography>
         </DialogContent>

@@ -13,7 +13,8 @@ import { configuracionRepository } from '@/infrastructure/repositories/configura
 import { donacionesRepository }    from '@/infrastructure/repositories/donacionesRepository';
 import { fmtMoney, fmtFecha } from './helpers';
 import { CertificadoDonacionDialog } from './CertificadoDonacionDialog';
-import { BRAND_COLOR } from '@/shared/constants/brand';
+import { useTheme, alpha } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 function generarPDF(don, config, firma) {
@@ -187,6 +188,7 @@ function generarPDF(don, config, firma) {
 }
 
 export function ReciboDonacionDialog({ open, donacion, onClose }) {
+  const theme = useTheme();
   const config = useConfiguracion();
   const [generando,      setGenerando]      = useState(false);
   const [enviando,       setEnviando]       = useState(false);
@@ -231,7 +233,7 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700 }}>
-        <ReceiptIcon sx={{ color: '#d97706' }} />
+        <ReceiptIcon sx={{ color: 'warning.main' }} />
         Recibo de Donación
       </DialogTitle>
       <DialogContent>
@@ -242,20 +244,20 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
               <Chip
                 label={`N° ${donacion.reciboNumero}`}
                 sx={{
-                  bgcolor: '#f5f0ff', color: '#4e1b95',
+                  bgcolor: colorEstado('marca', theme.palette.mode).fondo, color: colorEstado('marca', theme.palette.mode).texto,
                   fontWeight: 800, fontSize: '1rem',
                   px: 2, height: 36, borderRadius: 2,
-                  border: '1.5px solid #c4b5fd',
+                  border: '1.5px solid', borderColor: alpha(theme.palette.primary.main, 0.4),
                 }}
               />
             </Box>
           )}
 
           <Box>
-            <Typography variant="caption" color="text.secondary">Donante</Typography>
-            <Typography fontWeight={600}>{donacion.nombreDonante}</Typography>
+            <Typography sx={{ color: 'text.secondary' }} variant="caption">Donante</Typography>
+            <Typography sx={{ fontWeight: 600 }}>{donacion.nombreDonante}</Typography>
             {donacion.tipoDocDonante && donacion.documentoDonante && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography sx={{ color: 'text.secondary' }} variant="body2">
                 {donacion.tipoDocDonante.toUpperCase()}: {donacion.documentoDonante}
               </Typography>
             )}
@@ -263,24 +265,24 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
           <Divider />
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
             <Box>
-              <Typography variant="caption" color="text.secondary">Fecha</Typography>
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">Fecha</Typography>
               <Typography variant="body2">{fmtFecha(donacion.fechaDonacion)}</Typography>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">Tipo</Typography>
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">Tipo</Typography>
               <Typography variant="body2">{donacion.tipo === 'dinero' ? 'Dinero' : 'Especie'}</Typography>
             </Box>
           </Box>
           {donacion.tipo === 'dinero' ? (
-            <Box sx={{ bgcolor: '#f0fdf4', borderRadius: 1.5, p: 1.5, textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary">Valor donado</Typography>
-              <Typography variant="h6" fontWeight={800} color="success.main">
+            <Box sx={{ bgcolor: colorEstado('exito', theme.palette.mode).fondo, borderRadius: 1.5, p: 1.5, textAlign: 'center' }}>
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">Valor donado</Typography>
+              <Typography sx={{ fontWeight: 800, color: 'success.main' }} variant="h6">
                 {fmtMoney(donacion.monto)}
               </Typography>
             </Box>
           ) : (
             <Box>
-              <Typography variant="caption" color="text.secondary">Artículo</Typography>
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">Artículo</Typography>
               <Typography variant="body2">
                 {donacion.cantidad} {donacion.unidadMedida} — {donacion.nombreItem}
               </Typography>
@@ -288,7 +290,7 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
           )}
           {(donacion.nombrePrograma || donacion.nombreSede) && (
             <Box>
-              <Typography variant="caption" color="text.secondary">Destino</Typography>
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">Destino</Typography>
               <Typography variant="body2">
                 {[donacion.nombreSede, donacion.nombrePrograma].filter(Boolean).join(' · ')}
               </Typography>
@@ -296,7 +298,7 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
           )}
           {donacion.descripcion && (
             <Box>
-              <Typography variant="caption" color="text.secondary">Descripción</Typography>
+              <Typography sx={{ color: 'text.secondary' }} variant="caption">Descripción</Typography>
               <Typography variant="body2">{donacion.descripcion}</Typography>
             </Box>
           )}
@@ -307,7 +309,7 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
               <Divider />
               <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                  <Typography sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }} variant="caption">
                     Firma representante legal
                   </Typography>
                   <Box
@@ -316,12 +318,12 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
                     alt="Firma"
                     sx={{ height: 44, maxWidth: '100%', objectFit: 'contain', display: 'block' }}
                   />
-                  <Box sx={{ borderTop: '1px solid #ccc', pt: 0.5 }}>
-                    <Typography variant="caption" fontWeight={600}>
+                  <Box sx={{ borderTop: '1px solid', borderTopColor: 'divider', pt: 0.5 }}>
+                    <Typography sx={{ fontWeight: 600 }} variant="caption">
                       {firma.nombreRepLegal || ''}
                     </Typography>
                     {firma.cargoRep && (
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">
                         {firma.cargoRep}
                       </Typography>
                     )}
@@ -338,7 +340,7 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
           <Button size="small" variant="outlined"
             startIcon={enviando ? <CircularProgress size={14} color="inherit" /> : <EmailIcon />}
             onClick={handleEnviarEmail} disabled={enviando}
-            sx={{ borderColor: BRAND_COLOR, color: BRAND_COLOR }}>
+            sx={{ borderColor: 'primary.main', color: 'primary.main' }}>
             {enviando ? 'Enviando…' : 'Enviar por email'}
           </Button>
         )}
@@ -346,7 +348,7 @@ export function ReciboDonacionDialog({ open, donacion, onClose }) {
           <Button size="small" variant="outlined"
             startIcon={<WorkspacePremiumIcon />}
             onClick={() => setCertOpen(true)}
-            sx={{ borderColor: BRAND_COLOR, color: BRAND_COLOR }}>
+            sx={{ borderColor: 'primary.main', color: 'primary.main' }}>
             Certificado
           </Button>
         )}

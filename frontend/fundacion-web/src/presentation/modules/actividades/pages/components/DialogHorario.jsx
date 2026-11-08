@@ -3,6 +3,7 @@ import {
   Alert, Box, Button, Chip, DialogActions, DialogContent,
   DialogTitle, Divider, FormHelperText, Grid, MenuItem, Switch, TextField, Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
 import AccessTimeIcon   from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -139,7 +140,7 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, pb: 1, color: COLOR }}>
+      <DialogTitle sx={{ fontWeight: 700, pb: 1, color: 'primary.main' }}>
         {editando ? 'Editar sesión del horario' : 'Configurar horario de programa'}
       </DialogTitle>
 
@@ -160,8 +161,8 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
 
           {/* Días de la semana — multi-select */}
           <Grid size={12}>
-            <Typography variant="caption" fontWeight={800} color="text.secondary"
-              sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', mb: 1 }}>
+            <Typography variant="caption"
+              sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', mb: 1 }}>
               Días de la semana *
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -182,12 +183,12 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
                       fontSize: '0.8rem',
                       bgcolor: sel ? COLOR : 'transparent',
                       color:   sel ? 'white' : 'text.secondary',
-                      border:  `2px solid ${sel ? COLOR : '#ddd'}`,
+                      border:  '2px solid', borderColor: sel ? COLOR : 'divider',
                       transition: 'all 0.15s',
                       '&:hover': editando ? {} : {
-                        bgcolor: sel ? COLOR : '#f3f0ff',
-                        border:  `2px solid ${COLOR}`,
-                        color:   sel ? 'white' : COLOR,
+                        bgcolor: sel ? COLOR : (t) => alpha(t.palette.primary.main, 0.08),
+                        borderColor: 'primary.main',
+                        color:   sel ? 'white' : 'primary.main',
                       },
                     }}
                   />
@@ -196,7 +197,7 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
             </Box>
             {v.err('diasSemana') && <FormHelperText error>{v.err('diasSemana')}</FormHelperText>}
             {!editando && (
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, display: 'block' }}>
                 Puedes seleccionar varios días. Se creará un horario por cada día.
               </Typography>
             )}
@@ -223,7 +224,7 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
 
           <Grid size={12}>
             <Divider>
-              <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', px: 1 }}>
                 Período de vigencia (opcional)
               </Typography>
             </Divider>
@@ -246,12 +247,12 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
           {/* Activo (solo en edición) */}
           {editando && (
             <Grid size={12}>
-              <Box display="flex" alignItems="center" gap={1}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Switch checked={form.activo}
                   onChange={e => setForm(p => ({ ...p, activo: e.target.checked }))}
                   size="small"
                   sx={{ '& .MuiSwitch-thumb': { bgcolor: form.activo ? COLOR : undefined } }} />
-                <Typography variant="body2" color={form.activo ? 'text.primary' : 'text.secondary'}>
+                <Typography sx={{ color: form.activo ? 'text.primary' : 'text.secondary' }} variant="body2">
                   {form.activo ? 'Horario activo' : 'Horario pausado'}
                 </Typography>
               </Box>
@@ -263,35 +264,35 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
         {form.programaId && form.diasSemana.length > 0 && form.horaInicio && form.horaFin && (
           <>
             <Divider sx={{ my: 2 }} />
-            <Box sx={{ bgcolor: '#f3f0ff', borderRadius: 2, p: 1.8, display: 'flex', flexDirection: 'column', gap: 0.7 }}>
-              <Typography variant="caption" fontWeight={800} color={COLOR}
-                sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <Box sx={{ bgcolor: (t) => alpha(t.palette.primary.main, 0.08), borderRadius: 2, p: 1.8, display: 'flex', flexDirection: 'column', gap: 0.7 }}>
+              <Typography variant="caption"
+                sx={{ fontWeight: 800, color: 'primary.main', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 Vista previa
               </Typography>
-              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                   {form.diasSemana.map(d => (
                     <Chip key={d} label={DIAS_CORTO[d]} size="small"
                       sx={{ bgcolor: COLOR, color: 'white', fontWeight: 800, fontSize: '0.7rem' }} />
                   ))}
                 </Box>
-                <Box display="flex" alignItems="center" gap={0.4}>
-                  <AccessTimeIcon sx={{ fontSize: 15, color: COLOR }} />
-                  <Typography variant="body2" fontWeight={700} color={COLOR}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                  <AccessTimeIcon sx={{ fontSize: 15, color: 'primary.main' }} />
+                  <Typography sx={{ fontWeight: 700, color: 'primary.main' }} variant="body2">
                     {form.horaInicio} – {form.horaFin}
                   </Typography>
                 </Box>
                 {form.lugar && (
-                  <Box display="flex" alignItems="center" gap={0.4}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
                     <PlaceIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                    <Typography variant="caption" color="text.secondary">{form.lugar}</Typography>
+                    <Typography sx={{ color: 'text.secondary' }} variant="caption">{form.lugar}</Typography>
                   </Box>
                 )}
               </Box>
               {(form.fechaInicioVigencia || form.fechaFinVigencia) && (
-                <Box display="flex" alignItems="center" gap={0.5}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <CalendarTodayIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography sx={{ color: 'text.secondary' }} variant="caption">
                     {form.fechaInicioVigencia
                       ? new Date(form.fechaInicioVigencia + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
                       : 'Sin fecha inicio'}
@@ -303,7 +304,7 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
                 </Box>
               )}
               {!editando && form.diasSemana.length > 1 && (
-                <Typography variant="caption" color="text.secondary">
+                <Typography sx={{ color: 'text.secondary' }} variant="caption">
                   Se crearán <strong>{form.diasSemana.length} registros</strong> (uno por día).
                 </Typography>
               )}

@@ -1,6 +1,7 @@
 import {
   Avatar, Box, Button, Chip, Divider, Grid, IconButton, Tooltip, Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import AssignmentIcon  from '@mui/icons-material/Assignment';
 import DeleteIcon      from '@mui/icons-material/Delete';
 import EditIcon        from '@mui/icons-material/Edit';
@@ -12,13 +13,13 @@ import { COLOR, fmtFecha } from './helpers';
 
 export function VoluntarioCard({ voluntario: v, onEditar, onEliminar, onAsignaciones }) {
   return (
-    <Box sx={{ border: '1.5px solid #ede9fe', borderRadius: 2, overflow: 'hidden', bgcolor: '#faf5ff', display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ border: '1.5px solid', borderColor: (t) => alpha(t.palette.primary.main, 0.15), borderRadius: 2, overflow: 'hidden', bgcolor: (t) => alpha(t.palette.primary.main, 0.04), display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ px: 2, pt: 2, pb: 1.5, display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
         <Avatar sx={{ bgcolor: COLOR, width: 42, height: 42, fontWeight: 800, fontSize: '0.85rem', flexShrink: 0 }}>
           {v.nombre.slice(0, 2).toUpperCase()}
         </Avatar>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography fontWeight={800} sx={{ fontSize: '0.92rem', lineHeight: 1.3 }} noWrap title={v.nombre}>
+          <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', lineHeight: 1.3 }} noWrap title={v.nombre}>
             {v.nombre}
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.5, mt: 0.3, flexWrap: 'wrap' }}>
@@ -83,13 +84,13 @@ export function VoluntarioCard({ voluntario: v, onEditar, onEliminar, onAsignaci
         </Box>
       </Box>
 
-      <Box sx={{ px: 1.5, py: 1, bgcolor: 'color-mix(in srgb, var(--color-primario) 3%, transparent)', borderTop: '1.5px solid #ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box sx={{ px: 1.5, py: 1, bgcolor: 'color-mix(in srgb, var(--color-primario) 3%, transparent)', borderTop: '1.5px solid', borderTopColor: (t) => alpha(t.palette.primary.main, 0.15), display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Button size="small" variant="outlined" startIcon={<AssignmentIcon />}
           onClick={() => onAsignaciones(v)}
           sx={{ fontWeight: 700, fontSize: '0.7rem', px: 1, color: COLOR, borderColor: COLOR, '&:hover': { borderColor: COLOR, bgcolor: 'color-mix(in srgb, var(--color-primario) 6%, transparent)' } }}>
           Programas
         </Button>
-        <Box display="flex" gap={0.3}>
+        <Box sx={{ display: 'flex', gap: 0.3 }}>
           <Tooltip title="Editar">
             <IconButton size="small" onClick={() => onEditar(v)}><EditIcon fontSize="small" /></IconButton>
           </Tooltip>

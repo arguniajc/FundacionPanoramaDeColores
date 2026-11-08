@@ -5,6 +5,7 @@ import {
   Box, Typography, Chip, Button, Avatar, Tooltip, CircularProgress,
    DialogTitle, DialogContent, DialogActions, IconButton, Alert,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
 import WarningAmberIcon  from '@mui/icons-material/WarningAmber';
 import EditIcon          from '@mui/icons-material/Edit';
@@ -13,18 +14,19 @@ import CloseIcon         from '@mui/icons-material/Close';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { useArchivoUrl } from '@/shared/utils/archivos';
+import { colorEstado } from '@/shared/theme/paleta';
 
 const CAMPO_COLOR = {
-  'Foto del menor':  { bg: '#fce4ec', txt: '#c62828' },
-  'Foto documento':  { bg: '#fce4ec', txt: '#c62828' },
-  'WhatsApp':        { bg: '#fff3e0', txt: '#e65100' },
-  'Direcci√≥n':       { bg: '#fff3e0', txt: '#e65100' },
-  'Talla camisa':    { bg: '#e8f5e9', txt: '#2e7d32' },
-  'Talla zapatos':   { bg: '#e8f5e9', txt: '#2e7d32' },
-  'Peso':            { bg: '#e8f5e9', txt: '#2e7d32' },
-  'Talla altura':    { bg: '#e8f5e9', txt: '#2e7d32' },
-  'Colegio':         { bg: '#e3f2fd', txt: '#1565c0' },
-  'Grado escolar':   { bg: '#e3f2fd', txt: '#1565c0' },
+  'Foto del menor':  'error',
+  'Foto documento':  'error',
+  'WhatsApp':        'aviso',
+  'Direcci√≥n':       'aviso',
+  'Talla camisa':    'exito',
+  'Talla zapatos':   'exito',
+  'Peso':            'exito',
+  'Talla altura':    'exito',
+  'Colegio':         'info',
+  'Grado escolar':   'info',
 };
 
 function AvatarBeneficiario({ nombre, fotoUrl: valorFoto }) {
@@ -33,13 +35,15 @@ function AvatarBeneficiario({ nombre, fotoUrl: valorFoto }) {
   return (
     <Avatar src={fotoUrl || undefined}
       sx={{ width: 36, height: 36, fontSize: '0.9rem', fontWeight: 700,
-            bgcolor: fotoUrl ? 'transparent' : '#7c3aed', flexShrink: 0 }}>
+            bgcolor: fotoUrl ? 'transparent' : 'primary.main', color: 'primary.contrastText', flexShrink: 0 }}>
       {inicial}
     </Avatar>
   );
 }
 
 export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'ni√±o' }) {
+  const theme = useTheme();
+  const modo  = theme.palette.mode;
   const [datos,    setDatos]    = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error,    setError]    = useState('');
@@ -58,14 +62,14 @@ export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'ni√
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper"
       slotProps={{ transition: { onEnter: cargar } }}>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: '#fffbeb', pr: 6 }}>
-        <WarningAmberIcon sx={{ color: '#d97706', fontSize: '1.3rem', flexShrink: 0 }} />
-        <Box flex={1}>
-          <Typography fontWeight={800} fontSize="1rem" color="#92400e">
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: colorEstado('aviso', modo).fondo, pr: 6 }}>
+        <WarningAmberIcon sx={{ color: 'warning.main', fontSize: '1.3rem', flexShrink: 0 }} />
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: colorEstado('aviso', modo).texto }}>
             Perfiles pendientes por completar
           </Typography>
           {!cargando && !error && datos.length > 0 && (
-            <Typography fontSize="0.75rem" color="#b45309">
+            <Typography sx={{ fontSize: '0.75rem', color: 'warning.dark' }}>
               {datos.length} perfil{datos.length > 1 ? 'es' : ''} ¬∑ {totalCamposFaltantes} campo{totalCamposFaltantes > 1 ? 's' : ''} sin completar
             </Typography>
           )}
@@ -79,7 +83,7 @@ export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'ni√
         {cargando && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 4 }}>
             <CircularProgress size={18} />
-            <Typography variant="body2" color="text.secondary">Verificando completitud de perfiles‚Ä¶</Typography>
+            <Typography sx={{ color: 'text.secondary' }} variant="body2">Verificando completitud de perfiles‚Ä¶</Typography>
           </Box>
         )}
 
@@ -89,8 +93,8 @@ export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'ni√
 
         {!cargando && !error && datos.length === 0 && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 4 }}>
-            <CheckCircleIcon sx={{ color: '#2e7d32' }} />
-            <Typography variant="body2" color="text.secondary">Todos los perfiles est√°n completos.</Typography>
+            <CheckCircleIcon sx={{ color: 'success.main' }} />
+            <Typography sx={{ color: 'text.secondary' }} variant="body2">Todos los perfiles est√°n completos.</Typography>
           </Box>
         )}
 
@@ -98,14 +102,14 @@ export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'ni√
           <Box key={ben.id} sx={{
             display: 'flex', alignItems: 'flex-start', gap: 1.5,
             py: 1.2, flexWrap: 'wrap',
-            borderBottom: idx < datos.length - 1 ? '1px solid #fef3c7' : 'none',
+            borderBottom: idx < datos.length - 1 ? `1px solid ${alpha(theme.palette.warning.main, 0.2)}` : 'none',
           }}>
             <AvatarBeneficiario nombre={ben.nombre} fotoUrl={ben.fotoUrl} />
 
-            <Box flex={1} minWidth={200}>
+            <Box sx={{ flex: 1, minWidth: 200 }}>
               {/* nombre + % completitud */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
-                <Typography fontWeight={700} fontSize="0.87rem" color="text.primary">
+                <Typography sx={{ fontWeight: 700, fontSize: '0.87rem', color: 'text.primary' }}>
                   {ben.nombre}
                 </Typography>
                 <Chip
@@ -113,8 +117,8 @@ export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'ni√
                   size="small"
                   sx={{
                     fontSize: '0.68rem', fontWeight: 700, height: 18,
-                    bgcolor: ben.completitud >= 60 ? '#fff3e0' : '#fce4ec',
-                    color:   ben.completitud >= 60 ? '#c2410c'  : '#b91c1c',
+                    bgcolor: colorEstado(ben.completitud >= 60 ? 'aviso' : 'error', modo).fondo,
+                    color:   colorEstado(ben.completitud >= 60 ? 'aviso' : 'error', modo).texto,
                   }}
                 />
               </Box>
@@ -122,7 +126,8 @@ export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'ni√
               {/* chips de campos faltantes */}
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.4 }}>
                 {ben.faltantes.map(f => {
-                  const c = CAMPO_COLOR[f] ?? { bg: '#f3f4f6', txt: '#374151' };
+                  const tono = colorEstado(CAMPO_COLOR[f] ?? 'neutro', modo);
+                  const c = { bg: tono.fondo, txt: tono.texto };
                   return (
                     <Chip key={f} label={f} size="small"
                       sx={{
@@ -140,10 +145,10 @@ export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'ni√
               <Button size="small" variant="outlined" startIcon={<EditIcon sx={{ fontSize: '0.8rem !important' }} />}
                 onClick={() => onEditar(ben.id)}
                 sx={{
-                  borderColor: '#7c3aed', color: '#7c3aed',
+                  borderColor: 'primary.main', color: 'primary.main',
                   fontSize: '0.72rem', py: 0.3, px: 1.2, minWidth: 0,
                   flexShrink: 0, alignSelf: 'center',
-                  '&:hover': { bgcolor: '#f5f0ff', borderColor: '#6d28d9' },
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08), borderColor: 'primary.dark' },
                 }}>
                 Editar
               </Button>
@@ -152,8 +157,8 @@ export function PerfilesIncompletosDialog({ open, onClose, onEditar, tipo = 'ni√
         ))}
       </DialogContent>
 
-      <DialogActions sx={{ px: 2.5, py: 1.2, bgcolor: '#fffbeb', justifyContent: 'space-between' }}>
-        <Typography fontSize="0.72rem" color="text.secondary">
+      <DialogActions sx={{ px: 2.5, py: 1.2, bgcolor: colorEstado('aviso', modo).fondo, justifyContent: 'space-between' }}>
+        <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
           Los campos marcados se completan en el formulario de edici√≥n.
         </Typography>
         <Button onClick={onClose} size="small">Cerrar</Button>

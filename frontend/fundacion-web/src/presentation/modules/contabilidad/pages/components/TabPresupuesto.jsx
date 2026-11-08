@@ -22,7 +22,7 @@ export function TabPresupuesto({
 
   return (
     <Box>
-      <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'superficie2', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <FormControl size="small" sx={{ minWidth: 100 }}>
             <InputLabel>Año</InputLabel>
@@ -59,7 +59,7 @@ export function TabPresupuesto({
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ bgcolor: 'grey.50' }}>
+            <TableRow sx={{ bgcolor: 'superficie2' }}>
               <TableCell>PUC</TableCell>
               <TableCell>Categoría</TableCell>
               <TableCell>Programa</TableCell>
@@ -100,8 +100,7 @@ export function TabPresupuesto({
                     {fmt(p.ejecutado)}
                   </TableCell>
                   <TableCell align="right">
-                    <Typography color={p.disponible < 0 ? 'error.main' : 'inherit'}
-                      fontWeight={p.disponible < 0 ? 700 : 'normal'}>
+                    <Typography sx={{ color: p.disponible < 0 ? 'error.main' : 'inherit', fontWeight: p.disponible < 0 ? 700 : 'normal' }}>
                       {fmt(p.disponible)}
                     </Typography>
                   </TableCell>
@@ -113,9 +112,7 @@ export function TabPresupuesto({
                         color={pct > 100 ? 'error' : pct > 90 ? 'error' : pct > 70 ? 'warning' : 'success'}
                         sx={{ flex: 1, height: 7, borderRadius: 3 }}
                       />
-                      <Typography variant="caption"
-                        fontWeight={sobreEjecutado ? 700 : 'normal'}
-                        color={sobreEjecutado ? 'error.main' : alertaAlta ? 'warning.main' : 'text.secondary'}>
+                      <Typography sx={{ fontWeight: sobreEjecutado ? 700 : 'normal', color: sobreEjecutado ? 'error.main' : alertaAlta ? 'warning.main' : 'text.secondary' }} variant="caption">
                         {pct}%
                       </Typography>
                     </Box>
@@ -136,7 +133,7 @@ export function TabPresupuesto({
             {presupuesto.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                  <Typography color="text.secondary">
+                  <Typography sx={{ color: 'text.secondary' }}>
                     Sin presupuesto definido para {presAnio}
                   </Typography>
                 </TableCell>

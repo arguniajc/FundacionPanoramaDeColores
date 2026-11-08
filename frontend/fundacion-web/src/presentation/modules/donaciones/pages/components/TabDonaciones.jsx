@@ -23,12 +23,15 @@ import { useConfirm } from '@/shared/components/useConfirm';
 import { COLOR_DONACIONES, COLOR_ESPECIE, fmtMoney, fmtFecha } from './helpers';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { useTheme, alpha } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 import { StatCard } from './StatCard';
 import { NuevaDonacionDialog }      from './NuevaDonacionDialog';
 import { ReciboDonacionDialog }     from './ReciboDonacionDialog';
 import { CertificadoDonacionDialog } from './CertificadoDonacionDialog';
 
 export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
+  const theme = useTheme();
   const { puedo } = useAuth();
   const confirm = useConfirm();
   const [donaciones,    setDonaciones]    = useState([]);
@@ -118,22 +121,22 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard icon={<AttachMoneyIcon />} label="Dinero este mes"
             value={fmtMoney(stats?.totalDineroMes)} color={COLOR_DONACIONES}
-            borderColor="#fde68a" bgColor="#fffbf0" loading={!stats} />
+            borderColor={alpha(theme.palette.warning.main, 0.35)} bgColor={alpha(theme.palette.warning.main, 0.06)} loading={!stats} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard icon={<TrendingUpIcon />} label="Dinero este año"
-            value={fmtMoney(stats?.totalDineroAnio)} color="#7c3aed"
-            borderColor="#e9d5ff" bgColor="#faf5ff" loading={!stats} />
+            value={fmtMoney(stats?.totalDineroAnio)} color={theme.palette.primary.main}
+            borderColor={alpha(theme.palette.primary.main, 0.35)} bgColor={alpha(theme.palette.primary.main, 0.06)} loading={!stats} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard icon={<AttachMoneyIcon />} label="Total histórico"
-            value={fmtMoney(stats?.totalDineroTotal)} color="#059669"
-            borderColor="#a7f3d0" bgColor="#f0fdf4" loading={!stats} />
+            value={fmtMoney(stats?.totalDineroTotal)} color={theme.palette.success.main}
+            borderColor={alpha(theme.palette.success.main, 0.35)} bgColor={alpha(theme.palette.success.main, 0.06)} loading={!stats} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard icon={<Inventory2Icon />} label="Especie este mes"
             value={stats?.totalEspecieMes ?? '—'} color={COLOR_ESPECIE}
-            borderColor="#bae6fd" bgColor="#f0f9ff" loading={!stats} />
+            borderColor={alpha(theme.palette.info.main, 0.35)} bgColor={alpha(theme.palette.info.main, 0.06)} loading={!stats} />
         </Grid>
       </Grid>
 
@@ -201,9 +204,9 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
       {cargando && donaciones.length === 0 ? (
         <SkeletonTabla columnas={5} filas={8} />
       ) : donaciones.length === 0 ? (
-        <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed #fde68a', borderRadius: 2, bgcolor: '#fffbf0' }}>
-          <VolunteerActivismIcon sx={{ fontSize: 48, color: '#fcd34d', mb: 1.5 }} />
-          <Typography fontWeight={700} color="text.secondary">
+        <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed', borderColor: alpha(theme.palette.warning.main, 0.35), borderRadius: 2, bgcolor: alpha(theme.palette.warning.main, 0.06) }}>
+          <VolunteerActivismIcon sx={{ fontSize: 48, color: alpha(theme.palette.warning.main, 0.5), mb: 1.5 }} />
+          <Typography sx={{ fontWeight: 700, color: 'text.secondary' }}>
             {hayFiltros ? 'No hay donaciones con estos filtros' : 'No hay donaciones registradas'}
           </Typography>
           {!hayFiltros && puedo('donaciones', 'crear') && (
@@ -218,7 +221,7 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
         <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ bgcolor: '#fffbf0' }}>
+              <TableRow sx={{ bgcolor: 'superficie2' }}>
                 <TableCell sx={{ fontWeight: 700 }}>Fecha</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Donante</TableCell>
                 <TableCell sx={{ fontWeight: 700, display: { xs: 'none', sm: 'table-cell' } }}>Tipo</TableCell>
@@ -235,8 +238,8 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
                     {fmtFecha(d.fechaDonacion)}
                   </TableCell>
                   <TableCell sx={{ fontSize: '0.83rem', maxWidth: 170 }}>
-                    <Typography fontWeight={600} fontSize="inherit" noWrap>{d.nombreDonante}</Typography>
-                    <Typography fontSize="0.7rem" color="text.secondary">
+                    <Typography sx={{ fontWeight: 600, fontSize: 'inherit' }} noWrap>{d.nombreDonante}</Typography>
+                    <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
                       {d.tipoDonante === 'empresa' ? 'Empresa' : 'Persona'}
                     </Typography>
                   </TableCell>
@@ -276,8 +279,8 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
                       label={d.reciboEstado === 'anulado' ? 'Anulado' : 'Emitido'}
                       size="small"
                       sx={{
-                        bgcolor: d.reciboEstado === 'anulado' ? '#fee2e2' : '#dcfce7',
-                        color:   d.reciboEstado === 'anulado' ? '#991b1b' : '#166534',
+                        bgcolor: colorEstado(d.reciboEstado === 'anulado' ? 'anulado' : 'emitido', theme.palette.mode).fondo,
+                        color:   colorEstado(d.reciboEstado === 'anulado' ? 'anulado' : 'emitido', theme.palette.mode).texto,
                         fontWeight: 700, fontSize: '0.68rem',
                       }}
                     />
@@ -300,7 +303,7 @@ export function TabDonaciones({ donanteInicial, onClearDonanteInicial }) {
                     )}
                     {d.reciboEstado !== 'anulado' && puedo('donaciones', 'editar') && (
                       <Tooltip title="Anular recibo">
-                        <IconButton size="small" sx={{ color: '#d97706' }} onClick={() => handleAnular(d)}>
+                        <IconButton size="small" sx={{ color: 'warning.main' }} onClick={() => handleAnular(d)}>
                           <BlockIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>

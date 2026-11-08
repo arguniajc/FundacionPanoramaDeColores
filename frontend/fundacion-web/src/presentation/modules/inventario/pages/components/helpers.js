@@ -12,7 +12,7 @@ export const CAT_COLOR = {
   'Alimentos':           '#dc2626',
   'Medicamentos':        '#db2777',
   'Muebles y enseres':   '#64748b',
-  'Herramientas':        '#92400e',
+  'Herramientas':        '#A16207',
   'Otros':               '#6b7280',
 };
 

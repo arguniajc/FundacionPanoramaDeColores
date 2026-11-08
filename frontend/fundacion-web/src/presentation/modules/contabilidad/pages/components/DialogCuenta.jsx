@@ -94,9 +94,8 @@ export function DialogCuenta({ open, modo, data, guardando, onClose, onGuardar }
           )}
           {modo === 'crear' && (
             <Grid size={12}>
-              <TextField fullWidth label="Saldo inicial" type="number" size="small"
-                value={form.saldoInicial} onChange={set('saldoInicial')} {...v.props('saldoInicial')}
-                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
+              <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Saldo inicial" type="number" size="small"
+                value={form.saldoInicial} onChange={set('saldoInicial')} {...v.props('saldoInicial')} />
             </Grid>
           )}
         </Grid>

@@ -11,6 +11,8 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import BalanceIcon      from '@mui/icons-material/Balance';
 import { contabilidadRepository } from '@/infrastructure/repositories/contabilidadRepository';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
+import { useTheme, alpha } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 
 const MESES = [
   'Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -20,6 +22,7 @@ const MESES = [
 const fmtCOP = v => Number(v).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 export function TabContabilidadEsal() {
+  const theme = useTheme();
   const hoy   = new Date();
   const [mes,       setMes]       = useState(hoy.getMonth() + 1);
   const [anio,      setAnio]      = useState(hoy.getFullYear());
@@ -65,7 +68,7 @@ export function TabContabilidadEsal() {
   return (
     <Box>
       {/* Selectores de período */}
-      <Grid container spacing={2} sx={{ mb: 3 }} alignItems="center">
+      <Grid container spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
         <Grid size={{ xs: 6, sm: 4, md: 3 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Mes</InputLabel>
@@ -102,19 +105,19 @@ export function TabContabilidadEsal() {
         {/* Tarjetas resumen */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           {[
-            { label: 'Total ingresos', value: reporte.totalIngresos, icon: <TrendingUpIcon />,   color: '#16a34a' },
-            { label: 'Total egresos',  value: reporte.totalEgresos,  icon: <TrendingDownIcon />, color: '#dc2626' },
+            { label: 'Total ingresos', value: reporte.totalIngresos, icon: <TrendingUpIcon />,   color: theme.palette.success.main },
+            { label: 'Total egresos',  value: reporte.totalEgresos,  icon: <TrendingDownIcon />, color: theme.palette.error.main },
             { label: reporte.balance >= 0 ? 'Excedente' : 'Déficit',
               value: Math.abs(reporte.balance), icon: <BalanceIcon />,
-              color: reporte.balance >= 0 ? '#7c3aed' : '#ea580c' },
+              color: reporte.balance >= 0 ? theme.palette.primary.main : theme.palette.warning.main },
           ].map(({ label, value, icon, color }) => (
             <Grid size={{ xs: 12, sm: 4 }} key={label}>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderColor: color + '44' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <Box sx={{ color }}>{icon}</Box>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>{label}</Typography>
+                  <Typography sx={{ color: 'text.secondary', fontWeight: 600 }} variant="caption">{label}</Typography>
                 </Box>
-                <Typography variant="h6" fontWeight={800} sx={{ color }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color }}>
                   {fmtCOP(value)}
                 </Typography>
               </Paper>
@@ -123,12 +126,12 @@ export function TabContabilidadEsal() {
         </Grid>
 
         {/* Estado de actividades */}
-        <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+        <Typography sx={{ fontWeight: 700 }} variant="subtitle1" gutterBottom>
           Estado de Actividades — {MESES[mes - 1]} {anio}
         </Typography>
         <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
           <Table size="small">
-            <TableHead sx={{ bgcolor: '#f8fafc' }}>
+            <TableHead sx={{ bgcolor: 'superficie2' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Código PUC</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Cuenta</TableCell>
@@ -137,8 +140,8 @@ export function TabContabilidadEsal() {
             </TableHead>
             <TableBody>
               {ingresos.length > 0 && <>
-                <TableRow sx={{ bgcolor: '#f0fdf4' }}>
-                  <TableCell colSpan={3} sx={{ fontWeight: 700, color: '#16a34a', py: 0.5 }}>
+                <TableRow sx={{ bgcolor: alpha(theme.palette.success.main, 0.06) }}>
+                  <TableCell colSpan={3} sx={{ fontWeight: 700, color: 'success.main', py: 0.5 }}>
                     INGRESOS OPERACIONALES
                   </TableCell>
                 </TableRow>
@@ -146,18 +149,18 @@ export function TabContabilidadEsal() {
                   <TableRow key={c.codigoPuc} hover>
                     <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary', fontSize: '0.8rem' }}>{c.codigoPuc}</TableCell>
                     <TableCell>{c.cuenta}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: '#16a34a' }}>{fmtCOP(c.total)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: 'success.main' }}>{fmtCOP(c.total)}</TableCell>
                   </TableRow>
                 ))}
-                <TableRow sx={{ bgcolor: '#dcfce7' }}>
+                <TableRow sx={{ bgcolor: colorEstado('exito', theme.palette.mode).fondo }}>
                   <TableCell colSpan={2} sx={{ fontWeight: 700 }}>Total ingresos</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, color: '#16a34a' }}>{fmtCOP(reporte.totalIngresos)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800, color: 'success.main' }}>{fmtCOP(reporte.totalIngresos)}</TableCell>
                 </TableRow>
               </>}
 
               {egresos.length > 0 && <>
-                <TableRow sx={{ bgcolor: '#fef2f2' }}>
-                  <TableCell colSpan={3} sx={{ fontWeight: 700, color: '#dc2626', py: 0.5 }}>
+                <TableRow sx={{ bgcolor: alpha(theme.palette.error.main, 0.06) }}>
+                  <TableCell colSpan={3} sx={{ fontWeight: 700, color: 'error.main', py: 0.5 }}>
                     GASTOS Y COSTOS
                   </TableCell>
                 </TableRow>
@@ -165,20 +168,20 @@ export function TabContabilidadEsal() {
                   <TableRow key={c.codigoPuc} hover>
                     <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary', fontSize: '0.8rem' }}>{c.codigoPuc}</TableCell>
                     <TableCell>{c.cuenta}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: '#dc2626' }}>{fmtCOP(c.total)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: 'error.main' }}>{fmtCOP(c.total)}</TableCell>
                   </TableRow>
                 ))}
-                <TableRow sx={{ bgcolor: '#fee2e2' }}>
+                <TableRow sx={{ bgcolor: colorEstado('error', theme.palette.mode).fondo }}>
                   <TableCell colSpan={2} sx={{ fontWeight: 700 }}>Total egresos</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, color: '#dc2626' }}>{fmtCOP(reporte.totalEgresos)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800, color: 'error.main' }}>{fmtCOP(reporte.totalEgresos)}</TableCell>
                 </TableRow>
               </>}
 
-              <TableRow sx={{ bgcolor: reporte.balance >= 0 ? '#ede9fe' : '#fff7ed' }}>
+              <TableRow sx={{ bgcolor: colorEstado(reporte.balance >= 0 ? 'marca' : 'aviso', theme.palette.mode).fondo }}>
                 <TableCell colSpan={2} sx={{ fontWeight: 800, fontSize: '0.95rem' }}>
                   {reporte.balance >= 0 ? 'EXCEDENTE DEL PERÍODO' : 'DÉFICIT DEL PERÍODO'}
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 900, fontSize: '1rem', color: reporte.balance >= 0 ? '#7c3aed' : '#ea580c' }}>
+                <TableCell align="right" sx={{ fontWeight: 900, fontSize: '1rem', color: reporte.balance >= 0 ? 'primary.main' : 'warning.main' }}>
                   {fmtCOP(Math.abs(reporte.balance))}
                 </TableCell>
               </TableRow>
@@ -188,16 +191,16 @@ export function TabContabilidadEsal() {
 
         {/* Centro de costos por programa */}
         {reporte.porPrograma?.length > 0 && <>
-          <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+          <Typography sx={{ fontWeight: 700 }} variant="subtitle1" gutterBottom>
             Centro de costos por programa
           </Typography>
           <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
             <Table size="small">
-              <TableHead sx={{ bgcolor: '#f8fafc' }}>
+              <TableHead sx={{ bgcolor: 'superficie2' }}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700 }}>Programa</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, color: '#16a34a' }}>Ingresos</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, color: '#dc2626' }}>Egresos</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, color: 'success.main' }}>Ingresos</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, color: 'error.main' }}>Egresos</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700 }}>Balance</TableCell>
                 </TableRow>
               </TableHead>
@@ -205,9 +208,9 @@ export function TabContabilidadEsal() {
                 {reporte.porPrograma.map(p => (
                   <TableRow key={p.programa} hover>
                     <TableCell>{p.programa}</TableCell>
-                    <TableCell align="right" sx={{ color: '#16a34a' }}>{fmtCOP(p.ingresos)}</TableCell>
-                    <TableCell align="right" sx={{ color: '#dc2626' }}>{fmtCOP(p.egresos)}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: p.balance >= 0 ? '#7c3aed' : '#ea580c' }}>
+                    <TableCell align="right" sx={{ color: 'success.main' }}>{fmtCOP(p.ingresos)}</TableCell>
+                    <TableCell align="right" sx={{ color: 'error.main' }}>{fmtCOP(p.egresos)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: p.balance >= 0 ? 'primary.main' : 'warning.main' }}>
                       {fmtCOP(p.balance)}
                     </TableCell>
                   </TableRow>
@@ -220,12 +223,12 @@ export function TabContabilidadEsal() {
         {/* Retenciones practicadas */}
         {retenciones.length > 0 && <>
           <Divider sx={{ mb: 2 }} />
-          <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+          <Typography sx={{ fontWeight: 700 }} variant="subtitle1" gutterBottom>
             Retenciones en la fuente practicadas
           </Typography>
           <TableContainer component={Paper} variant="outlined" sx={{ mb: 2, borderRadius: 2 }}>
             <Table size="small">
-              <TableHead sx={{ bgcolor: '#fef9c3' }}>
+              <TableHead sx={{ bgcolor: colorEstado('aviso', theme.palette.mode).fondo }}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700 }}>Fecha</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Tercero</TableCell>
@@ -243,23 +246,23 @@ export function TabContabilidadEsal() {
                     <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{m.terceroDocumento ?? '—'}</TableCell>
                     <TableCell>{m.conceptoRetencion ?? '—'}</TableCell>
                     <TableCell align="right">{m.tarifaRetencion != null ? `${m.tarifaRetencion}%` : '—'}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: '#b45309' }}>{fmtCOP(m.retencionPracticada)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: 'warning.dark' }}>{fmtCOP(m.retencionPracticada)}</TableCell>
                   </TableRow>
                 ))}
-                <TableRow sx={{ bgcolor: '#fef9c3' }}>
+                <TableRow sx={{ bgcolor: colorEstado('aviso', theme.palette.mode).fondo }}>
                   <TableCell colSpan={5} sx={{ fontWeight: 700 }}>Total retenciones practicadas</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, color: '#b45309' }}>{fmtCOP(totalRetenciones)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800, color: 'warning.dark' }}>{fmtCOP(totalRetenciones)}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </TableContainer>
-          <Typography variant="caption" color="text.secondary">
+          <Typography sx={{ color: 'text.secondary' }} variant="caption">
             Estos valores deben declararse en el formulario 350 — Retención en la fuente (DIAN).
           </Typography>
         </>}
 
         {ingresos.length === 0 && egresos.length === 0 && (
-          <Typography color="text.secondary" textAlign="center" py={4}>
+          <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 4 }}>
             No hay movimientos registrados para {MESES[mes - 1]} {anio}.
           </Typography>
         )}

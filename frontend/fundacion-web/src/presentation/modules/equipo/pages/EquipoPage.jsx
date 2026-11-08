@@ -156,8 +156,8 @@ export default function EquipoPage() {
     <Box sx={{ p: { xs: 2, md: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Equipo</Typography>
-          <Typography variant="body2" color="text.secondary">Usuarios con acceso al panel administrativo</Typography>
+          <Typography sx={{ fontWeight: 700 }} variant="h5">Equipo</Typography>
+          <Typography sx={{ color: 'text.secondary' }} variant="body2">Usuarios con acceso al panel administrativo</Typography>
         </Box>
         {puedo('equipo', 'crear') && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={abrirCrear}>
@@ -185,8 +185,8 @@ export default function EquipoPage() {
             {usuarios.map((u) => (
               <TableRow key={u.id} hover>
                 <TableCell>
-                  <Typography variant="body2" fontWeight={600}>{u.nombre ?? '—'}</Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>{u.email}</Typography>
+                  <Typography sx={{ fontWeight: 600 }} variant="body2">{u.nombre ?? '—'}</Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', overflowWrap: 'anywhere' }}>{u.email}</Typography>
                 </TableCell>
                 <TableCell>
                   <Chip

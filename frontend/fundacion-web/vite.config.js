@@ -14,6 +14,9 @@ export default defineConfig({
   },
   base: '/gestion/',
   build: {
+    // exceljs (~930 kB), xlsx y jspdf se cargan con import() solo al importar/exportar;
+    // no forman parte de la carga inicial, así que su tamaño no justifica la advertencia.
+    chunkSizeWarningLimit: 1000,
     rolldownOptions: {
       output: {
         codeSplitting: {

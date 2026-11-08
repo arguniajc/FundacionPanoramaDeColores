@@ -9,7 +9,8 @@ import VerifiedIcon        from '@mui/icons-material/Verified';
 import { useConfiguracion } from '@/shared/context/useConfiguracion';
 import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
 import { fmtMoney, fmtFecha } from './helpers';
-import { BRAND_COLOR } from '@/shared/constants/brand';
+import { useTheme } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 import { useToast } from '@/shared/context/useToast';
 
 // Convierte un número entero a letras en español (hasta 999.999.999)
@@ -182,6 +183,7 @@ function generarCertificadoPDF(don, config, firma) {
 }
 
 export function CertificadoDonacionDialog({ open, donacion, onClose }) {
+  const theme = useTheme();
   const config = useConfiguracion();
   const toast  = useToast();
   const [generando, setGenerando] = useState(false);
@@ -210,37 +212,37 @@ export function CertificadoDonacionDialog({ open, donacion, onClose }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700 }}>
-        <VerifiedIcon sx={{ color: BRAND_COLOR }} />
+        <VerifiedIcon sx={{ color: 'primary.main' }} />
         Certificado de Donación
       </DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          <Box sx={{ bgcolor: '#f5f0ff', borderRadius: 2, p: 1.5, textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary">Año gravable</Typography>
-            <Typography fontWeight={800} fontSize="1.1rem" color={BRAND_COLOR}>
+          <Box sx={{ bgcolor: colorEstado('marca', theme.palette.mode).fondo, borderRadius: 2, p: 1.5, textAlign: 'center' }}>
+            <Typography sx={{ color: 'text.secondary' }} variant="caption">Año gravable</Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: 'primary.main' }}>
               {new Date(donacion.fechaDonacion).getFullYear()}
             </Typography>
           </Box>
           <Box>
-            <Typography variant="caption" color="text.secondary">Donante</Typography>
-            <Typography fontWeight={600}>{donacion.nombreDonante}</Typography>
+            <Typography sx={{ color: 'text.secondary' }} variant="caption">Donante</Typography>
+            <Typography sx={{ fontWeight: 600 }}>{donacion.nombreDonante}</Typography>
             {donacion.tipoDocDonante && donacion.documentoDonante && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography sx={{ color: 'text.secondary' }} variant="body2">
                 {donacion.tipoDocDonante.toUpperCase()}: {donacion.documentoDonante}
               </Typography>
             )}
           </Box>
           <Divider />
-          <Box sx={{ bgcolor: '#f0fdf4', borderRadius: 1.5, p: 1.5, textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary">Valor certificado</Typography>
-            <Typography variant="h6" fontWeight={800} color="success.main">
+          <Box sx={{ bgcolor: colorEstado('exito', theme.palette.mode).fondo, borderRadius: 1.5, p: 1.5, textAlign: 'center' }}>
+            <Typography sx={{ color: 'text.secondary' }} variant="caption">Valor certificado</Typography>
+            <Typography sx={{ fontWeight: 800, color: 'success.main' }} variant="h6">
               {fmtMoney(donacion.monto)}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
               {numeroALetras(Math.round(donacion.monto || 0))}
             </Typography>
           </Box>
-          <Typography variant="caption" color="text.secondary" textAlign="center">
+          <Typography sx={{ color: 'text.secondary', textAlign: 'center' }} variant="caption">
             Deducible de impuesto sobre la renta — Art. 125 E.T.
           </Typography>
         </Box>

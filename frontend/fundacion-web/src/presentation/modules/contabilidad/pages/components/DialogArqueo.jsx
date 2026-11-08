@@ -65,9 +65,8 @@ export function DialogArqueo({ open, cuenta, guardando, onClose, onGuardar }) {
               {...v.props('fecha')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Conteo físico (efectivo) *" type="number" size="small"
+            <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Conteo físico (efectivo) *" type="number" size="small"
               value={form.saldoFisico} onChange={set('saldoFisico')}
-              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
               {...v.props('saldoFisico', 'Cuente el efectivo físico en caja')} />
           </Grid>
           {diferencia !== null && (

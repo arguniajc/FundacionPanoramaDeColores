@@ -140,7 +140,7 @@ export function VoluntarioDialog({ open, voluntario, onClose, onGuardado }) {
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}
-          sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: '#5b21b6' } }}>
+          sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: 'primary.dark' } }}>
           {guardando ? <CircularProgress size={20} color="inherit" /> : editando ? 'Guardar' : 'Crear voluntario'}
         </Button>
       </DialogActions>

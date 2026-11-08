@@ -26,8 +26,8 @@ export function HistorialDialog({ open, item, onClose }) {
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
-          <Typography fontWeight={800} color={COLOR}>Historial de movimientos</Typography>
-          <Typography variant="caption" color="text.secondary">{item.nombre} · {item.nombreSede}</Typography>
+          <Typography sx={{ fontWeight: 800, color: COLOR }}>Historial de movimientos</Typography>
+          <Typography sx={{ color: 'text.secondary' }} variant="caption">{item.nombre} · {item.nombreSede}</Typography>
         </Box>
         <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
       </DialogTitle>
@@ -38,7 +38,7 @@ export function HistorialDialog({ open, item, onClose }) {
           <Box sx={{ p: 2 }}><Alert severity="error">{error}</Alert></Box>
         ) : movs.length === 0 ? (
           <Box sx={{ p: 4, textAlign: 'center' }}>
-            <Typography color="text.secondary">Sin movimientos registrados.</Typography>
+            <Typography sx={{ color: 'text.secondary' }}>Sin movimientos registrados.</Typography>
           </Box>
         ) : (
           <TableContainer>
@@ -60,12 +60,12 @@ export function HistorialDialog({ open, item, onClose }) {
                     <TableCell sx={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>{fmtFecha(m.fechaMovimiento)}</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
-                        <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: m.afectaStock === '+' ? '#16a34a' : '#dc2626' }} />
+                        <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: m.afectaStock === '+' ? 'success.main' : 'error.main' }} />
                         <Typography sx={{ fontSize: '0.76rem' }}>{m.nombreTipo}</Typography>
                       </Box>
                     </TableCell>
                     <TableCell align="right">
-                      <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: m.afectaStock === '+' ? '#16a34a' : '#dc2626' }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: m.afectaStock === '+' ? 'success.main' : 'error.main' }}>
                         {m.afectaStock === '+' ? '+' : '-'}{fmtNum(m.cantidad)}
                       </Typography>
                     </TableCell>

@@ -7,9 +7,9 @@ export function KpiCard({ label, value, sub, color = 'primary.main', icon }) {
       <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: '12px !important' }}>
         <Box sx={{ color, fontSize: 36, lineHeight: 1 }}>{icon}</Box>
         <Box>
-          <Typography variant="h5" fontWeight={700} color={color}>{value ?? '—'}</Typography>
-          <Typography variant="body2" fontWeight={500}>{label}</Typography>
-          {sub && <Typography variant="caption" color="text.secondary">{sub}</Typography>}
+          <Typography sx={{ fontWeight: 700, color: color }} variant="h5">{value ?? '—'}</Typography>
+          <Typography sx={{ fontWeight: 500 }} variant="body2">{label}</Typography>
+          {sub && <Typography sx={{ color: 'text.secondary' }} variant="caption">{sub}</Typography>}
         </Box>
       </CardContent>
     </Card>
@@ -20,7 +20,7 @@ export function GraficaCard({ titulo, children, height = 260 }) {
   return (
     <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', height: '100%' }}>
       <CardContent>
-        <Typography variant="subtitle2" fontWeight={700} mb={1} color="text.secondary">{titulo}</Typography>
+        <Typography sx={{ fontWeight: 700, mb: 1, color: 'text.secondary' }} variant="subtitle2">{titulo}</Typography>
         <ResponsiveContainer width="100%" height={height} minWidth={0}>
           {children}
         </ResponsiveContainer>
@@ -50,7 +50,7 @@ export function TooltipCustom({ active, payload, label, prefix = '', suffix = ''
   if (!active || !payload?.length) return null;
   return (
     <Paper elevation={3} sx={{ p: 1.5, fontSize: 13 }}>
-      <Typography variant="caption" fontWeight={700}>{label}</Typography>
+      <Typography sx={{ fontWeight: 700 }} variant="caption">{label}</Typography>
       {payload.map((p, i) => (
         <Box key={i} sx={{ color: p.color }}>
           {p.name}: {prefix}{p.value?.toLocaleString('es-CO')}{suffix}

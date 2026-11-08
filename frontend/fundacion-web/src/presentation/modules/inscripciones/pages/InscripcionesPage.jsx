@@ -5,6 +5,7 @@ import {
   Divider, FormControl, Grid, IconButton, InputLabel,
   MenuItem, Select, Snackbar, TextField, Tooltip, Typography,
 } from '@mui/material';
+import { alpha }      from '@mui/material/styles';
 import AddIcon        from '@mui/icons-material/Add';
 import DeleteIcon     from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -81,7 +82,7 @@ export default function InscripcionesPage() {
             textTransform: 'uppercase', letterSpacing: '0.12em', mb: 0.5 }}>
             Módulo
           </Typography>
-          <Typography variant="h5" fontWeight={800} color={COLOR}>Inscripciones</Typography>
+          <Typography sx={{ fontWeight: 800, color: COLOR }} variant="h5">Inscripciones</Typography>
         </Box>
         <Button variant="contained" startIcon={<AddIcon />}
           onClick={() => setNuevaAbierta(true)}
@@ -119,7 +120,7 @@ export default function InscripcionesPage() {
       </Box>
 
       {cargando ? (
-        <Box display="flex" justifyContent="center" py={8}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress sx={{ color: COLOR }} />
         </Box>
       ) : filtradas.length === 0 ? (
@@ -129,18 +130,18 @@ export default function InscripcionesPage() {
           {filtradas.map(i => (
             <Grid key={i.id} size={{ xs: 12, sm: 6, lg: 4 }}>
               <Box sx={{
-                border: '1.5px solid #e2d9f3', borderRadius: 2, overflow: 'hidden',
-                bgcolor: '#fdfbff', display: 'flex', flexDirection: 'column', height: '100%',
+                border: '1.5px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden',
+                bgcolor: 'background.paper', display: 'flex', flexDirection: 'column', height: '100%',
               }}>
                 <Box sx={{ px: 2, pt: 2, pb: 1.5, display: 'flex', gap: 1.5, alignItems: 'center' }}>
                   <Avatar sx={{ bgcolor: COLOR, width: 44, height: 44, flexShrink: 0, fontWeight: 800 }}>
                     {(i.nombreBeneficiario || '?')[0].toUpperCase()}
                   </Avatar>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography fontWeight={800} noWrap sx={{ fontSize: '0.95rem' }}>
+                    <Typography noWrap sx={{ fontWeight: 800, fontSize: '0.95rem' }}>
                       {i.nombreBeneficiario}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">
                       {i.documentoBeneficiario ?? 'Sin documento'}
                     </Typography>
                   </Box>
@@ -150,24 +151,24 @@ export default function InscripcionesPage() {
 
                 <Box sx={{ px: 2, py: 2, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}
-                      sx={{ textTransform: 'uppercase', fontSize: '0.62rem', letterSpacing: '0.07em' }}>
+                    <Typography variant="caption"
+                      sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5, textTransform: 'uppercase', fontSize: '0.62rem', letterSpacing: '0.07em' }}>
                       Programa
                     </Typography>
                     <Chip label={i.nombrePrograma} size="small"
-                      sx={{ bgcolor: '#ede7f6', color: COLOR, fontWeight: 600 }} />
+                      sx={{ bgcolor: (t) => alpha(t.palette.primary.main, 0.12), color: COLOR, fontWeight: 600 }} />
                   </Box>
                   <Grid container spacing={1.5}>
                     <Grid size={6}>
-                      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}
-                        sx={{ textTransform: 'uppercase', fontSize: '0.62rem', letterSpacing: '0.07em' }}>
+                      <Typography variant="caption"
+                        sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5, textTransform: 'uppercase', fontSize: '0.62rem', letterSpacing: '0.07em' }}>
                         Sede
                       </Typography>
                       <Typography variant="body2" noWrap>{i.nombreSede}</Typography>
                     </Grid>
                     <Grid size={6}>
-                      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}
-                        sx={{ textTransform: 'uppercase', fontSize: '0.62rem', letterSpacing: '0.07em' }}>
+                      <Typography variant="caption"
+                        sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5, textTransform: 'uppercase', fontSize: '0.62rem', letterSpacing: '0.07em' }}>
                         Inscripción
                       </Typography>
                       <Typography variant="body2">
@@ -180,7 +181,7 @@ export default function InscripcionesPage() {
                 <Box sx={{
                   px: 2, py: 1.5,
                   bgcolor: 'rgba(78,27,149,0.04)',
-                  borderTop: '1.5px solid #e2d9f3',
+                  borderTop: '1.5px solid', borderTopColor: 'divider',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 }}>
                   <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -190,7 +191,7 @@ export default function InscripcionesPage() {
                       {ESTADOS.map(e => <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>)}
                     </Select>
                   </FormControl>
-                  <Box display="flex" gap={0.5}>
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
                     <Tooltip title="Ver / Editar formulario">
                       <IconButton size="small" onClick={() => setVerInscripcion(i)}>
                         <VisibilityIcon fontSize="small" sx={{ color: COLOR }} />

@@ -15,9 +15,10 @@ import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
 import { COLORES } from './colores';
-import { BRAND_COLOR } from '@/shared/constants/brand';
+import { useTheme } from '@mui/material/styles';
 
 export function TabInventario() {
+  const theme = useTheme();
   const [data,  setData]  = useState(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -62,22 +63,22 @@ export function TabInventario() {
         </Box>
       </Grid>
       <Grid size={{ xs: 6, sm: 3 }}>
-        <KpiCard label="Total ítems" value={resumen.totalItems} icon={<InventoryIcon fontSize="inherit" />} color={BRAND_COLOR} />
+        <KpiCard label="Total ítems" value={resumen.totalItems} icon={<InventoryIcon fontSize="inherit" />} color="primary.main" />
       </Grid>
       <Grid size={{ xs: 6, sm: 3 }}>
-        <KpiCard label="Bajo stock mínimo" value={resumen.itemsBajoStock} icon={<WarningAmberIcon fontSize="inherit" />} color="#EF4444" />
+        <KpiCard label="Bajo stock mínimo" value={resumen.itemsBajoStock} icon={<WarningAmberIcon fontSize="inherit" />} color="error.main" />
       </Grid>
       <Grid size={{ xs: 6, sm: 3 }}>
-        <KpiCard label="Categorías" value={resumen.categorias} icon={<InventoryIcon fontSize="inherit" />} color="#F59E0B" />
+        <KpiCard label="Categorías" value={resumen.categorias} icon={<InventoryIcon fontSize="inherit" />} color="warning.main" />
       </Grid>
       <Grid size={{ xs: 6, sm: 3 }}>
-        <KpiCard label="Stock total (unidades)" value={Number(resumen.stockTotal).toLocaleString('es-CO')} icon={<InventoryIcon fontSize="inherit" />} color="#10B981" />
+        <KpiCard label="Stock total (unidades)" value={Number(resumen.stockTotal).toLocaleString('es-CO')} icon={<InventoryIcon fontSize="inherit" />} color="success.main" />
       </Grid>
 
       <Grid size={{ xs: 12, md: 6 }}>
         <GraficaCard titulo="Ítems por categoría">
           <BarChart data={porCategoria}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
             <XAxis dataKey="categoria" tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
             <Tooltip content={<TooltipCustom />} />
@@ -120,7 +121,7 @@ export function TabInventario() {
             <CardContent sx={{ pb: '16px !important' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                 <WarningAmberIcon color="error" fontSize="small" />
-                <Typography variant="subtitle2" fontWeight={700} color="error.main">Ítems bajo stock mínimo</Typography>
+                <Typography sx={{ fontWeight: 700, color: 'error.main' }} variant="subtitle2">Ítems bajo stock mínimo</Typography>
               </Box>
               <TableContainer>
                 <Table size="small">

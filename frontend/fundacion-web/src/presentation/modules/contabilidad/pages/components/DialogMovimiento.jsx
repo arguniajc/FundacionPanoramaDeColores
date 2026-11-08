@@ -187,9 +187,8 @@ export function DialogMovimiento({
               {...v.props('fecha')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Monto *" type="number" size="small"
-              value={form.monto} onChange={handleMontoChange} {...v.props('monto')}
-              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
+            <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Monto *" type="number" size="small"
+              value={form.monto} onChange={handleMontoChange} {...v.props('monto')} />
           </Grid>
           <Grid size={12}>
             <TextField fullWidth label="Concepto *" size="small"
@@ -251,7 +250,7 @@ export function DialogMovimiento({
 
           {form.tipo === 'egreso' && <>
             <Grid size={12}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Retención en la fuente (RTE)
               </Typography>
             </Grid>
@@ -267,10 +266,9 @@ export function DialogMovimiento({
               </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField fullWidth label="Valor retenido" size="small" type="number"
+              <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Valor retenido" size="small" type="number"
                 value={form.retencionPracticada}
                 onChange={set('retencionPracticada')}
-                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
                 {...v.props('retencionPracticada', 'Se calcula automáticamente')} />
             </Grid>
             <Grid size={12}>

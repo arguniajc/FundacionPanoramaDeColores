@@ -6,6 +6,7 @@ import {
   Box, Typography, CircularProgress, IconButton, Tooltip,
   Menu, MenuItem, ListItemIcon, ListItemText, Button,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import PhotoLibraryIcon  from '@mui/icons-material/PhotoLibrary';
 import CameraAltIcon     from '@mui/icons-material/CameraAlt';
 import DeleteIcon        from '@mui/icons-material/Delete';
@@ -46,7 +47,7 @@ async function crearPdf(frenteDataUrl, reversoDataUrl) {
 function LadoBox({ lado, label, inputRef, estado, menuEl, setMenuEl, onEliminar, onFoto, onCaptura, camara, setCamara }) {
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
+      <Typography sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 0.5 }} variant="caption">
         {label}
       </Typography>
       {estado.preview ? (
@@ -54,26 +55,26 @@ function LadoBox({ lado, label, inputRef, estado, menuEl, setMenuEl, onEliminar,
           <Box
             component="img" src={estado.preview} alt={label}
             onClick={(e) => { const el = e.currentTarget; setMenuEl(prev => ({ ...prev, [lado]: el })); }}
-            sx={{ width: 110, height: 82, objectFit: 'cover', borderRadius: 2, border: '2px solid #e0e0e0', display: 'block', cursor: 'pointer' }}
+            sx={{ width: 110, height: 82, objectFit: 'cover', borderRadius: 2, border: '2px solid', borderColor: 'divider', display: 'block', cursor: 'pointer' }}
           />
           <Tooltip title="Eliminar">
             <IconButton size="small" onClick={onEliminar}
-              sx={{ position: 'absolute', top: -8, right: -8, bgcolor: '#d32f2f', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: '#b71c1c' } }}>
+              sx={{ position: 'absolute', top: -8, right: -8, bgcolor: 'error.main', color: 'error.contrastText', width: 22, height: 22, '&:hover': { bgcolor: 'error.dark' } }}>
               <DeleteIcon sx={{ fontSize: 14 }} />
             </IconButton>
           </Tooltip>
           <Box component="button" type="button"
             onClick={(e) => { const el = e.currentTarget; setMenuEl(prev => ({ ...prev, [lado]: el })); }}
-            sx={{ mt: 0.5, display: 'block', width: '100%', fontSize: 11, color: 'var(--color-primario)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0 }}>
+            sx={{ mt: 0.5, display: 'block', width: '100%', fontSize: 11, color: 'var(--color-primario-texto)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', p: 0 }}>
             Cambiar
           </Box>
         </Box>
       ) : (
         <Box component="button" type="button"
           onClick={(e) => { const el = e.currentTarget; setMenuEl(prev => ({ ...prev, [lado]: el })); }}
-          sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 110, height: 82, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' }, gap: 0.5, p: 0 }}>
-          <CameraAltIcon sx={{ color: '#bdbdbd', fontSize: 26 }} />
-          <Typography variant="caption" color="text.disabled" fontSize={10}>{label}</Typography>
+          sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 110, height: 82, border: '2px dashed', borderColor: (t) => alpha(t.palette.text.primary, 0.25), borderRadius: 2, bgcolor: 'superficie2', cursor: 'pointer', transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario-texto)', bgcolor: (t) => alpha(t.palette.primary.main, 0.06) }, gap: 0.5, p: 0 }}>
+          <CameraAltIcon sx={{ color: 'text.disabled', fontSize: 26 }} />
+          <Typography sx={{ color: 'text.disabled', fontSize: 10 }} variant="caption">{label}</Typography>
         </Box>
       )}
       <Menu anchorEl={menuEl[lado]} open={Boolean(menuEl[lado])} onClose={() => setMenuEl(prev => ({ ...prev, [lado]: null }))}
@@ -230,17 +231,17 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
 
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={1}>
+      <Typography sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 1 }} variant="caption">
         Documento de identidad
       </Typography>
 
       {modo === 'ver' && value && (
-        <Box sx={{ p: 1.5, bgcolor: '#f0fdf4', borderRadius: 2, border: '1px solid #bbf7d0' }}>
+        <Box sx={{ p: 1.5, bgcolor: (t) => alpha(t.palette.success.main, 0.08), borderRadius: 2, border: '1px solid', borderColor: (t) => alpha(t.palette.success.main, 0.3) }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <PictureAsPdfIcon sx={{ color: '#16a34a', fontSize: 28, flexShrink: 0 }} />
+            <PictureAsPdfIcon sx={{ color: 'success.main', fontSize: 28, flexShrink: 0 }} />
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography fontSize={12} fontWeight={700} color="#166534">PDF guardado</Typography>
-              <Typography fontSize={11} color="text.secondary">
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'success.dark' }}>PDF guardado</Typography>
+              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
                 Documento de identidad (frente y reverso)
               </Typography>
             </Box>
@@ -250,20 +251,20 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
               size="small" variant="contained"
               onClick={handleDescargar}
               sx={{
-                bgcolor: '#166534', '&:hover': { bgcolor: '#14532d' },
+                bgcolor: 'success.main', color: 'success.contrastText', '&:hover': { bgcolor: 'success.dark' },
                 borderRadius: 2, fontSize: 12, fontWeight: 700,
                 display: 'flex', alignItems: 'center', gap: '5px',
               }}
             >
               {descargando
-                ? <><CircularProgress size={12} sx={{ color: '#fff' }} /> Descargando…</>
+                ? <><CircularProgress size={12} sx={{ color: 'inherit' }} /> Descargando…</>
                 : <><DownloadIcon sx={{ fontSize: 14 }} /> Descargar PDF</>
               }
             </Button>
             <Button
               size="small" variant="outlined"
               onClick={() => setModo('elegir')}
-              sx={{ borderColor: 'var(--color-primario)', color: 'var(--color-primario)', borderRadius: 2, fontSize: 12 }}
+              sx={{ borderColor: 'var(--color-primario-texto)', color: 'var(--color-primario-texto)', borderRadius: 2, fontSize: 12 }}
             >
               Reemplazar
             </Button>
@@ -275,15 +276,15 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
           <Box component="button" type="button"
             onClick={() => { setModo('subirPdf'); setTimeout(() => inputPdfRef.current?.click(), 50); }}
-            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 90, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', gap: 0.5, p: 0, transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' } }}>
-            <UploadFileIcon sx={{ color: '#bdbdbd', fontSize: 28 }} />
-            <Typography variant="caption" color="text.disabled" fontSize={10}>Subir PDF</Typography>
+            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 90, border: '2px dashed', borderColor: (t) => alpha(t.palette.text.primary, 0.25), borderRadius: 2, bgcolor: 'superficie2', cursor: 'pointer', gap: 0.5, p: 0, transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario-texto)', bgcolor: (t) => alpha(t.palette.primary.main, 0.06) } }}>
+            <UploadFileIcon sx={{ color: 'text.disabled', fontSize: 28 }} />
+            <Typography sx={{ color: 'text.disabled', fontSize: 10 }} variant="caption">Subir PDF</Typography>
           </Box>
           <Box component="button" type="button"
             onClick={() => setModo('fotografiar')}
-            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 90, border: '2px dashed #bdbdbd', borderRadius: 2, bgcolor: '#fafafa', cursor: 'pointer', gap: 0.5, p: 0, transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario)', bgcolor: '#f3effe' } }}>
-            <CameraAltIcon sx={{ color: '#bdbdbd', fontSize: 28 }} />
-            <Typography variant="caption" color="text.disabled" fontSize={10} textAlign="center">Fotografiar{'\n'}frente y reverso</Typography>
+            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 90, border: '2px dashed', borderColor: (t) => alpha(t.palette.text.primary, 0.25), borderRadius: 2, bgcolor: 'superficie2', cursor: 'pointer', gap: 0.5, p: 0, transition: 'border-color .2s, background .2s', '&:hover': { borderColor: 'var(--color-primario-texto)', bgcolor: (t) => alpha(t.palette.primary.main, 0.06) } }}>
+            <CameraAltIcon sx={{ color: 'text.disabled', fontSize: 28 }} />
+            <Typography sx={{ color: 'text.disabled', fontSize: 10, textAlign: 'center' }} variant="caption">Fotografiar{'\n'}frente y reverso</Typography>
           </Box>
         </Box>
       )}
@@ -293,15 +294,15 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 1 }}>
             <Box component="button" type="button"
               onClick={() => { setModo('subirPdf'); setTimeout(() => inputPdfRef.current?.click(), 50); }}
-              sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 80, border: '2px dashed var(--color-primario)', borderRadius: 2, bgcolor: '#f3effe', cursor: 'pointer', gap: 0.5, p: 0 }}>
-              <UploadFileIcon sx={{ color: 'var(--color-primario)', fontSize: 26 }} />
-              <Typography variant="caption" color="var(--color-primario)" fontSize={10} fontWeight={600}>Subir PDF</Typography>
+              sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 80, border: '2px dashed var(--color-primario)', borderRadius: 2, bgcolor: (t) => alpha(t.palette.primary.main, 0.06), cursor: 'pointer', gap: 0.5, p: 0 }}>
+              <UploadFileIcon sx={{ color: 'var(--color-primario-texto)', fontSize: 26 }} />
+              <Typography sx={{ color: 'var(--color-primario-texto)', fontSize: 10, fontWeight: 600 }} variant="caption">Subir PDF</Typography>
             </Box>
             <Box component="button" type="button"
               onClick={() => setModo('fotografiar')}
-              sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 80, border: '2px dashed var(--color-primario)', borderRadius: 2, bgcolor: '#f3effe', cursor: 'pointer', gap: 0.5, p: 0 }}>
-              <CameraAltIcon sx={{ color: 'var(--color-primario)', fontSize: 26 }} />
-              <Typography variant="caption" color="var(--color-primario)" fontSize={10} fontWeight={600} textAlign="center">Fotografiar{'\n'}frente y reverso</Typography>
+              sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 130, height: 80, border: '2px dashed var(--color-primario)', borderRadius: 2, bgcolor: (t) => alpha(t.palette.primary.main, 0.06), cursor: 'pointer', gap: 0.5, p: 0 }}>
+              <CameraAltIcon sx={{ color: 'var(--color-primario-texto)', fontSize: 26 }} />
+              <Typography sx={{ color: 'var(--color-primario-texto)', fontSize: 10, fontWeight: 600, textAlign: 'center' }} variant="caption">Fotografiar{'\n'}frente y reverso</Typography>
             </Box>
           </Box>
           <Button size="small" onClick={cancelar} sx={{ color: 'text.secondary', fontSize: 11 }}>
@@ -332,14 +333,14 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
           </Box>
           {generando && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-              <CircularProgress size={14} sx={{ color: 'var(--color-primario)' }} />
-              <Typography fontSize={12} color="text.secondary">Generando PDF…</Typography>
+              <CircularProgress size={14} sx={{ color: 'var(--color-primario-texto)' }} />
+              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Generando PDF…</Typography>
             </Box>
           )}
           {!generando && pdfListo && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
-              <CheckCircleIcon sx={{ color: '#16a34a', fontSize: 16 }} />
-              <Typography fontSize={12} color="#166534" fontWeight={600}>PDF generado correctamente</Typography>
+              <CheckCircleIcon sx={{ color: 'success.main', fontSize: 16 }} />
+              <Typography sx={{ fontSize: 12, color: 'success.dark', fontWeight: 600 }}>PDF generado correctamente</Typography>
             </Box>
           )}
           {!pdfListo && !generando && (
@@ -354,8 +355,8 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
         <Box>
           {subiendo ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CircularProgress size={16} sx={{ color: 'var(--color-primario)' }} />
-              <Typography fontSize={12} color="text.secondary">Subiendo PDF…</Typography>
+              <CircularProgress size={16} sx={{ color: 'var(--color-primario-texto)' }} />
+              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Subiendo PDF…</Typography>
             </Box>
           ) : (
             <Button size="small" onClick={cancelar} sx={{ color: 'text.secondary', fontSize: 11 }}>
@@ -366,7 +367,7 @@ export default function UploadDocumento({ value, onChange, beneficiarioId }) {
       )}
 
       {errorMsg && (
-        <Typography variant="caption" color="error" display="block" mt={0.5}>
+        <Typography sx={{ display: 'block', mt: 0.5 }} variant="caption" color="error">
           {errorMsg}
         </Typography>
       )}

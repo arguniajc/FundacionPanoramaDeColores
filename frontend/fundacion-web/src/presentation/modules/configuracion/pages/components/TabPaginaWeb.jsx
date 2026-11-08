@@ -41,7 +41,7 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
         {webForm.slider.map((slide, i) => (
           <Accordion key={i} disableGutters sx={{ mb: 1, border: '1px solid', borderColor: 'divider', borderRadius: '8px !important', '&:before': { display: 'none' } }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography fontWeight={600} fontSize="0.88rem">Slide {i + 1} — {slide.titulo.slice(0, 45)}{slide.titulo.length > 45 ? '…' : ''}</Typography>
+              <Typography sx={{ fontWeight: 600, fontSize: '0.88rem' }}>Slide {i + 1} — {slide.titulo.slice(0, 45)}{slide.titulo.length > 45 ? '…' : ''}</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Grid container spacing={2}>
@@ -57,7 +57,7 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
       </Seccion>
 
       {/* Quiénes Somos */}
-      <Box mt={2}><Seccion titulo="Quiénes Somos">
+      <Box sx={{ mt: 2 }}><Seccion titulo="Quiénes Somos">
         <Grid container spacing={2.5}>
           <Grid size={12}><ImagenField label="Imagen sección (URL)" value={webForm.quienesSomos.imagen} onChange={(e) => setWebForm(p => ({ ...p, quienesSomos: { ...p.quienesSomos, imagen: e.target.value } }))} /></Grid>
           <Grid size={12}><TextField fullWidth size="small" multiline minRows={3} label="Misión" value={webForm.quienesSomos.mision} onChange={setQS('mision')} /></Grid>
@@ -67,11 +67,11 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
       </Seccion></Box>
 
       {/* Qué Hacemos */}
-      <Box mt={2}><Seccion titulo="Qué Hacemos — Programas">
+      <Box sx={{ mt: 2 }}><Seccion titulo="Qué Hacemos — Programas">
         {webForm.programas.map((prog, i) => (
           <Accordion key={i} disableGutters sx={{ mb: 1, border: '1px solid', borderColor: 'divider', borderRadius: '8px !important', '&:before': { display: 'none' } }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography fontWeight={600} fontSize="0.88rem">{prog.titulo || `Programa ${i + 1}`}</Typography>
+              <Typography sx={{ fontWeight: 600, fontSize: '0.88rem' }}>{prog.titulo || `Programa ${i + 1}`}</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Grid container spacing={2}>
@@ -92,8 +92,8 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
       </Seccion></Box>
 
       {/* Impacto */}
-      <Box mt={2}><Seccion titulo="Nuestro Impacto">
-        <Box mb={2}>
+      <Box sx={{ mt: 2 }}><Seccion titulo="Nuestro Impacto">
+        <Box sx={{ mb: 2 }}>
           <FormControlLabel label="Mostrar sección de impacto en la página pública"
             control={<Switch checked={webForm.impacto.visible}
               onChange={(e) => setWebForm(p => ({ ...p, impacto: { ...p.impacto, visible: e.target.checked } }))}
@@ -105,8 +105,8 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
           {webForm.impacto.items.map((item, i) => (
             <Grid key={i} size={{ xs: 12, sm: 6 }}>
               <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
-                <Typography variant="caption" color="text.secondary">Dato {i + 1}</Typography>
-                <Grid container spacing={1} mt={0.5}>
+                <Typography sx={{ color: 'text.secondary' }} variant="caption">Dato {i + 1}</Typography>
+                <Grid sx={{ mt: 0.5 }} container spacing={1}>
                   <Grid size={4}><TextField fullWidth size="small" label="Número" type="number" value={item.numero} onChange={setImpItem(i, 'numero')} /></Grid>
                   <Grid size={8}><TextField fullWidth size="small" label="Descripción" value={item.label} onChange={setImpItem(i, 'label')} /></Grid>
                 </Grid>
@@ -117,13 +117,13 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
       </Seccion></Box>
 
       {/* Galería */}
-      <Box mt={2}><Seccion titulo="Galería de Eventos">
+      <Box sx={{ mt: 2 }}><Seccion titulo="Galería de Eventos">
         <Grid container spacing={2}>
           {webForm.galeria.map((item, i) => (
             <Grid key={i} size={{ xs: 12, sm: 6 }}>
               <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700}>Foto {i + 1}</Typography>
-                <Box mt={1} display="flex" gap={1} flexDirection="column">
+                <Typography sx={{ color: 'text.secondary', fontWeight: 700 }} variant="caption">Foto {i + 1}</Typography>
+                <Box sx={{ mt: 1, display: 'flex', gap: 1, flexDirection: 'column' }}>
                   <ImagenField label="URL de la imagen" value={item.imagen} onChange={setGal(i, 'imagen')} />
                   <TextField fullWidth size="small" label="Descripción / título de foto" value={item.titulo} onChange={setGal(i, 'titulo')} />
                 </Box>
@@ -134,7 +134,7 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
       </Seccion></Box>
 
       {/* Cómo Ayudar */}
-      <Box mt={2}><Seccion titulo="¿Cómo Ayudar?">
+      <Box sx={{ mt: 2 }}><Seccion titulo="¿Cómo Ayudar?">
         <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="WhatsApp para donaciones (solo números)" value={webForm.donaciones.whatsapp} onChange={setDon('whatsapp')} placeholder="573226012056" {...v.props('webDonWhatsapp')} /></Grid>
           <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="Email para donaciones" value={webForm.donaciones.email} onChange={setDon('email')} {...v.props('webDonEmail')} /></Grid>
@@ -145,7 +145,7 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
       </Seccion></Box>
 
       {/* Contacto */}
-      <Box mt={2}><Seccion titulo="Contacto">
+      <Box sx={{ mt: 2 }}><Seccion titulo="Contacto">
         <Grid container spacing={2.5}>
           <Grid size={12}><TextField fullWidth size="small" label="Dirección" value={webForm.contacto.direccion} onChange={setCon('direccion')} /></Grid>
           <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="Teléfono" value={webForm.contacto.telefono} onChange={setCon('telefono')} {...v.props('webConTelefono')} /></Grid>
@@ -157,7 +157,7 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
       </Seccion></Box>
 
       {/* Footer */}
-      <Box mt={2}><Seccion titulo="Footer">
+      <Box sx={{ mt: 2 }}><Seccion titulo="Footer">
         <Grid container spacing={2.5}>
           <Grid size={12}><TextField fullWidth size="small" label="Nombre en el pie de página" value={webForm.footer.nombre} onChange={setFoo('nombre')} /></Grid>
           <Grid size={12}><TextField fullWidth size="small" label="Eslogan del footer" value={webForm.footer.eslogan} onChange={setFoo('eslogan')} /></Grid>

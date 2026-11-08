@@ -86,7 +86,7 @@ export function TabApariencia({ form, setForm }) {
 
       {/* ── Tipografía ── */}
       <Seccion titulo="Tipografía">
-        <Grid container spacing={3} alignItems="flex-start">
+        <Grid sx={{ alignItems: 'flex-start' }} container spacing={3}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Fuente principal</InputLabel>
@@ -101,7 +101,7 @@ export function TabApariencia({ form, setForm }) {
                       <Typography sx={{ fontFamily: `'${f.value}', sans-serif`, fontWeight: 600, fontSize: '0.9rem' }}>
                         {f.label}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">{f.desc}</Typography>
+                      <Typography sx={{ color: 'text.secondary' }} variant="caption">{f.desc}</Typography>
                     </Box>
                   </MenuItem>
                 ))}
@@ -116,7 +116,7 @@ export function TabApariencia({ form, setForm }) {
               <Typography sx={{ fontFamily: `'${ff}', sans-serif`, fontSize: '0.85rem', color: 'text.secondary', mb: 0.5 }}>
                 Texto normal — lorem ipsum dolor sit amet consectetur.
               </Typography>
-              <Typography sx={{ fontFamily: `'${ff}', sans-serif`, fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-primario)' }}>
+              <Typography sx={{ fontFamily: `'${ff}', sans-serif`, fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-primario-texto)' }}>
                 Texto destacado — Inter Medium 600
               </Typography>
             </Box>
@@ -125,7 +125,7 @@ export function TabApariencia({ form, setForm }) {
       </Seccion>
 
       {/* ── Colores de marca ── */}
-      <Box mt={3}>
+      <Box sx={{ mt: 3 }}>
         <Seccion titulo="Colores de marca (modo claro)">
           <Grid container spacing={3}>
             {COLORES_MARCA.map(c => (
@@ -143,7 +143,7 @@ export function TabApariencia({ form, setForm }) {
       </Box>
 
       {/* ── Modo oscuro ── */}
-      <Box mt={3}>
+      <Box sx={{ mt: 3 }}>
         <Seccion titulo="Colores modo oscuro">
           <Grid container spacing={3}>
             {COLORES_OSCURO.map(c => (
@@ -161,9 +161,9 @@ export function TabApariencia({ form, setForm }) {
       </Box>
 
       {/* ── Vista previa ── */}
-      <Box mt={3}>
+      <Box sx={{ mt: 3 }}>
         <Seccion titulo="Vista previa en tiempo real">
-          <Box display="flex" gap={2} flexWrap="wrap">
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
 
             {/* Sidebar modo claro */}
             <Box sx={{ width: 152, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
@@ -206,7 +206,7 @@ export function TabApariencia({ form, setForm }) {
             </Box>
 
             {/* Encabezado y botones */}
-            <Box flex={1} minWidth={220}>
+            <Box sx={{ flex: 1, minWidth: 220 }}>
               <Box sx={{ background: gradienteHeader, borderRadius: '12px 12px 0 0', px: 2, py: 1.5 }}>
                 <Typography sx={{ fontWeight: 800, color: 'white', fontSize: '0.88rem', fontFamily: `'${ff}',sans-serif`, letterSpacing: '0.04em' }}>
                   Módulo Beneficiarios
@@ -216,7 +216,7 @@ export function TabApariencia({ form, setForm }) {
                 <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 1.5, fontFamily: `'${ff}',sans-serif` }}>
                   Botones según rol y contexto:
                 </Typography>
-                <Box display="flex" gap={1} flexWrap="wrap">
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   <Box sx={{ bgcolor: cp, color: '#fff', px: 1.8, py: 0.6, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 700, fontFamily: `'${ff}',sans-serif` }}>Guardar</Box>
                   <Box sx={{ bgcolor: csec, color: '#fff', px: 1.8, py: 0.6, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 700, fontFamily: `'${ff}',sans-serif` }}>+ Nuevo</Box>
                   <Box sx={{ bgcolor: cac, color: '#fff', px: 1.8, py: 0.6, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 700, fontFamily: `'${ff}',sans-serif` }}>Inscribir</Box>

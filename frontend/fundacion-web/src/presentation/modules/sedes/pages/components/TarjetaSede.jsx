@@ -20,36 +20,36 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
       <Box sx={{
         display: 'flex', alignItems: 'center', gap: 2,
-        px: 2.5, py: 2, bgcolor: '#fdfbff',
+        px: 2.5, py: 2, bgcolor: 'superficie2',
         borderBottom: expandida ? '1px solid' : 'none', borderColor: 'divider',
       }}>
-        <LocationOnIcon sx={{ color: 'var(--color-primario)', flexShrink: 0 }} />
+        <LocationOnIcon sx={{ color: 'var(--color-primario-texto)', flexShrink: 0 }} />
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
-            <Typography fontWeight={700} noWrap>{sede.nombre}</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Typography sx={{ fontWeight: 700 }} noWrap>{sede.nombre}</Typography>
             <Chip label={sede.activo ? 'Activa' : 'Inactiva'} size="small"
               color={sede.activo ? 'success' : 'default'} />
           </Box>
           {(sede.ciudad || sede.direccion) && (
-            <Typography variant="caption" color="text.secondary" noWrap>
+            <Typography sx={{ color: 'text.secondary' }} variant="caption" noWrap>
               {[sede.ciudad, sede.direccion].filter(Boolean).join(' · ')}
             </Typography>
           )}
         </Box>
-        <Box display="flex" gap={1} flexShrink={0}>
+        <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
           <Tooltip title={sede.activo ? 'Desactivar' : 'Activar'}>
             <IconButton size="small" onClick={() => onToggle(sede)}>
-              {sede.activo ? <ToggleOnIcon sx={{ color: 'var(--color-secundario)' }} /> : <ToggleOffIcon sx={{ color: '#aaa' }} />}
+              {sede.activo ? <ToggleOnIcon sx={{ color: 'var(--color-secundario)' }} /> : <ToggleOffIcon sx={{ color: 'text.disabled' }} />}
             </IconButton>
           </Tooltip>
           <Tooltip title="Editar sede">
             <IconButton size="small" onClick={() => onEditar(sede)}>
-              <EditIcon fontSize="small" sx={{ color: '#1565C0' }} />
+              <EditIcon fontSize="small" sx={{ color: 'info.main' }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Eliminar sede">
             <IconButton size="small" onClick={() => onEliminar(sede)}>
-              <DeleteIcon fontSize="small" sx={{ color: '#c62828' }} />
+              <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
             </IconButton>
           </Tooltip>
           <Tooltip title={expandida ? 'Ocultar programas' : 'Ver programas'}>
@@ -62,8 +62,8 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
 
       <Collapse in={expandida}>
         <Box sx={{ px: 2.5, py: 2, overflowX: 'auto' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} mb={1.5}>
-            <Typography variant="body2" fontWeight={700} color="#2D984F" display="flex" alignItems="center" gap={0.5}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
+            <Typography sx={{ fontWeight: 700, color: 'secondary.main', display: 'flex', alignItems: 'center', gap: 0.5 }} variant="body2">
               <SchoolIcon fontSize="small" /> Programas ({sede.programas?.length ?? 0})
             </Typography>
             <Button size="small" startIcon={<AddIcon />} onClick={() => onNuevoPrograma(sede)}
@@ -73,7 +73,7 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
           </Box>
 
           {(!sede.programas || sede.programas.length === 0) ? (
-            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', py: 1 }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic', py: 1 }}>
               No hay programas. Haz clic en Agregar para crear uno.
             </Typography>
           ) : (
@@ -81,9 +81,9 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario)' }}>Programa</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario)' }}>Cupo</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario)' }}>Estado</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario-texto)' }}>Programa</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario-texto)' }}>Cupo</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primario-texto)' }}>Estado</TableCell>
                     <TableCell align="right" />
                   </TableRow>
                 </TableHead>
@@ -91,8 +91,8 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
                   {sede.programas.map(prog => (
                     <TableRow key={prog.id} hover>
                       <TableCell>
-                        <Typography variant="body2" fontWeight={600}>{prog.nombre}</Typography>
-                        {prog.descripcion && <Typography variant="caption" color="text.secondary">{prog.descripcion}</Typography>}
+                        <Typography sx={{ fontWeight: 600 }} variant="body2">{prog.nombre}</Typography>
+                        {prog.descripcion && <Typography sx={{ color: 'text.secondary' }} variant="caption">{prog.descripcion}</Typography>}
                       </TableCell>
                       <TableCell><Typography variant="body2">{prog.cupoMaximo ?? '—'}</Typography></TableCell>
                       <TableCell>
@@ -102,17 +102,17 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
                       <TableCell align="right">
                         <Tooltip title={prog.activo ? 'Desactivar' : 'Activar'}>
                           <IconButton size="small" onClick={() => onTogglePrograma(prog)}>
-                            {prog.activo ? <ToggleOnIcon fontSize="small" sx={{ color: 'var(--color-secundario)' }} /> : <ToggleOffIcon fontSize="small" sx={{ color: '#aaa' }} />}
+                            {prog.activo ? <ToggleOnIcon fontSize="small" sx={{ color: 'var(--color-secundario)' }} /> : <ToggleOffIcon fontSize="small" sx={{ color: 'text.disabled' }} />}
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Editar">
                           <IconButton size="small" onClick={() => onEditarPrograma(sede, prog)}>
-                            <EditIcon fontSize="small" sx={{ color: '#1565C0' }} />
+                            <EditIcon fontSize="small" sx={{ color: 'info.main' }} />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Eliminar">
                           <IconButton size="small" onClick={() => onEliminarPrograma(prog)}>
-                            <DeleteIcon fontSize="small" sx={{ color: '#c62828' }} />
+                            <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
                           </IconButton>
                         </Tooltip>
                       </TableCell>

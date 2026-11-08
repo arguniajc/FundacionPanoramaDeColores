@@ -34,7 +34,7 @@ export function TabMovimientos({
 
   return (
     <Box>
-      <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'superficie2', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 130 }}>
             <InputLabel>Tipo</InputLabel>
@@ -65,10 +65,9 @@ export function TabMovimientos({
             </Select>
           </FormControl>
           <Button variant="outlined" size="small" onClick={onFiltrar}>Filtrar</Button>
-          <TextField
+          <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }}
             size="small" placeholder="Buscar concepto / tercero..." value={busqueda}
-            onChange={e => onBusqueda(e.target.value)} sx={{ minWidth: 220 }}
-            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} />
+            onChange={e => onBusqueda(e.target.value)} sx={{ minWidth: 220 }} />
           <Button variant="outlined" size="small" startIcon={<DownloadIcon />} onClick={onExportarCSV}>
             CSV
           </Button>
@@ -78,7 +77,7 @@ export function TabMovimientos({
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ bgcolor: 'grey.50' }}>
+            <TableRow sx={{ bgcolor: 'superficie2' }}>
               <TableCell>Fecha</TableCell>
               <TableCell>Tipo</TableCell>
               <TableCell>Concepto</TableCell>
@@ -103,7 +102,7 @@ export function TabMovimientos({
                 <TableCell>
                   <Typography variant="body2">{m.concepto}</Typography>
                   {m.terceroNombre && (
-                    <Typography variant="caption" color="text.secondary">{m.terceroNombre}</Typography>
+                    <Typography sx={{ color: 'text.secondary' }} variant="caption">{m.terceroNombre}</Typography>
                   )}
                 </TableCell>
                 <TableCell>
@@ -115,15 +114,14 @@ export function TabMovimientos({
                 <TableCell>{m.programaNombre ?? '—'}</TableCell>
                 <TableCell>
                   <Typography variant="body2">{m.numeroSoporte ?? '-'}</Typography>
-                  {m.tipoSoporte && <Typography variant="caption" color="text.secondary">{m.tipoSoporte}</Typography>}
+                  {m.tipoSoporte && <Typography sx={{ color: 'text.secondary' }} variant="caption">{m.tipoSoporte}</Typography>}
                 </TableCell>
                 <TableCell align="right">
-                  <Typography fontWeight="bold"
-                    color={m.tipo === 'ingreso' ? 'success.main' : 'error.main'}>
+                  <Typography sx={{ fontWeight: 'bold', color: m.tipo === 'ingreso' ? 'success.main' : 'error.main' }}>
                     {m.tipo === 'ingreso' ? '+' : '-'}{fmt(m.monto)}
                   </Typography>
                   {m.retencionPracticada > 0 && (
-                    <Typography variant="caption" color="warning.dark" display="block">
+                    <Typography sx={{ color: 'warning.dark', display: 'block' }} variant="caption">
                       RTE: -{fmt(m.retencionPracticada)}
                     </Typography>
                   )}
@@ -182,7 +180,7 @@ export function TabMovimientos({
             {movimientos.length === 0 && (
               <TableRow>
                 <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
-                  <Typography color="text.secondary">No hay movimientos con los filtros actuales</Typography>
+                  <Typography sx={{ color: 'text.secondary' }}>No hay movimientos con los filtros actuales</Typography>
                 </TableCell>
               </TableRow>
             )}
@@ -192,14 +190,13 @@ export function TabMovimientos({
 
       {filtrados.length > 0 && (
         <Box sx={{ display: 'flex', gap: 3, mt: 1.5, px: 1, flexWrap: 'wrap' }}>
-          <Typography variant="caption" color="success.main" fontWeight={700}>
+          <Typography sx={{ color: 'success.main', fontWeight: 700 }} variant="caption">
             Ingresos: {fmt(totIng)} ({filtrados.filter(m => m.tipo === 'ingreso').length})
           </Typography>
-          <Typography variant="caption" color="error.main" fontWeight={700}>
+          <Typography sx={{ color: 'error.main', fontWeight: 700 }} variant="caption">
             Egresos: {fmt(totEgr)} ({filtrados.filter(m => m.tipo === 'egreso').length})
           </Typography>
-          <Typography variant="caption" fontWeight={700}
-            color={bal >= 0 ? 'primary.main' : 'warning.main'}>
+          <Typography sx={{ fontWeight: 700, color: bal >= 0 ? 'primary.main' : 'warning.main' }} variant="caption">
             Balance: {fmt(bal)}
           </Typography>
         </Box>

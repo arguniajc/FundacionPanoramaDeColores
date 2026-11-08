@@ -210,7 +210,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
               noOptionsText="Escriba para buscar…"
               renderInput={p => (
                 <TextField {...p} size="small" label="Donante *" {...v.props('donante')}
-                  InputProps={{ ...(p.InputProps ?? {}), endAdornment: <>{buscandoD && <CircularProgress size={16} />}{p.InputProps?.endAdornment}</> }}
+                  slotProps={{ ...p.slotProps, input: { ...p.slotProps.input, endAdornment: <>{buscandoD && <CircularProgress size={16} />}{p.slotProps.input.endAdornment}</> } }}
                 />
               )}
             />
@@ -234,9 +234,8 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
 
           {form.tipo === 'dinero' && <>
             <Grid size={12}>
-              <TextField fullWidth size="small" label="Monto *" type="number"
+              <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth size="small" label="Monto *" type="number"
                 value={form.monto} onChange={e => set('monto', e.target.value)}
-                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
                 {...v.props('monto', 'El número de recibo se genera automáticamente')} />
             </Grid>
             <Grid size={12}>
@@ -291,7 +290,7 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
                 renderInput={p => (
                   <TextField {...p} size="small" label="Artículo del inventario (opcional)"
                     placeholder="Buscar por nombre…"
-                    InputProps={{ ...(p.InputProps ?? {}), endAdornment: <>{buscandoI && <CircularProgress size={16} />}{p.InputProps?.endAdornment}</> }}
+                    slotProps={{ ...p.slotProps, input: { ...p.slotProps.input, endAdornment: <>{buscandoI && <CircularProgress size={16} />}{p.slotProps.input.endAdornment}</> } }}
                   />
                 )}
               />
@@ -335,10 +334,9 @@ export function NuevaDonacionDialog({ open, donanteInicial, onClose, onGuardada,
                 </FormControl>
               </Grid>
               <Grid size={6}>
-                <TextField fullWidth size="small" label="Stock mínimo" type="number"
+                <TextField slotProps={{ htmlInput: { min: 0, step: 1 } }} fullWidth size="small" label="Stock mínimo" type="number"
                   value={form.stockMinimoInv}
                   onChange={e => set('stockMinimoInv', e.target.value)}
-                  inputProps={{ min: 0, step: 1 }}
                   {...v.props('stockMinimoInv', 'Alerta de stock bajo (opcional)')} />
               </Grid>
             </>}

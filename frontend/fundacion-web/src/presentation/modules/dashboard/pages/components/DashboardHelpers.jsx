@@ -8,9 +8,9 @@ export function CustomTooltip({ active, payload }) {
   return (
     <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
                borderRadius: 2, p: 1.5, boxShadow: 3, minWidth: 160 }}>
-      <Typography fontWeight={700} fontSize="0.8rem">{d.codigo} — {d.nombre}</Typography>
-      <Typography fontSize="0.75rem" color="text.secondary">{d.rango}</Typography>
-      <Typography fontWeight={800} fontSize="1.1rem" mt={0.5} color={d.color}>
+      <Typography sx={{ fontWeight: 700, fontSize: '0.8rem' }}>{d.codigo} — {d.nombre}</Typography>
+      <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{d.rango}</Typography>
+      <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', mt: 0.5, color: d.color }}>
         {d.total} {d.total === 1 ? 'niño' : 'niños'}
       </Typography>
     </Box>
@@ -23,8 +23,8 @@ export function GeneroTooltip({ active, payload }) {
   return (
     <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
                borderRadius: 2, p: 1.5, boxShadow: 3 }}>
-      <Typography fontWeight={700} fontSize="0.82rem">{d.genero}</Typography>
-      <Typography fontWeight={800} fontSize="1rem" mt={0.3} color={COLORES_GENERO[d.genero] ?? '#64748b'}>
+      <Typography sx={{ fontWeight: 700, fontSize: '0.82rem' }}>{d.genero}</Typography>
+      <Typography sx={{ fontWeight: 800, fontSize: '1rem', mt: 0.3, color: COLORES_GENERO[d.genero] ?? 'text.secondary' }}>
         {d.total} {d.total === 1 ? 'niño' : 'niños'}
       </Typography>
     </Box>
@@ -46,11 +46,11 @@ export function KpiCard({ valor, label, sublabel, color, icon, cargando }) {
       <Box>
         {cargando
           ? <Skeleton width={50} height={36} />
-          : <Typography fontWeight={800} fontSize={{ xs: '1.6rem', sm: '2rem' }} lineHeight={1} sx={{ color }}>
+          : <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.6rem', sm: '2rem' }, lineHeight: 1, color }}>
               {valor}
             </Typography>}
-        <Typography fontWeight={700} fontSize="0.82rem" color="text.primary" mt={0.3}>{label}</Typography>
-        {sublabel && <Typography fontSize="0.72rem" color="text.secondary">{sublabel}</Typography>}
+        <Typography sx={{ fontWeight: 700, fontSize: '0.82rem', color: 'text.primary', mt: 0.3 }}>{label}</Typography>
+        {sublabel && <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>{sublabel}</Typography>}
       </Box>
     </Box>
   );
@@ -59,16 +59,16 @@ export function KpiCard({ valor, label, sublabel, color, icon, cargando }) {
 export function FilaOrigen({ nombre, total, max, color }) {
   const pct = max > 0 ? Math.round((total / max) * 100) : 0;
   return (
-    <Box display="flex" alignItems="center" gap={1.5} mb={0.8}>
-      <Typography fontSize="0.78rem"
-        sx={{ minWidth: 130, color: 'text.secondary', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.8 }}>
+      <Typography
+        sx={{ fontSize: '0.78rem', minWidth: 130, color: 'text.secondary', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
         title={nombre}>
         {nombre}
       </Typography>
-      <Box flex={1} sx={{ bgcolor: 'action.hover', borderRadius: 4, height: 8 }}>
+      <Box sx={{ flex: 1, bgcolor: 'action.hover', borderRadius: 4, height: 8 }}>
         <Box sx={{ width: `${pct}%`, height: 8, borderRadius: 4, bgcolor: color, transition: 'width 0.6s ease' }} />
       </Box>
-      <Typography fontSize="0.78rem" fontWeight={700} sx={{ minWidth: 24, textAlign: 'right', color }}>
+      <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, minWidth: 24, textAlign: 'right', color }}>
         {total}
       </Typography>
     </Box>
@@ -93,8 +93,8 @@ export function AlertaChip({ count, label, color, onClick }) {
       '&:hover': { bgcolor: `${color}28` },
     }}>
       <WarningAmberIcon sx={{ fontSize: 16, color }} />
-      <Typography fontSize="0.82rem" fontWeight={800} sx={{ color }}>{count}</Typography>
-      <Typography fontSize="0.82rem" color="text.secondary">{label}</Typography>
+      <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color }}>{count}</Typography>
+      <Typography sx={{ fontSize: '0.82rem', color: 'text.secondary' }}>{label}</Typography>
     </Box>
   );
 }

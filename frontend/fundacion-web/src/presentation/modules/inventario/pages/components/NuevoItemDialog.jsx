@@ -7,6 +7,8 @@ import Dialog from '@/shared/components/DialogResponsive';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { COLOR, CATEGORIAS } from './helpers';
+import { useTheme, alpha } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 import { CampoUnidadMedida } from '@/shared/components/form/FormControles';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r } from '@/shared/utils/validacion';
@@ -47,6 +49,7 @@ const ITEM_VACIO = {
 };
 
 export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuardado }) {
+  const theme = useTheme();
   const editando = !!item;
   const [form,      setForm]      = useState(ITEM_VACIO);
   const [guardando, setGuardando] = useState(false);
@@ -139,7 +142,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           </Grid>
           {editando && item?.codigo && (
             <Grid size={4}>
-              <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, px: 1.5, py: '6px', bgcolor: 'action.hover' }}>
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.5, py: '6px', bgcolor: 'action.hover' }}>
                 <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', lineHeight: 1 }}>Código</Typography>
                 <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, fontFamily: 'monospace' }}>
                   {item.codigo}
@@ -167,14 +170,12 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           </Grid>
           {!editando && (
             <Grid size={6}>
-              <TextField fullWidth size="small" label="Stock inicial" type="number"
-                inputProps={{ min: 0, step: 1 }} value={form.stockActual}
+              <TextField slotProps={{ htmlInput: { min: 0, step: 1 } }} fullWidth size="small" label="Stock inicial" type="number" value={form.stockActual}
                 onChange={e => set('stockActual', e.target.value)} {...v.props('stockActual')} />
             </Grid>
           )}
           <Grid size={editando ? 12 : 6}>
-            <TextField fullWidth size="small" label="Stock mínimo" type="number"
-              inputProps={{ min: 0, step: 1 }} value={form.stockMinimo}
+            <TextField slotProps={{ htmlInput: { min: 0, step: 1 } }} fullWidth size="small" label="Stock mínimo" type="number" value={form.stockMinimo}
               onChange={e => set('stockMinimo', e.target.value)}
               {...v.props('stockMinimo', 'Alerta cuando el stock baje de este valor')} />
           </Grid>
@@ -182,7 +183,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           {/* Tipo de tenencia */}
           <Grid size={12}>
             <Divider sx={{ my: 0.5 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', px: 1 }}>
                 Tipo de tenencia
               </Typography>
             </Divider>
@@ -195,8 +196,8 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
                 {TIPOS_TENENCIA.map(t => (
                   <MenuItem key={t.value} value={t.value}>
                     <Box>
-                      <Typography variant="body2" fontWeight={600}>{t.label}</Typography>
-                      <Typography variant="caption" color="text.secondary">{t.desc}</Typography>
+                      <Typography sx={{ fontWeight: 600 }} variant="body2">{t.label}</Typography>
+                      <Typography sx={{ color: 'text.secondary' }} variant="caption">{t.desc}</Typography>
                     </Box>
                   </MenuItem>
                 ))}
@@ -207,11 +208,11 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           {/* Campos de comodato — visibles solo cuando tipo = comodato */}
           <Grid size={12}>
             <Collapse in={esComodato} unmountOnExit>
-              <Box sx={{ border: '1.5px solid #e8b84b', borderRadius: 2, p: 2, bgcolor: '#fffbea' }}>
-                <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-                  <HandshakeIcon sx={{ color: '#b45309', fontSize: 18 }} />
-                  <Typography variant="caption" fontWeight={800} color="#b45309"
-                    sx={{ textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              <Box sx={{ border: '1.5px solid', borderColor: alpha(theme.palette.warning.main, 0.5), borderRadius: 2, p: 2, bgcolor: colorEstado('aviso', theme.palette.mode).fondo }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                  <HandshakeIcon sx={{ color: colorEstado('aviso', theme.palette.mode).texto, fontSize: 18 }} />
+                  <Typography variant="caption"
+                    sx={{ fontWeight: 800, color: colorEstado('aviso', theme.palette.mode).texto, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                     Información del comodato
                   </Typography>
                 </Box>
@@ -253,7 +254,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}
-          sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: '#3b1270' } }}>
+          sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: 'var(--color-gradiente)' } }}>
           {guardando ? <CircularProgress size={20} color="inherit" /> : editando ? 'Guardar cambios' : 'Crear artículo'}
         </Button>
       </DialogActions>

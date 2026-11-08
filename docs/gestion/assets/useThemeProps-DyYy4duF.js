@@ -1,1 +1,0 @@
-import{ct as e,it as t}from"./apiClient-CtlSrMjr.js";import{tt as n}from"./index-CWpTN11t.js";var r=t();function i({props:t,name:r,defaultTheme:i,themeId:a}){let o=e(i);return a&&(o=o[a]||o),n({theme:o,name:r,props:t})}export{r as n,i as t};

@@ -27,7 +27,7 @@ export function FirmaRepresentante({ value, onChange }) {
   return (
     <Box>
       <FirmaPad label="Firma del representante legal" value={value} onChange={onChange} />
-      <Box mt={1} display="flex" alignItems="center" gap={1}>
+      <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Tooltip title="Sube una foto o escaneo de la firma">
           <Button size="small" variant="outlined"
             startIcon={<UploadFileIcon />} onClick={() => inputRef.current?.click()} disabled={subiendo}
@@ -35,9 +35,9 @@ export function FirmaRepresentante({ value, onChange }) {
             {subiendo ? 'Procesando…' : 'Subir imagen de firma'}
           </Button>
         </Tooltip>
-        <Typography variant="caption" color="text.secondary">JPG · PNG · máx. 5 MB</Typography>
+        <Typography sx={{ color: 'text.secondary' }} variant="caption">JPG · PNG · máx. 5 MB</Typography>
       </Box>
-      {errImg && <Typography variant="caption" color="error" display="block" mt={0.5}>{errImg}</Typography>}
+      {errImg && <Typography sx={{ display: 'block', mt: 0.5 }} variant="caption" color="error">{errImg}</Typography>}
       <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleSubir} />
     </Box>
   );

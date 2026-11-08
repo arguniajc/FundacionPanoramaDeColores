@@ -24,7 +24,7 @@ export function TabTextos({ form, set, v }) {
           </Grid>
         </Grid>
       </Seccion>
-      <Box mt={3}>
+      <Box sx={{ mt: 3 }}>
         <Seccion titulo="Misión y Visión (panel admin)">
           <Grid container spacing={2.5}>
             <Grid size={12}>
@@ -38,7 +38,7 @@ export function TabTextos({ form, set, v }) {
           </Grid>
         </Seccion>
       </Box>
-      <Box mt={3}>
+      <Box sx={{ mt: 3 }}>
         <Seccion titulo="Textos del panel administrativo">
           <Grid container spacing={2.5}>
             <Grid size={12}>

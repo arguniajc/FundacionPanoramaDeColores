@@ -205,8 +205,8 @@ export default function ConfiguracionPage() {
         <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.12em', mb: 0.5 }}>
           Módulo
         </Typography>
-        <Typography variant="h5" fontWeight={800} sx={{ color: COLOR }}>Configuración</Typography>
-        <Typography variant="body2" color="text.secondary" mt={0.5}>
+        <Typography variant="h5" sx={{ fontWeight: 800, color: COLOR }}>Configuración</Typography>
+        <Typography sx={{ color: 'text.secondary', mt: 0.5 }} variant="body2">
           Gestiona datos, apariencia, textos y todo el contenido de la página pública.
         </Typography>
       </Box>
@@ -220,7 +220,7 @@ export default function ConfiguracionPage() {
       )}
 
       {cargando ? (
-        <Box display="flex" justifyContent="center" py={8}><CircularProgress sx={{ color: COLOR }} /></Box>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress sx={{ color: COLOR }} /></Box>
       ) : (
         <Box>
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
@@ -240,7 +240,7 @@ export default function ConfiguracionPage() {
 
           <Divider sx={{ my: 3 }} />
           <ResumenErrores {...v.resumen} accion="guardar la configuración" sx={{ mx: 0, mt: 0, mb: 2 }} />
-          <Box display="flex" justifyContent="flex-end">
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button variant="contained" startIcon={<SaveIcon />} onClick={handleGuardar} disabled={guardando}
               sx={{ bgcolor: COLOR, px: 3, '&:hover': { bgcolor: COLOR, opacity: 0.9 } }}>
               {guardando ? 'Guardando…' : 'Guardar configuración'}

@@ -116,7 +116,7 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
       <DialogContent dividers>
         <Grid container spacing={2}>
           {/* Datos personales */}
-          <Grid size={12}><Typography variant="subtitle2" fontWeight={700} color="text.secondary">Datos personales</Typography></Grid>
+          <Grid size={12}><Typography sx={{ fontWeight: 700, color: 'text.secondary' }} variant="subtitle2">Datos personales</Typography></Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Nombres *" value={form.nombres} onChange={set('nombres')} size="small" {...v.props('nombres')} />
           </Grid>
@@ -142,7 +142,7 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
           </Grid>
 
           {/* Cargo y sede */}
-          <Grid size={12}><Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mt: 1 }}>Cargo y ubicación</Typography></Grid>
+          <Grid size={12}><Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', mt: 1 }}>Cargo y ubicación</Typography></Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Autocomplete
               freeSolo
@@ -170,7 +170,7 @@ export function DialogEmpleado({ open, onClose, empleado, sedes, onSaved }) {
           </Grid>
 
           {/* Contrato */}
-          <Grid size={12}><Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mt: 1 }}>Contrato</Typography></Grid>
+          <Grid size={12}><Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', mt: 1 }}>Contrato</Typography></Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField select fullWidth label="Tipo contrato" value={form.tipoContrato} onChange={set('tipoContrato')} size="small">
               {TIPOS_CONTRATO.map(t => <MenuItem key={t} value={t}>{t.replace(/_/g,' ')}</MenuItem>)}

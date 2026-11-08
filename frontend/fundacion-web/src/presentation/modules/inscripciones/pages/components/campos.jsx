@@ -4,6 +4,7 @@ import {
   Alert, Autocomplete, Box, Button, Chip, FormControl, FormControlLabel, FormHelperText, Grid,
   InputAdornment, InputLabel, MenuItem, Select, Switch, TextField, Tooltip, Typography,
 } from '@mui/material';
+import { alpha, lighten } from '@mui/material/styles';
 import { archivosRepository }   from '@/infrastructure/repositories/archivosRepository';
 import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi }      from '@/shared/utils/mensajeErrorApi';
@@ -23,8 +24,8 @@ export function SeccionHeader({ titulo }) {
   return (
     <Grid size={12}>
       <Box sx={{ bgcolor: COLOR, borderRadius: 1.5, px: 2, py: 1.1, mt: 1 }}>
-        <Typography fontWeight={800} color="white"
-          sx={{ fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+        <Typography
+          sx={{ fontWeight: 800, color: 'white', fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
           {titulo}
         </Typography>
       </Box>
@@ -130,9 +131,9 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
   const documentoDisabled = !!docAuto;
 
   return (
-    <Box sx={{ p: 2, bgcolor: '#f3f0ff', borderRadius: 2, border: '2px solid #d0c4f7', ...sx }}>
-      <Typography variant="caption" color={COLOR} fontWeight={800} display="block" mb={1.5}
-        sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.72rem' }}>
+    <Box sx={{ p: 2, bgcolor: (t) => alpha(t.palette.primary.main, 0.06), borderRadius: 2, border: '2px solid', borderColor: (t) => alpha(t.palette.primary.main, 0.3), ...sx }}>
+      <Typography variant="caption"
+        sx={{ color: COLOR, fontWeight: 800, display: 'block', mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.72rem' }}>
         Autorización del padre / acudiente
       </Typography>
 
@@ -141,15 +142,15 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
           <Box>
             <Box component="img" src={datos.__firma_padre__} alt="Firma"
               sx={{ display: 'block', height: 60, maxWidth: 280, objectFit: 'contain',
-                    border: '1px solid #d0c4f7', borderRadius: 1, bgcolor: 'white', mb: 1 }} />
+                    border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'white', mb: 1 }} />
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
               {meta.quien && (
                 <Chip size="small" label={QUIEN_FIRMA_LABEL[meta.quien] ?? meta.quien}
                   sx={{ bgcolor: 'color-mix(in srgb, var(--color-primario) 9%, transparent)', color: COLOR, fontWeight: 700, fontSize: '0.72rem' }} />
               )}
-              {meta.nombre    && <Typography variant="caption" fontWeight={600}>{meta.nombre}</Typography>}
-              {meta.documento && <Typography variant="caption" color="text.secondary">Doc: {meta.documento}</Typography>}
-              {fmtFirmaFecha  && <Typography variant="caption" color="text.secondary">{fmtFirmaFecha}</Typography>}
+              {meta.nombre    && <Typography sx={{ fontWeight: 600 }} variant="caption">{meta.nombre}</Typography>}
+              {meta.documento && <Typography sx={{ color: 'text.secondary' }} variant="caption">Doc: {meta.documento}</Typography>}
+              {fmtFirmaFecha  && <Typography sx={{ color: 'text.secondary' }} variant="caption">{fmtFirmaFecha}</Typography>}
             </Box>
           </Box>
         ) : (
@@ -212,7 +213,7 @@ export function FirmaAutorizacion({ datos, setDatos, panelActivo = {}, campos = 
           />
           {errores.__firma_padre__ && <FormHelperText error>{errores.__firma_padre__}</FormHelperText>}
           {datos.__firma_padre__ && fmtFirmaFecha && (
-            <Typography variant="caption" color="text.secondary" display="block" mt={0.8}>
+            <Typography sx={{ color: 'text.secondary', display: 'block', mt: 0.8 }} variant="caption">
               Firmado el {fmtFirmaFecha}
             </Typography>
           )}
@@ -288,17 +289,17 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
     };
     return (
       <Box>
-        <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+        <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5 }} variant="caption">
           {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
         </Typography>
         {value ? (
-          <Box display="flex" alignItems="center" gap={1}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Chip label="✓ Entregado" color="success" size="small" />
             <Button size="small" onClick={() => abrirArchivo(value)}>Ver PDF</Button>
             <Button size="small" color="error" onClick={() => onChange('')}>Quitar</Button>
           </Box>
         ) : (
-          <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Chip label="Pendiente" color="warning" size="small" variant="outlined" />
             <Button variant="outlined" component="label" size="small" disabled={subiendo}
               sx={{ color: COLOR, borderColor: COLOR }}>
@@ -317,14 +318,14 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
     const setRng = (k, v) => onChange(JSON.stringify({ ...rng, [k]: v }));
     return (
       <Box>
-        <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+        <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5 }} variant="caption">
           {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
         </Typography>
-        <Box display="flex" gap={1} alignItems="center">
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField size="small" label="Desde" type="date" value={rng.desde ?? ''}
             onChange={e => setRng('desde', e.target.value)}
             slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
-          <Typography variant="body2" color="text.secondary" flexShrink={0}>—</Typography>
+          <Typography sx={{ color: 'text.secondary', flexShrink: 0 }} variant="body2">—</Typography>
           <TextField size="small" label="Hasta" type="date" value={rng.hasta ?? ''}
             onChange={e => setRng('hasta', e.target.value)}
             slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
@@ -383,10 +384,10 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
     const setDoc = (k, v) => onChange(JSON.stringify({ ...doc, [k]: v }));
     return (
       <Box>
-        <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+        <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5 }} variant="caption">
           {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
         </Typography>
-        <Box display="flex" gap={1}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
           <FormControl size="small" sx={{ width: 140, flexShrink: 0 }}>
             <InputLabel>Tipo</InputLabel>
             <Select label="Tipo" value={doc.tipo} onChange={e => setDoc('tipo', e.target.value)}>
@@ -430,7 +431,7 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
     const setGE = (k, v) => onChange(JSON.stringify({ ...ge, [k]: v }));
     return (
       <Box>
-        <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+        <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5 }} variant="caption">
           {campo.etiqueta}{campo.obligatorio ? ' *' : ''}
         </Typography>
         <Grid container spacing={1.5}>
@@ -500,6 +501,8 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
     try { if (value) d = JSON.parse(value); } catch { /* valor guardado ilegible: se muestra vacío */ }
     const setD = (k, v) => onChange(JSON.stringify({ ...d, [k]: v }));
     const SC      = '#7B3FC4';
+    // Texto del panel: el violeta se aclara en modo oscuro para mantener contraste
+    const colorSC = (t) => (t.palette.mode === 'dark' ? lighten(SC, 0.4) : SC);
     const esTutor = campo.tipo === 'datos_tutor';
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const estadosPanel  = useMemo(() => getEstadosDePais(d.pais || 'Colombia'), [d.pais]);
@@ -510,49 +513,49 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
     const tiposDocPanel = getDocsPorPanelYPais(esTutor, d.pais);
     return (
       <Box sx={{
-        border: `1.5px solid ${activo ? SC + '40' : '#d0d0d0'}`,
+        border: '1.5px solid', borderColor: activo ? SC + '40' : 'divider',
         borderRadius: 2.5, overflow: 'hidden',
         boxShadow: activo ? '0 3px 14px rgba(78,27,149,0.10)' : 'none',
         transition: 'all 0.2s',
       }}>
         <Box sx={{
-          bgcolor: activo ? `${SC}18` : '#f0f0f0',
-          borderBottom: `1.5px solid ${activo ? SC + '30' : '#ddd'}`,
-          borderLeft: `5px solid ${activo ? SC : '#bbb'}`,
+          bgcolor: activo ? `${SC}18` : 'superficie2',
+          borderBottom: '1.5px solid', borderBottomColor: activo ? SC + '30' : 'divider',
+          borderLeft: '5px solid', borderLeftColor: activo ? SC : 'text.disabled',
           px: 2, py: 1,
           display: 'flex', alignItems: 'center', gap: 1.5,
           transition: 'background 0.2s',
         }}>
           <Typography sx={{
             fontSize: '0.88rem', fontWeight: 800, flex: 1,
-            color: activo ? SC : '#aaa', transition: 'color 0.2s',
+            color: activo ? colorSC : 'text.disabled', transition: 'color 0.2s',
           }}>
             {campo.etiqueta}{campo.obligatorio && activo ? ' *' : ''}
           </Typography>
           {tieneToggle && (
             <Tooltip title={activo ? 'No aplica — deshabilitar' : 'Habilitar este panel'}>
               <Switch checked={activo} onChange={onToggle} size="small"
-                sx={{ '& .MuiSwitch-thumb': { bgcolor: activo ? SC : '#bbb' },
-                      '& .MuiSwitch-track': { bgcolor: activo ? `${SC}80 !important` : '#ccc !important' } }} />
+                sx={{ '& .MuiSwitch-thumb': { bgcolor: activo ? SC : 'text.disabled' },
+                      '& .MuiSwitch-track': { bgcolor: (t) => (activo ? `${SC}80 !important` : `${t.palette.divider} !important`) } }} />
             </Tooltip>
           )}
           {activo && (
             <Chip label={subcampos} size="small"
-              sx={{ bgcolor: `${SC}18`, color: SC, fontWeight: 700, fontSize: '0.68rem',
+              sx={{ bgcolor: `${SC}18`, color: colorSC, fontWeight: 700, fontSize: '0.68rem',
                     border: `1px solid ${SC}40`, height: 22 }} />
           )}
         </Box>
 
         {!activo && (
-          <Box sx={{ bgcolor: '#fafafa', py: 2.5, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.disabled" fontStyle="italic">
+          <Box sx={{ bgcolor: 'superficie2', py: 2.5, textAlign: 'center' }}>
+            <Typography sx={{ color: 'text.disabled', fontStyle: 'italic' }} variant="body2">
               No aplica para esta inscripción
             </Typography>
           </Box>
         )}
 
         {activo && (
-          <Box sx={{ bgcolor: '#f9f6ff', p: 2.5 }}>
+          <Box sx={{ bgcolor: `${SC}0A`, p: 2.5 }}>
             <Grid container spacing={2}>
               {esTutor && (
                 <Grid size={12}>

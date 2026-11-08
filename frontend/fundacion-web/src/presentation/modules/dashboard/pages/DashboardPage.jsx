@@ -26,7 +26,7 @@ const MODULOS = [
   { label: 'Donaciones',    desc: 'Registro de aportes recibidos',      icon: <MonetizationOnIcon sx={{ fontSize: 36 }} />,   grad: 'linear-gradient(135deg, #F59D1E 0%, #d97706 100%)',               ruta: '/sede/donaciones' },
   { label: 'Proyectos',     desc: 'Programas y proyectos activos',      icon: <FolderSpecialIcon sx={{ fontSize: 36 }} />,    grad: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',               ruta: '/sede/proyectos' },
   { label: 'Inventario',    desc: 'Control de bienes y materiales',     icon: <InventoryIcon sx={{ fontSize: 36 }} />,        grad: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',               ruta: '/sede/inventario' },
-  { label: 'Reportes',      desc: 'Informes y estadísticas',            icon: <AssessmentIcon sx={{ fontSize: 36 }} />,       grad: 'linear-gradient(135deg, #B4E8E8 0%, #0891b2 100%)',               ruta: '/sede/reportes' },
+  { label: 'Reportes',      desc: 'Informes y estadísticas',            icon: <AssessmentIcon sx={{ fontSize: 36 }} />,       grad: 'linear-gradient(135deg, #0E7490 0%, #0891b2 100%)',               ruta: '/sede/reportes' },
 ];
 
 export default function DashboardPage() {
@@ -122,7 +122,7 @@ export default function DashboardPage() {
         <Grid size={{ xs: 12, sm: 4 }}>
           <KpiCard valor={stats?.totalActivos ?? 0} label="Niños activos" sublabel="Inscritos y vigentes"
             color="var(--color-primario)" cargando={cargando}
-            icon={<ChildCareIcon sx={{ color: 'var(--color-primario)', fontSize: 26 }} />} />
+            icon={<ChildCareIcon sx={{ color: 'var(--color-primario-texto)', fontSize: 26 }} />} />
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
           <KpiCard valor={stats?.extranjeros ?? 0} label="Extranjeros" sublabel="Nacidos fuera de Colombia"
@@ -142,13 +142,13 @@ export default function DashboardPage() {
         {/* Gráfico rangos */}
         <Grid size={{ xs: 12, md: 7 }}>
           <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5, height: '100%' }}>
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-              <Typography fontWeight={700} fontSize="0.95rem">Distribución por rango etáreo</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Distribución por rango etáreo</Typography>
               <Tooltip title="Clasificación del ICBF / Código de Infancia y Adolescencia (Ley 1098)">
                 <InfoOutlinedIcon sx={{ fontSize: 18, color: 'text.disabled', cursor: 'help' }} />
               </Tooltip>
             </Box>
-            <Box display="flex" flexWrap="wrap" gap={0.8} mb={2}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mb: 2 }}>
               {stats?.porRango?.map((r, i) => (
                 <Chip key={r.codigo} label={`${r.codigo}: ${r.total}`} size="small" sx={{
                   bgcolor: `${COLORES_RANGO[i]}20`, color: COLORES_RANGO[i], fontWeight: 700,
@@ -183,9 +183,9 @@ export default function DashboardPage() {
                 { codigo: 'PA',  nombre: 'Preadolescencia',   rango: '12 – 13 años', i: 3 },
                 { codigo: 'AD',  nombre: 'Adolescencia',      rango: '14 – 16 años', i: 4 },
               ].map(({ codigo, nombre, rango, i }) => (
-                <Box key={codigo} display="flex" alignItems="center" gap={0.8}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }} key={codigo}>
                   <Box sx={{ width: 10, height: 10, borderRadius: 1, bgcolor: COLORES_RANGO[i], flexShrink: 0 }} />
-                  <Typography fontSize="0.7rem" color="text.secondary">
+                  <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
                     <strong>{codigo}</strong> {nombre} <span style={{ opacity: 0.7 }}>({rango})</span>
                   </Typography>
                 </Box>
@@ -197,20 +197,20 @@ export default function DashboardPage() {
         {/* Orígenes */}
         <Grid size={{ xs: 12, md: 5 }}>
           <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5, height: '100%' }}>
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2.5}>
-              <Typography fontWeight={800} fontSize="0.95rem">Lugar de origen</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+              <Typography sx={{ fontWeight: 800, fontSize: '0.95rem' }}>Lugar de origen</Typography>
               <Box sx={{ fontSize: '0.68rem', color: 'text.disabled', fontWeight: 500 }}>
                 clic en depto. para ver ciudades
               </Box>
             </Box>
 
             {/* Extranjeros */}
-            <Box mb={2.5}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                <Box display="flex" alignItems="center" gap={0.8}>
+            <Box sx={{ mb: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                   <PublicIcon sx={{ fontSize: 14, color: '#0ea5e9' }} />
-                  <Typography fontSize="0.72rem" fontWeight={700} color="text.secondary"
-                    sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <Typography
+                    sx={{ fontSize: '0.72rem', fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Extranjeros
                   </Typography>
                 </Box>
@@ -224,13 +224,13 @@ export default function DashboardPage() {
               {cargando ? <Skeleton height={44} sx={{ borderRadius: 2 }} /> :
                 stats?.topPaises?.length > 0
                   ? stats.topPaises.map((p, i) => (
-                      <Box key={p.pais} display="flex" alignItems="center" gap={1.5}
-                        sx={{ p: '5px 8px', borderRadius: 2, mb: 0.4, '&:hover': { bgcolor: 'action.hover' } }}>
-                        <Typography fontSize="0.65rem" fontWeight={700} color="text.disabled" sx={{ minWidth: 14 }}>
+                      <Box key={p.pais}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: '5px 8px', borderRadius: 2, mb: 0.4, '&:hover': { bgcolor: 'action.hover' } }}>
+                        <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: 'text.disabled', minWidth: 14 }}>
                           {i + 1}
                         </Typography>
-                        <Typography fontSize="0.8rem" fontWeight={600} color="text.primary"
-                          sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                        <Typography
+                          sx={{ fontSize: '0.8rem', fontWeight: 600, color: 'text.primary', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                           title={p.pais}>{p.pais}
                         </Typography>
                         <Box sx={{
@@ -246,7 +246,7 @@ export default function DashboardPage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1,
                                 bgcolor: 'action.hover', borderRadius: 2 }}>
                       <PublicIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-                      <Typography fontSize="0.74rem" color="text.disabled" fontStyle="italic">
+                      <Typography sx={{ fontSize: '0.74rem', color: 'text.disabled', fontStyle: 'italic' }}>
                         Todos los niños son de Colombia
                       </Typography>
                     </Box>
@@ -258,10 +258,10 @@ export default function DashboardPage() {
 
             {/* Departamentos acordeón */}
             <Box>
-              <Box display="flex" alignItems="center" gap={0.8} mb={1}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 1 }}>
                 <LocationOnIcon sx={{ fontSize: 14, color: '#f59e0b' }} />
-                <Typography fontSize="0.72rem" fontWeight={700} color="text.secondary"
-                  sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                <Typography
+                  sx={{ fontSize: '0.72rem', fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   Colombia · departamentos
                 </Typography>
               </Box>
@@ -285,12 +285,12 @@ export default function DashboardPage() {
                               '&:hover': hasCiudades ? { bgcolor: '#f59e0b08' } : {},
                             }}
                           >
-                            <Typography fontSize="0.64rem" fontWeight={700} color="text.disabled"
-                              sx={{ minWidth: 14, textAlign: 'center' }}>
+                            <Typography
+                              sx={{ fontSize: '0.64rem', fontWeight: 700, color: 'text.disabled', minWidth: 14, textAlign: 'center' }}>
                               {i + 1}
                             </Typography>
-                            <Typography fontSize="0.8rem" fontWeight={600}
-                              sx={{ flex: 1, color: abierto ? '#f59e0b' : 'text.primary',
+                            <Typography
+                              sx={{ fontSize: '0.8rem', fontWeight: 600, flex: 1, color: abierto ? '#f59e0b' : 'text.primary',
                                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                     transition: 'color 0.15s' }}
                               title={d.departamento}>{d.departamento}
@@ -315,12 +315,12 @@ export default function DashboardPage() {
                           {abierto && hasCiudades && (
                             <Box sx={{ ml: 3, mb: 0.8, pl: 1.5, borderLeft: '2px solid', borderColor: '#f59e0b40' }}>
                               {d.ciudades.map(c => (
-                                <Box key={c.ciudad} display="flex" alignItems="center" justifyContent="space-between"
-                                  sx={{ py: 0.4, px: 0.5, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover' } }}>
-                                  <Box display="flex" alignItems="center" gap={1}>
+                                <Box key={c.ciudad}
+                                  sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.4, px: 0.5, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover' } }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#8b5cf6', flexShrink: 0 }} />
-                                    <Typography fontSize="0.75rem" color="text.secondary"
-                                      sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}
+                                    <Typography
+                                      sx={{ fontSize: '0.75rem', color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}
                                       title={c.ciudad}>{c.ciudad}
                                     </Typography>
                                   </Box>
@@ -341,7 +341,7 @@ export default function DashboardPage() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1,
                                 bgcolor: 'action.hover', borderRadius: 2 }}>
                       <LocationOnIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-                      <Typography fontSize="0.74rem" color="text.disabled" fontStyle="italic">
+                      <Typography sx={{ fontSize: '0.74rem', color: 'text.disabled', fontStyle: 'italic' }}>
                         Sin departamentos registrados
                       </Typography>
                     </Box>
@@ -356,12 +356,12 @@ export default function DashboardPage() {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid size={{ xs: 12 }}>
           <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 2.5 }}>
-            <Typography fontWeight={700} fontSize="0.95rem" mb={1}>Niños y niñas</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 1 }}>Niños y niñas</Typography>
             {cargando ? (
               <Skeleton variant="rectangular" height={260} sx={{ borderRadius: 2 }} />
             ) : generoData.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography fontSize="0.8rem" color="text.disabled">Sin datos de género registrados</Typography>
+                <Typography sx={{ fontSize: '0.8rem', color: 'text.disabled' }}>Sin datos de género registrados</Typography>
               </Box>
             ) : (
               <ResponsiveContainer width="100%" height={280}>

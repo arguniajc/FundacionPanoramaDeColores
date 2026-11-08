@@ -4,6 +4,7 @@ import {
   Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import AddIcon        from '@mui/icons-material/Add';
 import DeleteIcon     from '@mui/icons-material/Delete';
 import DownloadIcon   from '@mui/icons-material/Download';
@@ -74,17 +75,17 @@ export function TabInstitucionales({ onToast }) {
 
       <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         {cargando ? (
-          <Box display="flex" justifyContent="center" py={5}><CircularProgress sx={{ color: 'var(--color-primario)' }} /></Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress sx={{ color: 'var(--color-primario-texto)' }} /></Box>
         ) : (
           <TableContainer>
             <Table size="small">
               <TableHead>
-                <TableRow sx={{ bgcolor: '#fdfbff' }}>
-                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Título / Descripción</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)', display: { xs: 'none', sm: 'table-cell' } }}>Categoría</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)', display: { xs: 'none', md: 'table-cell' } }}>Subido por</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Fecha</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, color: 'var(--color-primario)' }}>Acciones</TableCell>
+                <TableRow sx={{ bgcolor: 'superficie2' }}>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario-texto)' }}>Título / Descripción</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario-texto)', display: { xs: 'none', sm: 'table-cell' } }}>Categoría</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario-texto)', display: { xs: 'none', md: 'table-cell' } }}>Subido por</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: 'var(--color-primario-texto)' }}>Fecha</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, color: 'var(--color-primario-texto)' }}>Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -97,14 +98,14 @@ export function TabInstitucionales({ onToast }) {
                 ) : filtrados.map(doc => (
                   <TableRow key={doc.id} hover>
                     <TableCell>
-                      <Typography variant="body2" fontWeight={600}
-                        sx={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <Typography variant="body2"
+                        sx={{ fontWeight: 600, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {doc.titulo}
                       </Typography>
                       {doc.descripcion && (
                         <Tooltip title={doc.descripcion.length > 60 ? doc.descripcion : ''} arrow placement="top">
-                          <Typography variant="caption" color="text.secondary"
-                            sx={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', cursor: doc.descripcion.length > 60 ? 'help' : 'default' }}>
+                          <Typography variant="caption"
+                            sx={{ color: 'text.secondary', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', cursor: doc.descripcion.length > 60 ? 'help' : 'default' }}>
                             {doc.descripcion.length > 60 ? `${doc.descripcion.slice(0, 60)}…` : doc.descripcion}
                           </Typography>
                         </Tooltip>
@@ -112,7 +113,7 @@ export function TabInstitucionales({ onToast }) {
                     </TableCell>
                     <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                       <Chip label={doc.categoria} size="small"
-                        sx={{ bgcolor: '#f0eaff', color: 'var(--color-primario)', fontWeight: 600, fontSize: '0.72rem' }} />
+                        sx={{ bgcolor: (t) => alpha(t.palette.primary.main, 0.12), color: 'var(--color-primario-texto)', fontWeight: 600, fontSize: '0.72rem' }} />
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.78rem', color: 'text.secondary', display: { xs: 'none', md: 'table-cell' } }}>
                       {doc.subidoPorEmail}
@@ -128,12 +129,12 @@ export function TabInstitucionales({ onToast }) {
                       </Tooltip>
                       <Tooltip title="Descargar">
                         <IconButton size="small" onClick={() => abrirArchivo(doc.url)}>
-                          <DownloadIcon fontSize="small" sx={{ color: 'var(--color-primario)' }} />
+                          <DownloadIcon fontSize="small" sx={{ color: 'var(--color-primario-texto)' }} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Eliminar">
                         <IconButton size="small" onClick={() => setConfirmar({ id: doc.id, nombre: doc.titulo })}>
-                          <DeleteIcon fontSize="small" sx={{ color: '#d32f2f' }} />
+                          <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
                         </IconButton>
                       </Tooltip>
                     </TableCell>

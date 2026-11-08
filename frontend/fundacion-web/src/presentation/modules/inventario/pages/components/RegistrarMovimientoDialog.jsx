@@ -7,6 +7,8 @@ import {
 import Dialog from '@/shared/components/DialogResponsive';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { COLOR, fmtNum } from './helpers';
+import { useTheme, alpha } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
@@ -34,6 +36,7 @@ const ESQUEMA = {
 };
 
 export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegistrado }) {
+  const theme = useTheme();
   const [form,      setForm]      = useState({ tipoMovimientoId: '', cantidad: '', motivo: '', donante: '', donanteObj: null, buscandoDonante: false });
   const [donantes,  setDonantes]  = useState([]);
   const [guardando, setGuardando] = useState(false);
@@ -116,7 +119,7 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
                 {tiposFiltrados.map(t => (
                   <MenuItem key={t.id} value={t.id}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, bgcolor: t.afectaStock === '+' ? '#16a34a' : '#dc2626' }} />
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, bgcolor: t.afectaStock === '+' ? 'success.main' : 'error.main' }} />
                       {t.nombre}
                     </Box>
                   </MenuItem>
@@ -126,10 +129,8 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
             </FormControl>
           </Grid>
           <Grid size={12}>
-            <TextField fullWidth size="small" label="Cantidad *" type="number"
-              inputProps={{ min: 0.01, step: 1 }} value={form.cantidad}
+            <TextField slotProps={{ htmlInput: { min: 0.01, step: 1 }, input: { endAdornment: <InputAdornment position="end">{item.unidadMedida}</InputAdornment> } }} fullWidth size="small" label="Cantidad *" type="number" value={form.cantidad}
               onChange={e => set('cantidad', e.target.value)}
-              InputProps={{ endAdornment: <InputAdornment position="end">{item.unidadMedida}</InputAdornment> }}
               {...v.props('cantidad')}
             />
           </Grid>
@@ -145,7 +146,7 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
                 onChange={(_, v) => set('donanteObj', typeof v === 'object' ? v : null)}
                 renderInput={params => (
                   <TextField {...params} label="Donante" placeholder="Buscar donante o escribir nombre…"
-                    InputProps={{ ...params.InputProps, endAdornment: form.buscandoDonante ? <CircularProgress size={16} /> : params.InputProps.endAdornment }} />
+                    slotProps={{ ...params.slotProps, input: { ...params.slotProps.input, endAdornment: form.buscandoDonante ? <CircularProgress size={16} /> : params.slotProps.input.endAdornment } }} />
                 )}
               />
             </Grid>
@@ -157,11 +158,11 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
           {tipoSel && form.cantidad && (
             <Grid size={12}>
               <Box sx={{
-                bgcolor: tipoSel.afectaStock === '+' ? '#f0fdf4' : '#fef2f2',
-                border: `1px solid ${tipoSel.afectaStock === '+' ? '#bbf7d0' : '#fecaca'}`,
+                bgcolor: colorEstado(tipoSel.afectaStock === '+' ? 'exito' : 'error', theme.palette.mode).fondo,
+                border: '1px solid', borderColor: alpha(tipoSel.afectaStock === '+' ? theme.palette.success.main : theme.palette.error.main, 0.35),
                 borderRadius: 1.5, px: 2, py: 1,
               }}>
-                <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: tipoSel.afectaStock === '+' ? '#15803d' : '#dc2626' }}>
+                <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: colorEstado(tipoSel.afectaStock === '+' ? 'exito' : 'error', theme.palette.mode).texto }}>
                   Stock resultante estimado:{' '}
                   {tipoSel.afectaStock === '+'
                     ? fmtNum(Number(item.stockActual) + Number(form.cantidad || 0))
@@ -177,7 +178,7 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
         <Button variant="contained" onClick={guardar} disabled={guardando}
-          sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: '#3b1270' } }}>
+          sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: 'var(--color-gradiente)' } }}>
           {guardando ? <CircularProgress size={20} color="inherit" /> : 'Registrar'}
         </Button>
       </DialogActions>

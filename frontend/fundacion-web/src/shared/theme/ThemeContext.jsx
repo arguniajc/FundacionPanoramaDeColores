@@ -5,6 +5,8 @@ import { ThemeCtx } from './useThemeMode';
 import { PALETA } from './paleta';
 
 const MODO_KEY = 'themeMode';
+// Pantallas de celular (< sm): zonas táctiles de al menos 40px
+const CELULAR = '@media (max-width: 599.95px)';
 
 /** Modo inicial: el guardado o, la primera vez, el del sistema operativo. */
 function modoInicial() {
@@ -44,6 +46,13 @@ export function AppThemeProvider({ children }) {
     document.documentElement.dataset.modo = mode;
     document.documentElement.style.colorScheme = mode;
   }, [mode]);
+
+  // --color-primario es el de la configuración (fondos y botones con texto blanco);
+  // --color-primario-texto es su versión legible en el modo actual, para textos, íconos y bordes.
+  const primarioTexto = primarioPara(mode, colorPrimario).main;
+  useEffect(() => {
+    document.documentElement.style.setProperty('--color-primario-texto', primarioTexto);
+  }, [primarioTexto]);
 
   const theme = useMemo(() => {
     const p = PALETA[mode];
@@ -88,13 +97,15 @@ export function AppThemeProvider({ children }) {
           defaultProps: { disableElevation: true },
           styleOverrides: {
             root: { textTransform: 'none', fontWeight: 600, letterSpacing: '0.01em', borderRadius: 8 },
-            sizeSmall:  { padding: '5px 12px' },
+            sizeSmall:  { padding: '5px 12px', [CELULAR]: { minHeight: 40 } },
             sizeMedium: { padding: '7px 16px' },
             sizeLarge:  { padding: '10px 22px' },
             outlined: { borderColor: p.borde },
           },
         },
-        MuiIconButton: { styleOverrides: { root: { borderRadius: 8 } } },
+        MuiIconButton: { styleOverrides: { root: { borderRadius: 8, [CELULAR]: { minWidth: 40, minHeight: 40 } } } },
+        MuiToggleButton: { styleOverrides: { root: { [CELULAR]: { minHeight: 40 } } } },
+        MuiMenuItem: { styleOverrides: { root: { [CELULAR]: { minHeight: 44 } } } },
         MuiPaper: {
           defaultProps: { elevation: 0 },
           styleOverrides: {
@@ -119,14 +130,17 @@ export function AppThemeProvider({ children }) {
         MuiChip: { styleOverrides: { root: { fontWeight: 600, borderRadius: 6 } } },
         MuiAlert: { styleOverrides: { root: { borderRadius: 10 } } },
         MuiTableContainer: { styleOverrides: { root: { borderRadius: 12 } } },
+        // El fondo va en la cabecera (no en cada celda) para que las páginas que pintan
+        // su propia cabecera (fila con color de marca y texto blanco) no queden tapadas.
+        MuiTableHead: { styleOverrides: { root: { backgroundColor: p.superficie2 } } },
         MuiTableCell: {
           styleOverrides: {
             root: { padding: '10px 14px', borderColor: p.borde },
             head: {
               padding: '10px 14px', fontWeight: 700, fontSize: '0.72rem',
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-              color: p.textoSuave, backgroundColor: p.superficie2,
+              textTransform: 'uppercase', letterSpacing: '0.04em', color: p.textoSuave,
             },
+            stickyHeader: { backgroundColor: p.superficie2 },
           },
         },
         MuiTableRow: { styleOverrides: { root: { '&.MuiTableRow-hover:hover': { backgroundColor: p.hover } } } },

@@ -82,10 +82,9 @@ export function DialogPresupuesto({ open, modo, data, categorias, programas, pre
             </FormControl>
           </Grid>
           <Grid size={12}>
-            <TextField fullWidth label="Monto presupuestado *" type="number" size="small"
+            <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Monto presupuestado *" type="number" size="small"
               value={form.montoPresupuestado} onChange={set('montoPresupuestado')}
-              {...v.props('montoPresupuestado')}
-              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />
+              {...v.props('montoPresupuestado')} />
           </Grid>
         </Grid>
       </DialogContent>

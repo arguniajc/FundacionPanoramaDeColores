@@ -11,9 +11,10 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon       from '@mui/icons-material/Error';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
-import { BRAND_COLOR } from '@/shared/constants/brand';
+import { alpha, useTheme } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 
-const COLOR = BRAND_COLOR;
+const COLOR = 'primary.main';
 
 // ── Columnas de la plantilla ───────────────────────────────────────────────────
 const COLS = [
@@ -158,6 +159,11 @@ async function generarPlantilla() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
+  const theme    = useTheme();
+  const tonoOk   = colorEstado('exito', theme.palette.mode);
+  const tonoAv   = colorEstado('aviso', theme.palette.mode);
+  const tonoErr  = colorEstado('error', theme.palette.mode);
+  const tinte    = alpha(theme.palette.primary.main, 0.06);
   const inputRef = useRef();
   const [archivo,           setArchivo]           = useState(null);
   const [filas,             setFilas]             = useState([]);
@@ -249,10 +255,10 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
       </DialogTitle>
       <DialogContent dividers>
         {/* Plantilla */}
-        <Box sx={{ mb: 2, display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 1.5, bgcolor: '#f5f0ff', borderRadius: 2, border: '1px solid #e2d9f3' }}>
-          <Box flex={1}>
-            <Typography fontWeight={700} fontSize="0.85rem">Descarga la plantilla .xlsx</Typography>
-            <Typography fontSize="0.72rem" color="text.secondary" mt={0.3}>
+        <Box sx={{ mb: 2, display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 1.5, bgcolor: tinte, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>Descarga la plantilla .xlsx</Typography>
+            <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mt: 0.3 }}>
               Incluye <b>nombres amigables</b> en las columnas, pistas de formato en la fila 2,
               hoja de ejemplos y hoja de referencia con valores válidos.
               Los campos marcados con <b>*</b> son obligatorios.
@@ -260,9 +266,9 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.8 }}>
               {COLS.filter(c => c.req).map(c => (
                 <Chip key={c.field} label={c.header.replace(' *', '')} size="small"
-                  sx={{ fontSize: '0.65rem', bgcolor: '#ede9fe', color: COLOR, fontWeight: 700, height: 18 }} />
+                  sx={{ fontSize: '0.65rem', bgcolor: alpha(theme.palette.primary.main, 0.12), color: COLOR, fontWeight: 700, height: 18 }} />
               ))}
-              <Typography fontSize="0.65rem" color="text.secondary" alignSelf="center">← obligatorios</Typography>
+              <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', alignSelf: 'center' }}>← obligatorios</Typography>
             </Box>
           </Box>
           <Button variant="outlined" size="small" startIcon={generandoPlantilla ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon />}
@@ -279,20 +285,20 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
           <Box
             onClick={() => inputRef.current?.click()}
             sx={{
-              border: `2px dashed ${archivo ? COLOR : '#d1c4e9'}`,
+              border: '2px dashed', borderColor: archivo ? COLOR : 'divider',
               borderRadius: 2, p: 3, textAlign: 'center', cursor: 'pointer',
-              bgcolor: archivo ? '#f5f0ff' : 'transparent',
-              '&:hover': { bgcolor: '#f5f0ff', borderColor: COLOR },
+              bgcolor: archivo ? tinte : 'transparent',
+              '&:hover': { bgcolor: tinte, borderColor: COLOR },
               mb: 2,
             }}
           >
             <input ref={inputRef} type="file" accept=".xlsx,.xls" hidden onChange={handleArchivo} />
-            <UploadFileIcon sx={{ fontSize: 36, color: archivo ? COLOR : '#9e9e9e', mb: 1 }} />
-            <Typography fontWeight={700} color={archivo ? COLOR : 'text.secondary'}>
+            <UploadFileIcon sx={{ fontSize: 36, color: archivo ? COLOR : 'text.disabled', mb: 1 }} />
+            <Typography sx={{ fontWeight: 700, color: archivo ? COLOR : 'text.secondary' }}>
               {archivo ? archivo.name : 'Haz clic para seleccionar un archivo .xlsx'}
             </Typography>
             {archivo && (
-              <Typography fontSize="0.75rem" color="text.secondary" mt={0.5}>
+              <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mt: 0.5 }}>
                 {(archivo.size / 1024).toFixed(1)} KB — {filas.length} fila(s) leída(s)
               </Typography>
             )}
@@ -314,26 +320,26 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
         {/* Vista previa — todas las filas con scroll */}
         {filas.length > 0 && !resultado && (
           <Box>
-            <Typography fontSize="0.8rem" fontWeight={700} mb={1} color="text.secondary">
+            <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 1, color: 'text.secondary' }}>
               Vista previa — {filas.length} fila(s) leída(s)
               {filasInvalidas.length > 0 && ` · ${filasInvalidas.length} con errores (resaltadas en rojo)`}:
             </Typography>
-            <Box sx={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 300, borderRadius: 1, border: '1px solid #e0e0e0' }}>
+            <Box sx={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 300, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
               <Table size="small" stickyHeader>
                 <TableHead>
-                  <TableRow sx={{ bgcolor: '#f5f0ff' }}>
-                    <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR, bgcolor: '#f5f0ff' }}>#</TableCell>
+                  <TableRow sx={{ bgcolor: 'superficie2' }}>
+                    <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR, bgcolor: 'superficie2' }}>#</TableCell>
                     {['Primer nombre','Primer apellido','Fecha nac.','Documento','Acudiente'].map(h => (
-                      <TableCell key={h} sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR, whiteSpace: 'nowrap', bgcolor: '#f5f0ff' }}>{h}</TableCell>
+                      <TableCell key={h} sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR, whiteSpace: 'nowrap', bgcolor: 'superficie2' }}>{h}</TableCell>
                     ))}
-                    <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR, bgcolor: '#f5f0ff' }}>Estado</TableCell>
+                    <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700, color: COLOR, bgcolor: 'superficie2' }}>Estado</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filas.map((f, i) => {
                     const errs = validarFila(f);
                     return (
-                      <TableRow key={i} sx={{ bgcolor: errs.length ? '#fff5f5' : 'inherit' }}>
+                      <TableRow key={i} sx={{ bgcolor: errs.length ? alpha(theme.palette.error.main, 0.08) : 'inherit' }}>
                         <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{i + 1}</TableCell>
                         <TableCell sx={{ fontSize: '0.75rem' }}>{f.primerNombre || '—'}</TableCell>
                         <TableCell sx={{ fontSize: '0.75rem' }}>{f.primerApellido || '—'}</TableCell>
@@ -343,7 +349,7 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
                         <TableCell sx={{ fontSize: '0.75rem' }}>
                           {errs.length === 0
                             ? <Chip label="OK" color="success" size="small" sx={{ fontSize: '0.65rem', height: 18 }} />
-                            : <Box component="span" sx={{ color: '#dc2626', fontSize: '0.7rem' }}>{errs.join('; ')}</Box>
+                            : <Box component="span" sx={{ color: 'error.main', fontSize: '0.7rem' }}>{errs.join('; ')}</Box>
                           }
                         </TableCell>
                       </TableRow>
@@ -359,26 +365,26 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
         {resultado && (
           <Box>
             <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-              <Box sx={{ p: 1.5, bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2, flex: 1, textAlign: 'center', minWidth: 100 }}>
-                <Typography fontSize="1.6rem" fontWeight={800} color="#16a34a">{resultado.insertados}</Typography>
-                <Typography fontSize="0.75rem" color="text.secondary">Insertados</Typography>
+              <Box sx={{ p: 1.5, bgcolor: tonoOk.fondo, border: '1px solid', borderColor: alpha(theme.palette.success.main, 0.3), borderRadius: 2, flex: 1, textAlign: 'center', minWidth: 100 }}>
+                <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: 'success.main' }}>{resultado.insertados}</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>Insertados</Typography>
               </Box>
-              <Box sx={{ p: 1.5, bgcolor: '#fffbeb', border: '1px solid #fde68a', borderRadius: 2, flex: 1, textAlign: 'center', minWidth: 100 }}>
-                <Typography fontSize="1.6rem" fontWeight={800} color="#d97706">{resultado.omitidos}</Typography>
-                <Typography fontSize="0.75rem" color="text.secondary">Omitidos (duplicados)</Typography>
+              <Box sx={{ p: 1.5, bgcolor: tonoAv.fondo, border: '1px solid', borderColor: alpha(theme.palette.warning.main, 0.3), borderRadius: 2, flex: 1, textAlign: 'center', minWidth: 100 }}>
+                <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: 'warning.main' }}>{resultado.omitidos}</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>Omitidos (duplicados)</Typography>
               </Box>
-              <Box sx={{ p: 1.5, bgcolor: resultado.errores?.length ? '#fef2f2' : '#f0fdf4', border: `1px solid ${resultado.errores?.length ? '#fecaca' : '#bbf7d0'}`, borderRadius: 2, flex: 1, textAlign: 'center', minWidth: 100 }}>
-                <Typography fontSize="1.6rem" fontWeight={800} color={resultado.errores?.length ? '#dc2626' : '#16a34a'}>{resultado.errores?.length ?? 0}</Typography>
-                <Typography fontSize="0.75rem" color="text.secondary">Errores</Typography>
+              <Box sx={{ p: 1.5, bgcolor: resultado.errores?.length ? tonoErr.fondo : tonoOk.fondo, border: '1px solid', borderColor: alpha(resultado.errores?.length ? theme.palette.error.main : theme.palette.success.main, 0.3), borderRadius: 2, flex: 1, textAlign: 'center', minWidth: 100 }}>
+                <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: resultado.errores?.length ? 'error.main' : 'success.main' }}>{resultado.errores?.length ?? 0}</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>Errores</Typography>
               </Box>
             </Box>
             {resultado.errores?.length > 0 && (
               <Box>
-                <Typography fontSize="0.8rem" fontWeight={700} mb={1} color="#dc2626">Filas con error:</Typography>
-                <Box sx={{ maxHeight: 200, overflowY: 'auto', border: '1px solid #fecaca', borderRadius: 1 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 1, color: 'error.main' }}>Filas con error:</Typography>
+                <Box sx={{ maxHeight: 200, overflowY: 'auto', border: '1px solid', borderColor: alpha(theme.palette.error.main, 0.3), borderRadius: 1 }}>
                   <Table size="small">
                     <TableHead>
-                      <TableRow sx={{ bgcolor: '#fef2f2' }}>
+                      <TableRow sx={{ bgcolor: tonoErr.fondo }}>
                         <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700 }}>Fila</TableCell>
                         <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700 }}>Nombre</TableCell>
                         <TableCell sx={{ fontSize: '0.7rem', fontWeight: 700 }}>Motivo</TableCell>
@@ -389,7 +395,7 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
                         <TableRow key={i}>
                           <TableCell sx={{ fontSize: '0.75rem' }}>{e.fila}</TableCell>
                           <TableCell sx={{ fontSize: '0.75rem' }}>{e.nombre}</TableCell>
-                          <TableCell sx={{ fontSize: '0.75rem', color: '#dc2626' }}>{e.motivo}</TableCell>
+                          <TableCell sx={{ fontSize: '0.75rem', color: 'error.main' }}>{e.motivo}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -416,7 +422,7 @@ export function ImportarBeneficiariosDialog({ open, onClose, onImportado }) {
           ? <Button variant="outlined" onClick={reset} sx={{ borderColor: COLOR, color: COLOR }}>Importar otro archivo</Button>
           : <Button variant="contained" onClick={importar}
               disabled={!archivo || cargando || filasValidas.length === 0}
-              sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: '#3b1270' } }}>
+              sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: 'primary.dark' } }}>
               {cargando
                 ? <CircularProgress size={20} color="inherit" />
                 : `Importar ${filasValidas.length > 0 ? `${filasValidas.length} fila(s)` : ''}`}

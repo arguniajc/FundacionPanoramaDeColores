@@ -47,7 +47,7 @@ function KpiCard({ label, value, icon, color = 'primary.main', warn }) {
       <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: '12px !important' }}>
         <Box sx={{ color, fontSize: 32 }}>{icon}</Box>
         <Box>
-          <Typography variant="h5" fontWeight={700} color={color}>{value ?? '—'}</Typography>
+          <Typography sx={{ fontWeight: 700, color: color }} variant="h5">{value ?? '—'}</Typography>
           <Typography variant="body2">{label}</Typography>
         </Box>
       </CardContent>
@@ -127,8 +127,8 @@ export default function TalentoHumanoPage() {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Talento Humano</Typography>
-          <Typography variant="body2" color="text.secondary">Gestión del personal y novedades de la fundación</Typography>
+          <Typography sx={{ fontWeight: 700 }} variant="h5">Talento Humano</Typography>
+          <Typography sx={{ color: 'text.secondary' }} variant="body2">Gestión del personal y novedades de la fundación</Typography>
         </Box>
         {mainTab === 0 && puedo('talento_humano', 'crear') && (
           <Button variant="contained" startIcon={<AddIcon />}
@@ -185,15 +185,15 @@ export default function TalentoHumanoPage() {
             <KpiCard label="Total empleados" value={stats.total} icon={<PeopleIcon fontSize="inherit" />} color={BRAND_COLOR} />
           </Grid>
           <Grid size={{ xs: 6, sm: 3 }}>
-            <KpiCard label="Activos" value={stats.activos} icon={<BadgeIcon fontSize="inherit" />} color="#10B981" />
+            <KpiCard label="Activos" value={stats.activos} icon={<BadgeIcon fontSize="inherit" />} color="success.main" />
           </Grid>
           <Grid size={{ xs: 6, sm: 3 }}>
             <KpiCard label="Contratos vencen en 30 días" value={stats.contratosProximosVencer}
-              icon={<WarningAmberIcon fontSize="inherit" />} color="#F59E0B" warn={stats.contratosProximosVencer > 0} />
+              icon={<WarningAmberIcon fontSize="inherit" />} color="warning.main" warn={stats.contratosProximosVencer > 0} />
           </Grid>
           <Grid size={{ xs: 6, sm: 3 }}>
             <KpiCard label="Novedades pendientes" value={stats.novedadesPendientes}
-              icon={<NotificationsIcon fontSize="inherit" />} color="#EF4444" warn={stats.novedadesPendientes > 0} />
+              icon={<NotificationsIcon fontSize="inherit" />} color="error.main" warn={stats.novedadesPendientes > 0} />
           </Grid>
         </Grid>
       )}
@@ -202,11 +202,10 @@ export default function TalentoHumanoPage() {
 
       {/* Filtros */}
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-        <TextField
+        <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }}
           placeholder="Buscar por nombre, cargo, documento…"
           size="small" sx={{ minWidth: 280 }}
           value={busqueda} onChange={e => setBusqueda(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
         />
         <TextField select size="small" label="Estado" value={filtroActivo}
           onChange={e => setFiltroActivo(e.target.value)} sx={{ minWidth: 140 }}>
@@ -244,7 +243,7 @@ export default function TalentoHumanoPage() {
           ) : filtrados.length === 0 ? (
             <Box sx={{ py: 6, textAlign: 'center' }}>
               <PeopleIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
-              <Typography color="text.secondary" mt={1}>No hay empleados registrados</Typography>
+              <Typography sx={{ color: 'text.secondary', mt: 1 }}>No hay empleados registrados</Typography>
             </Box>
           ) : (
             filtrados.map(emp => (
@@ -267,7 +266,7 @@ export default function TalentoHumanoPage() {
                     <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
                       {emp.nombres} {emp.apellidos}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                    <Typography variant="caption" noWrap sx={{ color: 'text.secondary', display: 'block' }}>
                       {emp.cargo ?? 'Sin cargo'}{emp.area ? ` · ${emp.area}` : ''}
                     </Typography>
                   </Box>

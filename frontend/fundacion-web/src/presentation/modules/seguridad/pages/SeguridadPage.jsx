@@ -18,6 +18,8 @@ import { useToast } from '@/shared/context/useToast';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { useAuth } from '@/application/auth/useAuth';
 import TabAlmacenamiento from './TabAlmacenamiento';
+import { useTheme } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 
 // ── Permisos ──────────────────────────────────────────────────────────────────
 
@@ -93,16 +95,17 @@ const TIPO_LABELS = {
   nomina_liquidacion:       'Nómina — Liquidación',
 };
 
+// Tono de la paleta central por acción (colorEstado da fondo + texto según el modo)
 const ACCION_ESTILOS = {
-  creado:           { bg: '#dcfce7', color: '#166534' },
-  editado:          { bg: '#dbeafe', color: '#1e40af' },
-  eliminado:        { bg: '#fee2e2', color: '#991b1b' },
-  cerrado:          { bg: '#f3f4f6', color: '#374151' },
-  liquidado:        { bg: '#ede9fe', color: '#6d28d9' },
-  'auto-liquidado': { bg: '#ede9fe', color: '#6d28d9' },
-  anulado:          { bg: '#ffedd5', color: '#9a3412' },
-  movimiento:       { bg: '#e0f2fe', color: '#0369a1' },
-  transferencia:    { bg: '#e0f2fe', color: '#0369a1' },
+  creado:           'exito',
+  editado:          'info',
+  eliminado:        'error',
+  cerrado:          'neutro',
+  liquidado:        'marca',
+  'auto-liquidado': 'marca',
+  anulado:          'aviso',
+  movimiento:       'info',
+  transferencia:    'info',
 };
 
 const ACCIONES_FILTRO = [
@@ -114,6 +117,7 @@ const TAMANO_PAGINA = 50;
 
 function TabAuditoria() {
   const toast = useToast();
+  const theme = useTheme();
   const [tipos,        setTipos]        = useState([]);
   const [filtTipo,     setFiltTipo]     = useState('');
   const [filtAccion,   setFiltAccion]   = useState('');
@@ -201,13 +205,12 @@ function TabAuditoria() {
           </Select>
         </FormControl>
 
-        <TextField size="small" placeholder="Buscar usuario…" value={inputUsuario}
-          onChange={e => setInputUsuario(e.target.value)} sx={{ width: 200 }}
-          InputProps={{ startAdornment: (
+        <TextField slotProps={{ input: { startAdornment: (
             <InputAdornment position="start">
               <SearchIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
             </InputAdornment>
-          )}}
+          )} }} size="small" placeholder="Buscar usuario…" value={inputUsuario}
+          onChange={e => setInputUsuario(e.target.value)} sx={{ width: 200 }}
         />
 
         <TextField size="small" label="Desde" type="date" value={filtDesde}
@@ -234,7 +237,7 @@ function TabAuditoria() {
 
       {/* Contador */}
       {result && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
           {result.total.toLocaleString('es-CO')} evento{result.total !== 1 ? 's' : ''}
           {hayFiltros ? ' con estos filtros' : ' en total'}
           {totalPaginas > 1 && ` — página ${result.pagina} de ${totalPaginas}`}
@@ -268,7 +271,7 @@ function TabAuditoria() {
                   </TableCell>
                 </TableRow>
               ) : result.datos.map(ev => {
-                const est = ACCION_ESTILOS[ev.accion] ?? { bg: '#f3f4f6', color: '#374151' };
+                const est = colorEstado(ACCION_ESTILOS[ev.accion] ?? 'neutro', theme.palette.mode);
                 return (
                   <TableRow key={ev.id} hover>
                     <TableCell sx={{ fontSize: '0.78rem', whiteSpace: 'nowrap', color: 'text.secondary' }}>
@@ -284,7 +287,7 @@ function TabAuditoria() {
                     </TableCell>
                     <TableCell>
                       <Chip label={ev.accion} size="small"
-                        sx={{ bgcolor: est.bg, color: est.color, fontWeight: 700, fontSize: '0.68rem' }} />
+                        sx={{ bgcolor: est.fondo, color: est.texto, fontWeight: 700, fontSize: '0.68rem' }} />
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.82rem', color: 'text.secondary' }}>
                       {ev.usuarioEmail ?? '—'}
@@ -394,8 +397,8 @@ export default function SeguridadPage() {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Seguridad</Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography sx={{ fontWeight: 700 }} variant="h5">Seguridad</Typography>
+          <Typography sx={{ color: 'text.secondary' }} variant="body2">
             Permisos por rol y registro de auditoría del sistema
           </Typography>
         </Box>
@@ -487,7 +490,7 @@ export default function SeguridadPage() {
             </Table>
           </TableContainer>
 
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1, display: 'block' }}>
             Clic en el nombre del módulo o en el encabezado de acción para marcar/desmarcar toda la fila o columna.
           </Typography>
         </>

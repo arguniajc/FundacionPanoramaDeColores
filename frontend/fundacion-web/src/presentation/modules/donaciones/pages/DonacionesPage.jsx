@@ -20,7 +20,7 @@ export default function DonacionesPage() {
       <Box sx={{ mb: 2.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
           <Box sx={{ width: 4, height: 26, borderRadius: 1, bgcolor: COLOR_DONANTES }} />
-          <Typography variant="h5" fontWeight={800}>Donantes y Donaciones</Typography>
+          <Typography sx={{ fontWeight: 800 }} variant="h5">Donantes y Donaciones</Typography>
         </Box>
         <Typography sx={{ color: 'text.secondary', fontSize: '0.875rem', pl: 0.5 }}>
           Gestión de donantes y registro de donaciones en dinero o especie

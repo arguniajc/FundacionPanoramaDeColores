@@ -15,7 +15,7 @@ export default function ResumenErrores({
 
   return (
     <Alert severity="warning" onClose={onClose} sx={{ mx: 3, mt: 1.5, mb: 0, ...sx }}>
-      <Typography fontWeight={700} fontSize="0.85rem" mb={0.5}>
+      <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', mb: 0.5 }}>
         Corrige estos datos para {accion}:
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: '0.8rem', maxHeight: 160, overflowY: 'auto' }}>

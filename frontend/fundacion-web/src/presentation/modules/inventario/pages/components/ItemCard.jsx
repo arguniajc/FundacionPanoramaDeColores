@@ -9,12 +9,14 @@ import MoveDownIcon   from '@mui/icons-material/MoveDown';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import HandshakeIcon  from '@mui/icons-material/Handshake';
 import WarningIcon    from '@mui/icons-material/Warning';
+import { useTheme } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 import { COLOR, CAT_COLOR, fmtNum, estadoStock } from './helpers';
 
 const TENENCIA_LABEL = {
-  comodato:      { label: 'Comodato',       color: '#b45309', bg: '#fef3c7' },
-  donacion_uso:  { label: 'Donación en uso', color: '#0369a1', bg: '#e0f2fe' },
-  arrendamiento: { label: 'Arrendamiento',  color: '#6d28d9', bg: '#ede9fe' },
+  comodato:      { label: 'Comodato',       tono: 'aviso' },
+  donacion_uso:  { label: 'Donación en uso', tono: 'info' },
+  arrendamiento: { label: 'Arrendamiento',  tono: 'marca' },
 };
 
 function diasParaVencer(fechaStr) {
@@ -25,14 +27,16 @@ function diasParaVencer(fechaStr) {
 }
 
 export function ItemCard({ item, onMovimiento, onEditar, onEliminar, onHistorial, onTransferir }) {
+  const theme = useTheme();
   const est      = estadoStock(item);
   const catColor = CAT_COLOR[item.categoria] ?? '#6b7280';
   const tenencia = TENENCIA_LABEL[item.tipoTenencia];
+  const tonoTen  = tenencia ? colorEstado(tenencia.tono, theme.palette.mode) : null;
   const diasVenc = item.tipoTenencia === 'comodato' ? diasParaVencer(item.comodatoFechaFin) : null;
   const proxVencer = diasVenc !== null && diasVenc <= 30;
 
   return (
-    <Box sx={{ border: '1.5px solid #e2d9f3', borderRadius: 2, overflow: 'hidden', bgcolor: '#fdfbff', display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ border: '1.5px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
       <Box sx={{ px: 2, pt: 2, pb: 1.5, display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
         <Avatar sx={{ bgcolor: catColor, width: 40, height: 40, fontSize: '0.75rem', fontWeight: 800, flexShrink: 0 }}>
@@ -59,23 +63,23 @@ export function ItemCard({ item, onMovimiento, onEditar, onEliminar, onHistorial
             sx={{ bgcolor: `${catColor}15`, color: catColor, fontWeight: 700, fontSize: '0.68rem', height: 20 }} />
           {tenencia && (
             <Chip
-              icon={<HandshakeIcon sx={{ fontSize: '11px !important', color: `${tenencia.color} !important` }} />}
+              icon={<HandshakeIcon sx={{ fontSize: '11px !important', color: `${tonoTen.texto} !important` }} />}
               label={tenencia.label} size="small"
-              sx={{ bgcolor: tenencia.bg, color: tenencia.color, fontWeight: 700, fontSize: '0.68rem', height: 20, border: `1px solid ${tenencia.color}40` }} />
+              sx={{ bgcolor: tonoTen.fondo, color: tonoTen.texto, fontWeight: 700, fontSize: '0.68rem', height: 20, border: `1px solid ${tonoTen.texto}40` }} />
           )}
           {item.nombreSede && (
             <Chip icon={<LocationOnIcon sx={{ fontSize: '12px !important' }} />}
               label={item.nombreSede} size="small" variant="outlined"
-              sx={{ fontSize: '0.68rem', height: 20, borderColor: '#d9c9f5', color: 'text.secondary' }} />
+              sx={{ fontSize: '0.68rem', height: 20, borderColor: 'divider', color: 'text.secondary' }} />
           )}
         </Box>
 
         {/* Info comodato */}
         {item.tipoTenencia === 'comodato' && item.comodante && (
-          <Box sx={{ bgcolor: proxVencer ? '#fef3c7' : '#fafafa', border: `1px solid ${proxVencer ? '#f59e0b' : '#e5e7eb'}`, borderRadius: 1.5, px: 1.2, py: 0.8 }}>
-            <Box display="flex" alignItems="center" gap={0.5} mb={0.3}>
-              {proxVencer && <WarningIcon sx={{ fontSize: 13, color: '#d97706' }} />}
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: proxVencer ? '#b45309' : 'text.secondary' }}>
+          <Box sx={{ bgcolor: proxVencer ? colorEstado('aviso', theme.palette.mode).fondo : 'superficie2', border: '1px solid', borderColor: proxVencer ? 'warning.main' : 'divider', borderRadius: 1.5, px: 1.2, py: 0.8 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+              {proxVencer && <WarningIcon sx={{ fontSize: 13, color: 'warning.main' }} />}
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: proxVencer ? colorEstado('aviso', theme.palette.mode).texto : 'text.secondary' }}>
                 {item.comodante}
               </Typography>
               {item.comodatoContrato && (
@@ -83,7 +87,7 @@ export function ItemCard({ item, onMovimiento, onEditar, onEliminar, onHistorial
               )}
             </Box>
             {item.comodatoFechaFin && (
-              <Typography sx={{ fontSize: '0.63rem', color: proxVencer ? '#b45309' : 'text.secondary' }}>
+              <Typography sx={{ fontSize: '0.63rem', color: proxVencer ? colorEstado('aviso', theme.palette.mode).texto : 'text.secondary' }}>
                 Devolver:{' '}
                 {new Date(item.comodatoFechaFin + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
                 {diasVenc !== null && (
@@ -139,14 +143,14 @@ export function ItemCard({ item, onMovimiento, onEditar, onEliminar, onHistorial
       </Box>
 
       {/* Footer */}
-      <Box sx={{ px: 1.5, py: 1, bgcolor: 'rgba(78,27,149,0.04)', borderTop: '1.5px solid #e2d9f3', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box sx={{ px: 1.5, py: 1, bgcolor: 'rgba(78,27,149,0.04)', borderTop: '1.5px solid', borderTopColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Button size="small" variant="contained" startIcon={<SwapHorizIcon />} onClick={() => onMovimiento(item)}
-          sx={{ bgcolor: COLOR, fontWeight: 700, fontSize: '0.7rem', px: 1, '&:hover': { bgcolor: '#3b1270' } }}>
+          sx={{ bgcolor: COLOR, fontWeight: 700, fontSize: '0.7rem', px: 1, '&:hover': { bgcolor: 'var(--color-gradiente)' } }}>
           Movimiento
         </Button>
-        <Box display="flex" gap={0.3}>
+        <Box sx={{ display: 'flex', gap: 0.3 }}>
           <Tooltip title="Transferir a otra sede">
-            <IconButton size="small" onClick={() => onTransferir(item)} sx={{ color: '#0ea5e9' }}>
+            <IconButton size="small" onClick={() => onTransferir(item)} sx={{ color: 'info.main' }}>
               <MoveDownIcon fontSize="small" />
             </IconButton>
           </Tooltip>

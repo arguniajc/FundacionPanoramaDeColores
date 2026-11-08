@@ -13,12 +13,14 @@ import { donantesRepository } from '@/infrastructure/repositories/donantesReposi
 import { useAuth } from '@/application/auth/useAuth';
 import { useConfirm } from '@/shared/components/useConfirm';
 import { COLOR_DONANTES, fmtMoney } from './helpers';
+import { useTheme, alpha } from '@mui/material/styles';
 import { StatCard } from './StatCard';
 import { DonanteCard }   from './DonanteCard';
 import { DonanteDialog } from './DonanteDialog';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 
 export function TabDonantes({ onNuevaDonacion }) {
+  const theme = useTheme();
   const { puedo } = useAuth();
   const confirm = useConfirm();
   const [donantes,  setDonantes]  = useState([]);
@@ -71,31 +73,30 @@ export function TabDonantes({ onNuevaDonacion }) {
         <Grid size={{ xs: 12, sm: 4 }}>
           <StatCard icon={<VolunteerActivismIcon />} label="Total donantes"
             value={donantes.length} color={COLOR_DONANTES}
-            borderColor="#c8e6c9" bgColor="#f9fdf9" loading={cargando} />
+            borderColor={alpha(theme.palette.secondary.main, 0.35)} bgColor={alpha(theme.palette.secondary.main, 0.06)} loading={cargando} />
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
           <StatCard icon={<AttachMoneyIcon />} label="Total donado (dinero)"
-            value={fmtMoney(totalDinero)} color="#d97706"
-            borderColor="#fde68a" bgColor="#fffbf0" loading={cargando} />
+            value={fmtMoney(totalDinero)} color={theme.palette.warning.main}
+            borderColor={alpha(theme.palette.warning.main, 0.35)} bgColor={alpha(theme.palette.warning.main, 0.06)} loading={cargando} />
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
           <StatCard icon={<VolunteerActivismIcon />} label="Con donaciones"
-            value={totalConDonacion} color="#0ea5e9"
-            borderColor="#bae6fd" bgColor="#f0f9ff" loading={cargando} />
+            value={totalConDonacion} color={theme.palette.info.main}
+            borderColor={alpha(theme.palette.info.main, 0.35)} bgColor={alpha(theme.palette.info.main, 0.06)} loading={cargando} />
         </Grid>
       </Grid>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5, flexWrap: 'wrap', gap: 1.5 }}>
-        <TextField size="small" placeholder="Buscar por nombre, documento o email…"
-          value={buscar} onChange={e => setBuscar(e.target.value)}
-          InputProps={{
+        <TextField slotProps={{ input: {
             startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment>,
             endAdornment: buscar ? (
               <InputAdornment position="end">
                 <IconButton size="small" onClick={() => setBuscar('')}><CloseIcon fontSize="small" /></IconButton>
               </InputAdornment>
             ) : null,
-          }}
+          } }} size="small" placeholder="Buscar por nombre, documento o email…"
+          value={buscar} onChange={e => setBuscar(e.target.value)}
           sx={{ width: { xs: '100%', sm: 340 } }}
         />
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -120,7 +121,7 @@ export function TabDonantes({ onNuevaDonacion }) {
           {puedo('donantes', 'crear') && (
             <Button variant="contained" startIcon={<AddIcon />}
               onClick={() => setDialDon({ open: true, donante: null })}
-              sx={{ bgcolor: COLOR_DONANTES, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#1e7a38' } }}>
+              sx={{ bgcolor: COLOR_DONANTES, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: 'secondary.dark' } }}>
               Nuevo donante
             </Button>
           )}
@@ -129,13 +130,13 @@ export function TabDonantes({ onNuevaDonacion }) {
 
       {cargando && donantes.length === 0 ? (
         <Box sx={{ py: 8, textAlign: 'center' }}>
-          <VolunteerActivismIcon sx={{ fontSize: 48, color: '#a5d6a7', mb: 1.5 }} />
-          <Typography fontWeight={700} color="text.secondary">Cargando donantes…</Typography>
+          <VolunteerActivismIcon sx={{ fontSize: 48, color: alpha(theme.palette.secondary.main, 0.5), mb: 1.5 }} />
+          <Typography sx={{ fontWeight: 700, color: 'text.secondary' }}>Cargando donantes…</Typography>
         </Box>
       ) : donantes.length === 0 ? (
-        <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed #c8e6c9', borderRadius: 2, bgcolor: '#f9fdf9' }}>
-          <VolunteerActivismIcon sx={{ fontSize: 48, color: '#a5d6a7', mb: 1.5 }} />
-          <Typography fontWeight={700} color="text.secondary">
+        <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed', borderColor: alpha(theme.palette.secondary.main, 0.35), borderRadius: 2, bgcolor: alpha(theme.palette.secondary.main, 0.06) }}>
+          <VolunteerActivismIcon sx={{ fontSize: 48, color: alpha(theme.palette.secondary.main, 0.5), mb: 1.5 }} />
+          <Typography sx={{ fontWeight: 700, color: 'text.secondary' }}>
             {buscar ? 'No se encontraron donantes' : 'No hay donantes registrados'}
           </Typography>
           {!buscar && puedo('donantes', 'crear') && (
@@ -147,7 +148,7 @@ export function TabDonantes({ onNuevaDonacion }) {
           )}
         </Box>
       ) : (
-        <Grid container spacing={2} alignItems="stretch">
+        <Grid sx={{ alignItems: 'stretch' }} container spacing={2}>
           {donantes.map(d => (
             <Grid key={d.id} size={{ xs: 12, sm: 6, lg: 4 }}>
               <DonanteCard

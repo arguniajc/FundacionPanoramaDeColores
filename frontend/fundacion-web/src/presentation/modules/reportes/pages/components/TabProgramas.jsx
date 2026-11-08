@@ -12,9 +12,10 @@ import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { GraficaCard, KpiCard, SkeletonSection, TooltipCustom } from './helpers';
 import { COLORES } from './colores';
-import { BRAND_COLOR } from '@/shared/constants/brand';
+import { useTheme } from '@mui/material/styles';
 
 export function TabProgramas() {
+  const theme = useTheme();
   const [data,  setData]  = useState(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -55,19 +56,19 @@ export function TabProgramas() {
         </Box>
       </Grid>
       <Grid size={{ xs: 6, sm: 4, md: 4 }}>
-        <KpiCard label="Total programas" value={resumen.total} icon={<FolderIcon fontSize="inherit" />} color={BRAND_COLOR} />
+        <KpiCard label="Total programas" value={resumen.total} icon={<FolderIcon fontSize="inherit" />} color="primary.main" />
       </Grid>
       <Grid size={{ xs: 6, sm: 4, md: 4 }}>
-        <KpiCard label="Programas activos" value={resumen.activos} icon={<FolderIcon fontSize="inherit" />} color="#10B981" />
+        <KpiCard label="Programas activos" value={resumen.activos} icon={<FolderIcon fontSize="inherit" />} color="success.main" />
       </Grid>
       <Grid size={{ xs: 6, sm: 4, md: 4 }}>
-        <KpiCard label="Total inscripciones activas" value={resumen.totalInscritos} icon={<PeopleIcon fontSize="inherit" />} color="#2563EB" />
+        <KpiCard label="Total inscripciones activas" value={resumen.totalInscritos} icon={<PeopleIcon fontSize="inherit" />} color="info.main" />
       </Grid>
 
       <Grid size={{ xs: 12, md: 8 }}>
         <GraficaCard titulo="Inscripciones por programa" height={300}>
           <BarChart data={inscritosPorPrograma}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
             <XAxis dataKey="programa" tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
             <Tooltip content={<TooltipCustom />} />
@@ -93,7 +94,7 @@ export function TabProgramas() {
       <Grid size={{ xs: 12, md: 6 }}>
         <GraficaCard titulo="Programas por sede">
           <BarChart data={porSede}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
             <XAxis dataKey="etiqueta" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
             <Tooltip content={<TooltipCustom />} />

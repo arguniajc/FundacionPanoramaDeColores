@@ -19,6 +19,7 @@ import LocationOnIcon      from '@mui/icons-material/LocationOn';
 import { donantesRepository } from '@/infrastructure/repositories/donantesRepository';
 import { DonanteDialog } from '@/presentation/modules/donaciones/pages/components/DonanteDialog';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { useTheme, alpha } from '@mui/material/styles';
 
 const COLOR = 'var(--color-secundario)';
 
@@ -32,7 +33,7 @@ function fmtFecha(d) {
 // ── StatCard ──────────────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, color, loading }) {
   return (
-    <Box sx={{ border: '1.5px solid #c8e6c9', borderRadius: 2, p: 2.5, bgcolor: '#f9fdf9', display: 'flex', alignItems: 'center', gap: 2 }}>
+    <Box sx={{ border: '1.5px solid', borderColor: 'divider', borderRadius: 2, p: 2.5, bgcolor: 'background.paper', display: 'flex', alignItems: 'center', gap: 2 }}>
       <Box sx={{ width: 46, height: 46, borderRadius: '50%', bgcolor: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color, flexShrink: 0 }}>
         {icon}
       </Box>
@@ -50,18 +51,19 @@ function StatCard({ icon, label, value, color, loading }) {
 
 // ── DonanteCard ───────────────────────────────────────────────────────────────
 function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) {
+  const theme = useTheme();
   const esEmpresa = donante.tipo === 'empresa';
-  const colorAvatar = esEmpresa ? '#0ea5e9' : COLOR;
+  const colorAvatar = esEmpresa ? theme.palette.info.main : COLOR;
 
   return (
-    <Box sx={{ border: '1.5px solid #c8e6c9', borderRadius: 2, overflow: 'hidden', bgcolor: '#f9fdf9', display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ border: '1.5px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
       <Box sx={{ px: 2, pt: 2, pb: 1.5, display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
         <Avatar sx={{ bgcolor: colorAvatar, width: 42, height: 42, fontWeight: 800, fontSize: '0.85rem', flexShrink: 0 }}>
           {donante.nombre.slice(0, 2).toUpperCase()}
         </Avatar>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography fontWeight={800} sx={{ fontSize: '0.92rem', lineHeight: 1.3 }} noWrap title={donante.nombre}>
+          <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', lineHeight: 1.3 }} noWrap title={donante.nombre}>
             {donante.nombre}
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.5, mt: 0.3 }}>
@@ -142,13 +144,13 @@ function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) {
       </Box>
 
       {/* Footer */}
-      <Box sx={{ px: 1.5, py: 1, bgcolor: 'rgba(45,152,79,0.04)', borderTop: '1.5px solid #c8e6c9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box sx={{ px: 1.5, py: 1, bgcolor: 'rgba(45,152,79,0.04)', borderTop: '1.5px solid', borderTopColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Button size="small" variant="contained" startIcon={<VolunteerActivismIcon />}
           onClick={() => onNuevaDonacion(donante)}
-          sx={{ bgcolor: COLOR, fontWeight: 700, fontSize: '0.7rem', px: 1, '&:hover': { bgcolor: '#1e7a38' } }}>
+          sx={{ bgcolor: COLOR, fontWeight: 700, fontSize: '0.7rem', px: 1, '&:hover': { bgcolor: 'secondary.dark' } }}>
           Donación
         </Button>
-        <Box display="flex" gap={0.3}>
+        <Box sx={{ display: 'flex', gap: 0.3 }}>
           <Tooltip title="Editar">
             <IconButton size="small" onClick={() => onEditar(donante)}><EditIcon fontSize="small" /></IconButton>
           </Tooltip>
@@ -162,6 +164,7 @@ function DonanteCard({ donante, onEditar, onEliminar, onNuevaDonacion }) {
 }
 
 export default function DonantesPage() {
+  const theme = useTheme();
   const confirm = useConfirm();
   const [donantes,  setDonantes]  = useState([]);
   const [cargando,  setCargando]  = useState(false);
@@ -216,7 +219,7 @@ export default function DonantesPage() {
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
             <Box sx={{ width: 4, height: 26, borderRadius: 1, bgcolor: COLOR }} />
-            <Typography variant="h5" fontWeight={800}>Donantes</Typography>
+            <Typography sx={{ fontWeight: 800 }} variant="h5">Donantes</Typography>
           </Box>
           <Typography sx={{ color: 'text.secondary', fontSize: '0.875rem', pl: 0.5 }}>
             Personas y empresas que apoyan la fundación
@@ -224,7 +227,7 @@ export default function DonantesPage() {
         </Box>
         <Button variant="contained" startIcon={<AddIcon />}
           onClick={() => setDialDon({ open: true, donante: null })}
-          sx={{ bgcolor: COLOR, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: '#1e7a38' } }}>
+          sx={{ bgcolor: COLOR, fontWeight: 700, borderRadius: 2, '&:hover': { bgcolor: 'secondary.dark' } }}>
           Nuevo donante
         </Button>
       </Box>
@@ -235,21 +238,20 @@ export default function DonantesPage() {
           <StatCard icon={<VolunteerActivismIcon />} label="Total donantes" value={totalDonantes} color={COLOR} loading={cargando} />
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <StatCard icon={<AttachMoneyIcon />} label="Total donado (dinero)" value={fmtMoney(totalDinero)} color="#d97706" loading={cargando} />
+          <StatCard icon={<AttachMoneyIcon />} label="Total donado (dinero)" value={fmtMoney(totalDinero)} color={theme.palette.warning.main} loading={cargando} />
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <StatCard icon={<VolunteerActivismIcon />} label="Con donaciones" value={totalConDonacion} color="#0ea5e9" loading={cargando} />
+          <StatCard icon={<VolunteerActivismIcon />} label="Con donaciones" value={totalConDonacion} color={theme.palette.info.main} loading={cargando} />
         </Grid>
       </Grid>
 
       {/* Búsqueda */}
       <Box sx={{ mb: 2.5 }}>
-        <TextField size="small" placeholder="Buscar por nombre, documento o email…"
-          value={buscar} onChange={e => setBuscar(e.target.value)}
-          InputProps={{
+        <TextField slotProps={{ input: {
             startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment>,
             endAdornment: buscar ? <InputAdornment position="end"><IconButton size="small" onClick={() => setBuscar('')}><CloseIcon fontSize="small" /></IconButton></InputAdornment> : null,
-          }}
+          } }} size="small" placeholder="Buscar por nombre, documento o email…"
+          value={buscar} onChange={e => setBuscar(e.target.value)}
           sx={{ width: { xs: '100%', sm: 340 } }}
         />
       </Box>
@@ -258,9 +260,9 @@ export default function DonantesPage() {
       {cargando && donantes.length === 0 ? (
         <Box sx={{ py: 8, textAlign: 'center' }}><CircularProgress /></Box>
       ) : donantes.length === 0 ? (
-        <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed #c8e6c9', borderRadius: 2, bgcolor: '#f9fdf9' }}>
-          <VolunteerActivismIcon sx={{ fontSize: 48, color: '#a5d6a7', mb: 1.5 }} />
-          <Typography fontWeight={700} color="text.secondary">
+        <Box sx={{ py: 8, textAlign: 'center', border: '1.5px dashed', borderColor: alpha(theme.palette.secondary.main, 0.35), borderRadius: 2, bgcolor: alpha(theme.palette.secondary.main, 0.06) }}>
+          <VolunteerActivismIcon sx={{ fontSize: 48, color: alpha(theme.palette.secondary.main, 0.5), mb: 1.5 }} />
+          <Typography sx={{ fontWeight: 700, color: 'text.secondary' }}>
             {buscar ? 'No se encontraron donantes' : 'No hay donantes registrados'}
           </Typography>
           {!buscar && (
@@ -272,7 +274,7 @@ export default function DonantesPage() {
           )}
         </Box>
       ) : (
-        <Grid container spacing={2} alignItems="stretch">
+        <Grid sx={{ alignItems: 'stretch' }} container spacing={2}>
           {donantes.map(d => (
             <Grid key={d.id} size={{ xs: 12, sm: 6, lg: 4 }}>
               <DonanteCard

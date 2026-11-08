@@ -16,7 +16,7 @@ export function TabReporteContador({
 }) {
   return (
     <Box>
-      <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'superficie2', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <FormControl size="small" sx={{ minWidth: 140 }}>
             <InputLabel>Mes</InputLabel>
@@ -47,12 +47,12 @@ export function TabReporteContador({
 
       {resumenAnual && (
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+          <Typography sx={{ fontWeight: 700 }} variant="subtitle1" gutterBottom>
             Resumen anual {resumenAnual.anio}
           </Typography>
           <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
             <Table size="small">
-              <TableHead sx={{ bgcolor: 'grey.50' }}>
+              <TableHead sx={{ bgcolor: 'superficie2' }}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700 }}>Mes</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700, color: 'success.main' }}>Ingresos</TableCell>
@@ -71,7 +71,7 @@ export function TabReporteContador({
                     </TableCell>
                   </TableRow>
                 ))}
-                <TableRow sx={{ bgcolor: 'grey.100' }}>
+                <TableRow sx={{ bgcolor: 'action.hover' }}>
                   <TableCell sx={{ fontWeight: 700 }}>TOTAL</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700, color: 'success.main' }}>{fmt(resumenAnual.totalIngresos)}</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700, color: 'error.main' }}>{fmt(resumenAnual.totalEgresos)}</TableCell>
@@ -86,7 +86,7 @@ export function TabReporteContador({
       )}
 
       {!reporte && (
-        <Typography color="text.secondary" textAlign="center" sx={{ py: 6 }}>
+        <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 6 }}>
           Selecciona el mes y año, luego haz clic en "Generar Reporte"
         </Typography>
       )}
@@ -95,7 +95,7 @@ export function TabReporteContador({
         <Box>
           <Card sx={{ mb: 2 }}>
             <CardContent>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
+              <Typography sx={{ fontWeight: 'bold' }} variant="h6" gutterBottom>
                 Reporte Contable — {reporte.periodo}
               </Typography>
               <Grid container spacing={2}>
@@ -106,8 +106,8 @@ export function TabReporteContador({
                 ].map(({ label, value, color }) => (
                   <Grid size={{ xs: 12, sm: 4 }} key={label}>
                     <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: `${color}.50`, borderRadius: 1 }}>
-                      <Typography variant="caption" color="text.secondary">{label}</Typography>
-                      <Typography variant="h6" fontWeight="bold" color={`${color}.main`}>
+                      <Typography sx={{ color: 'text.secondary' }} variant="caption">{label}</Typography>
+                      <Typography sx={{ fontWeight: 'bold', color: `${color}.main` }} variant="h6">
                         {fmt(value)}
                       </Typography>
                     </Box>
@@ -117,11 +117,11 @@ export function TabReporteContador({
             </CardContent>
           </Card>
 
-          <Grid container spacing={2} mb={2}>
+          <Grid sx={{ mb: 2 }} container spacing={2}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Card>
                 <CardContent>
-                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Por Cuenta PUC</Typography>
+                  <Typography sx={{ fontWeight: 'bold' }} variant="subtitle2" gutterBottom>Por Cuenta PUC</Typography>
                   <TableContainer>
                   <Table size="small">
                     <TableHead>
@@ -147,7 +147,7 @@ export function TabReporteContador({
                       {reporte.porCuenta.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={4} align="center">
-                            <Typography variant="caption" color="text.secondary">Sin movimientos</Typography>
+                            <Typography sx={{ color: 'text.secondary' }} variant="caption">Sin movimientos</Typography>
                           </TableCell>
                         </TableRow>
                       )}
@@ -160,7 +160,7 @@ export function TabReporteContador({
             <Grid size={{ xs: 12, md: 6 }}>
               <Card>
                 <CardContent>
-                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Por Programa</Typography>
+                  <Typography sx={{ fontWeight: 'bold' }} variant="subtitle2" gutterBottom>Por Programa</Typography>
                   <TableContainer>
                   <Table size="small">
                     <TableHead>
@@ -193,7 +193,7 @@ export function TabReporteContador({
 
           <Card>
             <CardContent>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Detalle de Movimientos</Typography>
+              <Typography sx={{ fontWeight: 'bold' }} variant="subtitle2" gutterBottom>Detalle de Movimientos</Typography>
               <TableContainer>
                 <Table size="small">
                   <TableHead>
@@ -224,11 +224,11 @@ export function TabReporteContador({
                         <TableCell><Typography variant="caption">{m.codigoPuc}</Typography></TableCell>
                         <TableCell>
                           <Typography variant="body2">{m.terceroNombre ?? '-'}</Typography>
-                          {m.terceroDocumento && <Typography variant="caption" color="text.secondary">{m.terceroDocumento}</Typography>}
+                          {m.terceroDocumento && <Typography sx={{ color: 'text.secondary' }} variant="caption">{m.terceroDocumento}</Typography>}
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2">{m.numeroSoporte ?? '-'}</Typography>
-                          {m.tipoSoporte && <Typography variant="caption" color="text.secondary">{m.tipoSoporte}</Typography>}
+                          {m.tipoSoporte && <Typography sx={{ color: 'text.secondary' }} variant="caption">{m.tipoSoporte}</Typography>}
                         </TableCell>
                         <TableCell align="right" sx={{ fontWeight: 'bold',
                           color: m.tipo === 'ingreso' ? 'success.main' : 'error.main' }}>
@@ -242,7 +242,7 @@ export function TabReporteContador({
                     {reporte.movimientos.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={9} align="center">
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography sx={{ color: 'text.secondary' }} variant="caption">
                             Sin movimientos en este periodo
                           </Typography>
                         </TableCell>

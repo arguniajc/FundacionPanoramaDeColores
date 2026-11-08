@@ -49,15 +49,15 @@ export function DialogAsistencia({ open, actividad, onClose, onGuardado }) {
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
-          <Typography variant="subtitle1" fontWeight={700}>Asistencia</Typography>
-          <Typography variant="caption" color="text.secondary">{actividad?.titulo}</Typography>
+          <Typography sx={{ fontWeight: 700 }} variant="subtitle1">Asistencia</Typography>
+          <Typography sx={{ color: 'text.secondary' }} variant="caption">{actividad?.titulo}</Typography>
         </Box>
         <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
       </DialogTitle>
       <Divider />
       <DialogContent sx={{ py: 1 }}>
         {asistentes.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}>
             No hay beneficiarios inscritos en este programa
           </Typography>
         ) : (
@@ -73,7 +73,7 @@ export function DialogAsistencia({ open, actividad, onClose, onGuardado }) {
       </DialogContent>
       <Divider />
       <DialogActions sx={{ px: 3, py: 1.5 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary', flex: 1 }}>
           {asistentes.filter(a => a.asistio).length} / {asistentes.length} presentes
         </Typography>
         <Button onClick={onClose}>Cancelar</Button>

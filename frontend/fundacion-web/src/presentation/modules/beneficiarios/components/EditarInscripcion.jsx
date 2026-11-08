@@ -5,6 +5,7 @@ import {
   InputLabel, Select, Typography, Alert, CircularProgress,
   InputAdornment, Autocomplete, Checkbox, FormControlLabel, Chip,
 } from '@mui/material';
+import { alpha, lighten } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
 import apiClient       from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
@@ -51,8 +52,8 @@ function SeccionTitulo({ children }) {
         display: 'flex', alignItems: 'center',
         borderLeft: '5px solid rgba(0,0,0,0.15)',
       }}>
-        <Typography fontWeight={800} color="white"
-          sx={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+        <Typography
+          sx={{ fontWeight: 800, color: 'secondary.contrastText', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
           {children}
         </Typography>
       </Box>
@@ -258,12 +259,12 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
 
       <DialogContent dividers sx={{ px: { xs: 2, sm: 3 }, py: 3 }}>
 
-        <Grid container spacing={2.5} mt={0}>
+        <Grid sx={{ mt: 0 }} container spacing={2.5}>
 
           {/* ── Tipo de beneficiario ── */}
           <Grid size={12}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Typography variant="body2" color="text.secondary" fontWeight={600}>Tipo:</Typography>
+              <Typography sx={{ color: 'text.secondary', fontWeight: 600 }} variant="body2">Tipo:</Typography>
               {[
                 { value: 'niño',   label: '👦 Niño / Adolescente  (menor de 18)' },
                 { value: 'adulto', label: '🧑 Adulto  (18 años en adelante)' },
@@ -278,9 +279,9 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
                   }))}
                   sx={{
                     px: 2, py: 0.75, borderRadius: 5, border: '2px solid',
-                    borderColor: form.tipo === op.value ? 'primary.main' : '#ccc',
+                    borderColor: form.tipo === op.value ? 'primary.main' : 'divider',
                     bgcolor: form.tipo === op.value ? 'primary.main' : 'transparent',
-                    color: form.tipo === op.value ? '#fff' : 'text.secondary',
+                    color: form.tipo === op.value ? 'primary.contrastText' : 'text.secondary',
                     cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
                     transition: 'all 0.15s',
                   }}>
@@ -344,12 +345,14 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
                   label={`${categoria.label} · ${categoria.rango}`}
                   size="small"
                   sx={{
-                    bgcolor: categoria.color, color: categoria.tc,
+                    // Modo oscuro: tinte translúcido del tono de la categoría + texto aclarado
+                    bgcolor: (t) => (t.palette.mode === 'dark' ? alpha(categoria.tc, 0.3) : categoria.color),
+                    color:   (t) => (t.palette.mode === 'dark' ? lighten(categoria.tc, 0.6) : categoria.tc),
                     fontWeight: 700, fontSize: '0.78rem',
-                    border: '1px solid', borderColor: `${categoria.tc}55`,
+                    border: '1px solid', borderColor: (t) => alpha(t.palette.mode === 'dark' ? lighten(categoria.tc, 0.4) : categoria.tc, 0.33),
                   }}
                 />
-                <Typography variant="caption" color="text.secondary">
+                <Typography sx={{ color: 'text.secondary' }} variant="caption">
                   Categoría detectada automáticamente
                 </Typography>
               </Box>
@@ -494,7 +497,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
               renderInput={params => (
                 <TextField {...validacion('eps')} {...params} fullWidth label="EPS *" size="small" required
                   helperText={err('eps') || nr('eps')}
-                  inputProps={{ ...params.inputProps, ...(form.eps === 'No registra' ? { readOnly: true } : {}) }} />
+                  slotProps={{ ...params.slotProps, htmlInput: { ...params.slotProps.htmlInput, ...(form.eps === 'No registra' ? { readOnly: true } : {}) } }} />
               )} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -649,7 +652,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
 
       {resumen && Object.keys(errores).length > 0 && (
         <Alert severity="warning" onClose={() => setResumen(false)} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
-          <Typography fontWeight={700} fontSize="0.85rem" mb={0.5}>
+          <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', mb: 0.5 }}>
             Corrige estos datos para guardar:
           </Typography>
           <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: '0.8rem', maxHeight: 160, overflowY: 'auto' }}>
@@ -680,7 +683,7 @@ export default function EditarInscripcion({ inscripcion, onCerrar, onGuardado })
     <Dialog open={confirmCerrar} onClose={() => setConfirmCerrar(false)} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>¿Salir sin guardar?</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary">
+        <Typography sx={{ color: 'text.secondary' }} variant="body2">
           Tienes cambios pendientes que se perderán si cierras sin guardar.
         </Typography>
       </DialogContent>

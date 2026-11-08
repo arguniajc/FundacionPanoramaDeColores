@@ -195,19 +195,15 @@ export function CampoMedidas({
   return (
     <Grid container spacing={2}>
       <Grid size={6}>
-        <TextField fullWidth size={size} label={labelPeso} type="number"
+        <TextField slotProps={{ input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> }, htmlInput: { min: 0, max: 500, step: 0.1 } }} fullWidth size={size} label={labelPeso} type="number"
           value={peso}
           onChange={e => onChangePeso(e.target.value)}
-          InputProps={{ endAdornment: <InputAdornment position="end">kg</InputAdornment> }}
-          inputProps={{ min: 0, max: 500, step: 0.1 }}
         />
       </Grid>
       <Grid size={6}>
-        <TextField fullWidth size={size} label={labelTalla} type="number"
+        <TextField slotProps={{ input: { endAdornment: <InputAdornment position="end">cm</InputAdornment> }, htmlInput: { min: 0, max: 300 } }} fullWidth size={size} label={labelTalla} type="number"
           value={talla}
           onChange={e => onChangeTalla(e.target.value)}
-          InputProps={{ endAdornment: <InputAdornment position="end">cm</InputAdornment> }}
-          inputProps={{ min: 0, max: 300 }}
         />
       </Grid>
     </Grid>

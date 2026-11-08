@@ -46,7 +46,7 @@ export default function FirmaPad({ label, value, onChange, obligatorio = false, 
 
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.8}>
+      <Typography sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.8 }} variant="caption">
         {label}{obligatorio ? ' *' : ''}
       </Typography>
 
@@ -56,11 +56,11 @@ export default function FirmaPad({ label, value, onChange, obligatorio = false, 
             sx={{
               display: 'block', height: 60, maxWidth: 260,
               objectFit: 'contain', bgcolor: 'white',
-              border: '1.5px solid #d0c4f7', borderRadius: 1.5, mb: 0.8,
+              border: '1.5px solid', borderColor: 'divider', borderRadius: 1.5, mb: 0.8,
             }}
           />
           {!disabled && (
-            <Box display="flex" gap={1.5}>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
               <Button size="small" onClick={() => setOpen(true)}
                 sx={{ color: COLOR, p: 0, minWidth: 0, textDecoration: 'underline', fontSize: '0.75rem' }}>
                 Cambiar firma
@@ -80,14 +80,13 @@ export default function FirmaPad({ label, value, onChange, obligatorio = false, 
         </Button>
       )}
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog slotProps={{ paper: { sx: { borderRadius: 3 } } }} open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ bgcolor: COLOR, color: 'white', fontWeight: 700, py: 1.5 }}>
           Captura de firma — {label}
         </DialogTitle>
 
         <DialogContent sx={{ pt: 2, pb: 1, px: 2.5 }}>
-          <Typography variant="body2" color="text.secondary" mb={1.5}>
+          <Typography sx={{ color: 'text.secondary', mb: 1.5 }} variant="body2">
             Firma con el dedo (pantalla táctil) o con el ratón dentro del recuadro.
           </Typography>
           <Box sx={{
@@ -99,7 +98,7 @@ export default function FirmaPad({ label, value, onChange, obligatorio = false, 
               style={{ width: '100%', height: 200, display: 'block', touchAction: 'none' }}
             />
           </Box>
-          <Typography variant="caption" color="text.secondary" display="block" mt={0.8}>
+          <Typography sx={{ color: 'text.secondary', display: 'block', mt: 0.8 }} variant="caption">
             Toca "Borrar" para volver a empezar.
           </Typography>
         </DialogContent>
@@ -110,7 +109,7 @@ export default function FirmaPad({ label, value, onChange, obligatorio = false, 
             sx={{ color: 'text.secondary' }}>
             Borrar
           </Button>
-          <Box flex={1} />
+          <Box sx={{ flex: 1 }} />
           <Button onClick={() => setOpen(false)}>Cancelar</Button>
           <Button variant="contained" onClick={handleConfirmar} sx={{ bgcolor: COLOR }}>
             Confirmar firma

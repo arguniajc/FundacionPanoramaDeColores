@@ -2,7 +2,7 @@ import { Box, Typography, CircularProgress } from '@mui/material';
 
 export function StatCard({ icon, label, value, color, borderColor, bgColor, loading }) {
   return (
-    <Box sx={{ border: `1.5px solid ${borderColor}`, borderRadius: 2, p: 2.5,
+    <Box sx={{ border: '1.5px solid', borderColor, borderRadius: 2, p: 2.5,
         bgcolor: bgColor, display: 'flex', alignItems: 'center', gap: 2 }}>
       <Box sx={{ width: 46, height: 46, borderRadius: '50%', bgcolor: `${color}18`,
           display: 'flex', alignItems: 'center', justifyContent: 'center', color, flexShrink: 0 }}>

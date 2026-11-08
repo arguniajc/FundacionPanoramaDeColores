@@ -7,6 +7,8 @@ import {
 import Dialog from '@/shared/components/DialogResponsive';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
 import { fmtNum } from './helpers';
+import { useTheme, alpha } from '@mui/material/styles';
+import { colorEstado } from '@/shared/theme/paleta';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
@@ -36,6 +38,7 @@ const ESQUEMA = {
 };
 
 export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida }) {
+  const theme = useTheme();
   const [form,      setForm]      = useState({ sedeDestinoId: '', cantidad: '', motivo: '' });
   const [guardando, setGuardando] = useState(false);
   const [error,     setError]     = useState('');
@@ -76,7 +79,7 @@ export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida 
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontWeight: 800, color: '#0ea5e9' }}>Transferir a otra sede</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 800, color: 'info.main' }}>Transferir a otra sede</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
           <strong>{item.nombre}</strong> · Stock: <strong>{fmtNum(item.stockActual)} {item.unidadMedida}</strong>
@@ -96,10 +99,8 @@ export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida 
             </FormControl>
           </Grid>
           <Grid size={12}>
-            <TextField fullWidth size="small" label="Cantidad *" type="number"
-              inputProps={{ min: 0.01, step: 1 }} value={form.cantidad}
+            <TextField slotProps={{ htmlInput: { min: 0.01, step: 1 }, input: { endAdornment: <InputAdornment position="end">{item.unidadMedida}</InputAdornment> } }} fullWidth size="small" label="Cantidad *" type="number" value={form.cantidad}
               onChange={e => set('cantidad', e.target.value)}
-              InputProps={{ endAdornment: <InputAdornment position="end">{item.unidadMedida}</InputAdornment> }}
               {...v.props('cantidad')}
             />
           </Grid>
@@ -109,11 +110,11 @@ export function TransferenciaDialog({ open, item, sedes, onClose, onTransferida 
           </Grid>
           {form.cantidad > 0 && sedeDest && (
             <Grid size={12}>
-              <Box sx={{ bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 1.5, px: 2, py: 1 }}>
-                <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#1d4ed8' }}>
+              <Box sx={{ bgcolor: colorEstado('info', theme.palette.mode).fondo, border: '1px solid', borderColor: alpha(theme.palette.info.main, 0.35), borderRadius: 1.5, px: 2, py: 1 }}>
+                <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: colorEstado('info', theme.palette.mode).texto }}>
                   {item.nombreSede || 'Origen'} → {sedeDest.nombre}: {fmtNum(form.cantidad)} {item.unidadMedida}
                 </Typography>
-                <Typography sx={{ fontSize: '0.73rem', color: '#3b82f6' }}>
+                <Typography sx={{ fontSize: '0.73rem', color: 'info.main' }}>
                   Si el artículo no existe en la sede destino, se creará automáticamente.
                 </Typography>
               </Box>

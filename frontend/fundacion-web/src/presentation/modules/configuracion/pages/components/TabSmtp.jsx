@@ -31,8 +31,8 @@ export function TabSmtp({ form, set, v }) {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
         <EmailIcon sx={{ color: COLOR }} />
         <Box>
-          <Typography fontWeight={700} color={COLOR}>Correo saliente (SMTP)</Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography sx={{ fontWeight: 700, color: COLOR }}>Correo saliente (SMTP)</Typography>
+          <Typography sx={{ color: 'text.secondary' }} variant="caption">
             Configura el servidor de correo para enviar recibos de donación a los donantes.
             Para Gmail usa <strong>smtp.gmail.com</strong> puerto <strong>587</strong> con una
             contraseña de aplicación (no la contraseña normal de Gmail).
@@ -49,9 +49,8 @@ export function TabSmtp({ form, set, v }) {
               {...v.props('smtpHost')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth size="small" label="Puerto" type="number"
+            <TextField slotProps={{ htmlInput: { min: 1, max: 65535 } }} fullWidth size="small" label="Puerto" type="number"
               value={form.smtpPuerto ?? 587} onChange={set('smtpPuerto')}
-              inputProps={{ min: 1, max: 65535 }}
               {...v.props('smtpPuerto', 'Gmail: 587')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -105,7 +104,7 @@ export function TabSmtp({ form, set, v }) {
         >
           {probando ? 'Enviando prueba…' : 'Enviar email de prueba'}
         </Button>
-        <Typography variant="caption" color="text.secondary">
+        <Typography sx={{ color: 'text.secondary' }} variant="caption">
           Guarda primero la configuración, luego prueba el envío.
         </Typography>
       </Box>

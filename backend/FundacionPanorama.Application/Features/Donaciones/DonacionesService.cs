@@ -17,6 +17,18 @@ public class DonacionesService(IDonacionesRepository repo)
     /// <summary>Devuelve el mensaje de error de validación, o null si el DTO es válido.</summary>
     public static string? ValidarCrear(CrearDonacionDto dto)
     {
+        // Un tipo distinto saltaba todas las reglas de abajo
+        if (dto.Tipo is not ("dinero" or "especie"))
+            return "El tipo de donación debe ser dinero o especie.";
+        if (dto.DonanteId == Guid.Empty)
+            return "Selecciona el donante.";
+        if (dto.Monto < 0)
+            return "El monto no puede ser negativo.";
+        if (dto.Cantidad < 0)
+            return "La cantidad no puede ser negativa.";
+        // Hoy en Colombia (UTC-5): una donación de las 9 p. m. no debe verse "en el futuro"
+        if (dto.FechaDonacion?.Date > DateTime.UtcNow.AddHours(-5).Date)
+            return "La fecha de la donación no puede ser futura.";
         if (dto.Tipo == "dinero" && (dto.Monto is null || dto.Monto <= 0))
             return "El monto es obligatorio para donaciones en dinero.";
         if (dto.Tipo == "especie" && (dto.Cantidad is null || dto.Cantidad <= 0))

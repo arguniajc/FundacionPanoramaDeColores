@@ -57,7 +57,7 @@ public record MovimientoDto(
 public record CrearMovimientoDto(
     [Required][StringLength(10)]  string   Tipo,
     DateOnly Fecha,
-    [Required][StringLength(500)] string   Concepto,
+    [Required][StringLength(200)] string   Concepto,
     decimal  Monto,
     Guid     CuentaId,
     int      CategoriaId,
@@ -74,7 +74,7 @@ public record CrearMovimientoDto(
 public record ActualizarMovimientoDto(
     [Required][StringLength(10)]  string   Tipo,
     DateOnly Fecha,
-    [Required][StringLength(500)] string   Concepto,
+    [Required][StringLength(200)] string   Concepto,
     decimal  Monto,
     Guid     CuentaId,
     int      CategoriaId,

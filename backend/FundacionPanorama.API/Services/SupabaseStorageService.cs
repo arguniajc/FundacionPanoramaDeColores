@@ -1,3 +1,4 @@
+using FundacionPanorama.Domain.Shared;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Options;
 
@@ -109,8 +110,8 @@ public class SupabaseStorageService
         if (!CarpetaPermitida(carpeta))
             throw new ArgumentException($"Carpeta no permitida: {carpeta}");
         if (!ValidarMagicBytes(archivo))
-            throw new InvalidOperationException(
-                "El contenido del archivo no coincide con su tipo declarado.");
+            throw new DatoInvalidoException(
+                "El archivo no es lo que dice ser (su contenido no coincide con el tipo). Elige otro archivo.");
 
         var tipo      = archivo.ContentType.Split(';')[0].Trim().ToLowerInvariant();
         var ext       = ExtPorTipo.GetValueOrDefault(tipo, "");

@@ -52,6 +52,10 @@ public class DonacionesController(DonacionesService svc, DbConnectionFactory db)
     [RequierePermiso("donaciones", "editar")]
     public async Task<IActionResult> Actualizar(Guid id, [FromBody] CrearDonacionDto dto)
     {
+        // Mismas reglas que al crear (antes el PUT aceptaba montos negativos o vacíos)
+        var error = DonacionesService.ValidarCrear(dto);
+        if (error is not null) return BadRequest(new { mensaje = error });
+
         if (!await svc.ActualizarAsync(id, dto)) return NotFound();
 
         await using (var conn = AbrirConexion())

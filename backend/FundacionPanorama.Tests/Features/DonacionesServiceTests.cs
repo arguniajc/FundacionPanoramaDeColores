@@ -29,7 +29,6 @@ public class DonacionesServiceTests
     [Theory]
     [InlineData(null)]
     [InlineData(0)]
-    [InlineData(-10)]
     public void ValidarCrear_Dinero_Sin_Monto_Positivo(int? monto)
         => Assert.Equal("El monto es obligatorio para donaciones en dinero.",
                         DonacionesService.ValidarCrear(Crear("dinero", monto: monto)));
@@ -41,10 +40,17 @@ public class DonacionesServiceTests
     [Theory]
     [InlineData(null)]
     [InlineData(0)]
-    [InlineData(-1)]
     public void ValidarCrear_Especie_Sin_Cantidad_Positiva(int? cantidad)
         => Assert.Equal("La cantidad es obligatoria para donaciones en especie.",
                         DonacionesService.ValidarCrear(Crear("especie", cantidad: cantidad, nombreItem: "Balón")));
+
+    [Fact]
+    public void ValidarCrear_Negativos_Dicen_Que_No_Pueden_Ser_Negativos()
+    {
+        Assert.Equal("El monto no puede ser negativo.", DonacionesService.ValidarCrear(Crear("dinero", monto: -10)));
+        Assert.Equal("La cantidad no puede ser negativa.",
+                     DonacionesService.ValidarCrear(Crear("especie", cantidad: -1, nombreItem: "Balón")));
+    }
 
     [Theory]
     [InlineData(null)]
@@ -69,8 +75,23 @@ public class DonacionesServiceTests
     }
 
     [Fact]
-    public void ValidarCrear_Otro_Tipo_No_Valida_Nada()
-        => Assert.Null(DonacionesService.ValidarCrear(Crear("servicio")));
+    public void ValidarCrear_Rechaza_Tipo_Desconocido()
+        => Assert.Equal("El tipo de donación debe ser dinero o especie.",
+                        DonacionesService.ValidarCrear(Crear("servicio")));
+
+    [Fact]
+    public void ValidarCrear_Rechaza_Negativos_Y_Fecha_Futura()
+    {
+        Assert.NotNull(DonacionesService.ValidarCrear(Crear("especie", cantidad: 2, nombreItem: "X", monto: -1)));
+        Assert.NotNull(DonacionesService.ValidarCrear(Crear("dinero", monto: 5, cantidad: -1)));
+        var futura = Crear("dinero", monto: 5) with { FechaDonacion = DateTime.UtcNow.AddDays(3) };
+        Assert.Equal("La fecha de la donación no puede ser futura.", DonacionesService.ValidarCrear(futura));
+    }
+
+    [Fact]
+    public void ValidarCrear_Exige_Donante()
+        => Assert.Equal("Selecciona el donante.",
+                        DonacionesService.ValidarCrear(Crear("dinero", monto: 5) with { DonanteId = Guid.Empty }));
 
     // ── Delegación ───────────────────────────────────────────────────────────
 

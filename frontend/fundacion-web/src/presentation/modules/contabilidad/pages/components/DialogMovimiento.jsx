@@ -32,7 +32,7 @@ const esEgreso = form => form.tipo === 'egreso';
 const ESQUEMA = {
   fecha:       { etiqueta: 'Fecha',         reglas: [r.obligatorio('2026-03-15'), r.fecha({ ejemplo: '2026-03-15' }), noFutura] },
   monto:       { etiqueta: 'Monto',         reglas: [r.obligatorio('150000'), r.monto('150000')] },
-  concepto:    { etiqueta: 'Concepto',      reglas: [r.obligatorio('Compra de útiles escolares'), r.texto({ min: 3, ejemplo: 'Compra de útiles escolares' })] },
+  concepto:    { etiqueta: 'Concepto',      reglas: [r.obligatorio('Compra de útiles escolares'), r.texto({ min: 3, max: 200, ejemplo: 'Compra de útiles escolares' })] },
   cuentaId:    { etiqueta: 'Cuenta',        reglas: [r.seleccion('Caja general o la cuenta bancaria')] },
   categoriaId: { etiqueta: 'Categoría PUC', reglas: [r.seleccion('4120 — Donaciones (ingreso) o 5195 — Diversos (egreso)')] },
   terceroDocumento: { etiqueta: 'NIT / Documento del tercero', reglas: [

@@ -205,17 +205,23 @@ app.UseRateLimiter();
 // de error incluya el header Access-Control-Allow-Origin
 app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
 {
-    ctx.Response.StatusCode  = 500;
-    ctx.Response.ContentType = "application/json";
     var ex       = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+    // Errores de datos conocidos (texto largo, duplicado, dato inexistente…) → 400/409 con
+    // un mensaje que el usuario entiende; el resto, 500 genérico.
+    var (status, mensaje) = FundacionPanorama.API.Services.TraductorErrores.Traducir(ex);
+    ctx.Response.StatusCode  = status;
+    ctx.Response.ContentType = "application/json";
     var exLogger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
     // Código corto para cruzar el mensaje que ve el usuario con el log de Render.
     // El detalle técnico de la excepción solo va al log, nunca al cliente.
     var codigo   = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
-    if (ex is not null)
+    if (ex is not null && status >= 500)
         exLogger.LogError(ex, "❌ Excepción no manejada [{Codigo}] en {Method} {Path}",
             codigo, ctx.Request.Method, ctx.Request.Path);
-    await ctx.Response.WriteAsJsonAsync(new { mensaje = "Error interno del servidor.", codigo });
+    else if (ex is not null)
+        exLogger.LogWarning("⚠️ Dato rechazado [{Codigo}] {Status} en {Method} {Path}: {Tipo} {Detalle}",
+            codigo, status, ctx.Request.Method, ctx.Request.Path, ex.GetType().Name, ex.Message);
+    await ctx.Response.WriteAsJsonAsync(new { mensaje, codigo });
 }));
 
 // Permite que Google Sign-In funcione con postMessage

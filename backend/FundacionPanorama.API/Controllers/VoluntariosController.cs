@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using FundacionPanorama.API.Filters;
+using FundacionPanorama.Application.Shared;
 using FundacionPanorama.Application.Features.Voluntarios;
 using FundacionPanorama.Application.Features.Voluntarios.DTOs;
 
@@ -24,6 +25,22 @@ public class VoluntariosController(VoluntariosService svc) : ControllerBase
     [RequierePermiso("voluntarios", "ver")]
     public async Task<IActionResult> Stats()
         => Ok(await svc.StatsAsync());
+
+    // POST api/voluntarios/verificar-documento  { "numero": "...", "excluirId": "<guid>"? }
+    // → { existe, id, nombre } del voluntario que ya tiene ese número (id y nombre null si nadie).
+    // Compara sin puntos, espacios ni guiones. Al editar se manda excluirId (el propio registro).
+    // El número va en el cuerpo y no en la URL para que no quede en el log de peticiones.
+    public record VerificarDocumentoDto(string? Numero, Guid? ExcluirId = null);
+
+    [HttpPost("verificar-documento")]
+    [RequierePermiso("voluntarios", "ver")]
+    public async Task<IActionResult> VerificarDocumento([FromBody] VerificarDocumentoDto dto, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(DocumentoIdentidad.Normalizar(dto?.Numero)))
+            return BadRequest(new { mensaje = "Escribe el número de documento. Ejemplo: 1144123456." });
+        var existente = await svc.BuscarDocumentoAsync(dto!.Numero, dto.ExcluirId, ct);
+        return Ok(new { existe = existente is not null, id = existente?.Id, nombre = existente?.Nombre });
+    }
 
     [HttpGet("{id:guid}")]
     [RequierePermiso("voluntarios", "ver")]

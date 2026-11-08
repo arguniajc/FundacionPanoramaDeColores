@@ -28,6 +28,22 @@ public class DonantesController(DonantesService svc) : ControllerBase
         return donante is null ? NotFound() : Ok(donante);
     }
 
+    // POST api/donantes/verificar-documento  { "numero", "tipo"?, "excluirId"? } → { existe, id, nombre }
+    // Avisa en el formulario si otro donante ya tiene ese documento (al editar se manda excluirId
+    // para no encontrarse a sí mismo). El número va en el cuerpo para que no quede en los logs de URL.
+    // `tipo` se acepta pero no filtra: el NIT de una persona natural es su cédula más el DV.
+    public record VerificarDocumentoDto(string? Numero, string? Tipo = null, Guid? ExcluirId = null);
+
+    [HttpPost("verificar-documento")]
+    [RequiereAlgunPermiso("donantes:ver", "donaciones:ver")]
+    public async Task<IActionResult> VerificarDocumento([FromBody] VerificarDocumentoDto dto, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(dto?.Numero))
+            return BadRequest(new { mensaje = "Escribe el número de documento. Ejemplo: 900123456-8." });
+        var existente = await svc.BuscarDocumentoAsync(dto.Numero, dto.ExcluirId, ct);
+        return Ok(new { existe = existente is not null, id = existente?.Id, nombre = existente?.Nombre });
+    }
+
     [HttpPost]
     [RequierePermiso("donantes", "crear")]
     public async Task<IActionResult> Crear([FromBody] CrearDonanteDto dto)

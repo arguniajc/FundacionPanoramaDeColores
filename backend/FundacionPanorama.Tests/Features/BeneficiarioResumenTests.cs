@@ -31,6 +31,7 @@ public class BeneficiarioResumenTests
         FotoMenorUrl = "privado://fotos/a.jpg", FotoDocumentoUrl = "privado://documentos/b.pdf",
         FotoDocumentoReversoUrl = "privado://documentos/c.pdf",
         Activo = true, Tipo = tipo, MotivoBaja = "x",
+        Celular = tipo == "adulto" ? "3109876543" : null,
     };
 
     private void ListadoDevuelve(params BeneficiarioDto[] filas) =>
@@ -124,6 +125,18 @@ public class BeneficiarioResumenTests
         b.GradoEscolar  = null;
         b.PesoKg        = 0;     // 7/8 = 87.5 → 88 (como Math.round del frontend)
         Assert.Equal(88, BeneficiarioResumenDto.CalcularCompletitud(b));
+    }
+
+    [Fact]
+    public void Adulto_El_Listado_Muestra_Su_Celular_Y_No_El_Del_Acudiente()
+    {
+        var adulto = Completo("adulto");
+        Assert.Equal("3109876543", BeneficiarioResumenDto.Desde(adulto).Whatsapp);
+        Assert.Equal("3001234567", BeneficiarioResumenDto.Desde(Completo()).Whatsapp); // niño: el del acudiente
+
+        adulto.Celular = "No registra";   // no es un número: no se enlaza y cuenta como faltante
+        Assert.Null(BeneficiarioResumenDto.Desde(adulto).Whatsapp);
+        Assert.Contains("WhatsApp", CompletitudPerfil.Evaluar(DatosPerfil.Desde(adulto)).Faltantes);
     }
 
     [Fact]

@@ -1,0 +1,1 @@
+import{t as e}from"./apiClient-Dv5qetnh.js";var t={listar:t=>e.get(`/api/donantes`,{params:t}),obtener:t=>e.get(`/api/donantes/${t}`),crear:t=>e.post(`/api/donantes`,t),editar:(t,n)=>e.put(`/api/donantes/${t}`,n),verificarDocumento:t=>e.post(`/api/donantes/verificar-documento`,t),toggle:t=>e.patch(`/api/donantes/${t}/toggle`),eliminar:t=>e.delete(`/api/donantes/${t}`)};export{t};

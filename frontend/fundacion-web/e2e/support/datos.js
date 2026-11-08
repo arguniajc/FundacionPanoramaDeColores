@@ -73,15 +73,18 @@ export const STATS_BENEFICIARIOS = { activos: 3, baja: 0, total: 3 };
  */
 export function resumenBeneficiario(b) {
   const dato = v => !!v && v !== 'No registra';
+  // Contacto: WhatsApp del acudiente (niño) o celular propio (adulto); 'No registra' no es un número
+  const contacto = b.tipo === 'adulto' ? b.celular : b.whatsapp;
+  const whatsapp = dato(contacto) ? contacto : null;
   const checks = [
-    !!b.fotoMenorUrl, !!b.fotoDocumentoUrl, dato(b.eps), !!b.whatsapp, dato(b.direccion),
+    !!b.fotoMenorUrl, !!b.fotoDocumentoUrl, dato(b.eps), !!whatsapp, dato(b.direccion),
     dato(b.tallaCamisa), dato(b.tallaZapatos), Number(b.pesoKg) > 0,
     ...(b.tipo === 'adulto' ? [] : [dato(b.nombreColegio), !!b.gradoEscolar]),
   ];
   return {
     id: b.id, nombreMenor: b.nombreMenor, fechaNacimiento: b.fechaNacimiento,
     tipoDocumento: b.tipoDocumento, numeroDocumento: b.numeroDocumento, genero: b.genero,
-    whatsapp: b.whatsapp, tieneAlergia: b.tieneAlergia, activo: b.activo, tipo: b.tipo ?? 'niño',
+    whatsapp, tieneAlergia: b.tieneAlergia, activo: b.activo, tipo: b.tipo ?? 'niño',
     tieneFotoMenor: !!b.fotoMenorUrl, tieneFotoDocumento: !!b.fotoDocumentoUrl,
     completitud: Math.round(checks.filter(Boolean).length / checks.length * 100),
   };
@@ -98,8 +101,9 @@ export const INCOMPLETOS = [
 
 /**
  * Borrador completo y válido del formulario "Nuevo beneficiario" (niño).
- * NuevoBeneficiario restaura su borrador de localStorage ('nuevo_beneficiario_draft'),
- * así las pruebas llegan a un paso concreto sin escribir los 25 campos.
+ * NuevoBeneficiario restaura su borrador de sessionStorage ({ form, paso } en
+ * 'nuevo_beneficiario_draft_nino' / '_adulto'), así las pruebas llegan a un paso concreto
+ * sin escribir los 25 campos.
  */
 export const BORRADOR_VALIDO = {
   tipo: 'niño',
@@ -113,6 +117,19 @@ export const BORRADOR_VALIDO = {
   tieneDiscapacidad: false, descripcionDiscapacidad: '',
   nombreColegio: 'IE Panorama', gradoEscolar: '4°',
   nombreAcudiente: 'Ana Gómez', parentesco: 'Madre', whatsapp: '3001234567', viveConNino: 'si',
+  celular: '',
   autorizacion: true,
   fotoMenorUrl: null, fotoDocumentoUrl: null, fotoDocumentoReversoUrl: null,
+};
+
+/** Borrador completo y válido de un adulto (sin acudiente; con celular propio). */
+export const BORRADOR_ADULTO_VALIDO = {
+  ...BORRADOR_VALIDO,
+  tipo: 'adulto',
+  primerNombre: 'Carlos', primerApellido: 'Gómez', segundoApellido: '',
+  fechaNacimiento: '1985-08-20', tipoDocumento: 'CC', numeroDocumento: '16123456',
+  genero: 'Masculino', numHermanos: '1', tallaCamisa: 'L', tallaPantalon: '32', tallaZapatos: '41',
+  pesoKg: '70', tallaCm: '172', nombreColegio: '', gradoEscolar: 'Bachillerato completo',
+  nombreAcudiente: '', parentesco: '', whatsapp: '', viveConNino: '',
+  celular: '3109876543',
 };

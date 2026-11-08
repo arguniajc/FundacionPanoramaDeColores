@@ -35,6 +35,31 @@ public class DonantesService(IDonantesRepository repo)
         return repo.ActualizarAsync(id, dto, ct);
     }
 
+    /// <summary>
+    /// Documento comparable: sin puntos, espacios ni guiones, en minúsculas y sin el dígito de
+    /// verificación del NIT ("900.123.456-8" → "900123456"). El número identifica al donante sin
+    /// importar el tipo: el NIT de una persona natural es su cédula más el DV.
+    /// </summary>
+    public static string NormalizarDocumento(string? numero)
+    {
+        var s = (numero ?? "").Trim().ToLowerInvariant();
+        var guion = s.LastIndexOf('-');
+        // "<dígitos>-<1 dígito>" = NIT con DV: el DV no cuenta para comparar.
+        if (guion > 0 && guion == s.Length - 2 && char.IsDigit(s[^1])
+            && s[..guion].All(c => char.IsDigit(c) || c == '.' || c == ' '))
+            s = s[..guion];
+        return new string(s.Where(c => c is (>= '0' and <= '9') or (>= 'a' and <= 'z')).ToArray());
+    }
+
+    /// <summary>Otro donante con el mismo documento (null si nadie lo tiene o el número está vacío).</summary>
+    public Task<DonanteExistente?> BuscarDocumentoAsync(string? numero, Guid? excluirId, CancellationToken ct = default)
+    {
+        var normalizado = NormalizarDocumento(numero);
+        return normalizado.Length == 0
+            ? Task.FromResult<DonanteExistente?>(null)
+            : repo.BuscarDocumentoAsync(normalizado, excluirId, ct);
+    }
+
     public Task<bool?> ToggleAsync(Guid id, CancellationToken ct = default)
         => repo.ToggleAsync(id, ct);
 

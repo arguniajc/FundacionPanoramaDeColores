@@ -118,18 +118,23 @@ public class BeneficiariosController : BaseController
     }
 
     // =========================================================================
-    // POST api/beneficiarios/verificar-documento  { "numero": "..." }
+    // POST api/beneficiarios/verificar-documento  { "numero": "...", "excluirId": "<guid>"? }
+    // → { existe, id, nombre }: id y nombre del beneficiario que ya lo tiene (null si nadie).
+    // Al editar se manda excluirId (el propio registro) para no encontrarse a sí mismo.
     // El número va en el cuerpo, no en la URL: las rutas quedan en el log de cada petición
     // y el documento de un menor no debe aparecer ahí.
     // =========================================================================
-    public record VerificarDocumentoDto(string Numero);
+    public record VerificarDocumentoDto(string Numero, Guid? ExcluirId = null);
 
     [HttpPost("verificar-documento")]
     [RequiereAlgunPermiso("beneficiarios:crear", "beneficiarios:editar")]
     public async Task<IActionResult> VerificarDocumento([FromBody] VerificarDocumentoDto dto, CancellationToken ct = default)
-        => string.IsNullOrWhiteSpace(dto?.Numero)
-            ? BadRequest(new { mensaje = "Escribe el número de documento." })
-            : Ok(new { existe = await _svc.ExisteDocumentoAsync(dto.Numero.Trim(), ct) });
+    {
+        if (string.IsNullOrWhiteSpace(dto?.Numero))
+            return BadRequest(new { mensaje = "Escribe el número de documento. Ejemplo: 1144123456." });
+        var existente = await _svc.BuscarDocumentoAsync(dto.Numero, dto.ExcluirId, ct);
+        return Ok(new { existe = existente is not null, id = existente?.Id, nombre = existente?.Nombre });
+    }
 
     // =========================================================================
     // POST api/beneficiarios

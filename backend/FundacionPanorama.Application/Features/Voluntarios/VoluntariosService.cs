@@ -1,5 +1,6 @@
 using FundacionPanorama.Application.Features.Voluntarios.DTOs;
 using FundacionPanorama.Application.Features.Voluntarios.Interfaces;
+using FundacionPanorama.Application.Shared;
 using static FundacionPanorama.Application.Shared.Validar;
 
 namespace FundacionPanorama.Application.Features.Voluntarios;
@@ -50,4 +51,17 @@ public class VoluntariosService(IVoluntariosRepository repo)
 
     public Task<bool> EliminarAsignacionAsync(Guid asigId, CancellationToken ct = default)
         => repo.EliminarAsignacionAsync(asigId, ct);
+
+    /// <summary>
+    /// ¿Hay otro registro con ese número de documento? Compara sin puntos, espacios, guiones
+    /// ni mayúsculas ("1.144.123.456" = "1144123456"). Al editar se pasa el id propio en
+    /// <paramref name="excluirId"/>. Número vacío → null (sin consultar la BD).
+    /// </summary>
+    public Task<PersonaConDocumento?> BuscarDocumentoAsync(string? numero, Guid? excluirId, CancellationToken ct = default)
+    {
+        var normalizado = DocumentoIdentidad.Normalizar(numero);
+        return normalizado.Length == 0
+            ? Task.FromResult<PersonaConDocumento?>(null)
+            : repo.BuscarDocumentoAsync(normalizado, excluirId, ct);
+    }
 }

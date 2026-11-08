@@ -12,12 +12,15 @@ export { default as SinAcceso }          from './components/SinAcceso';
 export {
   CampoFecha, CampoDocumento, CampoCiudad,
   SelectorUbicacion, CampoUnidadMedida, CampoMedidas,
+  CampoTelefono, CampoMoneda, AccionesDialogo, ErrorServidor,
 } from './components/form/FormControles';
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 export { useAsyncData }                          from './hooks/useAsyncData';
 export { default as usePermisos }                from './hooks/usePermisos';
 export { useGeografia, useGeografiaColombia }    from './hooks/useGeografia';
+export { useCerrarConCambios, hayCambiosEn }     from './hooks/useCerrarConCambios';
+export { useAutoFocus }                          from './hooks/useAutoFocus';
 
 // ── Context ───────────────────────────────────────────────────────────────────
 export { ConfiguracionProvider }         from './context/ConfiguracionContext';

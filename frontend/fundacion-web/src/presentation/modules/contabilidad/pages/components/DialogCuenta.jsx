@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import {
-  Button, DialogActions, DialogContent, DialogTitle,
-  FormControl, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
+  DialogContent, DialogTitle,
+  FormControl, Grid, InputLabel, MenuItem, Select, TextField,
 } from '@mui/material';
 import Dialog from '@/shared/components/DialogResponsive';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
+import { AccionesDialogo, CampoMoneda, ErrorServidor } from '@/shared/components/form/FormControles';
 import ResumenErrores from '@/shared/components/ResumenErrores';
 
 const esBancaria = form => form.tipo === 'cuenta_bancaria';
@@ -20,8 +23,13 @@ const ESQUEMA = {
   saldoInicial: { etiqueta: 'Saldo inicial',    reglas: [r.si(form => form.crear, r.numero({ min: 0, unidad: 'pesos', ejemplo: '500000' }))] },
 };
 
+const VACIO = { nombre: '', tipo: 'caja', banco: '', numeroCuenta: '', saldoInicial: '0' };
+
 export function DialogCuenta({ open, modo, data, guardando, onClose, onGuardar }) {
-  const [form, setForm] = useState({ nombre: '', tipo: 'caja', banco: '', numeroCuenta: '', saldoInicial: '0' });
+  const [form, setForm] = useState(VACIO);
+  const [inicial, setInicial] = useState(VACIO);
+  const [error, setError] = useState('');
+  const autoFocus = useAutoFocus();
   const v = useValidacion(ESQUEMA, { ...form, crear: modo === 'crear' });
   const { reiniciar } = v;
 
@@ -35,40 +43,47 @@ export function DialogCuenta({ open, modo, data, guardando, onClose, onGuardar }
 
   function reiniciarFormulario() {
     reiniciar();
-    if (modo === 'editar' && data) {
-      setForm({
+    setError('');
+    const datos = modo === 'editar' && data
+      ? {
         nombre: data.nombre,
         tipo: data.tipo,
         banco: data.banco ?? '',
         numeroCuenta: data.numeroCuenta ?? '',
         saldoInicial: String(data.saldoInicial ?? 0),
-      });
-    } else {
-      setForm({ nombre: '', tipo: 'caja', banco: '', numeroCuenta: '', saldoInicial: '0' });
-    }
+      }
+      : VACIO;
+    setForm(datos);
+    setInicial(datos);
   }
+
+  const { confirmarCierre } = useCerrarConCambios({
+    hayCambios: hayCambiosEn(form, inicial), bloqueado: guardando, onCerrar: onClose,
+  });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const guardar = () => {
-    if (!v.validarTodo()) return;
-    onGuardar({
+  const guardar = async () => {
+    if (guardando || !v.validarTodo()) return;
+    setError('');
+    const fallo = await onGuardar({
       nombre: form.nombre.trim(),
       tipo: form.tipo,
       banco:        esBancaria(form) ? form.banco || null : null,
       numeroCuenta: esBancaria(form) ? form.numeroCuenta || null : null,
-      saldoInicial: parseFloat(form.saldoInicial) || 0,
+      saldoInicial: Number(form.saldoInicial) || 0,
     });
+    if (fallo) setError(fallo);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} maxWidth="xs" fullWidth bloqueado={guardando} alEnviar={guardar}>
       <DialogTitle>{modo === 'crear' ? 'Nueva Cuenta' : 'Editar Cuenta'}</DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         <Grid container spacing={2}>
           <Grid size={12}>
             <TextField fullWidth label="Nombre *" size="small" value={form.nombre} onChange={set('nombre')}
-              {...v.props('nombre')} />
+              autoFocus={autoFocus} {...v.props('nombre')} />
           </Grid>
           <Grid size={12}>
             <FormControl fullWidth size="small">
@@ -88,25 +103,23 @@ export function DialogCuenta({ open, modo, data, guardando, onClose, onGuardar }
               </Grid>
               <Grid size={12}>
                 <TextField fullWidth label="Número de cuenta" size="small"
+                  slotProps={{ htmlInput: { inputMode: 'tel', autoComplete: 'off' } }}
                   value={form.numeroCuenta} onChange={set('numeroCuenta')} {...v.props('numeroCuenta')} />
               </Grid>
             </>
           )}
           {modo === 'crear' && (
             <Grid size={12}>
-              <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Saldo inicial" type="number" size="small"
-                value={form.saldoInicial} onChange={set('saldoInicial')} {...v.props('saldoInicial')} />
+              <CampoMoneda label="Saldo inicial" value={form.saldoInicial}
+                onChange={s => setForm(f => ({ ...f, saldoInicial: s }))} {...v.props('saldoInicial')} />
             </Grid>
           )}
         </Grid>
       </DialogContent>
       <ResumenErrores {...v.resumen} accion={modo === 'crear' ? 'crear la cuenta' : 'guardar la cuenta'} />
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" disabled={guardando} onClick={guardar}>
-          {guardando ? 'Guardando…' : (modo === 'crear' ? 'Crear' : 'Guardar')}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar
+        textoGuardar={modo === 'crear' ? 'Crear' : 'Guardar'} />
     </Dialog>
   );
 }

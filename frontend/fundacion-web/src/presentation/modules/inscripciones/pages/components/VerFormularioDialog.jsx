@@ -1,10 +1,14 @@
 ﻿// Diálogo de vista y edición del formulario dinámico de una inscripción.
-import { useState, useEffect } from 'react';
+// En edición: Enter guarda, cerrar o cancelar con cambios pide confirmación y mientras guarda no se cierra.
+import { useState, useEffect, useMemo } from 'react';
 import {
   Alert, Avatar, Box, Button, Chip, CircularProgress,
-  Dialog, DialogActions, DialogContent, DialogTitle,
-  Grid, IconButton, TextField, Tooltip, Typography, useMediaQuery, useTheme,
+  DialogActions, DialogContent, DialogTitle,
+  Grid, IconButton, TextField, Tooltip, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
 import { alpha }          from '@mui/material/styles';
 import EditIcon           from '@mui/icons-material/Edit';
 import GavelIcon          from '@mui/icons-material/Gavel';
@@ -35,14 +39,20 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   const [observaciones, setObservaciones] = useState('');
   const [guardando,     setGuardando]     = useState(false);
   const [generandoPdf,  setGenerandoPdf]  = useState(false);
-  const [error,         setError]         = useState('');
+  const [error,         setError]         = useState('');        // error al guardar
+  const [aviso,         setAviso]         = useState({ mensaje: '', titulo: '' }); // error al cargar o generar el PDF
   const [beneficiario,  setBeneficiario]  = useState(null);
   const fotoBeneficiario = useArchivoUrl(beneficiario?.fotoMenorUrl);
   const [programa,      setPrograma]      = useState(null);
   const [intentado,     setIntentado]     = useState(false); // ya se intentó guardar: mostrar errores en los campos
   const [verResumen,    setVerResumen]    = useState(false);
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Datos guardados en el servidor: base para saber si hay cambios sin guardar
+  const datosGuardados = useMemo(() => {
+    try { return JSON.parse(inscripcion.datos || '{}'); } catch { return {}; }
+  }, [inscripcion.datos]);
+  const hayCambios = editando && (
+    hayCambiosEn(datos, datosGuardados) || hayCambiosEn(observaciones, inscripcion.observaciones ?? ''));
 
   const tienePadreMadre = campos.some(c => c.tipo === 'datos_padre') && campos.some(c => c.tipo === 'datos_madre');
 
@@ -50,6 +60,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
     setCargando(true);
     setEditando(false);
     setError('');
+    setAviso({ mensaje: '', titulo: '' });
     setBeneficiario(null);
     setPrograma(null);
     try { setDatos(JSON.parse(inscripcion.datos || '{}')); } catch { setDatos({}); }
@@ -78,7 +89,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         }
         setPanelActivo(initPanel);
       })
-      .catch(err => setError(mensajeErrorApi(err, { accion: 'cargar el formulario de la inscripción' })))
+      .catch(err => setAviso({ mensaje: mensajeErrorApi(err, { accion: 'cargar el formulario de la inscripción' }), titulo: 'No se pudo cargar' }))
       .finally(() => setCargando(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps -- se recarga solo al cambiar de inscripción, no cuando el padre pasa otro objeto con el mismo id
   }, [inscripcion.id]);
@@ -96,7 +107,14 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
     cerrarEdicion();
   };
 
+  // Cerrar el diálogo y cancelar la edición preguntan antes de descartar cambios
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: guardando, onCerrar });
+  const { confirmarCierre: confirmarCancelarEdicion } = useCerrarConCambios({
+    hayCambios, bloqueado: guardando, onCerrar: cancelarEdicion,
+  });
+
   const handleGuardar = async () => {
+    if (guardando) return;
     if (hayErrores) { setIntentado(true); setVerResumen(true); return; }
     setGuardando(true);
     setError('');
@@ -105,7 +123,7 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
         datos: JSON.stringify(datos),
         observaciones: observaciones.trim() || null,
       });
-      onActualizada(result.data);
+      onActualizada(result.data); // la página muestra "Formulario actualizado"
       cerrarEdicion();
     } catch (err) {
       setError(mensajeErrorApi(err, { accion: 'guardar los cambios de la inscripción' }));
@@ -152,9 +170,12 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       }
       setTimeout(() => URL.revokeObjectURL(url), 30000);
     } catch (err) {
-      setError(err?.isAxiosError
-        ? mensajeErrorApi(err, { accion: 'generar el PDF de la inscripción' })
-        : 'No se pudo generar el PDF. Intenta de nuevo.');
+      setAviso({
+        mensaje: err?.isAxiosError
+          ? mensajeErrorApi(err, { accion: 'generar el PDF de la inscripción' })
+          : 'Ocurrió un error al armar el documento. Intenta de nuevo.',
+        titulo: 'No se pudo generar el PDF',
+      });
     } finally {
       setGenerandoPdf(false);
     }
@@ -219,7 +240,9 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
   });
 
   return (
-    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
+    <Dialog open onClose={confirmarCierre} maxWidth="sm" fullWidth
+      alEnviar={() => { if (editando) handleGuardar(); }}
+      slotProps={{ paper: { sx: { borderRadius: { xs: 0, sm: 3 } } } }}>
       <DialogTitle sx={{ bgcolor: COLOR, color: 'white', py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Typography sx={{ fontWeight: 700 }} component="div">Formulario de inscripción</Typography>
@@ -490,32 +513,29 @@ export function VerFormularioDialog({ inscripcion, onCerrar, onActualizada }) {
       <ResumenErrores visible={editando && verResumen && hayErrores} errores={errores}
         etiqueta={id => campos.find(c => String(c.id) === id)?.etiqueta ?? id}
         onClose={() => setVerResumen(false)} accion="guardar los cambios" />
-      {error && (
-        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
-          {error}
-        </Alert>
-      )}
-      <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-        <Button onClick={onCerrar} disabled={guardando}>Cerrar</Button>
-        <Box sx={{ flex: 1 }} />
-        {editando ? (
-          <>
-            <Button onClick={cancelarEdicion} disabled={guardando}>
-              Cancelar
-            </Button>
-            <Button variant="contained" onClick={handleGuardar}
-              disabled={guardando} sx={{ bgcolor: COLOR }}>
-              {guardando ? 'Guardando...' : 'Guardar cambios'}
-            </Button>
-          </>
-        ) : (
+      <ErrorServidor mensaje={aviso.mensaje} titulo={aviso.titulo}
+        onClose={() => setAviso({ mensaje: '', titulo: '' })} />
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      {editando ? (
+        <AccionesDialogo
+          onCancelar={confirmarCancelarEdicion}
+          guardando={guardando}
+          enviar
+          textoGuardar="Guardar cambios"
+          anterior={{ onClick: () => confirmarCierre(), texto: 'Cerrar' }}
+          sxGuardar={{ bgcolor: COLOR }}
+        />
+      ) : (
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button onClick={() => confirmarCierre()} color="inherit">Cerrar</Button>
+          <Box sx={{ flex: 1 }} />
           <Button variant="outlined" startIcon={<EditIcon />}
-            onClick={() => setEditando(true)}
+            onClick={() => setEditando(true)} disabled={cargando}
             sx={{ color: COLOR, borderColor: COLOR }}>
             Editar
           </Button>
-        )}
-      </DialogActions>
+        </DialogActions>
+      )}
     </Dialog>
   );
 }

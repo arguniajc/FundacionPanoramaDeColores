@@ -126,6 +126,29 @@ public class DonantesRepository(DbConnectionFactory factory) : IDonantesReposito
         return LeerDonante(r);
     }
 
+    public async Task<DonanteExistente?> BuscarDocumentoAsync(string documentoNormalizado, Guid? excluirId, CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        // Misma normalización que DonantesService.NormalizarDocumento: quita el DV de un NIT
+        // ("900.123.456-8"), luego todo lo que no sea letra a-z o dígito, y compara en minúsculas.
+        cmd.CommandText = @"
+            SELECT id, nombre FROM donantes
+            WHERE documento IS NOT NULL
+              AND regexp_replace(
+                    regexp_replace(LOWER(TRIM(documento)), '^([0-9. ]+)-[0-9]$', '\1'),
+                    '[^a-z0-9]', '', 'g') = @doc
+              AND (@excluir IS NULL OR id <> @excluir)
+            ORDER BY activo DESC, fecha_creacion
+            LIMIT 1";
+        cmd.Parameters.AddWithValue("doc", documentoNormalizado);
+        cmd.Parameters.Add(new Npgsql.NpgsqlParameter("excluir", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = (object?)excluirId ?? DBNull.Value });
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return null;
+        return new DonanteExistente(r.GetGuid(0), r.GetString(1));
+    }
+
     public async Task<bool?> ToggleAsync(Guid id, CancellationToken ct = default)
     {
         await using var conn = factory.Create();

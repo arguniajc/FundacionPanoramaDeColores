@@ -12,6 +12,8 @@ public interface IBeneficiariosRepository
     Task<StatsNinosDatos>            ObtenerStatsNinosAsync(CancellationToken ct);
     Task<BeneficiarioDto?>           ObtenerAsync(Guid id, CancellationToken ct);
     Task<bool>                       ExisteDocumentoAsync(string numeroDocumento, CancellationToken ct);
+    /// <summary>Quién tiene ese número de documento (sin contar a <paramref name="excluirId"/>), o null.</summary>
+    Task<DocumentoExistente?>        BuscarDocumentoAsync(string numeroDocumento, Guid? excluirId, CancellationToken ct);
     Task<List<HistorialFila>>        HistorialAsync(Guid id, int limite, CancellationToken ct);
 
     // Escrituras (cada una en su transacción; el audit_log va dentro de la misma)

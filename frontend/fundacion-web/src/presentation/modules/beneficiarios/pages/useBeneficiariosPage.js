@@ -197,7 +197,7 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
         'NOMBRE','F. NACIMIENTO','TIPO DOC.','N° DOCUMENTO',
         'EDAD','EPS','T. CAMISA','T. PANTALÓN','T. ZAPATOS',
         'ALERGIA','DESC. ALERGIA','OBS. SALUD',
-        'ACUDIENTE','PARENTESCO','WHATSAPP','DIRECCIÓN',
+        'ACUDIENTE','PARENTESCO','WHATSAPP / CELULAR','DIRECCIÓN',
         'ESTADO','F. INSCRIPCIÓN',
       ];
       const filas = todos.map(ins => [
@@ -209,7 +209,8 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
         ins.tieneAlergia === 'si' ? 'Sí' : 'No',
         ins.descripcionAlergia || '—', ins.observacionesSalud || '—',
         ins.nombreAcudiente    || '—', ins.parentesco       || '—',
-        ins.whatsapp           || '—', ins.direccion        || '—',
+        // WhatsApp del acudiente (niño) o celular propio del adulto
+        (ins.tipo === 'adulto' ? ins.celular : ins.whatsapp) || '—', ins.direccion || '—',
         ins.activo ? 'Activo' : 'Baja',
         ins.createdAt ? new Date(ins.createdAt).toLocaleDateString('es-CO') : '—',
       ]);

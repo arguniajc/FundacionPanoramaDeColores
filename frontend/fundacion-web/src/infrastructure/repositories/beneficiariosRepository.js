@@ -10,7 +10,9 @@ export const beneficiariosRepository = {
   obtener:         (id)          => apiClient.get(`/api/beneficiarios/${id}`),
   stats:           ()            => apiClient.get('/api/beneficiarios/stats'),
   statsNinos:      ()            => apiClient.get('/api/beneficiarios/stats-ninos'),
-  verificarDoc:    (numero)      => apiClient.post('/api/beneficiarios/verificar-documento', { numero }),
+  // → { existe, id, nombre }. Al editar, excluirId = el propio registro (no se cuenta a sí mismo)
+  verificarDoc:    (numero, excluirId) =>
+    apiClient.post('/api/beneficiarios/verificar-documento', excluirId ? { numero, excluirId } : { numero }),
   crear:           (datos)       => apiClient.post('/api/beneficiarios', datos),
   editar:          (id, datos)   => apiClient.put(`/api/beneficiarios/${id}`, datos),
   baja:            (id, motivo)  => apiClient.patch(`/api/beneficiarios/${id}/baja`, { motivo }),

@@ -113,4 +113,17 @@ public class TalentoHumanoService(ITalentoHumanoRepository repo)
 
     public Task<TalentoHumanoStatsDto> StatsAsync(CancellationToken ct = default)
         => repo.StatsAsync(ct);
+
+    /// <summary>
+    /// ¿Hay otro registro con ese número de documento? Compara sin puntos, espacios, guiones
+    /// ni mayúsculas ("1.144.123.456" = "1144123456"). Al editar se pasa el id propio en
+    /// <paramref name="excluirId"/>. Número vacío → null (sin consultar la BD).
+    /// </summary>
+    public Task<PersonaConDocumento?> BuscarDocumentoAsync(string? numero, Guid? excluirId, CancellationToken ct = default)
+    {
+        var normalizado = DocumentoIdentidad.Normalizar(numero);
+        return normalizado.Length == 0
+            ? Task.FromResult<PersonaConDocumento?>(null)
+            : repo.BuscarDocumentoAsync(normalizado, excluirId, ct);
+    }
 }

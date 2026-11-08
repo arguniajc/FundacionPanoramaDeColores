@@ -1,8 +1,25 @@
 ﻿import { BRAND_COLOR } from '@/shared/constants/brand';
 import { nominaDesdeApi } from './nominaConfig';
+import { calcularDvNit } from '@/shared/utils/validacion';
 
 export const COLOR     = 'var(--color-primario)';
-export const TIPOS_DOC = ['CC', 'CE', 'PP', 'NIT', 'Otro'];
+/**
+ * Tipos de documento del representante legal: catálogo único (constants/tiposDocumento),
+ * lista general de personas. Valores viejos ('PP' = pasaporte) se siguen mostrando
+ * (CampoDocumento usa opcionConValorActual) y al guardar se normalizan ('PP' → 'PA').
+ */
+export const TIPOS_DOC_REP = 'persona';
+
+/** Ayuda del NIT: sugiere el dígito de verificación (DIAN) cuando se escribió el NIT sin él. */
+export function ayudaNit(nit) {
+  const s = String(nit ?? '').trim();
+  if (/^\d{6,10}$/.test(s)) {
+    const dv = calcularDvNit(s);
+    return `Dígito de verificación: ${dv} (${s}-${dv})`;
+  }
+  return 'Solo números y, si aplica, guion y dígito de verificación. Ej: 900123456-8';
+}
+
 export const FA_ICONOS = [
   'fa-palette','fa-futbol','fa-leaf','fa-users','fa-star','fa-heart',
   'fa-book','fa-music','fa-camera','fa-paint-brush','fa-seedling',

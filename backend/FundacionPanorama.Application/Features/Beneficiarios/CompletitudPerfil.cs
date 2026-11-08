@@ -17,7 +17,8 @@ public sealed record DatosPerfil(
     string?  GradoEscolar)
 {
     public static DatosPerfil Desde(BeneficiarioDto b) => new(
-        b.Tipo, b.FotoMenorUrl, b.FotoDocumentoUrl, b.Eps, b.Whatsapp, b.Direccion,
+        // WhatsApp: el del acudiente para niños; el celular propio para adultos
+        b.Tipo, b.FotoMenorUrl, b.FotoDocumentoUrl, b.Eps, b.Tipo == "adulto" ? b.Celular : b.Whatsapp, b.Direccion,
         b.TallaCamisa, b.TallaZapatos, b.PesoKg, b.NombreColegio, b.GradoEscolar);
 }
 
@@ -39,7 +40,7 @@ public static class CompletitudPerfil
         new("Foto del menor", false, d => Lleno(d.FotoMenorUrl)),
         new("Foto documento", false, d => Lleno(d.FotoDocumentoUrl)),
         new("EPS",            false, d => Dato(d.Eps)),
-        new("WhatsApp",       false, d => Lleno(d.Whatsapp)),
+        new("WhatsApp",       false, d => Dato(d.Whatsapp)), // "No registra" (celular del adulto) = falta
         new("Dirección",      false, d => Dato(d.Direccion)),
         new("Talla camisa",   false, d => Dato(d.TallaCamisa)),
         new("Talla zapatos",  false, d => Dato(d.TallaZapatos)),

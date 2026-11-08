@@ -24,6 +24,9 @@ public record DonanteDto(
     DateTime? UltimaDonacion
 );
 
+/// <summary>Donante que ya tiene un documento (respuesta de verificar-documento).</summary>
+public record DonanteExistente(Guid Id, string Nombre);
+
 // Límites = columnas de donantes (email 150 y telefono 20 en el esquema base; tipo VARCHAR(20)).
 public record CrearDonanteDto(
     [Required(ErrorMessage = "El nombre es obligatorio. Ejemplo: Ferretería El Tornillo")]

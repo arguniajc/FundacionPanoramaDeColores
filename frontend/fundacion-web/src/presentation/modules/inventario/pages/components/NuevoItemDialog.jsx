@@ -1,15 +1,17 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Button, CircularProgress, Collapse, DialogActions, DialogContent,
+  Box, Collapse, DialogContent,
   DialogTitle, Divider, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, Typography,
 } from '@mui/material';
 import Dialog from '@/shared/components/DialogResponsive';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
-import { COLOR, CATEGORIAS } from './helpers';
+import { COLOR, CATEGORIAS, limpiarCantidad } from './helpers';
 import { useTheme, alpha } from '@mui/material/styles';
 import { colorEstado } from '@/shared/theme/paleta';
-import { CampoUnidadMedida } from '@/shared/components/form/FormControles';
+import { AccionesDialogo, CampoUnidadMedida, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
@@ -52,14 +54,16 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
   const theme = useTheme();
   const editando = !!item;
   const [form,      setForm]      = useState(ITEM_VACIO);
+  const [inicial,   setInicial]   = useState(ITEM_VACIO);
   const [guardando, setGuardando] = useState(false);
   const [error,     setError]     = useState('');
+  const autoFocus = useAutoFocus();
   const v = useValidacion(ESQUEMA, { ...form, _editando: editando });
   const { reiniciar } = v;
 
   useEffect(() => {
     if (open) {
-      setForm(item
+      const datos = item
         ? {
             nombre: item.nombre, descripcion: item.descripcion ?? '',
             unidadMedida: item.unidadMedida, categoria: item.categoria,
@@ -70,17 +74,23 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
             comodatoFechaInicio: item.comodatoFechaInicio ?? '',
             comodatoFechaFin:   item.comodatoFechaFin   ?? '',
           }
-        : { ...ITEM_VACIO, sedeId: sedeSelId ?? '' });
+        : { ...ITEM_VACIO, sedeId: sedeSelId ?? '' };
+      setForm(datos);
+      setInicial(datos);
       setError('');
       reiniciar();
     }
   }, [open, item, sedeSelId, reiniciar]);
 
+  const { confirmarCierre } = useCerrarConCambios({
+    hayCambios: hayCambiosEn(form, inicial), bloqueado: guardando, onCerrar: onClose,
+  });
+
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const esComodato = form.tipoTenencia === 'comodato';
 
   const guardar = async () => {
-    if (!v.validarTodo()) return;
+    if (guardando || !v.validarTodo()) return;
     setGuardando(true); setError('');
     try {
       const comodatoPayload = {
@@ -118,7 +128,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} maxWidth="sm" fullWidth bloqueado={guardando} alEnviar={guardar}>
       <DialogTitle sx={{ fontWeight: 800, color: COLOR }}>
         {editando ? 'Editar artículo' : 'Nuevo artículo'}
       </DialogTitle>
@@ -136,12 +146,12 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
               </FormControl>
             </Grid>
           )}
-          <Grid size={editando ? 8 : 12}>
-            <TextField fullWidth size="small" label="Nombre *" value={form.nombre}
+          <Grid size={editando && item?.codigo ? { xs: 12, sm: 8 } : 12}>
+            <TextField fullWidth size="small" label="Nombre *" value={form.nombre} autoFocus={autoFocus}
               onChange={e => set('nombre', e.target.value)} {...v.props('nombre')} />
           </Grid>
           {editando && item?.codigo && (
-            <Grid size={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.5, py: '6px', bgcolor: 'action.hover' }}>
                 <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', lineHeight: 1 }}>Código</Typography>
                 <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, fontFamily: 'monospace' }}>
@@ -150,7 +160,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
               </Box>
             </Grid>
           )}
-          <Grid size={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small" error={!!v.err('categoria')}>
               <InputLabel id="nuevo-item-dialog-categoria-label">Categoría</InputLabel>
               <Select labelId="nuevo-item-dialog-categoria-label" value={form.categoria} label="Categoría" onChange={e => set('categoria', e.target.value)}
@@ -160,7 +170,7 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
               {v.err('categoria') && <FormHelperText>{v.err('categoria')}</FormHelperText>}
             </FormControl>
           </Grid>
-          <Grid size={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <CampoUnidadMedida value={form.unidadMedida} onChange={u => set('unidadMedida', u)} label="Unidad" required />
             {v.err('unidadMedida') && <FormHelperText error>{v.err('unidadMedida')}</FormHelperText>}
           </Grid>
@@ -169,14 +179,14 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
               value={form.descripcion} onChange={e => set('descripcion', e.target.value)} />
           </Grid>
           {!editando && (
-            <Grid size={6}>
-              <TextField slotProps={{ htmlInput: { min: 0, step: 1 } }} fullWidth size="small" label="Stock inicial" type="number" value={form.stockActual}
-                onChange={e => set('stockActual', e.target.value)} {...v.props('stockActual')} />
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField slotProps={{ htmlInput: { inputMode: 'decimal', autoComplete: 'off' } }} fullWidth size="small" label="Stock inicial" type="text" value={form.stockActual}
+                onChange={e => set('stockActual', limpiarCantidad(e.target.value))} {...v.props('stockActual')} />
             </Grid>
           )}
-          <Grid size={editando ? 12 : 6}>
-            <TextField slotProps={{ htmlInput: { min: 0, step: 1 } }} fullWidth size="small" label="Stock mínimo" type="number" value={form.stockMinimo}
-              onChange={e => set('stockMinimo', e.target.value)}
+          <Grid size={editando ? 12 : { xs: 12, sm: 6 }}>
+            <TextField slotProps={{ htmlInput: { inputMode: 'numeric', autoComplete: 'off' } }} fullWidth size="small" label="Stock mínimo" type="text" value={form.stockMinimo}
+              onChange={e => set('stockMinimo', limpiarCantidad(e.target.value, { decimales: false }))}
               {...v.props('stockMinimo', 'Alerta cuando el stock baje de este valor')} />
           </Grid>
 
@@ -227,13 +237,13 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
                       placeholder="Ej: CON-2024-001"
                       value={form.comodatoContrato} onChange={e => set('comodatoContrato', e.target.value)} />
                   </Grid>
-                  <Grid size={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField fullWidth size="small" label="Fecha inicio contrato" type="date"
                       value={form.comodatoFechaInicio} onChange={e => set('comodatoFechaInicio', e.target.value)}
                       slotProps={{ inputLabel: { shrink: true } }}
                       {...v.props('comodatoFechaInicio', '¿Cuándo inicia?')} />
                   </Grid>
-                  <Grid size={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField fullWidth size="small" label="Fecha fin / devolución" type="date"
                       value={form.comodatoFechaFin} onChange={e => set('comodatoFechaFin', e.target.value)}
                       slotProps={{ inputLabel: { shrink: true } }}
@@ -245,19 +255,11 @@ export function NuevoItemDialog({ open, item, sedes, sedeSelId, onClose, onGuard
           </Grid>
         </Grid>
       </DialogContent>
-      {error && (
-        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
-          {error}
-        </Alert>
-      )}
       <ResumenErrores {...v.resumen} accion={editando ? 'guardar los cambios' : 'crear el artículo'} />
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
-        <Button variant="contained" onClick={guardar} disabled={guardando}
-          sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: 'var(--color-gradiente)' } }}>
-          {guardando ? <CircularProgress size={20} color="inherit" /> : editando ? 'Guardar cambios' : 'Crear artículo'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar
+        textoGuardar={editando ? 'Guardar cambios' : 'Crear artículo'}
+        sxGuardar={{ bgcolor: COLOR, '&:hover': { bgcolor: 'var(--color-gradiente)' } }} />
     </Dialog>
   );
 }

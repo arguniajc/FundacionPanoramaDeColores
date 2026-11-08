@@ -88,6 +88,15 @@ export default function VoluntariosPage() {
     recargarStats();
   };
 
+  // Desde el aviso de documento repetido: abre el voluntario que ya lo tiene
+  const handleVerExistente = async (existente) => {
+    if (!existente?.id) return;
+    try {
+      const { data } = await voluntariosRepository.obtener(existente.id);
+      setDialVol({ open: true, voluntario: data });
+    } catch (e) { err(mensajeErrorApi(e, { accion: `abrir el voluntario ${existente.nombre ?? ''}`.trim() })); }
+  };
+
   const handleAsignacionCambio = useCallback(async (id) => {
     try {
       const { data } = await voluntariosRepository.obtener(id);
@@ -215,7 +224,8 @@ export default function VoluntariosPage() {
       <VoluntarioDialog
         open={dialVol.open} voluntario={dialVol.voluntario}
         onClose={() => setDialVol({ open: false, voluntario: null })}
-        onGuardado={handleGuardado} />
+        onGuardado={handleGuardado}
+        onVerExistente={handleVerExistente} />
 
       <AsignacionesDialog
         open={dialAsig.open} voluntario={dialAsig.voluntario}

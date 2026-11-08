@@ -501,7 +501,8 @@ export default function BeneficiariosPage() {
       />
 
       {creando && (
-        <NuevoBeneficiario onCerrar={() => setCreando(false)} onCreado={handleBeneficiarioCreado} tipoDefault="niño" />
+        <NuevoBeneficiario onCerrar={() => setCreando(false)} onCreado={handleBeneficiarioCreado} tipoDefault="niño"
+          onVerBeneficiario={id => { setCreando(false); verFicha(id); }} />
       )}
 
       {seleccionada && (
@@ -519,7 +520,8 @@ export default function BeneficiariosPage() {
       />
 
       {editando && (
-        <EditarInscripcion inscripcion={editando} onCerrar={() => setEditando(null)} onGuardado={handleGuardadoEdicion} />
+        <EditarInscripcion inscripcion={editando} onCerrar={() => setEditando(null)} onGuardado={handleGuardadoEdicion}
+          onVerBeneficiario={id => { setEditando(null); verFicha(id); }} />
       )}
 
       <Dialog open={!!idBaja} onClose={() => { setIdBaja(null); setMotivoBaja(''); }} maxWidth="xs" fullWidth>

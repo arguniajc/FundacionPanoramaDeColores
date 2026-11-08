@@ -1266,7 +1266,8 @@ public static class DbMigrations
             ("beneficiarios", "barrio"),
             ("beneficiarios", "num_personas_vive"),
             ("beneficiarios", "num_hermanos"),
-            ("beneficiarios", "numero_documento"),
+            // numero_documento ya NO es obligatorio: con el tipo "Sin documento" se guarda NULL
+            // (ver beneficiarios.numero_documento.drop_not_null al final).
             ("beneficiario_talla", "talla_camisa"),
             ("beneficiario_talla", "talla_pantalon"),
             ("beneficiario_talla", "talla_zapatos"),
@@ -1392,6 +1393,32 @@ public static class DbMigrations
                 END IF;
             END $$
             """, "movimientos_contables.uq_consecutivo_anio");
+
+        // Contacto propio del adulto: celular / WhatsApp (o "No registra") y dirección. Para los niños
+        // siguen siendo los del acudiente (tabla acudientes); antes la dirección de un adulto se perdía.
+        await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS celular VARCHAR(20)",    "beneficiarios.celular");
+        await Migrar("ALTER TABLE beneficiarios ADD COLUMN IF NOT EXISTS direccion VARCHAR(200)", "beneficiarios.direccion");
+
+        // "Sin documento": el beneficiario se guarda sin número (NULL). Un paso anterior le ponía NOT NULL
+        // (ya quitado de la lista de obligatorios); el UNIQUE de la BD nueva admite varios NULL.
+        await Migrar("ALTER TABLE beneficiarios ALTER COLUMN numero_documento DROP NOT NULL", "beneficiarios.numero_documento.drop_not_null");
+
+        // Tipos de documento que el panel ofrece (src/shared/constants/tiposDocumento.js) y el catálogo no
+        // tenía: ResolverTipoDocumentoIdAsync busca por código, así que con PA, RAMV, PEP, 'Sin documento' u
+        // 'Otro' el beneficiario quedaba con tipo_documento_id NULL y perdía su tipo. Se amplía `codigo`
+        // (VARCHAR(10) → 20; ampliar un VARCHAR no reescribe la tabla ni rompe el UNIQUE) para guardar
+        // 'Sin documento' tal cual: el panel recibe exactamente el código que envía, sin mapeos.
+        // 'PAS' (semilla vieja) se deja: nada lo envía hoy y borrarlo podría dejar filas huérfanas.
+        await Migrar("ALTER TABLE cat_tipos_documento ALTER COLUMN codigo TYPE VARCHAR(20)", "cat_tipos_documento.codigo_20");
+        await Migrar("""
+            INSERT INTO cat_tipos_documento (codigo, nombre) VALUES
+                ('PA',            'Pasaporte'),
+                ('RAMV',          'Registro administrativo de migrantes venezolanos'),
+                ('PEP',           'Permiso especial de permanencia'),
+                ('Sin documento', 'Sin documento'),
+                ('Otro',          'Otro')
+            ON CONFLICT (codigo) DO NOTHING
+            """, "cat_tipos_documento.codigos_del_panel");
     }
 
     /// <summary>

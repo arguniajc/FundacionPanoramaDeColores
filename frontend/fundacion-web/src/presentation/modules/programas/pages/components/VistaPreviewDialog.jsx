@@ -1,17 +1,15 @@
 import {
-  Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Typography,
-  useMediaQuery, useTheme,
+  Box, Button, DialogActions, DialogContent, DialogTitle, Grid, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import { COLOR, camposDeSeccion, seccionesOrdenadas } from './helpers';
 import { CampoPreview } from './CampoPreview';
 
 export function VistaPreviewDialog({ campos, programa, onCerrar }) {
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const secciones = seccionesOrdenadas(campos);
 
   return (
-    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: { xs: 0, sm: 3 } } } }} open onClose={onCerrar} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ bgcolor: COLOR, color: 'white', py: 1.5 }}>
         <Typography sx={{ fontWeight: 700 }}>Vista previa del formulario</Typography>
         <Typography variant="caption" sx={{ opacity: 0.8 }}>{programa.nombre} · {programa.nombreSede}</Typography>

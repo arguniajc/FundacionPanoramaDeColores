@@ -1,9 +1,12 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Button, DialogActions, DialogContent, DialogTitle,
+  Box, Button, DialogContent, DialogTitle,
   FormHelperText, Grid, IconButton, MenuItem, TextField, Tooltip, Typography,
 } from '@mui/material';
 import Dialog from '@/shared/components/DialogResponsive';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import AddIcon    from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { actividadesRepository } from '@/infrastructure/repositories/actividadesRepository';
@@ -67,6 +70,7 @@ function parseHora(iso) {
 
 export function DialogActividad({ open, editando, programas, onClose, onGuardado }) {
   const [form,   setForm]   = useState(EMPTY_FORM);
+  const [inicial, setInicial] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
   const v = useValidacion(ESQUEMA, form);
@@ -77,7 +81,7 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
     setError('');
     reiniciar();
     if (editando) {
-      setForm({
+      const datos = {
         titulo:          editando.titulo,
         descripcion:     editando.descripcion ?? '',
         programaId:      editando.programaId  ?? '',
@@ -87,11 +91,18 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
         horaFin:         editando.fechaFin ? parseHora(editando.fechaFin) : '',
         estado:          editando.estado,
         diasAdicionales: (editando.diasAdicionales ?? []).map(d => ({ ...d })),
-      });
+      };
+      setForm(datos);
+      setInicial(datos);
     } else {
       setForm(EMPTY_FORM);
+      setInicial(EMPTY_FORM);
     }
   }, [open, editando, reiniciar]);
+
+  const hayCambios = open && hayCambiosEn(form, inicial);
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: saving, onCerrar: onClose });
+  const autoFocus = useAutoFocus();
 
   const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
 
@@ -137,26 +148,26 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} alEnviar={guardar} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, color: 'primary.main' }}>Editar actividad</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
 
-        <TextField label="Título *" fullWidth size="small"
+        <TextField label="Título *" fullWidth size="small" autoFocus={autoFocus}
           value={form.titulo} onChange={set('titulo')} {...v.props('titulo')} />
 
         {/* Fecha y rango horario principal */}
         <Grid container spacing={2}>
-          <Grid size={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField label="Fecha *" type="date" fullWidth size="small"
               value={form.fecha} onChange={set('fecha')}
               slotProps={{ inputLabel: { shrink: true } }} {...v.props('fecha')} />
           </Grid>
-          <Grid size={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField label="Hora inicio *" type="time" fullWidth size="small"
               value={form.horaInicio} onChange={set('horaInicio')}
               slotProps={{ inputLabel: { shrink: true } }} {...v.props('horaInicio')} />
           </Grid>
-          <Grid size={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <TextField label="Hora fin" type="time" fullWidth size="small"
               value={form.horaFin} onChange={set('horaFin')}
               slotProps={{ inputLabel: { shrink: true } }}
@@ -202,8 +213,8 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
           )}
 
           {form.diasAdicionales.map((dia, idx) => (
-            <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 }}>
-              <TextField label="Fecha" type="date" size="small" sx={{ flex: 2 }}
+            <Box key={idx} sx={{ display: 'flex', flexWrap: { xs: 'wrap', sm: 'nowrap' }, gap: 1, alignItems: 'flex-start', mt: 1 }}>
+              <TextField label="Fecha" type="date" size="small" sx={{ flex: 2, minWidth: { xs: '100%', sm: 0 } }}
                 value={dia.fecha}
                 onChange={e => editarDia(idx, 'fecha', e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }} />
@@ -225,16 +236,11 @@ export function DialogActividad({ open, editando, programas, onClose, onGuardado
           {v.err('diasAdicionales') && <FormHelperText error>{v.err('diasAdicionales')}</FormHelperText>}
         </Box>
 
-        {error && <Alert severity="error">{error}</Alert>}
       </DialogContent>
       <ResumenErrores {...v.resumen} accion="guardar la actividad" />
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" onClick={guardar} disabled={saving}
-          sx={{ bgcolor: COLOR }}>
-          {saving ? 'Guardando…' : 'Guardar'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={saving} enviar
+        textoGuardar="Guardar" sxGuardar={{ bgcolor: COLOR }} />
     </Dialog>
   );
 }

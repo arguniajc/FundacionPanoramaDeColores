@@ -12,6 +12,35 @@
  */
 
 import { parsearFechaISO } from './fecha';
+import { normalizarTipoDocumento, esDocumentoNumerico } from '../constants/tiposDocumento';
+
+// Pesos DIAN del dígito de verificación, aplicados a los dígitos de derecha a izquierda.
+const PESOS_DV_NIT = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
+
+/**
+ * Dígito de verificación (DV) de un NIT según la DIAN (módulo 11).
+ * Acepta puntos, espacios o un DV ya escrito (se ignora lo que va después del guion).
+ *   calcularDvNit('900123456')     // → 8
+ *   calcularDvNit('800.197.268')   // → 4   (DIAN)
+ *   calcularDvNit('abc')           // → null (no es un NIT)
+ * @returns {number|null}
+ */
+export function calcularDvNit(nit) {
+  if (nit === null || nit === undefined) return null;
+  const base = String(nit).split('-')[0].replace(/[\s.]/g, '');
+  if (!/^\d{1,15}$/.test(base)) return null;
+  let suma = 0;
+  for (let i = 0; i < base.length; i++) suma += Number(base[base.length - 1 - i]) * PESOS_DV_NIT[i];
+  const residuo = suma % 11;
+  return residuo > 1 ? 11 - residuo : residuo;
+}
+
+/** NIT con su DV: nitConDv('900123456') → '900123456-8' ('' si no es un NIT). */
+export function nitConDv(nit) {
+  const base = String(nit ?? '').split('-')[0].replace(/[\s.]/g, '');
+  const dv = calcularDvNit(base);
+  return dv === null ? '' : `${base}-${dv}`;
+}
 
 export const vacio = v => v === null || v === undefined || String(v).trim() === '';
 const num = v => (vacio(v) ? NaN : Number(String(v).replace(',', '.')));
@@ -67,11 +96,23 @@ export const r = {
       ? '' : `Escribe un celular de 10 dígitos o un fijo con indicativo, solo números. Ejemplo: ${ejemplo}`;
   },
 
-  /** NIT: 6 a 10 dígitos con dígito de verificación opcional. */
-  nit: (ejemplo = '900123456-7') => v => {
+  /**
+   * NIT: 6 a 10 dígitos con dígito de verificación (DV) opcional tras un guion.
+   * Si trae DV, se comprueba con el cálculo DIAN (ver calcularDvNit):
+   *   '900123456'   → ''        (sin DV se acepta; el formulario puede sugerirlo)
+   *   '900123456-8' → ''
+   *   '900123456-7' → 'El dígito de verificación no corresponde; debería ser 8. Ejemplo: 900123456-8'
+   */
+  nit: (ejemplo = '900123456-8') => v => {
     if (vacio(v)) return '';
-    return /^\d{6,10}(-\d)?$/.test(String(v).trim())
-      ? '' : `El NIT lleva solo números y, si aplica, guion y dígito de verificación. Ejemplo: ${ejemplo}`;
+    const s = String(v).trim();
+    if (!/^\d{6,10}(-\d)?$/.test(s))
+      return `El NIT lleva solo números y, si aplica, guion y dígito de verificación. Ejemplo: ${ejemplo}`;
+    const [base, dv] = s.split('-');
+    if (dv === undefined) return '';
+    const correcto = calcularDvNit(base);
+    return Number(dv) === correcto
+      ? '' : `El dígito de verificación no corresponde; debería ser ${correcto}. Ejemplo: ${base}-${correcto}`;
   },
 
   /** Documento de identidad: solo números (6 a 11) o, si se permite, letras y números (pasaporte). */
@@ -83,11 +124,15 @@ export const r = {
     return /^\d{6,11}$/.test(s) ? '' : `Escribe de 6 a 11 dígitos, sin puntos ni espacios. Ejemplo: ${ejemplo}`;
   },
 
-  /** Número de documento según el tipo elegido en otro campo (NIT, RC/TI/CC numéricos, el resto alfanumérico). */
+  /**
+   * Número de documento según el tipo elegido en otro campo. Usa el catálogo
+   * (constants/tiposDocumento) y entiende alias viejos y minúsculas ('Pasaporte', 'PP', 'nit'…):
+   * NIT → regla de NIT con DV; RC/TI/CC/NUIP → solo dígitos; el resto → letras y números.
+   */
   documentoSegunTipo: (campoTipo) => (v, form) => {
-    const tipo = form[campoTipo];
+    const tipo = normalizarTipoDocumento(form?.[campoTipo]);
     if (tipo === 'NIT') return r.nit()(v);
-    if (['RC', 'TI', 'CC', 'NUIP'].includes(tipo)) return r.documento({ ejemplo: tipo === 'CC' ? '1144123456' : '1107123456' })(v);
+    if (esDocumentoNumerico(tipo)) return r.documento({ ejemplo: tipo === 'CC' ? '1144123456' : '1107123456' })(v);
     return r.documento({ alfanumerico: true, ejemplo: 'AB123456' })(v);
   },
 

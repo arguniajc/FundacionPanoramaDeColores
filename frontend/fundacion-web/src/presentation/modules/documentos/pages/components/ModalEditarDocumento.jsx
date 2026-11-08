@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import {
-  Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
+  Box, DialogContent,
   DialogTitle, FormControl, FormHelperText, IconButton, InputLabel,
-  MenuItem, Select, TextField, Typography, useMediaQuery, useTheme,
+  MenuItem, Select, TextField, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon  from '@mui/icons-material/Edit';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
@@ -21,11 +25,14 @@ import {
  */
 export function ModalEditarDocumento({ documento, conCategoria = true, onCerrar, onGuardar, onToast }) {
   const [form,      setForm]      = useState(() => formEdicion(documento, conCategoria));
+  const [inicial]                 = useState(form);
   const [guardando, setGuardando] = useState(false);
   const [error,     setError]     = useState('');
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const v = useValidacion(conCategoria ? ESQUEMA_EDITAR_INSTITUCIONAL : ESQUEMA_EDITAR_BENEFICIARIO, form);
+
+  const hayCambios = hayCambiosEn(form, inicial);
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: guardando, onCerrar });
+  const autoFocus = useAutoFocus();
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -34,7 +41,7 @@ export function ModalEditarDocumento({ documento, conCategoria = true, onCerrar,
     setGuardando(true); setError('');
     try {
       await onGuardar(datosEdicion(form, conCategoria));
-      onToast('Documento actualizado', 'success');
+      onToast('Documento actualizado correctamente', 'success');
       onCerrar();
     } catch (err) {
       setError(mensajeErrorApi(err, { accion: 'guardar los cambios del documento' }));
@@ -43,17 +50,15 @@ export function ModalEditarDocumento({ documento, conCategoria = true, onCerrar,
   };
 
   return (
-    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open
-      onClose={guardando ? undefined : onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: { xs: 0, sm: 3 } } } }} open
+      onClose={confirmarCierre} alEnviar={handleGuardar} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ background: HEADER_GRADIENT, color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><EditIcon /> Editar documento</Box>
-        <IconButton onClick={onCerrar} disabled={guardando} size="small" aria-label="Cerrar" sx={{ color: 'rgba(255,255,255,0.8)' }}><CloseIcon /></IconButton>
+        <IconButton onClick={() => confirmarCierre()} disabled={guardando} size="small" aria-label="Cerrar" sx={{ color: 'rgba(255,255,255,0.8)' }}><CloseIcon /></IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ py: 2.5, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {error && <Alert severity="error">{error}</Alert>}
-
         <TextField fullWidth size="small" label={conCategoria ? 'Título *' : 'Nombre del documento *'}
-          value={form.titulo} onChange={set('titulo')} {...v.props('titulo')} />
+          value={form.titulo} onChange={set('titulo')} autoFocus={autoFocus} {...v.props('titulo')} />
 
         {conCategoria && (
           <>
@@ -76,14 +81,9 @@ export function ModalEditarDocumento({ documento, conCategoria = true, onCerrar,
         </Typography>
       </DialogContent>
       <ResumenErrores {...v.resumen} accion="guardar los cambios" />
-      <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-        <Button onClick={onCerrar} variant="outlined" disabled={guardando}>Cancelar</Button>
-        <Button variant="contained" onClick={handleGuardar} disabled={guardando}
-          startIcon={guardando ? <CircularProgress size={16} color="inherit" /> : <EditIcon />}
-          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, fontWeight: 700, minWidth: 140 }}>
-          {guardando ? 'Guardando…' : 'Guardar cambios'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar textoGuardar="Guardar cambios"
+        sxGuardar={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, minWidth: 140 }} />
     </Dialog>
   );
 }

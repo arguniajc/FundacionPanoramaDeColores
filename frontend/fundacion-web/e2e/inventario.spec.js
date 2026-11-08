@@ -42,8 +42,8 @@ test.describe('Inventario', () => {
     await combo(dialogo, 'Categoría').click();
     await page.getByRole('option', { name: 'Material escolar' }).click();
     await dialogo.getByRole('combobox', { name: /^Unidad/ }).fill('paquete');
-    await dialogo.getByRole('spinbutton', { name: 'Stock inicial' }).fill('40');
-    await dialogo.getByRole('spinbutton', { name: 'Stock mínimo' }).fill('10');
+    await dialogo.getByRole('textbox', { name: 'Stock inicial' }).fill('40');
+    await dialogo.getByRole('textbox', { name: 'Stock mínimo' }).fill('10');
 
     await dialogo.getByRole('button', { name: 'Crear artículo' }).click();
 
@@ -79,7 +79,7 @@ test.describe('Inventario', () => {
     await expect(page.getByRole('option', { name: 'Transferencia (salida)' })).toHaveCount(0);
     await page.getByRole('option', { name: 'Salida por entrega' }).click();
 
-    const cantidad = dialogo.getByRole('spinbutton', { name: /^Cantidad/ });
+    const cantidad = dialogo.getByRole('textbox', { name: /^Cantidad/ });
     await cantidad.fill('20');
     // Al salir del campo aparece su mensaje (y se mueven los botones): se sale antes de pulsar
     await cantidad.blur();

@@ -1,11 +1,11 @@
-import {
-  Alert, FormControl, Grid, InputLabel, MenuItem, Select, TextField,
-} from '@mui/material';
+import { Alert, Grid, TextField } from '@mui/material';
 import { Seccion }             from './Seccion';
 import { FirmaRepresentante }  from './FirmaRepresentante';
-import { TIPOS_DOC }           from './helpers';
+import { TIPOS_DOC_REP }       from './helpers';
+import { CampoDocumento }      from '@/shared/components/form/FormControles';
 
 export function TabRepLegal({ form, set, setForm, v }) {
+  const setValor = k => val => setForm(p => ({ ...p, [k]: val }));
   return (
     <Seccion titulo="Representante Legal">
       <Alert severity="info" sx={{ mb: 2.5 }} icon={false}>
@@ -15,19 +15,17 @@ export function TabRepLegal({ form, set, setForm, v }) {
       <Grid container spacing={2.5}>
         <Grid size={12}>
           <TextField fullWidth size="small" label="Nombre completo" value={form.nombreRepLegal} onChange={set('nombreRepLegal')}
+            slotProps={{ htmlInput: { autoComplete: 'off' } }}
             {...v.props('nombreRepLegal')} />
         </Grid>
-        <Grid size={{ xs: 12, sm: 5 }}>
-          <FormControl fullWidth size="small">
-            <InputLabel id="tab-rep-legal-tipo-de-documento-label">Tipo de documento</InputLabel>
-            <Select labelId="tab-rep-legal-tipo-de-documento-label" label="Tipo de documento" value={form.tipoDocRep} onChange={set('tipoDocRep')}>
-              {TIPOS_DOC.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 7 }}>
-          <TextField fullWidth size="small" label="Número de documento" value={form.documentoRep} onChange={set('documentoRep')}
-            {...v.props('documentoRep')} />
+        <Grid size={12}>
+          {/* Catálogo único de tipos; con NIT valida el DV y sugiere el correcto. */}
+          <CampoDocumento
+            aplicaA={TIPOS_DOC_REP}
+            labelTipo="Tipo de documento" labelNumero="Número de documento"
+            tipoDocumento={form.tipoDocRep} documento={form.documentoRep}
+            onChangeTipo={setValor('tipoDocRep')} onChangeNumero={setValor('documentoRep')}
+            validacionNumero={v.props('documentoRep')} />
         </Grid>
         <Grid size={12}>
           <TextField fullWidth size="small" label="Cargo"
@@ -36,7 +34,7 @@ export function TabRepLegal({ form, set, setForm, v }) {
             {...v.props('cargoRep')} />
         </Grid>
         <Grid size={12}>
-          <FirmaRepresentante value={form.firmaRep} onChange={(v) => setForm(p => ({ ...p, firmaRep: v }))} />
+          <FirmaRepresentante value={form.firmaRep} onChange={setValor('firmaRep')} />
         </Grid>
       </Grid>
     </Seccion>

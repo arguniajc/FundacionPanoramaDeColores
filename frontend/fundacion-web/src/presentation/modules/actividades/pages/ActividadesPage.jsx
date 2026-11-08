@@ -18,6 +18,7 @@ import EditIcon          from '@mui/icons-material/Edit';
 import PeopleIcon        from '@mui/icons-material/People';
 import ScheduleIcon      from '@mui/icons-material/Schedule';
 import { BRAND_COLOR }           from '@/shared/constants/brand';
+import { useToast }              from '@/shared/context/useToast';
 import { DialogActividad }       from './components/DialogActividad';
 import { DialogAsistencia }      from './components/DialogAsistencia';
 import { DialogNuevaActividad }  from './components/DialogNuevaActividad';
@@ -33,6 +34,7 @@ function EstadoChip({ estado }) {
 
 export default function ActividadesPage() {
   const calendarRef = useRef(null);
+  const toast = useToast();
   const theme = useTheme();
   // En celular la vista de mes corta los títulos: se abre en lista (se puede cambiar)
   const movil = useMediaQuery(theme.breakpoints.down('sm'));
@@ -253,7 +255,10 @@ export default function ActividadesPage() {
         programas={programas}
         fechaInicialSugerida={fechaInicialSug}
         onClose={() => setNuevaOpen(false)}
-        onGuardado={() => { cargar(); cargarHorarios(); }}
+        onGuardado={tipo => {
+          cargar(); cargarHorarios();
+          toast(tipo === 'recurrente' ? 'Horario creado correctamente.' : 'Actividad creada correctamente.');
+        }}
       />
 
       <DialogActividad
@@ -262,14 +267,17 @@ export default function ActividadesPage() {
         fechaInicialSugerida=""
         programas={programas}
         onClose={() => setEditDialogOpen(false)}
-        onGuardado={() => cargar(mesCalendario ? { view: { currentStart: mesCalendario } } : undefined)}
+        onGuardado={() => {
+          toast('Actividad guardada correctamente.');
+          return cargar(mesCalendario ? { view: { currentStart: mesCalendario } } : undefined);
+        }}
       />
 
       <DialogAsistencia
         open={asistenciaOpen}
         actividad={actividadSel}
         onClose={() => setAsistenciaOpen(false)}
-        onGuardado={cargar}
+        onGuardado={() => { cargar(); toast('Asistencia guardada correctamente.'); }}
       />
 
       <Menu

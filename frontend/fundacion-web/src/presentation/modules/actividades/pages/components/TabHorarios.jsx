@@ -17,6 +17,7 @@ import { DialogHorario }         from './DialogHorario';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { useAsyncData } from '@/shared/hooks/useAsyncData';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
+import { useToast } from '@/shared/context/useToast';
 
 const COLOR = BRAND_COLOR;
 
@@ -28,6 +29,7 @@ const DIAS_COLOR = {
 
 export function TabHorarios({ programas, puedo, onCambio }) {
   const confirm = useConfirm();
+  const toast = useToast();
   const {
     data: horarios, cargando, error, setError, ejecutar: cargar,
   } = useAsyncData(
@@ -215,7 +217,7 @@ export function TabHorarios({ programas, puedo, onCambio }) {
       <DialogHorario
         open={dialogOpen} editando={editando} programas={programas}
         onClose={() => setDialogOpen(false)}
-        onGuardado={cargar}
+        onGuardado={() => { cargar(); toast('Horario guardado correctamente.'); }}
       />
     </Box>
   );

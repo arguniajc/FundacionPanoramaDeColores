@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle,
-  Grid, InputAdornment, TextField, Typography,
+  Box, DialogContent, DialogTitle, Grid, TextField, Typography,
 } from '@mui/material';
 import Dialog from '@/shared/components/DialogResponsive';
 import { nominaRepository } from '@/infrastructure/repositories/nominaRepository';
@@ -9,6 +8,9 @@ import { mensajeErrorApi }  from '@/shared/utils/mensajeErrorApi';
 import { r }                from '@/shared/utils/validacion';
 import { useValidacion }    from '@/shared/hooks/useValidacion';
 import ResumenErrores       from '@/shared/components/ResumenErrores';
+import { CampoMoneda, AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus }     from '@/shared/hooks/useAutoFocus';
 import {
   fmtCOP, fmtPorcentaje, calcularLiquidacion as calcular,
   PARAMETROS_NOMINA_DEFECTO, normalizarParametrosNomina,
@@ -43,17 +45,23 @@ const n = v => Number(v) || 0;
 export function EditarLiquidacionDialog({ liquidacion, onClose, onGuardada }) {
   const open = Boolean(liquidacion);
   const [form, setForm] = useState(() => formDesde(liquidacion));
+  const [inicial, setInicial] = useState(() => formDesde(liquidacion));
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const v = useValidacion(ESQUEMA, form);
   const { reiniciar } = v;
+  const autoFocus = useAutoFocus();
+  const hayCambios = open && hayCambiosEn(form, inicial);
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: guardando, onCerrar: onClose });
 
   // Al abrir con otra liquidación se carga su formulario (durante el render, no en un efecto)
   const [cargadaId, setCargadaId] = useState(liquidacion?.id ?? null);
   if ((liquidacion?.id ?? null) !== cargadaId) {
     setCargadaId(liquidacion?.id ?? null);
     if (liquidacion) {
-      setForm(formDesde(liquidacion));
+      const datos = formDesde(liquidacion);
+      setForm(datos);
+      setInicial(datos);
       setError('');
       reiniciar();
     }
@@ -73,10 +81,11 @@ export function EditarLiquidacionDialog({ liquidacion, onClose, onGuardada }) {
   }, [open]);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const setValor = (k, valor) => setForm(f => ({ ...f, [k]: valor }));
   const t = calcular(form, parametros);
 
   const guardar = async () => {
-    if (!v.validarTodo()) return;
+    if (guardando || !v.validarTodo()) return;
     setGuardando(true); setError('');
     try {
       const { data } = await nominaRepository.editarLiquidacion(liquidacion.id, {
@@ -97,14 +106,12 @@ export function EditarLiquidacionDialog({ liquidacion, onClose, onGuardada }) {
   };
 
   const campoPesos = (campo, label, ayuda) => (
-    <TextField fullWidth size="small" type="number" label={label}
-      value={form[campo]} onChange={set(campo)}
-      slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }}
+    <CampoMoneda label={label} value={form[campo]} onChange={m => setValor(campo, m)}
       {...v.props(campo, ayuda)} />
   );
 
   return (
-    <Dialog open={open} onClose={guardando ? undefined : onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} alEnviar={guardar} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>
         Editar liquidación
         {liquidacion && (
@@ -114,11 +121,11 @@ export function EditarLiquidacionDialog({ liquidacion, onClose, onGuardada }) {
         )}
       </DialogTitle>
       <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2} sx={{ pt: 1 }}>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth size="small" type="number" label="Días trabajados *"
-              value={form.diasTrabajados} onChange={set('diasTrabajados')}
+            <TextField fullWidth size="small" type="text" label="Días trabajados *" autoFocus={autoFocus}
+              value={form.diasTrabajados} onChange={e => setValor('diasTrabajados', e.target.value.replace(/D/g, ''))}
+              slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 2 } }}
               {...v.props('diasTrabajados', 'De 0 a 30')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 8 }}>
@@ -156,12 +163,8 @@ export function EditarLiquidacionDialog({ liquidacion, onClose, onGuardada }) {
         )}
       </DialogContent>
       <ResumenErrores {...v.resumen} accion="guardar la liquidación" />
-      <DialogActions>
-        <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
-        <Button variant="contained" onClick={guardar} disabled={guardando}>
-          {guardando ? <CircularProgress size={18} color="inherit" /> : 'Guardar'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar />
     </Dialog>
   );
 }

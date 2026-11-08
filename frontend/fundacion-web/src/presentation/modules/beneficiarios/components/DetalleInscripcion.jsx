@@ -130,6 +130,21 @@ function Campo({ label, value, children }) {
   );
 }
 
+/** Número con enlace a WhatsApp; "No registra" (o vacío) se muestra como texto, sin enlace. */
+function NumeroWhatsapp({ numero }) {
+  const digitos = String(numero ?? '').replace(/\D/g, '');
+  if (!digitos) return <Typography variant="body2">{numero || '—'}</Typography>;
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <IconButton size="small" component="a" href={`https://wa.me/${digitos}`} target="_blank" rel="noopener noreferrer"
+        aria-label={`Abrir WhatsApp ${numero}`} sx={{ color: '#25D366', p: 0.5, flexShrink: 0 }}>
+        <WhatsAppIcon fontSize="small" />
+      </IconButton>
+      <Typography sx={{ fontWeight: 600 }} variant="body2">{numero}</Typography>
+    </Box>
+  );
+}
+
 function TallaCard({ icono, valor, etiqueta }) {
   return (
     <Box
@@ -440,7 +455,17 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
             </>
           )}
 
-          {/* ── Acudiente ───────────────────────────────────────────────────── */}
+          {/* ── Contacto propio (adulto) / Acudiente (niño) ─────────────────── */}
+          {ins.tipo === 'adulto' ? (
+            <>
+              <Seccion titulo="Contacto" />
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Campo label="Celular / WhatsApp">
+                  <NumeroWhatsapp numero={ins.celular} />
+                </Campo>
+              </Grid>
+            </>
+          ) : (<>
           <Seccion titulo="Acudiente" icono={<FamilyRestroomIcon sx={{ fontSize: 18 }} />} />
 
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -449,19 +474,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Campo label="WhatsApp">
-              {ins.whatsapp ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <IconButton size="small" component="a"
-                    href={`https://wa.me/${ins.whatsapp.replace(/\D/g, '')}`}
-                    target="_blank"
-                    sx={{ color: '#25D366', p: 0.5, flexShrink: 0 }}>
-                    <WhatsAppIcon fontSize="small" />
-                  </IconButton>
-                  <Typography sx={{ fontWeight: 600 }} variant="body2">{ins.whatsapp}</Typography>
-                </Box>
-              ) : (
-                <Typography variant="body2">—</Typography>
-              )}
+              <NumeroWhatsapp numero={ins.whatsapp} />
             </Campo>
             <Campo label="¿Vive con el niño?">
               <Typography sx={{ fontWeight: 500 }} variant="body2">
@@ -471,6 +484,7 @@ export default function DetalleInscripcion({ inscripcion: ins, onCerrar, onEdita
               </Typography>
             </Campo>
           </Grid>
+          </>)}
 
           {/* ── Autorización ────────────────────────────────────────────────── */}
           <Grid size={12}>

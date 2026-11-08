@@ -1,7 +1,7 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Button, TextField, MenuItem, Grid, Chip,
-  IconButton, DialogTitle, DialogContent, DialogActions, Alert,
+  IconButton, DialogTitle, DialogContent, Alert,
   Skeleton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -9,13 +9,16 @@ import Dialog from '@/shared/components/DialogResponsive';
 import AddIcon    from '@mui/icons-material/Add';
 import EditIcon   from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import SaveIcon   from '@mui/icons-material/Save';
 import { useConfirm } from '@/shared/components/useConfirm';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
+import { useToast } from '@/shared/context/useToast';
 import { colorEstado } from '@/shared/theme/paleta';
 
 const TIPOS_NOVEDAD   = ['vacaciones','incapacidad','permiso_remunerado','permiso_no_remunerado','comision','otro'];
@@ -54,21 +57,30 @@ function fmtFecha(f) {
 }
 
 function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
-  const [form, setForm]     = useState(NOVEDAD_VACIA);
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState('');
+  const [form, setForm]       = useState(NOVEDAD_VACIA);
+  const [inicial, setInicial] = useState(NOVEDAD_VACIA);
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
   const v = useValidacion(ESQUEMA_NOVEDAD, form);
   const { reiniciar } = v;
+  const autoFocus = useAutoFocus();
+
+  const hayCambios = open && hayCambiosEn(form, inicial);
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: saving, onCerrar: onClose });
 
   useEffect(() => {
-    setForm(novedad ? {
+    if (!open) return;
+    const datos = novedad ? {
       tipo:        novedad.tipo,
       fechaInicio: novedad.fechaInicio ?? '',
       fechaFin:    novedad.fechaFin    ?? '',
-      dias:        novedad.dias        ?? '',
+      // Texto, como lo deja el campo al escribir (así el snapshot se compara igual)
+      dias:        novedad.dias === null || novedad.dias === undefined ? '' : String(novedad.dias),
       descripcion: novedad.descripcion ?? '',
       estado:      novedad.estado,
-    } : NOVEDAD_VACIA);
+    } : NOVEDAD_VACIA;
+    setForm(datos);
+    setInicial(datos);
     setError('');
     reiniciar();
   }, [novedad, open, reiniciar]);
@@ -76,7 +88,7 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
   const guardar = async () => {
-    if (!v.validarTodo()) return;
+    if (saving || !v.validarTodo()) return;
     setSaving(true); setError('');
     try {
       const payload = {
@@ -92,7 +104,7 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
       } else {
         await apiClient.post(`/api/talento-humano/${empleadoId}/novedades`, payload);
       }
-      onSaved();
+      onSaved(!!novedad);
     } catch (e) {
       setError(mensajeErrorApi(e, { accion: novedad ? 'actualizar la novedad' : 'registrar la novedad' }));
     } finally {
@@ -101,13 +113,12 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} alEnviar={guardar} maxWidth="sm" fullWidth>
       <DialogTitle fontWeight={700}>{novedad ? 'Editar novedad' : 'Nueva novedad'}</DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField select fullWidth label="Tipo" value={form.tipo} onChange={set('tipo')} size="small">
+            <TextField select fullWidth label="Tipo" value={form.tipo} onChange={set('tipo')} size="small" autoFocus={autoFocus}>
               {TIPOS_NOVEDAD.map(t => <MenuItem key={t} value={t}>{t.replace(/_/g, ' ')}</MenuItem>)}
             </TextField>
           </Grid>
@@ -125,7 +136,10 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
               size="small" type="date" slotProps={{ inputLabel: { shrink: true } }} {...v.props('fechaFin')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Días" value={form.dias} onChange={set('dias')} size="small" type="number" {...v.props('dias')} />
+            <TextField fullWidth label="Días" value={form.dias} size="small" type="text"
+              onChange={e => setForm(p => ({ ...p, dias: e.target.value.replace(/D/g, '') }))}
+              slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 3 } }}
+              {...v.props('dias', 'Ejemplo: 15')} />
           </Grid>
           <Grid size={12}>
             <TextField fullWidth label="Descripción" value={form.descripcion} onChange={set('descripcion')}
@@ -134,12 +148,9 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
         </Grid>
       </DialogContent>
       <ResumenErrores {...v.resumen} accion={novedad ? 'actualizar la novedad' : 'registrar la novedad'} />
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" startIcon={<SaveIcon />} onClick={guardar} disabled={saving}>
-          {saving ? 'Guardando…' : 'Guardar'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={saving} enviar
+        textoGuardar={novedad ? 'Guardar' : 'Registrar novedad'} />
     </Dialog>
   );
 }
@@ -148,6 +159,7 @@ function DialogNovedad({ open, onClose, novedad, empleadoId, onSaved }) {
 export function PanelNovedades({ empleado, puedo }) {
   const theme = useTheme();
   const confirm = useConfirm();
+  const toast = useToast();
   const [novedades, setNovedades]   = useState([]);
   const [loading,   setLoading]     = useState(true);
   const [dialog,    setDialog]      = useState(false);
@@ -177,6 +189,7 @@ export function PanelNovedades({ empleado, puedo }) {
       setError(mensajeErrorApi(err, { accion: 'eliminar la novedad' }));
       return;
     }
+    toast('Novedad eliminada.');
     cargar();
   };
 
@@ -252,7 +265,10 @@ export function PanelNovedades({ empleado, puedo }) {
         onClose={() => setDialog(false)}
         novedad={editNov}
         empleadoId={empleado.id}
-        onSaved={() => { setDialog(false); cargar(); }}
+        onSaved={(editando) => {
+          setDialog(false); cargar();
+          toast(editando ? 'Novedad actualizada correctamente.' : 'Novedad registrada correctamente.');
+        }}
       />
     </Box>
   );

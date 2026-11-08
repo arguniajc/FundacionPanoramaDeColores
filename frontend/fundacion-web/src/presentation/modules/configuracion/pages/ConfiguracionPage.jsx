@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, CircularProgress, Divider,
-  Snackbar, Tab, Tabs, Typography,
+  Snackbar, Tab, Tabs, Tooltip, Typography,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { configuracionRepository } from '@/infrastructure/repositories/configuracionRepository';
@@ -20,6 +20,8 @@ import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r, vacio } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
+import { normalizarTipoDocumento } from '@/shared/constants/tiposDocumento';
+import { pestanasConCambios } from './components/cambiosConfig';
 
 // Reglas propias de esta pantalla
 const url = (ejemplo = 'https://fundacionpanoramadecolores.org') => r.propia(v =>
@@ -70,6 +72,7 @@ export default function ConfiguracionPage() {
   const [form,       setForm]      = useState(VACIO_FORM);
   const [formPrev,   setFormPrev]  = useState(VACIO_FORM);
   const [webForm,    setWebForm]   = useState(DEFAULT_WEB);
+  const [webPrev,    setWebPrev]   = useState(DEFAULT_WEB);
   const [tab,        setTab]       = useState(0);
   const [cargando,   setCargando]  = useState(true);
   const [guardando,  setGuardando] = useState(false);
@@ -99,7 +102,7 @@ export default function ConfiguracionPage() {
           direccion:         data.direccion         ?? '',
           telefono:          data.telefono          ?? '',
           nombreRepLegal:    data.nombreRepLegal     ?? '',
-          tipoDocRep:        data.tipoDocRep         ?? 'CC',
+          tipoDocRep:        data.tipoDocRep         || 'CC',
           documentoRep:      data.documentoRep       ?? '',
           cargoRep:          data.cargoRep           ?? '',
           firmaRep:          data.firmaRep           ?? '',
@@ -122,7 +125,7 @@ export default function ConfiguracionPage() {
           webContenido:      data.webContenido       ?? '',
           // SMTP
           smtpHost:          data.smtpHost           ?? '',
-          smtpPuerto:        data.smtpPuerto         ?? 587,
+          smtpPuerto:        String(data.smtpPuerto  ?? 587),   // texto, como queda al editarlo
           smtpUsuario:       data.smtpUsuario        ?? '',
           smtpClave:         '',                          // nunca se precarga la clave
           smtpClaveGuardada: data.smtpClaveGuardada  ?? false,
@@ -136,7 +139,9 @@ export default function ConfiguracionPage() {
         setFormPrev(loaded);
         if (data.webContenido) {
           try {
-            setWebForm(mergeDeep(DEFAULT_WEB, JSON.parse(data.webContenido)));
+            const web = mergeDeep(DEFAULT_WEB, JSON.parse(data.webContenido));
+            setWebForm(web);
+            setWebPrev(web);
           } catch { /* opcional: si el JSON guardado está dañado se usan los textos por defecto */ }
         }
       })
@@ -146,6 +151,16 @@ export default function ConfiguracionPage() {
 
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
+  // Pestañas con cambios sin guardar (se marcan con •) y aviso al salir de la página.
+  const cambiosPorPestana = pestanasConCambios(form, formPrev, webForm, webPrev);
+  const hayCambios = cambiosPorPestana.some(Boolean);
+  useEffect(() => {
+    if (!hayCambios) return undefined;
+    const avisar = e => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', avisar);
+    return () => window.removeEventListener('beforeunload', avisar);
+  }, [hayCambios]);
+
   const repCambiado = tab === 1 && (
     form.nombreRepLegal !== formPrev.nombreRepLegal ||
     form.documentoRep   !== formPrev.documentoRep   ||
@@ -154,6 +169,7 @@ export default function ConfiguracionPage() {
   );
 
   const handleGuardar = async () => {
+    if (guardando) return;
     if (!v.validarTodo()) {
       // Lleva a la pestaña del primer dato mal llenado para que se vea el campo marcado
       const primero = Object.keys(v.errores)[0];
@@ -161,6 +177,8 @@ export default function ConfiguracionPage() {
       return;
     }
     setGuardando(true); setError('');
+    // 'PP'/'Pasaporte' (datos viejos) → código del catálogo ('PA')
+    const tipoDocRep = normalizarTipoDocumento(form.tipoDocRep);
     try {
       const { data } = await configuracionRepository.guardar({
         nombreFundacion:   form.nombreFundacion   || null,
@@ -168,7 +186,7 @@ export default function ConfiguracionPage() {
         direccion:         form.direccion         || null,
         telefono:          form.telefono          || null,
         nombreRepLegal:    form.nombreRepLegal     || null,
-        tipoDocRep:        form.tipoDocRep         || null,
+        tipoDocRep:        tipoDocRep              || null,
         documentoRep:      form.documentoRep       || null,
         cargoRep:          form.cargoRep           || null,
         firmaRep:          form.firmaRep           || null,
@@ -201,7 +219,10 @@ export default function ConfiguracionPage() {
         ...nominaParaApi(form),
       });
       actualizarConfig(data);
-      setFormPrev({ ...form });
+      const guardado = { ...form, tipoDocRep };
+      setForm(p => ({ ...p, tipoDocRep }));
+      setFormPrev(guardado);
+      setWebPrev(webForm);
       if (repCambiado) setAvisoRep(true);
       setToast('Configuración guardada correctamente');
     } catch (e) {
@@ -241,21 +262,36 @@ export default function ConfiguracionPage() {
             <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto"
               sx={{ '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: '0.88rem' },
                     '& .Mui-selected': { color: COLOR }, '& .MuiTabs-indicator': { backgroundColor: COLOR } }}>
-              {TABS.map((t, i) => <Tab key={i} label={t} />)}
+              {TABS.map((t, i) => (
+                <Tab key={i} label={cambiosPorPestana[i] ? (
+                  <Tooltip title="Cambios sin guardar">
+                    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                      {t}
+                      <Box component="span" aria-label="(cambios sin guardar)"
+                        sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'warning.main', flexShrink: 0 }} />
+                    </Box>
+                  </Tooltip>
+                ) : t} />
+              ))}
             </Tabs>
           </Box>
 
-          {tab === 0 && <TabFundacion   form={form} set={set} v={v} />}
+          {tab === 0 && <TabFundacion   form={form} set={set} setForm={setForm} v={v} />}
           {tab === 1 && <TabRepLegal    form={form} set={set} setForm={setForm} v={v} />}
           {tab === 2 && <TabApariencia  form={form} setForm={setForm} />}
           {tab === 3 && <TabTextos      form={form} set={set} v={v} />}
           {tab === 4 && <TabPaginaWeb   webForm={webForm} setWebForm={setWebForm} v={v} />}
           {tab === 5 && <TabSmtp        form={form} set={set} v={v} />}
-          {tab === 6 && <TabNomina      form={form} set={set} v={v} />}
+          {tab === 6 && <TabNomina      form={form} set={set} setForm={setForm} v={v} />}
 
           <Divider sx={{ my: 3 }} />
           <ResumenErrores {...v.resumen} accion="guardar la configuración" sx={{ mx: 0, mt: 0, mb: 2 }} />
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            {hayCambios && (
+              <Typography variant="caption" sx={{ color: 'warning.main', fontWeight: 600 }}>
+                Hay cambios sin guardar
+              </Typography>
+            )}
             <Button variant="contained" startIcon={<SaveIcon />} onClick={handleGuardar} disabled={guardando}
               sx={{ bgcolor: COLOR, px: 3, '&:hover': { bgcolor: COLOR, opacity: 0.9 } }}>
               {guardando ? 'Guardando…' : 'Guardar configuración'}

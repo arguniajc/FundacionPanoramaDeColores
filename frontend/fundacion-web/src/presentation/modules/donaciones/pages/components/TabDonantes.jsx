@@ -55,6 +55,14 @@ export function TabDonantes({ onNuevaDonacion }) {
     ok(editando ? 'Donante actualizado.' : 'Donante creado.');
   };
 
+  // Aviso de documento repetido → abre el donante que ya existe para editarlo
+  const handleVerExistente = async ({ id }) => {
+    try {
+      const { data } = await donantesRepository.obtener(id);
+      setDialDon({ open: true, donante: data });
+    } catch (e) { err(mensajeErrorApi(e, { accion: 'abrir el donante existente' })); }
+  };
+
   const handleEliminar = async (donante) => {
     if (!await confirm(`¿Eliminar a "${donante.nombre}"? Si tiene donaciones quedará inactivo.`)) return;
     try {
@@ -166,6 +174,7 @@ export function TabDonantes({ onNuevaDonacion }) {
         open={dialDon.open} donante={dialDon.donante}
         onClose={() => setDialDon({ open: false, donante: null })}
         onGuardado={handleGuardado}
+        onVerExistente={handleVerExistente}
       />
 
       <Snackbar open={snack.open} autoHideDuration={snack.sev === 'error' ? 8000 : 3500}

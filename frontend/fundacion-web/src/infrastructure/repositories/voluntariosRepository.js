@@ -8,6 +8,8 @@ export const voluntariosRepository = {
   toggle:             (id)        => apiClient.patch(`/api/voluntarios/${id}/toggle`),
   eliminar:           (id)        => apiClient.delete(`/api/voluntarios/${id}`),
   stats:              ()          => apiClient.get('/api/voluntarios/stats'),
+  /** { numero, excluirId? } → { existe, id, nombre }: ¿otro voluntario ya tiene ese documento? */
+  verificarDocumento: (datos)     => apiClient.post('/api/voluntarios/verificar-documento', datos),
   listarAsignaciones: (id)        => apiClient.get(`/api/voluntarios/${id}/asignaciones`),
   agregarAsignacion:  (id, datos) => apiClient.post(`/api/voluntarios/${id}/asignaciones`, datos),
   editarAsignacion:   (asigId, datos) => apiClient.put(`/api/voluntarios/asignaciones/${asigId}`, datos),

@@ -1,10 +1,13 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Button, Chip, DialogActions, DialogContent,
+  Box, Chip, DialogContent,
   DialogTitle, Divider, FormHelperText, Grid, MenuItem, Switch, TextField, Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import AccessTimeIcon   from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlaceIcon        from '@mui/icons-material/Place';
@@ -70,6 +73,7 @@ function toggleDia(dias, valor) {
 
 export function DialogHorario({ open, editando, programas, onClose, onGuardado }) {
   const [form,   setForm]   = useState(EMPTY);
+  const [inicial, setInicial] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
   const v = useValidacion(ESQUEMA, form);
@@ -79,8 +83,8 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
     if (!open) return;
     setError('');
     reiniciar();
-    if (editando) {
-      setForm({
+    const datos = editando
+      ? {
         programaId:          editando.programaId,
         diasSemana:          [editando.diaSemana],  // edición: un día a la vez
         horaInicio:          editando.horaInicio,
@@ -89,11 +93,15 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
         fechaInicioVigencia: editando.fechaInicioVigencia ?? '',
         fechaFinVigencia:    editando.fechaFinVigencia    ?? '',
         activo:              editando.activo,
-      });
-    } else {
-      setForm({ ...EMPTY, programaId: programas[0]?.id ?? '' });
-    }
+      }
+      : { ...EMPTY, programaId: programas[0]?.id ?? '' };
+    setForm(datos);
+    setInicial(datos);
   }, [open, editando, programas, reiniciar]);
+
+  const hayCambios = open && hayCambiosEn(form, inicial);
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: saving, onCerrar: onClose });
+  const autoFocus = useAutoFocus();
 
   const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
 
@@ -139,7 +147,7 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} alEnviar={guardar} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, pb: 1, color: 'primary.main' }}>
         {editando ? 'Editar sesión del horario' : 'Configurar horario de programa'}
       </DialogTitle>
@@ -149,7 +157,7 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
 
           {/* Programa */}
           <Grid size={12}>
-            <TextField select fullWidth size="small" label="Programa *"
+            <TextField select fullWidth size="small" label="Programa *" autoFocus={autoFocus}
               value={form.programaId}
               onChange={e => setForm(p => ({ ...p, programaId: e.target.value }))}
               {...v.props('programaId')}>
@@ -204,12 +212,12 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
           </Grid>
 
           {/* Rango horario */}
-          <Grid size={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField label="Hora inicio *" type="time" fullWidth size="small"
               value={form.horaInicio} onChange={set('horaInicio')}
               slotProps={{ inputLabel: { shrink: true } }} {...v.props('horaInicio')} />
           </Grid>
-          <Grid size={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField label="Hora fin *" type="time" fullWidth size="small"
               value={form.horaFin} onChange={set('horaFin')}
               slotProps={{ inputLabel: { shrink: true } }} {...v.props('horaFin')} />
@@ -231,13 +239,13 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
           </Grid>
 
           {/* Fechas de vigencia */}
-          <Grid size={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField label="Fecha inicio" type="date" fullWidth size="small"
               value={form.fechaInicioVigencia} onChange={set('fechaInicioVigencia')}
               slotProps={{ inputLabel: { shrink: true } }}
               {...v.props('fechaInicioVigencia', '¿Cuándo empieza?')} />
           </Grid>
-          <Grid size={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField label="Fecha fin" type="date" fullWidth size="small"
               value={form.fechaFinVigencia} onChange={set('fechaFinVigencia')}
               slotProps={{ inputLabel: { shrink: true } }}
@@ -313,25 +321,14 @@ export function DialogHorario({ open, editando, programas, onClose, onGuardado }
         )}
       </DialogContent>
 
-      {error && (
-        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
-          {error}
-        </Alert>
-      )}
       <ResumenErrores {...v.resumen} accion={editando ? 'guardar el horario' : 'crear el horario'} />
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
 
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={saving}>Cancelar</Button>
-        <Button variant="contained" onClick={guardar}
-          disabled={saving}
-          sx={{ bgcolor: COLOR }}>
-          {saving
-            ? 'Guardando…'
-            : editando
-              ? 'Guardar cambios'
-              : `Crear ${form.diasSemana.length > 1 ? `${form.diasSemana.length} sesiones` : 'sesión'}`}
-        </Button>
-      </DialogActions>
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={saving} enviar
+        sxGuardar={{ bgcolor: COLOR }}
+        textoGuardar={editando
+          ? 'Guardar cambios'
+          : `Crear ${form.diasSemana.length > 1 ? `${form.diasSemana.length} sesiones` : 'sesión'}`} />
     </Dialog>
   );
 }

@@ -50,12 +50,12 @@ export function TabSmtp({ form, set, v }) {
               {...v.props('smtpHost')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField slotProps={{ htmlInput: { min: 1, max: 65535 } }} fullWidth size="small" label="Puerto" type="number"
+            <TextField slotProps={{ htmlInput: { inputMode: 'numeric' } }} fullWidth size="small" label="Puerto" type="text"
               value={form.smtpPuerto ?? 587} onChange={set('smtpPuerto')}
               {...v.props('smtpPuerto', 'Gmail: 587')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth size="small" label="Usuario / Email de envío"
+            <TextField fullWidth size="small" label="Usuario / Email de envío" autoComplete="off"
               placeholder="fundacion@gmail.com"
               value={form.smtpUsuario ?? ''} onChange={set('smtpUsuario')}
               {...v.props('smtpUsuario')} />
@@ -73,7 +73,7 @@ export function TabSmtp({ form, set, v }) {
               {...v.props('smtpDeNombre')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth size="small" label="Email del remitente (visible para el donante)"
+            <TextField fullWidth size="small" label="Email del remitente (visible para el donante)" type="email" autoComplete="off"
               placeholder="donaciones@fundacion.org"
               value={form.smtpDeEmail ?? ''} onChange={set('smtpDeEmail')}
               {...v.props('smtpDeEmail')} />

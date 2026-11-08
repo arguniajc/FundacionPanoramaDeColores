@@ -30,7 +30,7 @@ public class ValidacionBeneficiarioTests
         Genero = "M", Eps = "Nueva EPS",
         TallaCamisa = "L", TallaPantalon = "32", TallaZapatos = "41",
         PesoKg = 70m, TallaCm = 172,
-        Tipo = "adulto",
+        Tipo = "adulto", Celular = "3109876543",
         PaisNacimiento = "Colombia", DepartamentoNacimiento = "Valle", CiudadNacimiento = "Cali", Barrio = "Centro",
         NumPersonasVive = 3, NumHermanos = 0,
     };
@@ -91,7 +91,7 @@ public class ValidacionBeneficiarioTests
         var e = Validar(dto);
         string[] esperados =
         [
-            "El número de documento es obligatorio.", "El género es obligatorio.",
+            ValidacionBeneficiario.MsgDocumentoObligatorio, "El género es obligatorio.",
             "El país de nacimiento es obligatorio.", "El departamento es obligatorio.",
             "La ciudad es obligatoria.", "El barrio es obligatorio.",
             "El N.º de personas con quienes vive es obligatorio.", "El N.º de hermanos es obligatorio.",
@@ -347,5 +347,96 @@ public class ValidacionBeneficiarioTests
         var dto = AdultoValido();
         dto.Whatsapp = "123";
         Assert.Empty(Validar(dto));
+    }
+
+    // ── Celular / WhatsApp propio del adulto ─────────────────────────────────
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Celular_Del_Adulto_Es_Obligatorio(string? celular)
+    {
+        var dto = AdultoValido();
+        dto.Celular = celular;
+        Assert.Equal([ValidacionBeneficiario.MsgCelularObligatorio], Validar(dto));
+    }
+
+    [Theory]
+    [InlineData("2001234567")]
+    [InlineData("300123456")]
+    [InlineData("300 123 4567")]
+    [InlineData("+573001234567")]
+    public void Celular_Del_Adulto_Invalido(string celular)
+    {
+        var dto = AdultoValido();
+        dto.Celular = celular;
+        Assert.Equal([ValidacionBeneficiario.MsgCelularInvalido], Validar(dto));
+    }
+
+    [Theory]
+    [InlineData("3001234567")]
+    [InlineData(" 3001234567 ")]
+    [InlineData("No registra")]
+    public void Celular_Del_Adulto_Valido_O_No_Registra(string celular)
+    {
+        var dto = AdultoValido();
+        dto.Celular = celular;
+        Assert.Empty(Validar(dto));
+    }
+
+    [Fact]
+    public void Celular_No_Se_Exige_Ni_Valida_A_Un_Nino()
+    {
+        var dto = NinoValido();
+        dto.Celular = "123";
+        Assert.Empty(Validar(dto));
+    }
+
+    [Fact]
+    public void Normalizar_Descarta_El_Celular_De_Un_Nino_Y_Recorta_El_Del_Adulto()
+    {
+        var nino = NinoValido(); nino.Celular = "3001234567";
+        ValidacionBeneficiario.Normalizar(nino);
+        Assert.Null(nino.Celular);
+
+        var adulto = AdultoValido(); adulto.Celular = " 3001234567 ";
+        ValidacionBeneficiario.Normalizar(adulto);
+        Assert.Equal("3001234567", adulto.Celular);
+    }
+
+    // ── "Sin documento" ──────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("ABC-123 con espacios")]   // aunque escriban algo, no se revisa
+    public void Sin_Documento_No_Exige_Ni_Valida_El_Numero(string? numero)
+    {
+        var dto = NinoValido();
+        dto.TipoDocumento = "Sin documento"; dto.NumeroDocumento = numero;
+        Assert.Empty(Validar(dto));
+
+        var adulto = AdultoValido();
+        adulto.TipoDocumento = "SIN DOCUMENTO"; adulto.NumeroDocumento = numero;
+        Assert.Empty(Validar(adulto));
+    }
+
+    [Fact]
+    public void Sin_Documento_Normalizar_Deja_El_Numero_En_Null()
+    {
+        var dto = NinoValido();
+        dto.TipoDocumento = "sin documento"; dto.NumeroDocumento = "1144123456";
+        ValidacionBeneficiario.Normalizar(dto);
+        Assert.Null(dto.NumeroDocumento);
+        Assert.Equal("Sin documento", dto.TipoDocumento);
+    }
+
+    [Fact]
+    public void Con_Otro_Tipo_El_Numero_Sigue_Siendo_Obligatorio()
+    {
+        var dto = NinoValido();
+        dto.NumeroDocumento = null;
+        Assert.Equal([ValidacionBeneficiario.MsgDocumentoObligatorio], Validar(dto));
     }
 }

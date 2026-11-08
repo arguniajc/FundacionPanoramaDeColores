@@ -1,4 +1,5 @@
 using FundacionPanorama.Application.Features.Voluntarios.DTOs;
+using FundacionPanorama.Application.Shared;
 
 namespace FundacionPanorama.Application.Features.Voluntarios.Interfaces;
 
@@ -26,4 +27,10 @@ public interface IVoluntariosRepository
     Task<AsignacionVolDto?> EditarAsignacionAsync(Guid asigId, EditarAsignacionVolDto dto, CancellationToken ct = default);
 
     Task<bool> EliminarAsignacionAsync(Guid asigId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Voluntario que ya tiene ese número de documento (normalizado: sin puntos, espacios ni guiones),
+    /// o null. <paramref name="excluirId"/> deja fuera el propio registro al editar.
+    /// </summary>
+    Task<PersonaConDocumento?> BuscarDocumentoAsync(string numeroNormalizado, Guid? excluirId, CancellationToken ct = default);
 }

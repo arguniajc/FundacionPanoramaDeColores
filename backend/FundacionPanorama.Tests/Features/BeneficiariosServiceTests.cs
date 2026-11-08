@@ -78,7 +78,7 @@ public class BeneficiariosServiceTests
         var res = await _sut.CrearAsync(dto, "u@x.com");
 
         Assert.Equal(EstadoResultado.Invalido, res.Estado);
-        Assert.Contains("El número de documento es obligatorio.", res.Errores);
+        Assert.Contains(ValidacionBeneficiario.MsgDocumentoObligatorio, res.Errores);
         _repo.VerifyNoOtherCalls();
     }
 
@@ -316,7 +316,7 @@ public class BeneficiariosServiceTests
         // Mismo beneficiario visto por las dos rutas: la ficha (resumen) y los datos del SQL (incompletos)
         var ficha = new BeneficiarioDto
         {
-            Tipo = "adulto", FotoMenorUrl = "f.jpg", FotoDocumentoUrl = null, Eps = "No registra", Whatsapp = "300",
+            Tipo = "adulto", FotoMenorUrl = "f.jpg", FotoDocumentoUrl = null, Eps = "No registra", Celular = "3001234567",
             Direccion = "Calle", TallaCamisa = "M", TallaZapatos = "40", PesoKg = 70, TallaCm = 0,
         };
         Assert.Equal(BeneficiarioResumenDto.CalcularCompletitud(ficha),
@@ -480,6 +480,77 @@ public class BeneficiariosServiceTests
 
         Assert.Equal(1, Prop<int>(res.Valor!, "insertados"));
         _repo.Verify(r => r.ExisteDocumentoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ImportarFilasAsync_Tipo_Sin_Documento_Ignora_El_Numero_Y_No_Consulta_Duplicado()
+    {
+        CrearBeneficiarioDto? recibido = null;
+        InsercionOk((d, _) => recibido = d);
+        var fila = Fila(doc: "1144123456");
+        fila.TipoDocumento = "SIN DOCUMENTO";
+
+        var res = await _sut.ImportarFilasAsync([fila], null);
+
+        Assert.Equal(1, Prop<int>(res.Valor!, "insertados"));
+        Assert.Null(recibido!.NumeroDocumento);
+        Assert.Equal("Sin documento", recibido.TipoDocumento);
+        _repo.Verify(r => r.ExisteDocumentoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ImportarFilasAsync_Whatsapp_De_Un_Adulto_Es_Su_Celular()
+    {
+        CrearBeneficiarioDto? recibido = null;
+        InsercionOk((d, _) => recibido = d);
+        var fila = Fila(fecha: "1990-05-06", doc: "16123456");
+        fila.TipoDocumento = "CC"; fila.Tipo = "adulto"; fila.Whatsapp = " 3001234567 ";
+
+        await _sut.ImportarFilasAsync([fila], null);
+
+        Assert.Equal("3001234567", recibido!.Celular);
+    }
+
+    [Fact]
+    public async Task ImportarFilasAsync_Celular_Invalido_De_Un_Adulto_Se_Reporta()
+    {
+        var fila = Fila(fecha: "1990-05-06", doc: "16123456");
+        fila.TipoDocumento = "CC"; fila.Tipo = "adulto"; fila.Whatsapp = "12345";
+
+        var res = await _sut.ImportarFilasAsync([fila], null);
+
+        Assert.Contains("celular / WhatsApp", Prop<string>(Assert.Single(Errores(res.Valor!)), "motivo"));
+    }
+
+    // ── Sin documento / verificar documento ──────────────────────────────────
+
+    [Fact]
+    public async Task CrearAsync_Sin_Documento_Guarda_Sin_Numero()
+    {
+        CrearBeneficiarioDto? recibido = null;
+        var id = Guid.NewGuid();
+        _repo.Setup(r => r.CrearAsync(It.IsAny<CrearBeneficiarioDto>(), null, default))
+             .Callback<CrearBeneficiarioDto, string?, CancellationToken>((d, _, _) => recibido = d)
+             .ReturnsAsync(id);
+        _repo.Setup(r => r.ObtenerAsync(id, default)).ReturnsAsync(new BeneficiarioDto { Id = id });
+        var dto = NinoValido();
+        dto.TipoDocumento = "Sin documento"; dto.NumeroDocumento = "";
+
+        var res = await _sut.CrearAsync(dto, null);
+
+        Assert.Equal(EstadoResultado.Ok, res.Estado);
+        Assert.Null(recibido!.NumeroDocumento);
+    }
+
+    [Fact]
+    public async Task BuscarDocumentoAsync_Devuelve_Id_Y_Nombre_Y_Pasa_El_Id_A_Excluir()
+    {
+        var existente = new DocumentoExistente(Guid.NewGuid(), "Ana Pérez");
+        var propio = Guid.NewGuid();
+        _repo.Setup(r => r.BuscarDocumentoAsync("1144123456", propio, default)).ReturnsAsync(existente);
+
+        Assert.Equal(existente, await _sut.BuscarDocumentoAsync(" 1144123456 ", propio));
+        Assert.Null(await _sut.BuscarDocumentoAsync("999999", null));
     }
 
     [Fact]

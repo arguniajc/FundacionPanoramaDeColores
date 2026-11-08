@@ -52,6 +52,86 @@ public class BeneficiariosIntegracionTests(PostgresFixture pg)
         Assert.Equal(1L, await db.EscalarAsync<long>("SELECT COUNT(*) FROM alergias_catalogo"));
     }
 
+    static CrearBeneficiarioDto Adulto(string? doc, Action<CrearBeneficiarioDto>? ajustar = null) => Completo(doc ?? "", d =>
+    {
+        d.Tipo = "adulto"; d.FechaNacimiento = new(1988, 6, 1); d.TipoDocumento = "CC";
+        d.NombreAcudiente = null; d.Parentesco = null; d.Whatsapp = null; d.ViveConNino = null;
+        d.NombreColegio = null; d.GradoEscolar = null;
+        d.Celular = "3109876543"; d.Direccion = "Carrera 7 # 8-90";
+        ajustar?.Invoke(d);
+    });
+
+    [SkippableFact]
+    public async Task Adulto_guarda_su_celular_y_su_direccion_y_el_listado_muestra_el_celular()
+    {
+        var db = await pg.CrearBaseAsync();
+        var repo = new BeneficiariosRepository(db);
+        var svc = new BeneficiariosService(repo);
+
+        var creado = await svc.CrearAsync(Adulto("16123456"), null, Ct);
+        Assert.Equal(EstadoResultado.Ok, creado.Estado);
+        var id = creado.Valor!.Id;
+        Assert.Equal("3109876543", creado.Valor.Celular);
+        Assert.Equal("Carrera 7 # 8-90", creado.Valor.Direccion);   // antes se perdía (solo existía la del acudiente)
+
+        var fila = Assert.Single((await svc.ListarAsync(1, 20, null, "activos", null, null, null, null, null, "adulto", Ct)).Data);
+        Assert.Equal("3109876543", fila.Whatsapp);
+
+        // Editar: "No registra" se guarda, no se enlaza en el listado y cuenta como faltante
+        var editado = await svc.ActualizarAsync(id, Adulto("16123456", d => d.Celular = "No registra"), null, Ct);
+        Assert.Equal(EstadoResultado.Ok, editado.Estado);
+        Assert.Equal("No registra", editado.Valor!.Celular);
+        Assert.Null(Assert.Single((await svc.ListarAsync(1, 20, null, "activos", null, null, null, null, null, "adulto", Ct)).Data).Whatsapp);
+        Assert.Contains("WhatsApp", Assert.Single(await svc.ListarIncompletosAsync("adulto", Ct)).Faltantes);
+
+        // Un niño no guarda celular propio aunque lo manden
+        var nino = await svc.CrearAsync(Completo("1107000111", d => d.Celular = "3000000000"), null, Ct);
+        Assert.Null(nino.Valor!.Celular);
+    }
+
+    [SkippableFact]
+    public async Task Sin_documento_se_guarda_sin_numero_y_varios_pueden_no_tenerlo()
+    {
+        var db = await pg.CrearBaseAsync();
+        var svc = new BeneficiariosService(new BeneficiariosRepository(db));
+
+        var a = await svc.CrearAsync(Completo("", d => d.TipoDocumento = "Sin documento"), null, Ct);
+        var b = await svc.CrearAsync(Completo("123", d => d.TipoDocumento = "Sin documento"), null, Ct);
+        Assert.Equal(EstadoResultado.Ok, a.Estado);
+        Assert.Equal(EstadoResultado.Ok, b.Estado);   // sin número no hay duplicado
+        Assert.Null(a.Valor!.NumeroDocumento);
+        Assert.Null(b.Valor!.NumeroDocumento);
+        Assert.Equal("Sin documento", a.Valor.TipoDocumento);   // el tipo vuelve tal cual para poder editarlo
+    }
+
+    [SkippableTheory]
+    [InlineData("PA", "AB123456")]
+    [InlineData("RAMV", "1234567")]
+    [InlineData("PEP", "PEP12345")]
+    [InlineData("Sin documento", null)]
+    public async Task Guardar_y_leer_conserva_el_tipo_de_documento_del_panel(string tipo, string? numero)
+    {
+        var db = await pg.CrearBaseAsync();
+        var svc = new BeneficiariosService(new BeneficiariosRepository(db));
+        var res = await svc.CrearAsync(Adulto(numero, d => d.TipoDocumento = tipo), null, Ct);
+        Assert.Equal(EstadoResultado.Ok, res.Estado);
+        Assert.Equal(tipo, res.Valor!.TipoDocumento);
+    }
+
+    [SkippableFact]
+    public async Task Buscar_documento_devuelve_id_y_nombre_y_excluye_el_propio()
+    {
+        var db = await pg.CrearBaseAsync();
+        var repo = new BeneficiariosRepository(db);
+        var id = (await repo.CrearAsync(Completo("1107222333"), null, Ct))!.Value;
+
+        var existente = await repo.BuscarDocumentoAsync("1107222333", null, Ct);
+        Assert.Equal(id, existente!.Id);
+        Assert.Equal("Sofía Isabel Prueba Integración", existente.Nombre);
+        Assert.Null(await repo.BuscarDocumentoAsync("1107222333", id, Ct));
+        Assert.Null(await repo.BuscarDocumentoAsync("999999999", null, Ct));
+    }
+
     [SkippableFact]
     public async Task Listado_resumen_no_expone_datos_sensibles()
     {

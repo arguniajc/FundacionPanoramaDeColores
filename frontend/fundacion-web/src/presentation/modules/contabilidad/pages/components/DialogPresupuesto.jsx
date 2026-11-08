@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import {
-  Button, DialogActions, DialogContent, DialogTitle,
-  FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
+  DialogContent, DialogTitle,
+  FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select,
 } from '@mui/material';
 import Dialog from '@/shared/components/DialogResponsive';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
+import { AccionesDialogo, CampoMoneda, ErrorServidor } from '@/shared/components/form/FormControles';
 import ResumenErrores from '@/shared/components/ResumenErrores';
 
 // Reglas del formulario: cada una dice qué está mal y cómo llenarlo
@@ -16,6 +19,9 @@ const ESQUEMA = {
 
 export function DialogPresupuesto({ open, modo, data, categorias, programas, presAnio, guardando, onClose, onGuardar }) {
   const [form, setForm] = useState({ anio: presAnio, categoriaId: '', programaId: '', montoPresupuestado: '' });
+  const [inicial, setInicial] = useState(form);
+  const [error, setError] = useState('');
+  const autoFocus = useAutoFocus();
   const v = useValidacion(ESQUEMA, form);
   const { reiniciar } = v;
 
@@ -29,32 +35,39 @@ export function DialogPresupuesto({ open, modo, data, categorias, programas, pre
 
   function reiniciarFormulario() {
     reiniciar();
-    if (modo === 'editar' && data) {
-      setForm({
+    setError('');
+    const datos = modo === 'editar' && data
+      ? {
         anio: data.anio,
         categoriaId: String(data.categoriaId),
         programaId: data.programaId ?? '',
         montoPresupuestado: String(data.montoPresupuestado),
-      });
-    } else {
-      setForm({ anio: presAnio, categoriaId: '', programaId: '', montoPresupuestado: '' });
-    }
+      }
+      : { anio: presAnio, categoriaId: '', programaId: '', montoPresupuestado: '' };
+    setForm(datos);
+    setInicial(datos);
   }
+
+  const { confirmarCierre } = useCerrarConCambios({
+    hayCambios: hayCambiosEn(form, inicial), bloqueado: guardando, onCerrar: onClose,
+  });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const guardar = () => {
-    if (!v.validarTodo()) return;
-    onGuardar({
+  const guardar = async () => {
+    if (guardando || !v.validarTodo()) return;
+    setError('');
+    const fallo = await onGuardar({
       anio: parseInt(form.anio),
       categoriaId: parseInt(form.categoriaId),
       programaId: form.programaId || null,
-      montoPresupuestado: parseFloat(form.montoPresupuestado),
+      montoPresupuestado: Number(form.montoPresupuestado),
     });
+    if (fallo) setError(fallo);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} maxWidth="xs" fullWidth bloqueado={guardando} alEnviar={guardar}>
       <DialogTitle>{modo === 'crear' ? 'Agregar línea presupuestal' : 'Editar presupuesto'}</DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         <Grid container spacing={2}>
@@ -62,6 +75,7 @@ export function DialogPresupuesto({ open, modo, data, categorias, programas, pre
             <FormControl fullWidth size="small" error={!!v.err('categoriaId')}>
               <InputLabel id="dialog-presupuesto-categoria-puc-label">Categoría PUC *</InputLabel>
               <Select labelId="dialog-presupuesto-categoria-puc-label" value={form.categoriaId} label="Categoría PUC *" onChange={set('categoriaId')}
+                autoFocus={autoFocus}
                 onBlur={() => v.tocar('categoriaId')}>
                 {categorias.map(c => (
                   <MenuItem key={c.id} value={String(c.id)}>
@@ -82,19 +96,16 @@ export function DialogPresupuesto({ open, modo, data, categorias, programas, pre
             </FormControl>
           </Grid>
           <Grid size={12}>
-            <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Monto presupuestado *" type="number" size="small"
-              value={form.montoPresupuestado} onChange={set('montoPresupuestado')}
+            <CampoMoneda label="Monto presupuestado *"
+              value={form.montoPresupuestado} onChange={m => setForm(f => ({ ...f, montoPresupuestado: m }))}
               {...v.props('montoPresupuestado')} />
           </Grid>
         </Grid>
       </DialogContent>
       <ResumenErrores {...v.resumen} accion={modo === 'crear' ? 'agregar la línea presupuestal' : 'guardar el presupuesto'} />
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" disabled={guardando} onClick={guardar}>
-          {guardando ? 'Guardando…' : (modo === 'crear' ? 'Agregar' : 'Guardar')}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar
+        textoGuardar={modo === 'crear' ? 'Agregar' : 'Guardar'} />
     </Dialog>
   );
 }

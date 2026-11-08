@@ -6,11 +6,42 @@ namespace FundacionPanorama.Application.Features.Beneficiarios;
 
 public static class ValidacionBeneficiario
 {
+    /// <summary>Tipo de documento para quien no tiene ninguno: no lleva número ni se revisa si está repetido.</summary>
+    public const string SinDocumento = "Sin documento";
+    /// <summary>Valor que el panel guarda cuando un dato no se conoce ("→ No registra").</summary>
+    public const string NoRegistra   = "No registra";
+
+    public const string MsgDocumentoObligatorio =
+        "El número de documento es obligatorio. Ejemplo: 1144123456 (si no tiene, elige el tipo \"Sin documento\").";
+    public const string MsgCelularObligatorio =
+        "El celular / WhatsApp del adulto es obligatorio. Ejemplo: 3001234567 (o marca \"No registra\").";
+    public const string MsgCelularInvalido =
+        "El celular / WhatsApp debe tener 10 dígitos y empezar por 3, sin espacios. Ejemplo: 3001234567 (o marca \"No registra\").";
+
+    public static bool EsSinDocumento(string? tipoDocumento)
+        => string.Equals(tipoDocumento?.Trim(), SinDocumento, StringComparison.OrdinalIgnoreCase);
+
+    public static bool EsAdulto(CrearBeneficiarioDto dto)
+        => string.Equals(dto.Tipo?.Trim(), "adulto", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Deja el DTO listo para guardar: con "Sin documento" el número se descarta (null) y el celular
+    /// propio solo se guarda para adultos.
+    /// </summary>
+    public static void Normalizar(CrearBeneficiarioDto dto)
+    {
+        if (EsSinDocumento(dto.TipoDocumento)) { dto.TipoDocumento = SinDocumento; dto.NumeroDocumento = null; }
+        else if (string.IsNullOrWhiteSpace(dto.NumeroDocumento)) dto.NumeroDocumento = null;
+        else dto.NumeroDocumento = dto.NumeroDocumento.Trim();
+        dto.Celular = EsAdulto(dto) && !string.IsNullOrWhiteSpace(dto.Celular) ? dto.Celular.Trim() : null;
+    }
+
     /// <summary>Devuelve la lista de errores de validación (vacía si el DTO es válido).</summary>
     public static List<string> Validar(CrearBeneficiarioDto dto)
     {
         var e = new List<string>();
-        if (string.IsNullOrWhiteSpace(dto.NumeroDocumento))       e.Add("El número de documento es obligatorio.");
+        if (string.IsNullOrWhiteSpace(dto.NumeroDocumento) && !EsSinDocumento(dto.TipoDocumento))
+            e.Add(MsgDocumentoObligatorio);
         if (string.IsNullOrWhiteSpace(dto.Genero))                e.Add("El género es obligatorio.");
         if (string.IsNullOrWhiteSpace(dto.PaisNacimiento))        e.Add("El país de nacimiento es obligatorio.");
         if (string.IsNullOrWhiteSpace(dto.DepartamentoNacimiento))e.Add("El departamento es obligatorio.");
@@ -33,6 +64,8 @@ public static class ValidacionBeneficiario
             if (!dto.ViveConNino.HasValue)                        e.Add("Debe indicar si el acudiente vive con el niño.");
             if (string.IsNullOrWhiteSpace(dto.Direccion))         e.Add("La dirección es obligatoria.");
         }
+        else if (string.IsNullOrWhiteSpace(dto.Celular))
+            e.Add(MsgCelularObligatorio);
         e.AddRange(ValidarFormatoBeneficiario(dto, esNino, incluirDescripciones: true));
         return e;
     }
@@ -72,7 +105,8 @@ public static class ValidacionBeneficiario
         if (!esNino && tipoDoc is "RC" or "TI") yield return "Un adulto no usa Registro Civil ni Tarjeta de Identidad. Usa CC, CE, PPT o PA.";
         if (esNino && tipoDoc == "CC")          yield return "Un menor de edad no tiene Cédula. Usa RC, TI o NUIP.";
 
-        var doc = dto.NumeroDocumento?.Trim() ?? "";
+        // "Sin documento": el número no se revisa (se descarta al guardar)
+        var doc = EsSinDocumento(tipoDoc) ? "" : dto.NumeroDocumento?.Trim() ?? "";
         if (doc.Length > 0)
         {
             if (DocsNumericos.Contains(tipoDoc))
@@ -102,5 +136,10 @@ public static class ValidacionBeneficiario
         if (esNino && !string.IsNullOrWhiteSpace(dto.Whatsapp)
             && !System.Text.RegularExpressions.Regex.IsMatch(dto.Whatsapp.Trim(), @"^3\d{9}$"))
             yield return "El WhatsApp debe ser un celular de 10 dígitos que empiece por 3. Ejemplo: 3001234567.";
+
+        var celular = dto.Celular?.Trim() ?? "";
+        if (!esNino && celular.Length > 0 && celular != NoRegistra
+            && !System.Text.RegularExpressions.Regex.IsMatch(celular, @"^3\d{9}$"))
+            yield return MsgCelularInvalido;
     }
 }

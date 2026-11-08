@@ -1,11 +1,14 @@
 ﻿import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Button, Chip, DialogActions, DialogContent,
+  Box, Button, Chip, DialogContent,
   DialogTitle, Divider, FormHelperText, Grid, IconButton, MenuItem, Paper,
   TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import Dialog from '@/shared/components/DialogResponsive';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import AccessTimeIcon    from '@mui/icons-material/AccessTime';
 import AddIcon           from '@mui/icons-material/Add';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -97,6 +100,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
   const [tipo,   setTipo]   = useState('unico');
   const [unico,  setUnico]  = useState(EMPTY_UNICO);
   const [recur,  setRecur]  = useState(EMPTY_RECURRENTE);
+  const [inicial, setInicial] = useState({ unico: EMPTY_UNICO, recur: EMPTY_RECURRENTE });
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
   const vU = useValidacion(ESQUEMA_UNICO, unico);
@@ -109,14 +113,21 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
     setError('');
     reiniciarU(); reiniciarR();
     setTipo('unico');
-    setUnico({
+    const datosUnico = {
       ...EMPTY_UNICO,
       programaId:  programas[0]?.id ?? '',
       fecha:       fechaInicialSugerida ? fechaInicialSugerida.slice(0, 10) : fechaLocalISO(), // local: toISOString daba mañana después de las 7 p. m.
       horaInicio:  fechaInicialSugerida?.length > 10 ? fechaInicialSugerida.slice(11, 16) : '08:00',
-    });
-    setRecur({ ...EMPTY_RECURRENTE, programaId: programas[0]?.id ?? '' });
+    };
+    const datosRecur = { ...EMPTY_RECURRENTE, programaId: programas[0]?.id ?? '' };
+    setUnico(datosUnico);
+    setRecur(datosRecur);
+    setInicial({ unico: datosUnico, recur: datosRecur });
   }, [open, programas, fechaInicialSugerida, reiniciarU, reiniciarR]);
+
+  const hayCambios = open && hayCambiosEn({ unico, recur }, inicial);
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: saving, onCerrar: onClose });
+  const autoFocus = useAutoFocus();
 
   const setU = k => e => setUnico(p => ({ ...p, [k]: e.target.value }));
   const setR = k => e => setRecur(p => ({ ...p, [k]: e.target.value }));
@@ -153,7 +164,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
           });
         }
       }
-      onGuardado();
+      onGuardado(tipo);
       onClose();
     } catch (e) {
       setError(mensajeErrorApi(e, { accion: 'guardar la actividad' }));
@@ -163,7 +174,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} alEnviar={guardar} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, pb: 1, color: 'primary.main' }}>
         Nueva actividad
       </DialogTitle>
@@ -195,7 +206,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
         {tipo === 'unico' && (
           <Grid container spacing={2}>
             <Grid size={12}>
-              <TextField fullWidth size="small" label="Título *"
+              <TextField fullWidth size="small" label="Título *" autoFocus={autoFocus}
                 value={unico.titulo} onChange={setU('titulo')} {...vU.props('titulo')} />
             </Grid>
             <Grid size={12}>
@@ -205,17 +216,17 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
                 {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid size={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField label="Fecha *" type="date" fullWidth size="small"
                 value={unico.fecha} onChange={setU('fecha')}
                 slotProps={{ inputLabel: { shrink: true } }} {...vU.props('fecha')} />
             </Grid>
-            <Grid size={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField label="Hora inicio *" type="time" fullWidth size="small"
                 value={unico.horaInicio} onChange={setU('horaInicio')}
                 slotProps={{ inputLabel: { shrink: true } }} {...vU.props('horaInicio')} />
             </Grid>
-            <Grid size={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField label="Hora fin" type="time" fullWidth size="small"
                 value={unico.horaFin} onChange={setU('horaFin')}
                 slotProps={{ inputLabel: { shrink: true } }}
@@ -251,8 +262,8 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
                 </Typography>
               )}
               {unico.diasAdicionales.map((dia, idx) => (
-                <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 }}>
-                  <TextField label="Fecha" type="date" size="small" sx={{ flex: 2 }}
+                <Box key={idx} sx={{ display: 'flex', flexWrap: { xs: 'wrap', sm: 'nowrap' }, gap: 1, alignItems: 'flex-start', mt: 1 }}>
+                  <TextField label="Fecha" type="date" size="small" sx={{ flex: 2, minWidth: { xs: '100%', sm: 0 } }}
                     value={dia.fecha}
                     onChange={e => setUnico(p => ({ ...p, diasAdicionales: p.diasAdicionales.map((d, i) => i === idx ? { ...d, fecha: e.target.value } : d) }))}
                     slotProps={{ inputLabel: { shrink: true } }} />
@@ -282,7 +293,7 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
         {tipo === 'recurrente' && (
           <Grid container spacing={2.5}>
             <Grid size={12}>
-              <TextField select fullWidth size="small" label="Programa *"
+              <TextField select fullWidth size="small" label="Programa *" autoFocus={autoFocus}
                 value={recur.programaId} onChange={setR('programaId')} {...vR.props('programaId')}>
                 {programas.map(p => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
               </TextField>
@@ -317,12 +328,12 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
               </Typography>
             </Grid>
 
-            <Grid size={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Hora inicio *" type="time" fullWidth size="small"
                 value={recur.horaInicio} onChange={setR('horaInicio')}
                 slotProps={{ inputLabel: { shrink: true } }} {...vR.props('horaInicio')} />
             </Grid>
-            <Grid size={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Hora fin *" type="time" fullWidth size="small"
                 value={recur.horaFin} onChange={setR('horaFin')}
                 slotProps={{ inputLabel: { shrink: true } }} {...vR.props('horaFin')} />
@@ -343,13 +354,13 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
               </Divider>
             </Grid>
 
-            <Grid size={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Fecha inicio" type="date" fullWidth size="small"
                 value={recur.fechaInicioVigencia} onChange={setR('fechaInicioVigencia')}
                 slotProps={{ inputLabel: { shrink: true } }}
                 {...vR.props('fechaInicioVigencia', '¿Cuándo empieza?')} />
             </Grid>
-            <Grid size={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Fecha fin" type="date" fullWidth size="small"
                 value={recur.fechaFinVigencia} onChange={setR('fechaFinVigencia')}
                 slotProps={{ inputLabel: { shrink: true } }}
@@ -410,23 +421,14 @@ export function DialogNuevaActividad({ open, programas, fechaInicialSugerida, on
         )}
       </DialogContent>
 
-      {error && (
-        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
-          {error}
-        </Alert>
-      )}
       <ResumenErrores {...v.resumen} accion={tipo === 'unico' ? 'crear el evento' : 'crear el horario'} />
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
 
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={saving}>Cancelar</Button>
-        <Button variant="contained" onClick={guardar} disabled={saving}
-          sx={{ bgcolor: COLOR }}>
-          {saving ? 'Guardando…'
-            : tipo === 'unico' ? 'Crear evento'
-            : recur.diasSemana.length > 1 ? `Crear ${recur.diasSemana.length} horarios`
-            : 'Crear horario'}
-        </Button>
-      </DialogActions>
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={saving} enviar
+        sxGuardar={{ bgcolor: COLOR }}
+        textoGuardar={tipo === 'unico' ? 'Crear evento'
+          : recur.diasSemana.length > 1 ? `Crear ${recur.diasSemana.length} horarios`
+          : 'Crear horario'} />
     </Dialog>
   );
 }

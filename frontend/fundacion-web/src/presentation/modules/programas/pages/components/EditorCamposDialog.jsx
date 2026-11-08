@@ -1,10 +1,14 @@
 ﻿import { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  Alert, Autocomplete, Box, Button, CircularProgress, Dialog, DialogActions,
+  Alert, Autocomplete, Box, Button, CircularProgress,
   DialogContent, DialogTitle, FormControl, FormControlLabel, Grid, IconButton,
   InputLabel, ListSubheader, MenuItem, Select, Snackbar, Switch, TextField,
-  ToggleButton, ToggleButtonGroup, Tooltip, Typography, useMediaQuery, useTheme,
+  ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import { alpha }        from '@mui/material/styles';
 import AddIcon          from '@mui/icons-material/Add';
 import VisibilityIcon   from '@mui/icons-material/Visibility';
@@ -62,11 +66,22 @@ export function EditorCamposDialog({ programa, onCerrar }) {
   const [toast,       setToast]       = useState('');
   const [errGuardar,  setErrGuardar]  = useState('');
   const [preview,     setPreview]     = useState(false);
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const autoFocus = useAutoFocus();
 
   const campoVacio = { seccion: '', etiqueta: '', tipo: 'text', obligatorio: false, opciones: '', columnas: 6 };
   const [form, setForm] = useState(campoVacio);
+  const [formInicial, setFormInicial] = useState(campoVacio);   // snapshot al abrir el diálogo de campo
+  const abrirFormCampo = (f, campo) => {
+    setForm(f);
+    setFormInicial(f);
+    setEditando(campo);
+    v.reiniciar();
+    setFormAbierto(true);
+  };
+  const { confirmarCierre: confirmarCierreCampo } = useCerrarConCambios({
+    hayCambios: formAbierto && hayCambiosEn(form, formInicial),
+    onCerrar: () => setFormAbierto(false),
+  });
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -110,11 +125,13 @@ export function EditorCamposDialog({ programa, onCerrar }) {
     return false;
   }, [camposLocal, camposOrig]);
 
+  // Cerrar el editor con cambios sin guardar pregunta antes; mientras guarda no se cierra.
+  const { confirmarCierre: confirmarCierreEditor } = useCerrarConCambios({
+    hayCambios: hayPendientes, bloqueado: guardando, onCerrar,
+  });
+
   const abrirNuevo = () => {
-    setForm({ ...campoVacio, seccion: seccionesExistentes[seccionesExistentes.length - 1] ?? '' });
-    setEditando(null);
-    v.reiniciar();
-    setFormAbierto(true);
+    abrirFormCampo({ ...campoVacio, seccion: seccionesExistentes[seccionesExistentes.length - 1] ?? '' }, null);
   };
 
   const PANELES_RESPONSABLES = [
@@ -139,17 +156,14 @@ export function EditorCamposDialog({ programa, onCerrar }) {
     });
   };
   const abrirEditar = (c) => {
-    setForm({
+    abrirFormCampo({
       seccion:     c.seccion ?? '',
       etiqueta:    c.etiqueta,
       tipo:        c.tipo,
       obligatorio: c.obligatorio,
       opciones:    (c.opciones ?? []).join(', '),
       columnas:    c.columnas ?? 6,
-    });
-    setEditando(c);
-    v.reiniciar();
-    setFormAbierto(true);
+    }, c);
   };
 
   const handleCampoFormGuardar = () => {
@@ -182,6 +196,9 @@ export function EditorCamposDialog({ programa, onCerrar }) {
       });
     }
     setFormAbierto(false);
+    setToast(editando
+      ? 'Campo actualizado. Pulsa Guardar para aplicar los cambios.'
+      : 'Campo agregado. Pulsa Guardar para aplicar los cambios.');
   };
 
   const handleEliminar = (id) => {
@@ -234,6 +251,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
   };
 
   const handleGuardarTodo = async () => {
+    if (guardando || !hayPendientes) return;
     setGuardando(true);
     setErrGuardar('');
     try {
@@ -272,7 +290,8 @@ export function EditorCamposDialog({ programa, onCerrar }) {
 
   return (
     <>
-      <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
+      {/* Sin alEnviar: es una lista con arrastrar y soltar, no hay campos de texto donde Enter deba guardar. */}
+      <Dialog open onClose={confirmarCierreEditor} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ bgcolor: COLOR, color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center' }}>
           <Box sx={{ flex: 1 }}>
             Campos: {programa.nombre}
@@ -372,32 +391,27 @@ export function EditorCamposDialog({ programa, onCerrar }) {
           </Tooltip>
         </DialogContent>
 
-        {errGuardar && (
-          <Alert severity="error" onClose={() => setErrGuardar('')} sx={{ mx: 2, mt: 1.5, mb: 0 }}>
-            {errGuardar}
-          </Alert>
-        )}
-        <DialogActions sx={{ px: 2, py: 1.5, gap: 1 }}>
-          <Button variant="outlined" startIcon={<VisibilityIcon />}
-            onClick={() => setPreview(true)}
-            sx={{ color: COLOR, borderColor: COLOR }}>
-            Vista previa
-          </Button>
-          <Box sx={{ flex: 1 }} />
-          <Button onClick={onCerrar} disabled={guardando}>Cerrar</Button>
-          <Button variant="contained" onClick={handleGuardarTodo}
-            disabled={guardando || !hayPendientes}
-            sx={{ bgcolor: COLOR, minWidth: 110 }}>
-            {guardando ? 'Guardando…' : hayPendientes ? 'Guardar *' : 'Guardar'}
-          </Button>
-        </DialogActions>
+        <ErrorServidor mensaje={errGuardar} onClose={() => setErrGuardar('')} />
+        <AccionesDialogo
+          anterior={{
+            onClick: () => setPreview(true),
+            texto: <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, color: COLOR }}>
+              <VisibilityIcon fontSize="small" /> Vista previa
+            </Box>,
+          }}
+          onCancelar={confirmarCierreEditor} textoCancelar="Cerrar"
+          onGuardar={handleGuardarTodo} guardando={guardando} deshabilitado={!hayPendientes}
+          textoGuardar={hayPendientes ? 'Guardar *' : 'Guardar'}
+          sxGuardar={{ bgcolor: COLOR, minWidth: 110 }} />
       </Dialog>
 
       {preview && (
         <VistaPreviewDialog campos={camposLocal} programa={programa} onCerrar={() => setPreview(false)} />
       )}
 
-      <Dialog open={formAbierto} onClose={() => setFormAbierto(false)} maxWidth="xs" fullWidth>
+      {/* Enter guarda el campo. En "Sección" (Autocomplete) Enter con una opción resaltada solo la
+          elige (MUI hace preventDefault); "Opciones" es un único texto separado por comas. */}
+      <Dialog open={formAbierto} onClose={confirmarCierreCampo} alEnviar={handleCampoFormGuardar} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>
           {editando ? 'Editar campo' : 'Nuevo campo'}
         </DialogTitle>
@@ -409,7 +423,7 @@ export function EditorCamposDialog({ programa, onCerrar }) {
                 onInputChange={(_, val) => setForm(p => ({ ...p, seccion: val ?? '' }))}
                 onChange={(_, val)      => setForm(p => ({ ...p, seccion: val ?? '' }))}
                 renderInput={(params) => (
-                  <TextField {...params} fullWidth size="small" label="Sección *" required
+                  <TextField {...params} fullWidth size="small" label="Sección *" required autoFocus={autoFocus}
                     placeholder="Selecciona una existente o escribe una nueva…"
                     {...v.props('seccion',
                       seccionSimilar !== null
@@ -469,13 +483,8 @@ export function EditorCamposDialog({ programa, onCerrar }) {
           </Grid>
         </DialogContent>
         <ResumenErrores {...v.resumen} accion={editando ? 'actualizar el campo' : 'agregar el campo'} />
-        <DialogActions sx={{ px: 2, py: 1.5 }}>
-          <Button onClick={() => setFormAbierto(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={handleCampoFormGuardar}
-            sx={{ bgcolor: COLOR }}>
-            {editando ? 'Actualizar' : 'Agregar'}
-          </Button>
-        </DialogActions>
+        <AccionesDialogo onCancelar={confirmarCierreCampo} enviar
+          textoGuardar={editando ? 'Actualizar' : 'Agregar'} sxGuardar={{ bgcolor: COLOR }} />
       </Dialog>
 
       <Snackbar open={!!toast} autoHideDuration={3000} onClose={() => setToast('')}

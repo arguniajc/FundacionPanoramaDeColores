@@ -19,4 +19,10 @@ public interface ITalentoHumanoRepository
     Task<bool>                             EliminarNovedadAsync(Guid id, CancellationToken ct);
 
     Task<TalentoHumanoStatsDto>            StatsAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Empleado que ya tiene ese número de documento (normalizado: sin puntos, espacios ni guiones),
+    /// o null. <paramref name="excluirId"/> deja fuera el propio registro al editar.
+    /// </summary>
+    Task<FundacionPanorama.Application.Shared.PersonaConDocumento?> BuscarDocumentoAsync(string numeroNormalizado, Guid? excluirId, CancellationToken ct);
 }

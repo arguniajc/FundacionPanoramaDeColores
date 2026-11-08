@@ -21,6 +21,9 @@ import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r, vacio } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import { useArchivoUrl } from '@/shared/utils/archivos';
 import { validarArchivo } from '@/shared/utils/archivosPermitidos';
 
@@ -210,16 +213,30 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
   const [fotoPreview,   setFotoPreview]   = useState('');
   const [saving,        setSaving]        = useState(false);
   const [error,         setError]         = useState('');
+  // Datos al abrir, para saber si hay cambios sin guardar
+  const [inicial,       setInicial]       = useState({ cargo: '', parentId: '', empleadoId: '', nombreExterno: '', foto: null });
   const v = useValidacion(ESQUEMA_PERSONA, { cargo, empleadoId, nombreExterno });
   const { reiniciar } = v;
+  const autoFocus = useAutoFocus();
+
+  const hayCambios = open && hayCambiosEn({ cargo, parentId, empleadoId, nombreExterno, foto: fotoFile }, inicial);
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: saving, onCerrar: onClose });
 
   useEffect(() => {
     if (!open) return;
     reiniciar();
-    setCargo(persona?.cargo ?? '');
-    setParentId(persona?.parentId ?? persona?.ParentId ?? parentIdInicial ?? '');
-    setEmpleadoId(persona?.empleadoId ?? persona?.EmpleadoId ?? '');
-    setNombreExterno(persona?.nombreExterno ?? persona?.NombreExterno ?? '');
+    const datos = {
+      cargo:         persona?.cargo ?? '',
+      parentId:      persona?.parentId ?? persona?.ParentId ?? parentIdInicial ?? '',
+      empleadoId:    persona?.empleadoId ?? persona?.EmpleadoId ?? '',
+      nombreExterno: persona?.nombreExterno ?? persona?.NombreExterno ?? '',
+      foto:          null,
+    };
+    setInicial(datos);
+    setCargo(datos.cargo);
+    setParentId(datos.parentId);
+    setEmpleadoId(datos.empleadoId);
+    setNombreExterno(datos.nombreExterno);
     setFotoPreview(persona?.fotoUrl ?? persona?.FotoUrl ?? '');
     setFotoFile(null);
     setError('');
@@ -242,7 +259,7 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
     : nombreExterno;
 
   const handleSave = async () => {
-    if (!v.validarTodo()) return;
+    if (saving || !v.validarTodo()) return;
     setSaving(true); setError('');
     try {
       let fotoUrl = persona?.fotoUrl ?? null;
@@ -271,12 +288,11 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
   const posiblesJefes = personas.filter(p => p.id !== persona?.id);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} alEnviar={handleSave} maxWidth="xs" fullWidth>
       <DialogTitle fontWeight={700}>
         {persona ? 'Editar persona' : 'Agregar persona al organigrama'}
       </DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         {/* Foto */}
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
@@ -304,7 +320,7 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
           onChange={(_, v) => setCargo(v || '')}
           onInputChange={(_, v) => setCargo(v)}
           renderInput={(params) => (
-            <TextField {...params} size="small" label="Cargo *"
+            <TextField {...params} size="small" label="Cargo *" autoFocus={autoFocus}
               placeholder="Ej: Director, Coordinador, Tesorero..."
               required {...v.props('cargo')} />
           )}
@@ -355,18 +371,15 @@ function DialogOrgPersona({ open, onClose, persona, parentIdInicial, empleados, 
           <TextField
             fullWidth size="small" label="Nombre completo *"
             value={nombreExterno} onChange={e => setNombreExterno(e.target.value)}
+            slotProps={{ htmlInput: { autoComplete: 'off' } }}
             {...v.props('nombreExterno', 'Para personas que no están registradas como empleados')}
           />
         )}
       </DialogContent>
       <ResumenErrores {...v.resumen} accion={persona ? 'guardar la persona' : 'agregar la persona'} />
-      <DialogActions sx={{ px: 3 }}>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave}
-          disabled={saving}>
-          {saving ? 'Guardando…' : 'Guardar'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={saving} enviar
+        textoGuardar={persona ? 'Guardar' : 'Agregar'} />
     </Dialog>
   );
 }
@@ -429,6 +442,7 @@ export function OrgChartTab({ puedoEditar, empleados }) {
         parentId:      parentId      || null,
       });
     }
+    toast(dlg.persona ? 'Persona actualizada en el organigrama.' : 'Persona agregada al organigrama.');
     setDlg(d => ({ ...d, open: false }));
     cargar();
   };

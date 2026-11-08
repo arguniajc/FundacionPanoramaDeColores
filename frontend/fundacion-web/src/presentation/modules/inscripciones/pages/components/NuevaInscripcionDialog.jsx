@@ -1,13 +1,19 @@
-﻿// Stepper para crear una nueva inscripción: beneficiario → programa → formulario dinámico.
-import { useState, useEffect } from 'react';
+// Asistente para crear una nueva inscripción: beneficiario → programa → formulario dinámico.
+// - Lo escrito en el formulario se guarda como borrador (sessionStorage) por beneficiario + programa
+//   y se recupera al volver a elegirlos; se borra al inscribir.
+// - Cerrar con datos sin guardar pide confirmación; mientras guarda no se puede cerrar.
+import { useState, useEffect, useRef } from 'react';
 import {
   Alert, Autocomplete, Box, Button, CircularProgress,
-  Dialog, DialogActions, DialogContent, DialogTitle,
+  DialogContent, DialogTitle,
   Grid, Step, StepLabel, Stepper, TextField, Typography,
-  useMediaQuery, useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import CheckIcon from '@mui/icons-material/Check';
+import Dialog from '@/shared/components/DialogResponsive';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import { beneficiariosRepository } from '@/infrastructure/repositories/beneficiariosRepository';
 import { sedesRepository }         from '@/infrastructure/repositories/sedesRepository';
 import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
@@ -18,6 +24,9 @@ import { COLOR, agruparPorSeccion, calcEdad } from './camposUtils';
 import {
   ETIQUETAS_FIRMA, erroresCamposDinamicos, erroresFirma, esPanelResponsable, faltantesPanel,
 } from './validacionFormulario';
+import {
+  borrarBorrador, guardarBorrador, hayContenidoPropio, leerBorrador,
+} from './borradorInscripcion';
 
 // Nombres de los errores que no son campos del programa, para el resumen.
 const ETIQUETAS_PASO = {
@@ -26,6 +35,36 @@ const ETIQUETAS_PASO = {
   __responsable__: 'Responsable mayor de edad',
   ...ETIQUETAS_FIRMA,
 };
+
+const PASOS = ['Beneficiario', 'Programa', 'Formulario'];
+
+/** Tarjeta de programa seleccionable (role="radio": Tab llega a ella, Enter o Espacio la elige). */
+function TarjetaPrograma({ programa: p, seleccionada, onElegir }) {
+  const elegirConTeclado = e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onElegir(); }
+  };
+  return (
+    <Box role="radio" aria-checked={seleccionada} tabIndex={0}
+      onClick={onElegir} onKeyDown={elegirConTeclado}
+      sx={{
+        border: '2px solid', borderColor: seleccionada ? COLOR : 'divider',
+        borderRadius: 2, p: 1.5, cursor: 'pointer', height: '100%',
+        bgcolor: (t) => (seleccionada ? alpha(t.palette.primary.main, 0.08) : t.palette.background.paper),
+        transition: 'all 0.15s',
+        '&:hover': { borderColor: COLOR, bgcolor: (t) => alpha(t.palette.primary.main, 0.08) },
+        '&:focus-visible': { outline: '3px solid', outlineColor: 'primary.main', outlineOffset: 2 },
+      }}>
+      {seleccionada && <CheckIcon aria-hidden sx={{ float: 'right', color: COLOR, fontSize: 20 }} />}
+      <Typography sx={{ fontWeight: 700, color: COLOR }}>{p.nombre}</Typography>
+      <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">{p.nombreSede}</Typography>
+      {p.cupoMaximo > 0 && (
+        <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">
+          Cupo máximo: {p.cupoMaximo}
+        </Typography>
+      )}
+    </Box>
+  );
+}
 
 export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [paso,           setPaso]           = useState(0);
@@ -40,14 +79,26 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [datos,          setDatos]          = useState({});
   const [panelActivo,    setPanelActivo]    = useState({});
   const [observaciones,  setObservaciones]  = useState('');
+  // Valores con los que arranca el formulario del programa (auto-completados): base del borrador
+  const [inicio,         setInicio]         = useState({ datos: {}, panelActivo: {}, clave: '' });
+  const [recuperado,     setRecuperado]     = useState(false); // se restauró un borrador
   const [guardando,      setGuardando]      = useState(false);
-  const [error,          setError]          = useState('');
+  const [error,          setError]          = useState('');    // error al inscribir
+  const [errorCarga,     setErrorCarga]     = useState('');    // error al buscar / cargar
   const [intentado,      setIntentado]      = useState(false); // ya se intentó avanzar en este paso
   const [verResumen,     setVerResumen]     = useState(false);
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const autoFocus = useAutoFocus();
+  const inscrita  = useRef(false); // tras inscribir ya no se vuelve a guardar el borrador
 
   const tienePadreMadre = campos.some(c => c.tipo === 'datos_padre') && campos.some(c => c.tipo === 'datos_madre');
+  const claveActual = selBenef && selPrograma ? `${selBenef.id}:${selPrograma.id}` : '';
+  // El formulario cargado corresponde al beneficiario + programa elegidos
+  const formularioListo = !!claveActual && inicio.clave === claveActual && !cargandoCampos;
+
+  const contenidoPropio = formularioListo && hayContenidoPropio(datos, inicio.datos, observaciones);
+  // Cualquier avance en el asistente cuenta como cambio: cerrar pregunta antes de descartar
+  const hayCambios = !!selBenef || !!selPrograma || busqueda.trim() !== '' || contenidoPropio;
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: guardando, onCerrar });
 
   useEffect(() => {
     if (busqueda.length < 2) { setBeneficiarios([]); return; }
@@ -58,7 +109,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         setBeneficiarios(data.data ?? []);
       } catch (err) {
         setBeneficiarios([]);
-        setError(mensajeErrorApi(err, { accion: 'buscar beneficiarios' }));
+        setErrorCarga(mensajeErrorApi(err, { accion: 'buscar beneficiarios' }));
       }
       finally { setBuscando(false); }
     }, 300);
@@ -71,13 +122,17 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         (s.programas ?? []).filter(p => p.activo).map(p => ({ ...p, nombreSede: s.nombre }))
       );
       setProgramas(progs);
-    }).catch(err => setError(mensajeErrorApi(err, { accion: 'cargar los programas' })));
+    }).catch(err => setErrorCarga(mensajeErrorApi(err, { accion: 'cargar los programas' })));
   }, []);
 
+  // Carga los campos del programa, arma los valores iniciales y recupera el borrador si lo hay
   useEffect(() => {
     if (!selPrograma) { setCampos([]); return; }
+    let vigente = true;
     setCargandoCampos(true);
+    setRecuperado(false);
     sedesRepository.listarCampos(selPrograma.id).then(({ data }) => {
+      if (!vigente) return;
       setCampos(data);
       const auto = {};
       const init = {};
@@ -93,11 +148,40 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         // Sí/No empieza en No: así un interruptor obligatorio cuenta como respondido sin tocarlo
         if (c.tipo === 'boolean') auto[c.id] = 'false';
       }
-      setDatos(auto);
-      setPanelActivo(init);
-    }).catch(err => setError(mensajeErrorApi(err, { accion: 'cargar el formulario del programa' })))
-      .finally(() => setCargandoCampos(false));
+      const borrador = selBenef ? leerBorrador(selBenef.id, selPrograma.id) : null;
+      if (borrador && hayContenidoPropio(borrador.datos, auto, borrador.observaciones)) {
+        setDatos({ ...auto, ...borrador.datos });
+        setPanelActivo({ ...init, ...(borrador.panelActivo ?? {}) });
+        setObservaciones(borrador.observaciones ?? '');
+        setRecuperado(true);
+      } else {
+        setDatos(auto);
+        setPanelActivo(init);
+      }
+      setInicio({ datos: auto, panelActivo: init, clave: selBenef ? `${selBenef.id}:${selPrograma.id}` : '' });
+    }).catch(err => { if (vigente) setErrorCarga(mensajeErrorApi(err, { accion: 'cargar el formulario del programa' })); })
+      .finally(() => { if (vigente) setCargandoCampos(false); });
+    return () => { vigente = false; };
   }, [selPrograma, selBenef]);
+
+  // Guarda el borrador mientras se escribe (solo si hay algo escrito por la persona)
+  useEffect(() => {
+    if (!formularioListo || guardando || inscrita.current) return;
+    if (hayContenidoPropio(datos, inicio.datos, observaciones))
+      guardarBorrador(selBenef.id, selPrograma.id, { datos, panelActivo, observaciones });
+    else
+      borrarBorrador(selBenef.id, selPrograma.id);
+  }, [datos, panelActivo, observaciones, formularioListo, guardando, inicio, selBenef, selPrograma]);
+
+  const empezarDeCero = () => {
+    if (selBenef && selPrograma) borrarBorrador(selBenef.id, selPrograma.id);
+    setDatos(inicio.datos);
+    setPanelActivo(inicio.panelActivo);
+    setObservaciones('');
+    setRecuperado(false);
+    setIntentado(false);
+    setVerResumen(false);
+  };
 
   // Tutor visible SOLO en estos casos:
   // 1. Padre y madre ambos desactivados.
@@ -192,7 +276,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   };
 
   const handleSubmit = async () => {
-    if (guardando || !validarPaso()) return;
+    if (guardando || !formularioListo || !validarPaso()) return;
     setGuardando(true);
     setError('');
     try {
@@ -202,7 +286,9 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
         datos:          JSON.stringify(datos),
         observaciones:  observaciones.trim() || null,
       });
-      onCreada(result.data);
+      inscrita.current = true;
+      borrarBorrador(selBenef.id, selPrograma.id);
+      onCreada(result.data); // la página muestra "<beneficiario> inscrito en <programa>"
     } catch (err) {
       setError(mensajeErrorApi(err, {
         accion: 'guardar la inscripción',
@@ -213,10 +299,14 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     }
   };
 
-  const PASOS = ['Beneficiario', 'Programa', 'Formulario'];
+  // Enter en un campo: avanza de paso o inscribe en el último
+  const enviar = () => { if (paso < 2) cambiarPaso(1); else handleSubmit(); };
+  // No se avanza ni se inscribe mientras se cargan los campos del programa elegido
+  const esperandoCampos = paso >= 1 && !!selPrograma && cargandoCampos;
 
   return (
-    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
+    <Dialog open onClose={confirmarCierre} alEnviar={enviar} maxWidth="sm" fullWidth
+      slotProps={{ paper: { sx: { borderRadius: { xs: 0, sm: 3 } } } }}>
       <DialogTitle sx={{ bgcolor: COLOR, color: 'white', fontWeight: 700 }}>
         Nueva Inscripción
       </DialogTitle>
@@ -253,7 +343,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                 </li>
               )}
               renderInput={(params) => (
-                <TextField {...params} label="Buscar por nombre" size="small"
+                <TextField {...params} label="Buscar por nombre" size="small" autoFocus={autoFocus}
                   error={!!errCampo('beneficiario')} helperText={errCampo('beneficiario') || undefined} />
               )}
             />
@@ -270,29 +360,20 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
 
         {paso === 1 && (
           <Box>
-            <Typography sx={{ fontWeight: 700, mb: errCampo('programa') ? 0.5 : 2 }}>Selecciona el programa</Typography>
+            <Typography id="nueva-inscripcion-programa" sx={{ fontWeight: 700, mb: errCampo('programa') ? 0.5 : 2 }}>
+              Selecciona el programa
+            </Typography>
             {errCampo('programa') && (
               <Typography sx={{ display: 'block', mb: 1.5 }} variant="caption" color="error">{errCampo('programa')}</Typography>
             )}
             {programas.length === 0 ? (
               <Alert severity="warning">No hay programas activos disponibles.</Alert>
             ) : (
-              <Grid container spacing={1.5}>
+              <Grid container spacing={1.5} role="radiogroup" aria-labelledby="nueva-inscripcion-programa">
                 {programas.map(p => (
                   <Grid key={p.id} size={{ xs: 12, sm: 6 }}>
-                    <Box onClick={() => setSelPrograma(p)} sx={{
-                      border: '2px solid', borderColor: selPrograma?.id === p.id ? COLOR : 'divider',
-                      borderRadius: 2, p: 1.5, cursor: 'pointer',
-                      bgcolor: (t) => (selPrograma?.id === p.id ? alpha(t.palette.primary.main, 0.08) : t.palette.background.paper),
-                      transition: 'all 0.15s',
-                      '&:hover': { borderColor: COLOR, bgcolor: (t) => alpha(t.palette.primary.main, 0.08) },
-                    }}>
-                      <Typography sx={{ fontWeight: 700, color: COLOR }}>{p.nombre}</Typography>
-                      <Typography sx={{ color: 'text.secondary' }} variant="caption">{p.nombreSede}</Typography>
-                      {selPrograma?.id === p.id && (
-                        <CheckIcon sx={{ float: 'right', color: COLOR, fontSize: 20 }} />
-                      )}
-                    </Box>
+                    <TarjetaPrograma programa={p} seleccionada={selPrograma?.id === p.id}
+                      onElegir={() => setSelPrograma(p)} />
                   </Grid>
                 ))}
               </Grid>
@@ -305,9 +386,15 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
             <Typography sx={{ fontWeight: 700, mb: 2 }}>
               Completa el formulario de {selPrograma?.nombre}
             </Typography>
+            {recuperado && !cargandoCampos && (
+              <Alert severity="info" sx={{ mb: 2 }}
+                action={<Button color="inherit" size="small" onClick={empezarDeCero}>Empezar de cero</Button>}>
+                Recuperamos lo que habías escrito para este beneficiario y programa.
+              </Alert>
+            )}
             {cargandoCampos ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-                <CircularProgress sx={{ color: COLOR }} />
+                <CircularProgress sx={{ color: COLOR }} aria-label="Cargando el formulario" />
               </Box>
             ) : campos.length === 0 ? (
               <Alert severity="info">
@@ -344,38 +431,29 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                 </Grid>
               </Grid>
             )}
-            <FirmaAutorizacion datos={datos} setDatos={setDatos}
-              panelActivo={panelActivo} campos={campos}
-              errores={intentado ? errores : {}}
-              sx={{ mt: campos.length === 0 ? 0 : 1 }} />
+            {!cargandoCampos && (
+              <FirmaAutorizacion datos={datos} setDatos={setDatos}
+                panelActivo={panelActivo} campos={campos}
+                errores={intentado ? errores : {}}
+                sx={{ mt: campos.length === 0 ? 0 : 1 }} />
+            )}
           </Box>
         )}
       </DialogContent>
 
       <ResumenErrores visible={verResumen && hayErrores} errores={errores} etiqueta={etiquetaError}
         onClose={() => setVerResumen(false)} accion={paso < 2 ? 'continuar' : 'inscribir'} />
-      {error && (
-        <Alert severity="error" onClose={() => setError('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>
-          {error}
-        </Alert>
-      )}
-      <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-        <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
-        {paso > 0 && (
-          <Button onClick={() => cambiarPaso(-1)} disabled={guardando}>Atrás</Button>
-        )}
-        <Box sx={{ flex: 1 }} />
-        {paso < 2 ? (
-          <Button variant="contained" onClick={() => cambiarPaso(1)} sx={{ bgcolor: COLOR }}>
-            Siguiente
-          </Button>
-        ) : (
-          <Button variant="contained" onClick={handleSubmit}
-            disabled={guardando} sx={{ bgcolor: COLOR }}>
-            {guardando ? 'Guardando...' : 'Inscribir'}
-          </Button>
-        )}
-      </DialogActions>
+      <ErrorServidor mensaje={errorCarga} onClose={() => setErrorCarga('')} titulo="No se pudo cargar" />
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo
+        onCancelar={confirmarCierre}
+        guardando={guardando}
+        enviar
+        textoGuardar={paso < 2 ? 'Siguiente' : 'Inscribir'}
+        deshabilitado={esperandoCampos}
+        anterior={paso > 0 ? { onClick: () => cambiarPaso(-1), texto: 'Atrás' } : undefined}
+        sxGuardar={{ bgcolor: COLOR }}
+      />
     </Dialog>
   );
 }

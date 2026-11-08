@@ -13,14 +13,14 @@ export function TabTextos({ form, set, v }) {
               {...v.props('tagline')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth size="small" label="Correo de contacto" type="email"
+            <TextField fullWidth size="small" label="Correo de contacto" type="email" autoComplete="off"
               placeholder="contacto@fundacion.org" value={form.emailContacto} onChange={set('emailContacto')}
               {...v.props('emailContacto')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth size="small" label="Sitio web"
               placeholder="https://fundacionpanoramadecolores.org"
-              value={form.sitioWeb} onChange={set('sitioWeb')}
+              value={form.sitioWeb} onChange={set('sitioWeb')} type="url" autoComplete="off"
               {...v.props('sitioWeb')} />
           </Grid>
         </Grid>

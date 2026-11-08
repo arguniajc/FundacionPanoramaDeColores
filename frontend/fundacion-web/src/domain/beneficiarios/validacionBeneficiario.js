@@ -8,10 +8,19 @@
 
 import { parsearFechaISO } from '@/shared/utils/fecha';
 
-const NO_REGISTRA = 'No registra';
+/** Valor que se guarda cuando un dato no se conoce ("→ No registra"). */
+export const NO_REGISTRA = 'No registra';
 
 /** Tipos de documento que solo llevan números. */
 export const DOCS_NUMERICOS = ['RC', 'TI', 'CC', 'NUIP'];
+
+/** Tipo de documento de quien no tiene ninguno: no lleva número ni se revisa si está repetido. */
+export const SIN_DOCUMENTO = 'Sin documento';
+
+/** true si el tipo es "Sin documento" (sin importar mayúsculas: la plantilla de Excel lo trae en MAYÚSCULAS). */
+export const esSinDocumento = tipo => String(tipo ?? '').trim().toLowerCase() === SIN_DOCUMENTO.toLowerCase();
+
+const CELULAR = /^3\d{9}$/;
 
 const DOC_EJEMPLO = {
   RC: '1107654321', TI: '1107123456', CC: '1144123456', NUIP: '1107654321',
@@ -96,9 +105,10 @@ export const REGLAS = {
     etiqueta: 'Número de documento',
     validar: (v, form) => {
       const tipo = form.tipoDocumento;
+      if (esSinDocumento(tipo)) return ''; // no lleva número
       const ej   = DOC_EJEMPLO[tipo] ?? '1144123456';
       const s    = String(v ?? '').trim();
-      if (!s) return `Es obligatorio. Ejemplo: ${ej}`;
+      if (!s) return `Es obligatorio. Ejemplo: ${ej} (si no tiene, elige el tipo "Sin documento")`;
       if (DOCS_NUMERICOS.includes(tipo)) {
         if (!/^\d+$/.test(s))            return `Escribe solo números, sin puntos ni espacios. Ejemplo: ${ej}`;
         if (s.length < 6 || s.length > 11) return `Un documento ${tipo} tiene entre 6 y 11 dígitos. Ejemplo: ${ej}`;
@@ -200,7 +210,18 @@ export const REGLAS = {
       if (!esNino(form)) return '';
       const s = String(v ?? '').trim();
       if (!s) return 'Es obligatorio. Ejemplo: 3001234567';
-      if (!/^3\d{9}$/.test(s)) return 'Debe ser un celular de 10 dígitos que empiece por 3. Ejemplo: 3001234567';
+      if (!CELULAR.test(s)) return 'Debe ser un celular de 10 dígitos que empiece por 3. Ejemplo: 3001234567';
+      return '';
+    },
+  },
+  celular: {
+    etiqueta: 'Celular / WhatsApp',
+    validar: (v, form) => {
+      if (esNino(form)) return ''; // el niño se contacta por su acudiente
+      const s = String(v ?? '').trim();
+      if (!s) return 'Es obligatorio. Ejemplo: 3001234567 (o marca "No registra")';
+      if (s !== NO_REGISTRA && !CELULAR.test(s))
+        return 'Debe ser un celular de 10 dígitos que empiece por 3, sin espacios. Ejemplo: 3001234567';
       return '';
     },
   },
@@ -225,14 +246,17 @@ export const REGLAS = {
   },
 };
 
-/** Campos que se revisan en cada paso del registro. */
+/**
+ * Campos que se revisan en cada paso del registro. La residencia (barrio y dirección) va en el
+ * paso 0 para niño y adulto; el paso 3 es "Acudiente" (niño) o "Contacto" (celular del adulto).
+ */
 export const CAMPOS_POR_PASO = [
   ['primerNombre', 'segundoNombre', 'primerApellido', 'segundoApellido', 'fechaNacimiento',
    'tipoDocumento', 'numeroDocumento', 'genero', 'departamentoNacimiento', 'ciudadNacimiento',
-   'barrio', 'numPersonasVive', 'numHermanos'],
+   'barrio', 'direccion', 'numPersonasVive', 'numHermanos'],
   ['tallaCamisa', 'tallaPantalon', 'tallaZapatos', 'pesoKg', 'tallaCm'],
   ['eps', 'descripcionAlergia', 'descripcionDiscapacidad'],
-  ['nombreAcudiente', 'parentesco', 'whatsapp', 'viveConNino', 'direccion'],
+  ['nombreAcudiente', 'parentesco', 'whatsapp', 'viveConNino', 'celular'],
   ['autorizacion'],
 ];
 
@@ -271,12 +295,15 @@ export const describirError = (campo, mensaje) => `${REGLAS[campo]?.etiqueta ?? 
 /** Largo máximo de cada columna de la plantilla (el menor entre la columna de la BD y el DTO del servidor). */
 export const MAX_IMPORTACION = {
   primerNombre: 80, segundoNombre: 80, primerApellido: 80, segundoApellido: 80,
-  numeroDocumento: 30, eps: 100, nombreAcudiente: 150, whatsapp: 20,
+  numeroDocumento: 30, eps: 100, nombreAcudiente: 150, whatsapp: 20, celular: 20,
   direccion: 200, nombreColegio: 200, gradoEscolar: 50,
 };
 
-/** Campos opcionales en la plantilla: su regla de formato solo aplica si la celda trae valor. */
-const OPCIONALES_IMPORTACION = ['tipoDocumento', 'numeroDocumento', 'whatsapp'];
+/**
+ * Campos opcionales en la plantilla: su regla de formato solo aplica si la celda trae valor.
+ * La columna WhatsApp es el del acudiente (niño) o el celular propio (adulto), como en el servidor.
+ */
+const OPCIONALES_IMPORTACION = ['tipoDocumento', 'numeroDocumento', 'whatsapp', 'celular'];
 
 /** 'DD/MM/AAAA' (o D/M/AAAA) → 'AAAA-MM-DD'; cualquier otro texto se devuelve igual. */
 function fechaAIso(v) {
@@ -291,11 +318,13 @@ function fechaAIso(v) {
  * pero los campos opcionales solo se revisan cuando traen valor, igual que el backend.
  */
 export function validarFilaImportacion(fila) {
+  const tipo = String(fila.tipo ?? '').trim().toLowerCase() === 'adulto' ? 'adulto' : 'niño';
   const form = {
     ...fila,
-    tipo: String(fila.tipo ?? '').trim().toLowerCase() === 'adulto' ? 'adulto' : 'niño',
+    tipo,
     tipoDocumento: String(fila.tipoDocumento ?? '').trim().toUpperCase(),
     fechaNacimiento: fechaAIso(fila.fechaNacimiento),
+    celular: tipo === 'adulto' ? fila.whatsapp : '',
   };
   const errores = [];
   for (const campo of ['primerNombre', 'segundoNombre', 'primerApellido', 'segundoApellido', 'fechaNacimiento']) {

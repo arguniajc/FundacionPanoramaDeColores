@@ -260,19 +260,42 @@ export function useContabilidadPage() {
     }
   };
 
-  // ── Movimientos CRUD ──────────────────────────────────────────────────────
-  const guardarMovimiento = async (form) => {
+  /**
+   * Guardado de los diálogos: devuelve null si se guardó (cierra el diálogo y avisa con un toast)
+   * o el mensaje de error para mostrarlo DENTRO del diálogo (ErrorServidor), que queda abierto.
+   * La recarga posterior va aparte: si falla, el dato ya quedó guardado y solo se avisa.
+   */
+  const guardarDesdeDialogo = async ({ enviar, accion, cerrar, exito, recargar }) => {
     setGuardando(true);
     try {
-      if (dlgMov.modo === 'crear') await apiClient.post('/api/contabilidad/movimientos', form);
-      else await apiClient.put(`/api/contabilidad/movimientos/${dlgMov.data.id}`, form);
+      await enviar();
+    } catch (err) {
+      setGuardando(false);
+      return mensajeErrorApi(err, { accion });
+    }
+    cerrar();
+    toast(exito, 'success');
+    try {
+      await recargar();
+    } catch (err) {
+      toast(mensajeErrorApi(err, { accion: 'actualizar la información' }), 'error');
+    } finally { setGuardando(false); }
+    return null;
+  };
+
+  // ── Movimientos CRUD ──────────────────────────────────────────────────────
+  const guardarMovimiento = (form) => guardarDesdeDialogo({
+    enviar: () => (dlgMov.modo === 'crear'
+      ? apiClient.post('/api/contabilidad/movimientos', form)
+      : apiClient.put(`/api/contabilidad/movimientos/${dlgMov.data.id}`, form)),
+    accion: 'guardar el movimiento',
+    cerrar: () => setDlgMov(d => ({ ...d, open: false })),
+    exito:  dlgMov.modo === 'crear' ? 'Movimiento registrado.' : 'Movimiento actualizado.',
+    recargar: async () => {
       await Promise.all([cargarStats(), cargarCuentas(), recargarMovimientos()]);
       if (tab === 5) await cargarCajaMenor();
-      setDlgMov(d => ({ ...d, open: false }));
-    } catch (err) {
-      toast(mensajeErrorApi(err, { accion: 'guardar el movimiento' }), 'error');
-    } finally { setGuardando(false); }
-  };
+    },
+  });
 
   const eliminarMovimiento = async (id) => {
     if (!await confirm('¿Eliminar este movimiento? El saldo de la cuenta se ajustará automáticamente.')) return;
@@ -299,17 +322,15 @@ export function useContabilidadPage() {
   };
 
   // ── Cuentas CRUD ──────────────────────────────────────────────────────────
-  const guardarCuenta = async (form) => {
-    setGuardando(true);
-    try {
-      if (dlgCuenta.modo === 'crear') await apiClient.post('/api/contabilidad/cuentas', form);
-      else await apiClient.put(`/api/contabilidad/cuentas/${dlgCuenta.data.id}`, form);
-      await Promise.all([cargarCuentas(), cargarStats()]);
-      setDlgCuenta(d => ({ ...d, open: false }));
-    } catch (err) {
-      toast(mensajeErrorApi(err, { accion: 'guardar la cuenta' }), 'error');
-    } finally { setGuardando(false); }
-  };
+  const guardarCuenta = (form) => guardarDesdeDialogo({
+    enviar: () => (dlgCuenta.modo === 'crear'
+      ? apiClient.post('/api/contabilidad/cuentas', form)
+      : apiClient.put(`/api/contabilidad/cuentas/${dlgCuenta.data.id}`, form)),
+    accion: 'guardar la cuenta',
+    cerrar: () => setDlgCuenta(d => ({ ...d, open: false })),
+    exito:  dlgCuenta.modo === 'crear' ? 'Cuenta creada.' : 'Cuenta actualizada.',
+    recargar: () => Promise.all([cargarCuentas(), cargarStats()]),
+  });
 
   const eliminarCuenta = async (id) => {
     if (!await confirm('¿Eliminar esta cuenta? Solo es posible si no tiene movimientos registrados.')) return;
@@ -322,17 +343,15 @@ export function useContabilidadPage() {
   };
 
   // ── Presupuesto CRUD ──────────────────────────────────────────────────────
-  const guardarPresupuesto = async (form) => {
-    setGuardando(true);
-    try {
-      if (dlgPres.modo === 'crear') await apiClient.post('/api/contabilidad/presupuesto', form);
-      else await apiClient.put(`/api/contabilidad/presupuesto/${dlgPres.data.id}`, form);
-      await cargarPresupuesto();
-      setDlgPres(d => ({ ...d, open: false }));
-    } catch (err) {
-      toast(mensajeErrorApi(err, { accion: 'guardar la línea presupuestal' }), 'error');
-    } finally { setGuardando(false); }
-  };
+  const guardarPresupuesto = (form) => guardarDesdeDialogo({
+    enviar: () => (dlgPres.modo === 'crear'
+      ? apiClient.post('/api/contabilidad/presupuesto', form)
+      : apiClient.put(`/api/contabilidad/presupuesto/${dlgPres.data.id}`, form)),
+    accion: 'guardar la línea presupuestal',
+    cerrar: () => setDlgPres(d => ({ ...d, open: false })),
+    exito:  dlgPres.modo === 'crear' ? 'Línea presupuestal agregada.' : 'Presupuesto actualizado.',
+    recargar: () => cargarPresupuesto(),
+  });
 
   const eliminarPresupuesto = async (id) => {
     if (!await confirm('¿Eliminar esta línea presupuestal?')) return;
@@ -346,16 +365,13 @@ export function useContabilidadPage() {
   };
 
   // ── Caja Menor CRUD ───────────────────────────────────────────────────────
-  const guardarArqueo = async (form) => {
-    setGuardando(true);
-    try {
-      await apiClient.post('/api/contabilidad/caja-menor/arqueos', form);
-      await cargarCajaMenor();
-      setDlgArqueo({ open: false });
-    } catch (err) {
-      toast(mensajeErrorApi(err, { accion: 'registrar el arqueo' }), 'error');
-    } finally { setGuardando(false); }
-  };
+  const guardarArqueo = (form) => guardarDesdeDialogo({
+    enviar: () => apiClient.post('/api/contabilidad/caja-menor/arqueos', form),
+    accion: 'registrar el arqueo',
+    cerrar: () => setDlgArqueo({ open: false }),
+    exito:  'Arqueo registrado.',
+    recargar: () => cargarCajaMenor(),
+  });
 
   const eliminarArqueo = async (id) => {
     if (!await confirm('¿Eliminar este arqueo?')) return;
@@ -368,16 +384,13 @@ export function useContabilidadPage() {
     await cargarCajaMenor();
   };
 
-  const guardarReposicion = async (form) => {
-    setGuardando(true);
-    try {
-      await apiClient.post('/api/contabilidad/caja-menor/reposicion', form);
-      await Promise.all([cargarStats(), cargarCuentas(), cargarCajaMenor()]);
-      setDlgReposicion({ open: false });
-    } catch (err) {
-      toast(mensajeErrorApi(err, { accion: 'registrar la reposición' }), 'error');
-    } finally { setGuardando(false); }
-  };
+  const guardarReposicion = (form) => guardarDesdeDialogo({
+    enviar: () => apiClient.post('/api/contabilidad/caja-menor/reposicion', form),
+    accion: 'registrar la reposición',
+    cerrar: () => setDlgReposicion({ open: false }),
+    exito:  'Reposición registrada.',
+    recargar: () => Promise.all([cargarStats(), cargarCuentas(), cargarCajaMenor()]),
+  });
 
   // ── OCR ───────────────────────────────────────────────────────────────────
   const comprimirImagen = (file) => new Promise((resolve) => {

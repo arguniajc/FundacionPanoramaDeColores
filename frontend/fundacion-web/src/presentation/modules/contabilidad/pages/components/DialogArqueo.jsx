@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import {
-  Alert, Button, DialogActions, DialogContent, DialogTitle,
-  Grid, InputAdornment, TextField,
+  Alert, DialogContent, DialogTitle, Grid, TextField,
 } from '@mui/material';
 import Dialog from '@/shared/components/DialogResponsive';
 import { fmt, hoy } from './formato';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
+import { AccionesDialogo, CampoMoneda, ErrorServidor } from '@/shared/components/form/FormControles';
 import ResumenErrores from '@/shared/components/ResumenErrores';
 
 // Reglas del formulario: cada una dice qué está mal y cómo llenarlo
@@ -21,8 +23,13 @@ const ESQUEMA = {
   responsable: { etiqueta: 'Responsable del arqueo',   reglas: [r.texto({ min: 3, max: 120, soloLetras: true, ejemplo: 'Ana Gómez' })] },
 };
 
+const nuevoArqueo = () => ({ fecha: hoy(), saldoFisico: '', observacion: '', responsable: '' });
+
 export function DialogArqueo({ open, cuenta, guardando, onClose, onGuardar }) {
-  const [form, setForm] = useState({ fecha: hoy(), saldoFisico: '', observacion: '', responsable: '' });
+  const [form, setForm] = useState(nuevoArqueo);
+  const [inicial, setInicial] = useState(nuevoArqueo);
+  const [error, setError] = useState('');
+  const autoFocus = useAutoFocus();
   const v = useValidacion(ESQUEMA, form);
   const { reiniciar } = v;
 
@@ -31,28 +38,37 @@ export function DialogArqueo({ open, cuenta, guardando, onClose, onGuardar }) {
   if (open !== abiertoAntes) {
     setAbiertoAntes(open);
     if (open) {
-      setForm({ fecha: hoy(), saldoFisico: '', observacion: '', responsable: '' });
+      const datos = nuevoArqueo();
+      setForm(datos);
+      setInicial(datos);
+      setError('');
       reiniciar();
     }
   }
 
+  const { confirmarCierre } = useCerrarConCambios({
+    hayCambios: hayCambiosEn(form, inicial), bloqueado: guardando, onCerrar: onClose,
+  });
+
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-  const saldoFisicoNum = parseFloat(form.saldoFisico) || 0;
+  const saldoFisicoNum = Number(form.saldoFisico) || 0;
   const diferencia     = form.saldoFisico !== '' ? saldoFisicoNum - (cuenta?.saldoActual ?? 0) : null;
 
-  const guardar = () => {
-    if (!v.validarTodo()) return;
-    onGuardar({
+  const guardar = async () => {
+    if (guardando || !v.validarTodo()) return;
+    setError('');
+    const fallo = await onGuardar({
       cuentaId:    cuenta?.id,
       fecha:       form.fecha,
       saldoFisico: saldoFisicoNum,
       observacion: form.observacion || null,
       responsable: form.responsable || null,
     });
+    if (fallo) setError(fallo);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} maxWidth="sm" fullWidth bloqueado={guardando} alEnviar={guardar}>
       <DialogTitle>Arqueo de Caja — {cuenta?.nombre}</DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         <Alert severity="info" sx={{ mb: 2 }}>
@@ -65,8 +81,8 @@ export function DialogArqueo({ open, cuenta, guardando, onClose, onGuardar }) {
               {...v.props('fecha')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Conteo físico (efectivo) *" type="number" size="small"
-              value={form.saldoFisico} onChange={set('saldoFisico')}
+            <CampoMoneda label="Conteo físico (efectivo) *" autoFocus={autoFocus}
+              value={form.saldoFisico} onChange={s => setForm(f => ({ ...f, saldoFisico: s }))}
               {...v.props('saldoFisico', 'Cuente el efectivo físico en caja')} />
           </Grid>
           {diferencia !== null && (
@@ -90,12 +106,8 @@ export function DialogArqueo({ open, cuenta, guardando, onClose, onGuardar }) {
         </Grid>
       </DialogContent>
       <ResumenErrores {...v.resumen} accion="registrar el arqueo" />
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" disabled={guardando} onClick={guardar}>
-          {guardando ? 'Guardando…' : 'Registrar Arqueo'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar textoGuardar="Registrar Arqueo" />
     </Dialog>
   );
 }

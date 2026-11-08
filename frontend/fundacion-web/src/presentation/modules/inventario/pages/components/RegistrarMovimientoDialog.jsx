@@ -1,12 +1,15 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import {
-  Alert, Autocomplete, Box, Button, CircularProgress, DialogActions,
+  Autocomplete, Box, CircularProgress,
   DialogContent, DialogTitle, FormControl, FormHelperText, Grid, InputAdornment, InputLabel,
   MenuItem, Select, TextField, Typography,
 } from '@mui/material';
 import Dialog from '@/shared/components/DialogResponsive';
 import { inventarioRepository } from '@/infrastructure/repositories/inventarioRepository';
-import { COLOR, fmtNum } from './helpers';
+import { COLOR, fmtNum, limpiarCantidad } from './helpers';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import { useTheme, alpha } from '@mui/material/styles';
 import { colorEstado } from '@/shared/theme/paleta';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
@@ -41,7 +44,9 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
   const [donantes,  setDonantes]  = useState([]);
   const [guardando, setGuardando] = useState(false);
   const [error,     setError]     = useState('');
+  const [inicial,   setInicial]   = useState(null);
   const buscarTimer = useRef(null);
+  const autoFocus = useAutoFocus();
 
   const tiposFiltrados = tipos.filter(t => !t.codigo.startsWith('TRANSFERENCIA'));
   const tipoSel = tiposFiltrados.find(t => t.id === Number(form.tipoMovimientoId));
@@ -53,13 +58,22 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
 
   useEffect(() => {
     if (open) {
-      setForm({ tipoMovimientoId: tiposFiltrados[0]?.id ?? '', cantidad: '', motivo: '', donante: '', donanteObj: null, buscandoDonante: false });
+      const datos = { tipoMovimientoId: tiposFiltrados[0]?.id ?? '', cantidad: '', motivo: '', donante: '', donanteObj: null, buscandoDonante: false };
+      setForm(datos);
+      setInicial(datos);
       setDonantes([]);
       setError('');
       reiniciar();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Solo cuentan los datos escritos (no el estado de la búsqueda de donantes)
+  const datosEscritos = f => (f ? { tipoMovimientoId: f.tipoMovimientoId, cantidad: f.cantidad, motivo: f.motivo, donante: f.donante } : null);
+  const { confirmarCierre } = useCerrarConCambios({
+    hayCambios: !!inicial && hayCambiosEn(datosEscritos(form), datosEscritos(inicial)),
+    bloqueado: guardando, onCerrar: onClose,
+  });
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -78,7 +92,7 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
   };
 
   const guardar = async () => {
-    if (!v.validarTodo()) return;
+    if (guardando || !v.validarTodo()) return;
     const cant = aNumero(form.cantidad);
     setGuardando(true); setError('');
     try {
@@ -101,14 +115,13 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
   if (!item) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} maxWidth="xs" fullWidth bloqueado={guardando} alEnviar={guardar}>
       <DialogTitle sx={{ fontWeight: 800, color: COLOR }}>Registrar movimiento</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
           <strong>{item.nombre}</strong> · Stock: <strong>{fmtNum(item.stockActual)} {item.unidadMedida}</strong>
           {item.nombreSede && <> · <strong>{item.nombreSede}</strong></>}
         </Typography>
-        {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size={12}>
             <FormControl fullWidth size="small" error={!!v.err('tipoMovimientoId')}>
@@ -129,8 +142,9 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
             </FormControl>
           </Grid>
           <Grid size={12}>
-            <TextField slotProps={{ htmlInput: { min: 0.01, step: 1 }, input: { endAdornment: <InputAdornment position="end">{item.unidadMedida}</InputAdornment> } }} fullWidth size="small" label="Cantidad *" type="number" value={form.cantidad}
-              onChange={e => set('cantidad', e.target.value)}
+            <TextField slotProps={{ htmlInput: { inputMode: 'decimal', autoComplete: 'off' }, input: { endAdornment: <InputAdornment position="end">{item.unidadMedida}</InputAdornment> } }} fullWidth size="small" label="Cantidad *" type="text" value={form.cantidad}
+              onChange={e => set('cantidad', limpiarCantidad(e.target.value))}
+              autoFocus={autoFocus}
               {...v.props('cantidad')}
             />
           </Grid>
@@ -175,13 +189,9 @@ export function RegistrarMovimientoDialog({ open, item, tipos, onClose, onRegist
         </Grid>
       </DialogContent>
       <ResumenErrores {...v.resumen} accion="registrar el movimiento" />
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={guardando}>Cancelar</Button>
-        <Button variant="contained" onClick={guardar} disabled={guardando}
-          sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: 'var(--color-gradiente)' } }}>
-          {guardando ? <CircularProgress size={20} color="inherit" /> : 'Registrar'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar textoGuardar="Registrar"
+        sxGuardar={{ bgcolor: COLOR, '&:hover': { bgcolor: 'var(--color-gradiente)' } }} />
     </Dialog>
   );
 }

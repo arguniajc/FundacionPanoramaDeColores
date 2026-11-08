@@ -200,7 +200,14 @@ public class AccionesDePermisoTests
     public void Ninguna_Escritura_Exige_Solo_Ver()
     {
         // log-emision solo registra que alguien imprimió/envió un recibo: basta con poder verlo
-        HashSet<string> excepciones = ["DonacionesController.LogEmision"];
+        // verificar-documento es una CONSULTA (¿ya existe ese número?) que va por POST solo para
+        // que el número de documento no quede en la URL ni en el log de peticiones.
+        HashSet<string> excepciones = [
+            "DonacionesController.LogEmision",
+            "VoluntariosController.VerificarDocumento",
+            "TalentoHumanoController.VerificarDocumento",
+            "DonantesController.VerificarDocumento",
+        ];
         var malos = Endpoints()
             .Where(m => m.GetCustomAttributes<HttpPostAttribute>().Any()
                      || m.GetCustomAttributes<HttpPutAttribute>().Any()

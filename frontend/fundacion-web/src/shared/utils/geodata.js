@@ -2,6 +2,7 @@ import { countries }        from 'countries-list';
 import colombiaCities       from './colombia_cities.json';
 import worldStates          from './world_states.json';
 import citiesByDept         from './colombia_cities_by_dept.json';
+import { codigosTipoDocumento } from '../constants/tiposDocumento';
 
 export const PAISES = Object.values(countries)
   .map(c => c.name)
@@ -32,7 +33,9 @@ export function getCiudadesDeUbicacion(paisNombre, departamento) {
   return departamento ? getCiudadesDeDepartamento(departamento) : [];
 }
 
-export const TIPOS_DOCUMENTO    = ['RC', 'TI', 'CC', 'CE', 'PA', 'PEP', 'PPT', 'NIT', 'Otro'];
+// Lista general de tipos de documento, derivada del catálogo único (constants/tiposDocumento):
+// ['RC', 'TI', 'CC', 'CE', 'PA', 'PEP', 'PPT', 'NIT', 'Otro']
+export const TIPOS_DOCUMENTO    = codigosTipoDocumento('persona');
 export const GENEROS            = ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'];
 export const TIPOS_SANGRE       = ['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−'];
 export const ESTRATOS           = ['1', '2', '3', '4', '5', '6'];

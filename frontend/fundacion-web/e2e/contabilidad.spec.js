@@ -44,21 +44,24 @@ test.describe('Contabilidad — movimientos', () => {
     await abrirContabilidad(page, api, sesion);
     const dialogo = await abrirEgreso(page);
 
-    await dialogo.getByRole('spinbutton', { name: /^Monto/ }).fill('150000');
+    await dialogo.getByRole('textbox', { name: /^Monto/ }).fill('150000');
     await dialogo.getByRole('textbox', { name: /^Concepto \*/ }).fill('Honorarios del contador marzo');
     await elegir(page, dialogo, 'Cuenta *', 'Bancolombia ahorros');
     // Las categorías se filtran por tipo: en un egreso no aparece la de ingreso
     await combo(dialogo, 'Categoría PUC').click();
     await expect(page.getByRole('option', { name: '4120 — Donaciones en dinero' })).toHaveCount(0);
     await page.getByRole('option', { name: '5110 — Honorarios' }).click();
-    await dialogo.getByRole('textbox', { name: 'NIT / Documento del tercero' }).fill('900123456-7');
+    await dialogo.getByRole('textbox', { name: 'NIT / Documento del tercero' }).fill('900123456-8');
     // Al elegir la tarifa se calcula el valor retenido (4 % de 150.000)
     await elegir(page, dialogo, 'Tarifa de retención', '4% — Honorarios (persona natural)');
-    await expect(dialogo.getByRole('spinbutton', { name: 'Valor retenido' })).toHaveValue('6000.00');
+    // Los montos se muestran con separador de miles (es-CO); el envío sigue siendo numérico
+    await expect(dialogo.getByRole('textbox', { name: /^Monto/ })).toHaveValue('150.000');
+    await expect(dialogo.getByRole('textbox', { name: 'Valor retenido' })).toHaveValue('6.000,00');
 
     await dialogo.getByRole('button', { name: 'Registrar' }).click();
 
     await expect(dialogo).toBeHidden();
+    await expect(page.getByText('Movimiento registrado.')).toBeVisible();
     const llamadas = api.llamadas('POST', '/api/contabilidad/movimientos');
     expect(llamadas).toHaveLength(1);
     expect(llamadas[0].body).toMatchObject({
@@ -68,7 +71,7 @@ test.describe('Contabilidad — movimientos', () => {
       cuentaId: 'cta-banco',
       categoriaId: 8,
       programaId: null,
-      terceroDocumento: '900123456-7',
+      terceroDocumento: '900123456-8',
       tarifaRetencion: 4,
       retencionPracticada: 6000,
     });
@@ -92,10 +95,10 @@ test.describe('Contabilidad — movimientos', () => {
     ]);
 
     // Una retención mayor que el monto tampoco pasa
-    await dialogo.getByRole('spinbutton', { name: /^Monto/ }).fill('10000');
+    await dialogo.getByRole('textbox', { name: /^Monto/ }).fill('10000');
     await dialogo.getByRole('textbox', { name: /^Concepto \*/ }).fill('Compra de papelería');
     await elegir(page, dialogo, 'Categoría PUC', '5195 — Diversos');
-    await dialogo.getByRole('spinbutton', { name: 'Valor retenido' }).fill('20000');
+    await dialogo.getByRole('textbox', { name: 'Valor retenido' }).fill('20000');
     await dialogo.getByRole('button', { name: 'Registrar' }).click();
     await expect(resumen.getByRole('listitem')).toHaveText([
       'Valor retenido: La retención no puede ser mayor que el monto del movimiento.',
@@ -103,5 +106,34 @@ test.describe('Contabilidad — movimientos', () => {
 
     await expect(dialogo).toBeVisible();
     expect(api.llamadas('POST', '/api/contabilidad/movimientos')).toHaveLength(0);
+
+    // NIT del tercero: con DV equivocado dice cuál es el correcto; sin DV lo sugiere
+    const tercero = dialogo.getByRole('textbox', { name: 'NIT / Documento del tercero' });
+    await tercero.fill('900123456-7');
+    await tercero.blur();
+    await expect(tercero).toHaveAccessibleDescription('El dígito de verificación no corresponde; debería ser 8. Ejemplo: 900123456-8');
+    await tercero.fill('900123456');
+    await expect(tercero).toHaveAccessibleDescription('Si es un NIT, el dígito de verificación es 8: 900123456-8');
+  });
+
+  test('si el servidor rechaza el guardado, el error se muestra en el diálogo y no se pierde lo escrito', async ({ page, api, sesion }) => {
+    api.on('POST', '/api/contabilidad/movimientos', () => ({ status: 400, json: { mensaje: 'La cuenta está inactiva.' } }));
+    await abrirContabilidad(page, api, sesion);
+    const dialogo = await abrirEgreso(page);
+
+    await dialogo.getByRole('textbox', { name: /^Monto/ }).fill('80000');
+    await dialogo.getByRole('textbox', { name: /^Concepto \*/ }).fill('Compra de papelería');
+    await elegir(page, dialogo, 'Categoría PUC', '5195 — Diversos');
+    // Enter en un campo guarda
+    await dialogo.getByRole('textbox', { name: /^Concepto \*/ }).press('Enter');
+
+    await expect(dialogo.getByRole('alert').filter({ hasText: 'No se pudo guardar' })).toContainText('La cuenta está inactiva.');
+    await expect(dialogo.getByRole('textbox', { name: /^Monto/ })).toHaveValue('80.000');
+    expect(api.llamadas('POST', '/api/contabilidad/movimientos')).toHaveLength(1);
+
+    // Cancelar con datos escritos pregunta antes de descartarlos
+    await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+    await page.getByRole('button', { name: 'Seguir editando' }).click();
+    await expect(dialogo).toBeVisible();
   });
 });

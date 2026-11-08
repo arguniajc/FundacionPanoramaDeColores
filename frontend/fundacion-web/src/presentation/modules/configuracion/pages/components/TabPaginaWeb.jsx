@@ -7,6 +7,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Seccion }    from './Seccion';
 import { ImagenField } from './ImagenField';
 import { COLOR, FA_ICONOS } from './helpers';
+import { CampoTelefono } from '@/shared/components/form/FormControles';
 
 export function TabPaginaWeb({ webForm, setWebForm, v }) {
   const setSlide = (i, k) => (e) => setWebForm(p => {
@@ -107,7 +108,7 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
               <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
                 <Typography sx={{ color: 'text.secondary' }} variant="caption">Dato {i + 1}</Typography>
                 <Grid sx={{ mt: 0.5 }} container spacing={1}>
-                  <Grid size={4}><TextField fullWidth size="small" label="Número" type="number" value={item.numero} onChange={setImpItem(i, 'numero')} /></Grid>
+                  <Grid size={4}><TextField fullWidth size="small" label="Número" type="text" slotProps={{ htmlInput: { inputMode: 'numeric' } }} value={item.numero} onChange={setImpItem(i, 'numero')} /></Grid>
                   <Grid size={8}><TextField fullWidth size="small" label="Descripción" value={item.label} onChange={setImpItem(i, 'label')} /></Grid>
                 </Grid>
               </Box>
@@ -136,8 +137,8 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
       {/* Cómo Ayudar */}
       <Box sx={{ mt: 2 }}><Seccion titulo="¿Cómo Ayudar?">
         <Grid container spacing={2.5}>
-          <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="WhatsApp para donaciones (solo números)" value={webForm.donaciones.whatsapp} onChange={setDon('whatsapp')} placeholder="573226012056" {...v.props('webDonWhatsapp')} /></Grid>
-          <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="Email para donaciones" value={webForm.donaciones.email} onChange={setDon('email')} {...v.props('webDonEmail')} /></Grid>
+          <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="WhatsApp para donaciones (solo números)" autoComplete="off" slotProps={{ htmlInput: { inputMode: 'tel' } }} value={webForm.donaciones.whatsapp} onChange={setDon('whatsapp')} placeholder="573226012056" {...v.props('webDonWhatsapp')} /></Grid>
+          <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="Email para donaciones" type="email" autoComplete="off" value={webForm.donaciones.email} onChange={setDon('email')} {...v.props('webDonEmail')} /></Grid>
           <Grid size={12}><TextField fullWidth size="small" multiline minRows={2} label="Texto — Voluntariado" value={webForm.donaciones.textoVoluntariado} onChange={setDon('textoVoluntariado')} /></Grid>
           <Grid size={12}><TextField fullWidth size="small" multiline minRows={2} label="Texto — Donaciones en especie" value={webForm.donaciones.textoEspecie} onChange={setDon('textoEspecie')} /></Grid>
           <Grid size={12}><TextField fullWidth size="small" multiline minRows={2} label="Texto — Donaciones monetarias" value={webForm.donaciones.textoMonetario} onChange={setDon('textoMonetario')} /></Grid>
@@ -148,11 +149,11 @@ export function TabPaginaWeb({ webForm, setWebForm, v }) {
       <Box sx={{ mt: 2 }}><Seccion titulo="Contacto">
         <Grid container spacing={2.5}>
           <Grid size={12}><TextField fullWidth size="small" label="Dirección" value={webForm.contacto.direccion} onChange={setCon('direccion')} /></Grid>
-          <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="Teléfono" value={webForm.contacto.telefono} onChange={setCon('telefono')} {...v.props('webConTelefono')} /></Grid>
-          <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="Email" value={webForm.contacto.email} onChange={setCon('email')} {...v.props('webConEmail')} /></Grid>
-          <Grid size={{ xs: 12, sm: 4 }}><TextField fullWidth size="small" label="URL Instagram" value={webForm.contacto.instagram} onChange={setCon('instagram')} placeholder="https://instagram.com/..." {...v.props('webConInstagram')} /></Grid>
-          <Grid size={{ xs: 12, sm: 4 }}><TextField fullWidth size="small" label="URL TikTok" value={webForm.contacto.tiktok} onChange={setCon('tiktok')} placeholder="https://tiktok.com/..." {...v.props('webConTiktok')} /></Grid>
-          <Grid size={{ xs: 12, sm: 4 }}><TextField fullWidth size="small" label="WhatsApp (solo números)" value={webForm.contacto.whatsapp} onChange={setCon('whatsapp')} placeholder="573226012056" {...v.props('webConWhatsapp')} /></Grid>
+          <Grid size={{ xs: 12, sm: 6 }}><CampoTelefono label="Teléfono" autoComplete="off" value={webForm.contacto.telefono} onChange={t => setCon('telefono')({ target: { value: t } })} {...v.props('webConTelefono')} /></Grid>
+          <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth size="small" label="Email" type="email" autoComplete="off" value={webForm.contacto.email} onChange={setCon('email')} {...v.props('webConEmail')} /></Grid>
+          <Grid size={{ xs: 12, sm: 4 }}><TextField fullWidth size="small" label="URL Instagram" type="url" autoComplete="off" value={webForm.contacto.instagram} onChange={setCon('instagram')} placeholder="https://instagram.com/..." {...v.props('webConInstagram')} /></Grid>
+          <Grid size={{ xs: 12, sm: 4 }}><TextField fullWidth size="small" label="URL TikTok" type="url" autoComplete="off" value={webForm.contacto.tiktok} onChange={setCon('tiktok')} placeholder="https://tiktok.com/..." {...v.props('webConTiktok')} /></Grid>
+          <Grid size={{ xs: 12, sm: 4 }}><TextField fullWidth size="small" label="WhatsApp (solo números)" autoComplete="off" slotProps={{ htmlInput: { inputMode: 'tel' } }} value={webForm.contacto.whatsapp} onChange={setCon('whatsapp')} placeholder="573226012056" {...v.props('webConWhatsapp')} /></Grid>
         </Grid>
       </Seccion></Box>
 

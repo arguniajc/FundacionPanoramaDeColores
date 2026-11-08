@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-  errorCampoDinamico, erroresCamposDinamicos,
+  errorCampoDinamico, erroresCamposDinamicos, faltantesPanel,
 } from '@/presentation/modules/inscripciones/pages/components/validacionFormulario';
 
 // Fecha fija: 15 de junio de 2026 (hora local).
@@ -93,7 +93,7 @@ describe('errorCampoDinamico — documento_id', () => {
   it('documento válido', () => {
     expect(err('documento_id', doc('TI', '1107123456'))).toBe('');
     expect(err('documento_id', doc('PA', 'AB123456'))).toBe('');
-    expect(err('documento_id', doc('NIT', '900123456-7'))).toBe('');
+    expect(err('documento_id', doc('NIT', '900123456-8'))).toBe('');
   });
   it('JSON inválido', () => {
     expect(err('documento_id', 'no-json')).toContain('El documento no es válido');
@@ -119,5 +119,21 @@ describe('erroresCamposDinamicos', () => {
       c1: expect.stringContaining('El correo no es válido'),
     });
     expect(Object.keys(erroresCamposDinamicos(campos, { c1: 'a@b.co' }))).toEqual(['c3']);
+  });
+});
+
+describe('faltantesPanel', () => {
+  const completo = {
+    nombres: 'Ana', apellidos: 'Gómez', fechaNac: '1985-05-20', pais: 'Colombia', departamento: 'Valle del Cauca',
+    ciudad: 'Cali', tipoDoc: 'CC', numDoc: '1144123456', celular: '3001234567', direccion: 'Calle 1 # 2-3',
+    barrio: 'Centro', eps: 'Sura', escolaridad: 'Bachillerato', ocupacion: 'Docente', autoidentificacion: 'Ninguna',
+  };
+  it('empresa / lugar de trabajo es opcional', () => {
+    expect(faltantesPanel(completo, 'datos_madre')).toEqual([]);
+    expect(faltantesPanel({ ...completo, empresa: '' }, 'datos_padre')).toEqual([]);
+  });
+  it('lista lo que falta y el tutor pide la relación', () => {
+    expect(faltantesPanel({ ...completo, ocupacion: '' }, 'datos_padre')).toEqual(['ocupación']);
+    expect(faltantesPanel(completo, 'datos_tutor')).toEqual(['relación / parentesco']);
   });
 });

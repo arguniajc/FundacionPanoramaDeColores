@@ -1,10 +1,14 @@
 ﻿import { useState, useRef } from 'react';
 import {
-  Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
+  Alert, Box, DialogContent,
   DialogTitle, FormControl, FormHelperText, IconButton, InputLabel, LinearProgress,
-  MenuItem, Select, Typography, useMediaQuery, useTheme,
+  MenuItem, Select, Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import Dialog from '@/shared/components/DialogResponsive';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import CloseIcon          from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import UploadFileIcon     from '@mui/icons-material/UploadFile';
@@ -30,16 +34,20 @@ const ESQUEMA = {
   })] },
 };
 
+const FORM_INICIAL = { categoria: 'Otros', archivos: [] };
+
 export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
   const [categoria, setCategoria] = useState('Otros');
   const [archivos,  setArchivos]  = useState([]);
   const [subiendo,  setSubiendo]  = useState(false);
   const [progreso,  setProgreso]  = useState(0);
   const [error,     setError]     = useState('');
+  const [aviso,     setAviso]     = useState('');
   const inputRef = useRef();
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const v = useValidacion(ESQUEMA, { categoria, archivos });
+  const hayCambios = hayCambiosEn({ categoria, archivos }, FORM_INICIAL);
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: subiendo, onCerrar });
+  const autoFocus = useAutoFocus();
 
   const agregarArchivos = (lista) => {
     const todos     = Array.from(lista);
@@ -51,7 +59,7 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
       return [...prev, ...nuevos.filter(f => !nombres.has(f.name))];
     });
     // se avisa en lugar de descartar en silencio los que no son PDF
-    setError(omitidos.length
+    setAviso(omitidos.length
       ? `Se omitieron ${omitidos.length} archivo(s) que no son PDF: ${omitidos.join(', ')}. Solo se aceptan documentos PDF.`
       : '');
     v.tocar('archivos');
@@ -61,7 +69,7 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
 
   const handleSubir = async () => {
     if (!v.validarTodo()) return;
-    setSubiendo(true); setError('');
+    setSubiendo(true); setError(''); setAviso('');
     let ok = 0;
     const fallos = [];
     for (let i = 0; i < archivos.length; i++) {
@@ -99,23 +107,24 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
   };
 
   return (
-    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: { xs: 0, sm: 3 } } } }} open onClose={confirmarCierre} alEnviar={handleSubir} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ background: HEADER_GRADIENT, color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><UploadFileIcon /> Subir documentos</Box>
-        <IconButton onClick={onCerrar} size="small" sx={{ color: 'rgba(255,255,255,0.8)' }}><CloseIcon /></IconButton>
+        <IconButton onClick={() => confirmarCierre()} disabled={subiendo} size="small" aria-label="Cerrar" sx={{ color: 'rgba(255,255,255,0.8)' }}><CloseIcon /></IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ py: 2.5, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {error && <Alert severity="error">{error}</Alert>}
+        {aviso && <Alert severity="warning" onClose={() => setAviso('')}>{aviso}</Alert>}
         <FormControl size="small" fullWidth error={!!v.err('categoria')}>
           <InputLabel id="modal-subir-institucional-categoria-label">Categoría</InputLabel>
-          <Select labelId="modal-subir-institucional-categoria-label" label="Categoría" value={categoria} onChange={e => setCategoria(e.target.value)}
+          <Select labelId="modal-subir-institucional-categoria-label" label="Categoría" value={categoria} autoFocus={autoFocus} onChange={e => setCategoria(e.target.value)}
             onBlur={() => v.tocar('categoria')}>
             {CATEGORIAS.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
           </Select>
           {v.err('categoria') && <FormHelperText>{v.err('categoria')}</FormHelperText>}
         </FormControl>
 
-        <Box onClick={() => inputRef.current.click()}
+        <Box onClick={() => inputRef.current.click()} role="button" tabIndex={0}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputRef.current.click(); } }}
           onDragOver={e => e.preventDefault()}
           onDrop={e => { e.preventDefault(); agregarArchivos(e.dataTransfer.files); }}
           sx={{
@@ -165,15 +174,10 @@ export function ModalSubirInstitucional({ onCerrar, onSubido, onToast }) {
         )}
       </DialogContent>
       <ResumenErrores {...v.resumen} accion="subir los documentos" />
-      <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-        <Button onClick={onCerrar} variant="outlined" disabled={subiendo}>Cancelar</Button>
-        <Button variant="contained" onClick={handleSubir}
-          disabled={subiendo}
-          startIcon={subiendo ? <CircularProgress size={16} color="inherit" /> : <UploadFileIcon />}
-          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, fontWeight: 700, minWidth: 140 }}>
-          {subiendo ? `Subiendo ${progreso}%` : `Subir ${archivos.length > 1 ? `${archivos.length} archivos` : 'archivo'}`}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} titulo="No se pudo subir" />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={subiendo} enviar
+        textoGuardar={`Subir ${archivos.length > 1 ? `${archivos.length} archivos` : 'archivo'}`}
+        sxGuardar={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, minWidth: 140 }} />
     </Dialog>
   );
 }

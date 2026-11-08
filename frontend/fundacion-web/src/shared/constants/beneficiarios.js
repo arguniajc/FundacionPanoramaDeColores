@@ -1,4 +1,8 @@
-export const TIPOS_DOC = ['RC', 'TI', 'CC', 'CE', 'NUIP', 'PA', 'PPT', 'RAMV', 'Sin documento'];
+import { codigosTipoDocumento } from './tiposDocumento';
+
+// Tipos de documento de beneficiarios (niños y adultos), derivados del catálogo único:
+// ['RC', 'TI', 'CC', 'CE', 'NUIP', 'PA', 'PPT', 'RAMV', 'Sin documento']
+export const TIPOS_DOC = codigosTipoDocumento(['menor', 'adulto']);
 
 export const PAISES = [
   'Colombia', 'Venezuela', 'Ecuador', 'Perú', 'Bolivia', 'Chile', 'Argentina',

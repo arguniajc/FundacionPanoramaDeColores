@@ -123,7 +123,7 @@ const ASIGNACIONES = [
 
 // ── Donantes y donaciones ─────────────────────────────────────────────────────
 const DONANTES = [
-  { id: 'don-001', nombre: 'Corporación Industrial de Alimentos del Valle del Cauca S.A.S.', tipo: 'empresa', tipoDocumento: 'nit', documento: '900123456-7', email: 'responsabilidad.social.empresarial@corporacionalimentosvalle.com.co', telefono: '6024859632', pais: 'Colombia', departamento: 'Valle del Cauca', ciudad: 'Santiago de Cali', notas: 'Aporte mensual recurrente.', activo: true, totalDinero: 125000000, totalDonaciones: 18, totalEspecie: 6, ultimaDonacion: '2026-10-28' },
+  { id: 'don-001', nombre: 'Corporación Industrial de Alimentos del Valle del Cauca S.A.S.', tipo: 'empresa', tipoDocumento: 'nit', documento: '900123456-8', email: 'responsabilidad.social.empresarial@corporacionalimentosvalle.com.co', telefono: '6024859632', pais: 'Colombia', departamento: 'Valle del Cauca', ciudad: 'Santiago de Cali', notas: 'Aporte mensual recurrente.', activo: true, totalDinero: 125000000, totalDonaciones: 18, totalEspecie: 6, ultimaDonacion: '2026-10-28' },
   { id: 'don-002', nombre: 'Gabriela Inés Montenegro Salazar de Holguín', tipo: 'persona', tipoDocumento: 'cc', documento: '31987654', email: 'gabriela.montenegro@example.org', telefono: '3156789012', pais: 'Colombia', departamento: 'Antioquia', ciudad: 'Medellín', notas: '', activo: true, totalDinero: 4500000, totalDonaciones: 5, totalEspecie: 0, ultimaDonacion: '2026-09-15' },
   { id: 'don-003', nombre: 'Fundación Internacional para la Niñez y la Familia Latinoamericana', tipo: 'empresa', tipoDocumento: 'nit', documento: '830765432-1', email: 'alianzas@fundacion-ninez-latam.org', telefono: '6017654321', pais: 'Estados Unidos', departamento: 'Florida', ciudad: 'Miami', notas: '', activo: true, totalDinero: 87300000, totalDonaciones: 4, totalEspecie: 1, ultimaDonacion: '2026-08-02' },
   { id: 'don-004', nombre: 'Pedro Pablo Arango', tipo: 'persona', tipoDocumento: 'cc', documento: '16234567', email: null, telefono: '3004561234', pais: 'Colombia', departamento: 'Valle del Cauca', ciudad: 'Yumbo', notas: '', activo: true, totalDinero: 0, totalDonaciones: 3, totalEspecie: 3, ultimaDonacion: '2026-06-11' },
@@ -212,7 +212,7 @@ const cta = id => CUENTAS.find(c => c.id === id);
 /** Movimientos contables del mes pedido (fechas 'AAAA-MM-DD'). */
 function movimientosContables(mes, anio) {
   const def = [
-    { d: 3,  tipo: 'ingreso', concepto: 'Donación de la Corporación Industrial de Alimentos del Valle del Cauca S.A.S. para el programa de nutrición', monto: 12500000, cat: 1, cta: 'cta-001', prog: PROGRAMAS[3], tercero: 'Corporación Industrial de Alimentos del Valle del Cauca S.A.S.', doc: '900123456-7', soporte: 'RD-2026-000187', tipoSoporte: 'recibo_caja' },
+    { d: 3,  tipo: 'ingreso', concepto: 'Donación de la Corporación Industrial de Alimentos del Valle del Cauca S.A.S. para el programa de nutrición', monto: 12500000, cat: 1, cta: 'cta-001', prog: PROGRAMAS[3], tercero: 'Corporación Industrial de Alimentos del Valle del Cauca S.A.S.', doc: '900123456-8', soporte: 'RD-2026-000187', tipoSoporte: 'recibo_caja' },
     { d: 5,  tipo: 'egreso',  concepto: 'Compra de mercados', monto: 4875300, cat: 6, cta: 'cta-001', prog: PROGRAMAS[3], tercero: 'Supermercados La Gran Colombia S.A.', doc: '890300123-4', soporte: 'FE-998877', tipoSoporte: 'factura', rte: 121883, tarifa: 2.5, conceptoRte: 'Compras generales' },
     { d: 6,  tipo: 'egreso',  concepto: 'Honorarios profesionales de psicología clínica para el acompañamiento psicosocial de familias — octubre', monto: 3200000, cat: 4, cta: 'cta-002', prog: null, tercero: 'Carlos Andrés Mosquera Palacios', doc: '1107456789', soporte: 'CC-2026-045', tipoSoporte: 'cuenta_cobro', rte: 320000, tarifa: 10, conceptoRte: 'Honorarios' },
     { d: 7,  tipo: 'egreso',  concepto: 'Refrigerios taller de lectura', monto: 185000, cat: 6, cta: 'cta-003', prog: PROGRAMAS[0], tercero: 'Panadería El Trigal', doc: null, soporte: null, tipoSoporte: 'documento_soporte', anulado: true },
@@ -385,6 +385,8 @@ export function registrar(api) {
     })
     .on('GET', /^\/api\/voluntarios\/[^/]+\/asignaciones$/, ASIGNACIONES)
     .on('GET', '/api/voluntarios/stats', STATS_VOLUNTARIOS)
+    // VoluntarioDialog: al salir del número de documento (ninguno repetido en la auditoría)
+    .on('POST', '/api/voluntarios/verificar-documento', { existe: false, id: null, nombre: null })
     .on('GET', '/api/voluntarios', ({ url }) => ({
       json: buscarEn(VOLUNTARIOS, url.searchParams.get('buscar'), ['nombre', 'documento', 'email', 'profesion']),
     }));
@@ -398,6 +400,12 @@ export function registrar(api) {
     .on('GET', '/api/donantes', ({ url }) => ({
       json: buscarEn(DONANTES, url.searchParams.get('buscar'), ['nombre', 'documento', 'email']),
     }))
+    // Documento repetido: compara sin puntos ni dígito de verificación (como el servidor)
+    .on('POST', '/api/donantes/verificar-documento', ({ body }) => {
+      const base = doc => String(doc ?? '').toLowerCase().replace(/^([\d. ]+)-\d$/, '$1').replace(/[^a-z0-9]/g, '');
+      const d = DONANTES.find(x => x.id !== body?.excluirId && x.documento && base(x.documento) === base(body?.numero));
+      return { json: { existe: !!d, id: d?.id ?? null, nombre: d?.nombre ?? null } };
+    })
     .on('GET', /^\/api\/donaciones\/[^/]+$/, ({ url }) => {
       const id = url.pathname.split('/').pop();
       return { json: DONACIONES.find(d => d.id === id) ?? DONACIONES[0] };

@@ -160,14 +160,18 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
                LEFT   JOIN beneficiario_salud bs ON bs.beneficiario_id = b2.id
                WHERE  bs.eps_id IS NULL {tfb2})                                       AS sin_eps,
               (SELECT COUNT(*)::int FROM beneficiarios b2
-               WHERE  {(filtrarTipo ? $"{edadCond2} AND " : "")}NOT EXISTS (
+               WHERE  {(filtrarTipo ? $"{edadCond2} AND " : "")}NOT (COALESCE(b2.tipo, 'niño') = 'adulto'
+                         AND COALESCE(b2.celular, '') NOT IN ('', 'No registra'))
+               AND    NOT EXISTS (
                    SELECT 1 FROM beneficiario_acudiente bac
                    JOIN   acudientes ac ON ac.id = bac.acudiente_id
                    WHERE  bac.beneficiario_id = b2.id
                    AND    bac.es_principal = true AND bac.activo = true
                    AND    ac.whatsapp IS NOT NULL AND ac.whatsapp <> ''))             AS sin_whatsapp,
               (SELECT COUNT(*)::int FROM beneficiarios b2
-               WHERE  {(filtrarTipo ? $"{edadCond2} AND " : "")}NOT EXISTS (
+               WHERE  {(filtrarTipo ? $"{edadCond2} AND " : "")}NOT (COALESCE(b2.tipo, 'niño') = 'adulto'
+                         AND COALESCE(b2.direccion, '') <> '')
+               AND    NOT EXISTS (
                    SELECT 1 FROM beneficiario_acudiente bac
                    JOIN   acudientes ac ON ac.id = bac.acudiente_id
                    WHERE  bac.beneficiario_id = b2.id
@@ -344,7 +348,9 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
                 COALESCE(b.tipo, 'niño') AS tipo,
                 af1.url AS foto_menor, af2.url AS foto_doc,
                 ce.nombre AS eps,
-                acu.whatsapp, acu.direccion,
+                -- Igual que la ficha: el adulto usa su celular y su dirección propios
+                CASE WHEN COALESCE(b.tipo, 'niño') = 'adulto' THEN b.celular ELSE acu.whatsapp END AS whatsapp,
+                CASE WHEN COALESCE(b.tipo, 'niño') = 'adulto' THEN COALESCE(NULLIF(b.direccion, ''), acu.direccion) ELSE acu.direccion END AS direccion,
                 tl.talla_camisa, tl.talla_zapatos, tl.peso_kg,
                 b.nombre_colegio, b.grado_escolar
             FROM beneficiarios b
@@ -539,6 +545,24 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
         return cnt > 0;
     }
 
+    public async Task<DocumentoExistente?> BuscarDocumentoAsync(string numeroDocumento, Guid? excluirId, CancellationToken ct)
+    {
+        await using var conn = await AbrirAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT id, TRIM(concat_ws(' ', primer_nombre, segundo_nombre, primer_apellido, segundo_apellido))
+            FROM beneficiarios
+            WHERE numero_documento = @doc AND (@excluir::uuid IS NULL OR id <> @excluir::uuid)
+            ORDER BY fecha_creacion
+            LIMIT 1
+            """;
+        cmd.Parameters.AddWithValue("doc", numeroDocumento);
+        cmd.Parameters.Add(new NpgsqlParameter("excluir", NpgsqlDbType.Uuid) { Value = (object?)excluirId ?? DBNull.Value });
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return null;
+        return new DocumentoExistente(r.GetGuid(0), r.IsDBNull(1) ? "" : r.GetString(1));
+    }
+
     public async Task<List<HistorialFila>> HistorialAsync(Guid id, int limite, CancellationToken ct)
     {
         await using var conn = await AbrirAsync(ct);
@@ -599,14 +623,14 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
               pais_nacimiento, departamento_nacimiento, ciudad_nacimiento, barrio,
               num_personas_vive, num_hermanos, nombre_colegio, grado_escolar,
               tiene_discapacidad, descripcion_discapacidad, vive_con_nino,
-              genero, autorizacion, tipo, activo
+              genero, autorizacion, tipo, celular, direccion, activo
             ) VALUES (
               @pn, @sn, @pa, @sa,
               @fn, @tdoc, @ndoc,
               @pais, @depto, @ciudad, @barrio,
               @npv, @nh, @col, @grado,
               @disc, @disc_desc, @vive,
-              @genero, @auth, @tipo, true
+              @genero, @auth, @tipo, @cel, @dir_propia, true
             ) RETURNING id
             """;
         ins.Parameters.AddWithValue("pn", dto.PrimerNombre.Trim());
@@ -615,7 +639,7 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
         ins.Parameters.AddWithValue("sa", string.IsNullOrWhiteSpace(dto.SegundoApellido) ? DBNull.Value : (object)dto.SegundoApellido.Trim());
         ins.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object)dto.FechaNacimiento });
         ins.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = (object?)tipoDocId ?? DBNull.Value });
-        ins.Parameters.AddWithValue("ndoc",  dto.NumeroDocumento.Trim());
+        ins.Parameters.AddWithValue("ndoc",  string.IsNullOrWhiteSpace(dto.NumeroDocumento) ? DBNull.Value : (object)dto.NumeroDocumento.Trim());
         ins.Parameters.AddWithValue("pais",  dto.PaisNacimiento.Trim());
         ins.Parameters.AddWithValue("depto", dto.DepartamentoNacimiento.Trim());
         ins.Parameters.AddWithValue("ciudad",dto.CiudadNacimiento.Trim());
@@ -630,6 +654,7 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
         ins.Parameters.AddWithValue("genero",dto.Genero.Trim());
         ins.Parameters.AddWithValue("auth",  dto.Autorizacion);
         ins.Parameters.AddWithValue("tipo",  string.IsNullOrWhiteSpace(dto.Tipo) ? "niño" : dto.Tipo.Trim());
+        AgregarContactoPropio(ins, dto);
 
         var newId = (Guid)(await ins.ExecuteScalarAsync(ct))!;
 
@@ -695,7 +720,9 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
               vive_con_nino           = @vive,
               genero                  = @genero,
               autorizacion            = @auth,
-              tipo                    = @tipo
+              tipo                    = @tipo,
+              celular                 = @cel,
+              direccion               = @dir_propia
             WHERE id = @id
             """;
         upd.Parameters.AddWithValue("pn", dto.PrimerNombre.Trim());
@@ -704,7 +731,7 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
         upd.Parameters.AddWithValue("sa", string.IsNullOrWhiteSpace(dto.SegundoApellido) ? DBNull.Value : (object)dto.SegundoApellido.Trim());
         upd.Parameters.Add(new NpgsqlParameter("fn",   NpgsqlDbType.Date)     { Value = (object)dto.FechaNacimiento });
         upd.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = (object?)tipoDocId ?? DBNull.Value });
-        upd.Parameters.AddWithValue("ndoc",  dto.NumeroDocumento.Trim());
+        upd.Parameters.AddWithValue("ndoc",  string.IsNullOrWhiteSpace(dto.NumeroDocumento) ? DBNull.Value : (object)dto.NumeroDocumento.Trim());
         upd.Parameters.AddWithValue("pais",  dto.PaisNacimiento.Trim());
         upd.Parameters.AddWithValue("depto", dto.DepartamentoNacimiento.Trim());
         upd.Parameters.AddWithValue("ciudad",dto.CiudadNacimiento.Trim());
@@ -719,6 +746,7 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
         upd.Parameters.AddWithValue("genero",dto.Genero.Trim());
         upd.Parameters.AddWithValue("auth",  dto.Autorizacion);
         upd.Parameters.AddWithValue("tipo",  string.IsNullOrWhiteSpace(dto.Tipo) ? "niño" : dto.Tipo.Trim());
+        AgregarContactoPropio(upd, dto);
         upd.Parameters.AddWithValue("id",    id);
         await upd.ExecuteNonQueryAsync(ct);
 
@@ -850,14 +878,14 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
                   pais_nacimiento, departamento_nacimiento, ciudad_nacimiento, barrio,
                   num_personas_vive, num_hermanos, nombre_colegio, grado_escolar,
                   tiene_discapacidad, descripcion_discapacidad, vive_con_nino,
-                  genero, autorizacion, tipo, activo
+                  genero, autorizacion, tipo, celular, direccion, activo
                 ) VALUES (
                   @pn, @sn, @pa, @sa,
                   @fn, @tdoc, @ndoc,
                   NULL, NULL, NULL, NULL,
                   NULL, NULL, @col, @grado,
                   false, NULL, NULL,
-                  @genero, false, @tipo, true
+                  @genero, false, @tipo, @cel, @dir_propia, true
                 ) RETURNING id
                 """;
             ins.Parameters.AddWithValue("pn", dto.PrimerNombre);
@@ -871,6 +899,7 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
             ins.Parameters.AddWithValue("grado", (object?)dto.GradoEscolar    ?? DBNull.Value);
             ins.Parameters.AddWithValue("genero",(object?)dto.Genero           ?? DBNull.Value);
             ins.Parameters.AddWithValue("tipo",  dto.Tipo);
+            AgregarContactoPropio(ins, dto);
 
             var newId = (Guid)(await ins.ExecuteScalarAsync(ct))!;
 
@@ -906,6 +935,17 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
             "22P02" or "22007" or "22008" or "22003" => "No se pudo guardar: uno de los datos tiene un formato no válido (fecha o número).",
             _ => "No se pudo guardar (dato inválido o duplicado). Revisa los datos de la fila.",
         };
+    }
+
+    // Contacto propio del adulto (beneficiarios.celular / beneficiarios.direccion). Para un niño van en
+    // NULL: su WhatsApp y su dirección son los del acudiente (tabla acudientes).
+    private static void AgregarContactoPropio(NpgsqlCommand cmd, CrearBeneficiarioDto dto)
+    {
+        var adulto = string.Equals(dto.Tipo?.Trim(), "adulto", StringComparison.OrdinalIgnoreCase);
+        cmd.Parameters.Add(new NpgsqlParameter("cel", NpgsqlDbType.Varchar)
+            { Value = adulto && !string.IsNullOrWhiteSpace(dto.Celular) ? dto.Celular.Trim() : DBNull.Value });
+        cmd.Parameters.Add(new NpgsqlParameter("dir_propia", NpgsqlDbType.Varchar)
+            { Value = adulto && !string.IsNullOrWhiteSpace(dto.Direccion) ? dto.Direccion.Trim() : DBNull.Value });
     }
 
     private static async Task<bool> BeneficiarioExisteAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid id)
@@ -1262,7 +1302,8 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
               bs.observaciones                     AS obs_salud,
               ce.nombre                            AS eps,
               acu.nombre                           AS acu_nombre,
-              acu.whatsapp, acu.direccion,
+              acu.whatsapp,
+              CASE WHEN COALESCE(b.tipo, 'niño') = 'adulto' THEN COALESCE(NULLIF(b.direccion, ''), acu.direccion) ELSE acu.direccion END AS direccion,
               acu.parentesco,
               tl.talla_camisa, tl.talla_pantalon, tl.talla_zapatos, tl.peso_kg, tl.talla_cm,
               al.descripcion                       AS al_desc,
@@ -1271,7 +1312,8 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
               af2.url                              AS foto_doc,
               af3.url                              AS foto_doc_rev,
               b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido,
-              b.tipo
+              b.tipo,
+              b.celular
             FROM beneficiarios b
             LEFT JOIN cat_tipos_documento ctd ON ctd.id = b.tipo_documento_id
             LEFT JOIN beneficiario_salud bs ON bs.beneficiario_id = b.id
@@ -1367,6 +1409,7 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
                 PrimerApellido          = r.IsDBNull(39) ? "" : r.GetString(39),
                 SegundoApellido         = r.IsDBNull(40) ? null : r.GetString(40),
                 Tipo                    = r.IsDBNull(41) ? "niño" : r.GetString(41),
+                Celular                 = r.IsDBNull(42) ? null : r.GetString(42),
             });
         }
         return result;

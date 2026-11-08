@@ -35,6 +35,42 @@ test.describe('Beneficiarios — Niños', () => {
     expect(conBusqueda).toHaveLength(1); // con debounce: una sola petición, no una por tecla
   });
 
+  test('Editar: obligatorios marcados, error en su campo y documento repetido sin contarse a sí mismo', async ({ page, api }) => {
+    api.on('POST', '/api/beneficiarios/verificar-documento', { existe: true, id: 102, nombre: 'Santiago Pérez Mina' });
+    api.on('GET', /^\/api\/beneficiarios\/\d+\/historial$/, []);
+    await page.goto('#/sede/beneficiarios');
+    await filas(page).filter({ hasText: 'Valentina Rodríguez Gómez' }).getByTitle('Editar').click();
+
+    const dialogo = page.getByRole('dialog').filter({ hasText: 'Editar inscripción' });
+    await expect(dialogo).toBeVisible();
+    await expect(dialogo.getByText('Campo obligatorio')).toBeVisible();
+
+    // Departamento es obligatorio por la regla: lleva la marca y su error queda en el propio campo
+    const depto = dialogo.getByRole('combobox', { name: /^Departamento/ });
+    await expect(depto).toHaveAttribute('required', '');
+    await dialogo.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(dialogo.getByRole('alert').filter({ hasText: 'Corrige estos datos para guardar' }))
+      .toContainText('Departamento: Selecciona el departamento de nacimiento. Ejemplo: Valle del Cauca');
+    await expect(depto).toHaveAccessibleDescription('Selecciona el departamento de nacimiento. Ejemplo: Valle del Cauca');
+    expect(api.llamadas('PUT', '/api/beneficiarios/101')).toHaveLength(0);
+
+    // Su propio número no se consulta; otro número sí, excluyendo al propio registro
+    const numero = dialogo.getByRole('textbox', { name: /^Número de documento/ });
+    await numero.focus();
+    await numero.blur();
+    expect(api.llamadas('POST', '/api/beneficiarios/verificar-documento')).toHaveLength(0);
+    await numero.fill('1107654321');
+    await numero.blur();
+    const aviso = dialogo.getByRole('alert').filter({ hasText: 'ya está registrado' });
+    await expect(aviso).toContainText('a nombre de Santiago Pérez Mina');
+    expect(api.llamadas('POST', '/api/beneficiarios/verificar-documento')[0].body)
+      .toEqual({ numero: '1107654321', excluirId: 101 });
+
+    await aviso.getByRole('button', { name: 'Ver beneficiario' }).click();
+    await expect(dialogo).toBeHidden();
+    await expect.poll(() => api.llamadas('GET', '/api/beneficiarios/102').length).toBeGreaterThan(0);
+  });
+
   test('"Pendientes" consulta los perfiles incompletos solo al abrirse', async ({ page, api }) => {
     api.on('GET', '/api/beneficiarios/incompletos', INCOMPLETOS);
     api.on('POST', '/api/archivos/firmar', ({ body }) => ({

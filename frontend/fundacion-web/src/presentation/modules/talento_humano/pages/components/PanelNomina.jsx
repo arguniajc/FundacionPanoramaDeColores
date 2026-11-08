@@ -23,6 +23,9 @@ import { mensajeErrorApi }  from '@/shared/utils/mensajeErrorApi';
 import { r }                from '@/shared/utils/validacion';
 import { useValidacion }    from '@/shared/hooks/useValidacion';
 import ResumenErrores       from '@/shared/components/ResumenErrores';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus }     from '@/shared/hooks/useAutoFocus';
 import { colorEstado }      from '@/shared/theme/paleta';
 import { useConfiguracion } from '@/shared/context/useConfiguracion';
 import { EditarLiquidacionDialog } from './EditarLiquidacionDialog';
@@ -284,11 +287,19 @@ function NuevoPeriodoDialog({ open, onClose, onCreado }) {
   const [err, setErr] = useState('');
   const v = useValidacion(ESQUEMA_PERIODO, { mes, anio, obs });
   const { reiniciar } = v;
+  const autoFocus = useAutoFocus();
+  const hayCambios = open && (mes !== mesActual || anio !== anioActual || obs.trim() !== '');
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: guardando, onCerrar: onClose });
 
-  useEffect(() => { if (open) reiniciar(); }, [open, reiniciar]);
+  // Cada vez que se abre arranca en el mes actual, sin observación
+  useEffect(() => {
+    if (!open) return;
+    setMes(mesActual); setAnio(anioActual); setObs(''); setErr('');
+    reiniciar();
+  }, [open, reiniciar, mesActual, anioActual]);
 
   const handleGuardar = async () => {
-    if (!v.validarTodo()) return;
+    if (guardando || !v.validarTodo()) return;
     setGuardando(true); setErr('');
     try {
       const { data } = await nominaRepository.crearPeriodo({ mes, anio, observacion: obs || null });
@@ -301,14 +312,13 @@ function NuevoPeriodoDialog({ open, onClose, onCreado }) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} alEnviar={handleGuardar} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>Nuevo Período de Nómina</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          {err && <Alert severity="error">{err}</Alert>}
           <FormControl fullWidth size="small" error={!!v.err('mes')}>
             <InputLabel id="panel-nomina-mes-label">Mes</InputLabel>
-            <Select labelId="panel-nomina-mes-label" value={mes} label="Mes" onBlur={() => v.tocar('mes')} onChange={e => setMes(e.target.value)}>
+            <Select labelId="panel-nomina-mes-label" value={mes} label="Mes" autoFocus={autoFocus} onBlur={() => v.tocar('mes')} onChange={e => setMes(e.target.value)}>
               {MESES.map((m, i) => <MenuItem key={i + 1} value={i + 1}>{m}</MenuItem>)}
             </Select>
             {v.err('mes') && <FormHelperText>{v.err('mes')}</FormHelperText>}
@@ -327,12 +337,8 @@ function NuevoPeriodoDialog({ open, onClose, onCreado }) {
         </Box>
       </DialogContent>
       <ResumenErrores {...v.resumen} accion="crear el período" />
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" onClick={handleGuardar} disabled={guardando}>
-          {guardando ? <CircularProgress size={18} color="inherit" /> : 'Crear'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={err} onClose={() => setErr('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar textoGuardar="Crear período" />
     </Dialog>
   );
 }
@@ -365,7 +371,7 @@ export function PanelNomina({ puedo }) {
   const handleCreado = (periodo) => {
     setPeriodos(prev => [periodo, ...prev]);
     setDialOpen(false);
-    ok('Período creado.');
+    ok(`Período ${MESES[periodo.mes - 1] ?? ''} ${periodo.anio ?? ''} creado correctamente.`.replace(/s+/g, ' '));
   };
 
   const handleCerrar = async (periodo) => {

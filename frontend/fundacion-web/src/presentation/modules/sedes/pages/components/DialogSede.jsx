@@ -1,11 +1,13 @@
-﻿import { useState, useEffect } from 'react';
-import {
-  Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle,
-  Grid, TextField, useMediaQuery, useTheme,
-} from '@mui/material';
+import { useState, useEffect } from 'react';
+import { DialogContent, DialogTitle, Grid, TextField } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
 import apiClient from '@/infrastructure/http/apiClient';
 import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
-import { CampoCiudad } from '@/shared/components/form/FormControles';
+import {
+  AccionesDialogo, CampoTelefono, ErrorServidor, SelectorUbicacion,
+} from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
@@ -17,25 +19,34 @@ const ESQUEMA = {
   telefono:  { etiqueta: 'Teléfono',  reglas: [r.telefono()] },
 };
 
+const VACIO = { nombre: '', direccion: '', ciudad: '', telefono: '' };
+
 export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
-  const [form,     setForm]     = useState({ nombre: '', direccion: '', ciudad: '', telefono: '' });
-  const [guardando, setGuardando] = useState(false);
-  const [error,    setError]    = useState('');
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [form,        setForm]        = useState(VACIO);
+  const [formInicial, setFormInicial] = useState(VACIO);
+  const [guardando,   setGuardando]   = useState(false);
+  const [error,       setError]       = useState('');
   const v = useValidacion(ESQUEMA, form);
   const { reiniciar } = v;
 
   useEffect(() => {
-    if (abierto) setForm({
-      nombre:    inicial?.nombre    ?? '',
-      direccion: inicial?.direccion ?? '',
-      ciudad:    inicial?.ciudad    ?? '',
-      telefono:  inicial?.telefono  ?? '',
-    });
+    if (abierto) {
+      const datos = {
+        nombre:    inicial?.nombre    ?? '',
+        direccion: inicial?.direccion ?? '',
+        ciudad:    inicial?.ciudad    ?? '',
+        telefono:  inicial?.telefono  ?? '',
+      };
+      setForm(datos);
+      setFormInicial(datos);
+    }
     setError('');
     reiniciar();
   }, [abierto, inicial, reiniciar]);
+
+  const hayCambios = abierto && hayCambiosEn(form, formInicial);
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: guardando, onCerrar });
+  const autoFocus = useAutoFocus();
 
   const set = campo => e => setForm(p => ({ ...p, [campo]: e.target.value }));
 
@@ -55,39 +66,36 @@ export function DialogSede({ abierto, onCerrar, onGuardado, inicial }) {
   };
 
   return (
-    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 2 } } }} open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: { xs: 0, sm: 2 } } } }} open={abierto}
+      onClose={confirmarCierre} alEnviar={handleGuardar} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ bgcolor: 'var(--color-primario)', color: 'white', fontWeight: 700 }}>
         {inicial?.id ? 'Editar sede' : 'Nueva sede'}
       </DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Grid sx={{ mt: 0 }} container spacing={2.5}>
           <Grid size={12}>
             <TextField fullWidth label="Nombre *" size="small" value={form.nombre} onChange={set('nombre')}
-              {...v.props('nombre')} />
+              autoFocus={autoFocus} {...v.props('nombre')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 8 }}>
             <TextField fullWidth label="Dirección" size="small" value={form.direccion} onChange={set('direccion')}
               {...v.props('direccion')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <CampoCiudad value={form.ciudad} onChange={v => setForm(p => ({ ...p, ciudad: v }))} />
+            {/* La sede solo guarda la ciudad: municipio de la lista DANE (un valor viejo se sigue viendo) */}
+            <SelectorUbicacion ciudad={form.ciudad} mostrarPais={false} mostrarDepartamento={false}
+              onChange={(campo, valor) => { if (campo === 'ciudad') setForm(p => ({ ...p, ciudad: valor })); }} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Teléfono" size="small" value={form.telefono} onChange={set('telefono')}
-              {...v.props('telefono')} />
+            <CampoTelefono value={form.telefono} autoComplete="off"
+              onChange={t => setForm(p => ({ ...p, telefono: t }))} {...v.props('telefono')} />
           </Grid>
         </Grid>
       </DialogContent>
       <ResumenErrores {...v.resumen} accion={inicial?.id ? 'guardar' : 'crear la sede'} />
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
-        <Button variant="contained" onClick={handleGuardar}
-          disabled={guardando}
-          sx={{ bgcolor: 'var(--color-primario)' }}>
-          {guardando ? 'Guardando…' : 'Guardar'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar
+        textoGuardar={inicial?.id ? 'Guardar' : 'Crear sede'} sxGuardar={{ bgcolor: 'var(--color-primario)' }} />
     </Dialog>
   );
 }

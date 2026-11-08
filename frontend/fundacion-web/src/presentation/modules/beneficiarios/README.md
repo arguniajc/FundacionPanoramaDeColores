@@ -28,7 +28,7 @@ Gestión completa de los niños y adultos inscritos en la fundación. Incluye li
 | GET | `/api/beneficiarios/{id}/historial` | Historial de cambios |
 | GET | `/api/beneficiarios/stats` | Estadísticas generales |
 | GET | `/api/beneficiarios/stats-ninos` | Estadísticas solo niños (usado en Dashboard) |
-| GET | `/api/beneficiarios/verificar-documento/{numero}` | Validar duplicados antes de guardar |
+| POST | `/api/beneficiarios/verificar-documento` | Validar duplicados antes de guardar. Cuerpo `{ numero, excluirId? }` → `{ existe, id, nombre }` (al editar, `excluirId` = el propio registro) |
 | POST | `/api/archivos/log-descarga` | Auditar cuando se descarga un documento |
 
 ## Dependencias entre módulos

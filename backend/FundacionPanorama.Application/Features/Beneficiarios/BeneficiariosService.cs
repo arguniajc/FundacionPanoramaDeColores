@@ -124,6 +124,13 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
     public Task<bool> ExisteDocumentoAsync(string numero, CancellationToken ct = default)
         => repo.ExisteDocumentoAsync(numero, ct);
 
+    /// <summary>
+    /// Beneficiario que ya tiene ese número de documento (null si nadie lo tiene). Al editar se pasa
+    /// el id propio en <paramref name="excluirId"/> para no encontrarse a sí mismo.
+    /// </summary>
+    public Task<DocumentoExistente?> BuscarDocumentoAsync(string numero, Guid? excluirId, CancellationToken ct = default)
+        => repo.BuscarDocumentoAsync(numero.Trim(), excluirId, ct);
+
     // La forma del objeto (anónimo) es el contrato JSON de GET {id}/historial: no cambiarla.
     public async Task<List<object>> HistorialAsync(Guid id, int limite, CancellationToken ct = default)
     {
@@ -151,6 +158,7 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
     {
         var errVal = ValidacionBeneficiario.Validar(dto);
         if (errVal.Count > 0) return ResultadoBeneficiario<BeneficiarioDto>.Invalido(errVal);
+        ValidacionBeneficiario.Normalizar(dto);
 
         var newId = await repo.CrearAsync(dto, usuarioEmail, ct);
         if (newId is null)
@@ -164,6 +172,7 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
     {
         var errVal = ValidacionBeneficiario.Validar(dto);
         if (errVal.Count > 0) return ResultadoBeneficiario<BeneficiarioDto>.Invalido(errVal);
+        ValidacionBeneficiario.Normalizar(dto);
 
         switch (await repo.ActualizarAsync(id, dto, usuarioEmail, ct))
         {
@@ -244,7 +253,9 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
                 continue;
             }
 
-            var ndoc = fila.NumeroDocumento?.Trim();
+            // "Sin documento": no lleva número ni se revisa si está repetido
+            var sinDocumento = ValidacionBeneficiario.EsSinDocumento(fila.TipoDocumento);
+            var ndoc = sinDocumento ? null : fila.NumeroDocumento?.Trim();
             if (!string.IsNullOrWhiteSpace(ndoc))
             {
                 if (await repo.ExisteDocumentoAsync(ndoc, ct)) { omitidos++; continue; }
@@ -257,8 +268,8 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
                 PrimerApellido  = fila.PrimerApellido!.Trim(),
                 SegundoApellido = string.IsNullOrWhiteSpace(fila.SegundoApellido) ? null : fila.SegundoApellido.Trim(),
                 FechaNacimiento = fechaNac.Value,
-                TipoDocumento   = fila.TipoDocumento  ?? "",
-                NumeroDocumento = string.IsNullOrWhiteSpace(ndoc) ? null! : ndoc,
+                TipoDocumento   = sinDocumento ? ValidacionBeneficiario.SinDocumento : fila.TipoDocumento ?? "",
+                NumeroDocumento = string.IsNullOrWhiteSpace(ndoc) ? null : ndoc,
                 Genero          = fila.Genero?.Trim()!,
                 Eps             = fila.Eps?.Trim()!,
                 NombreAcudiente = fila.NombreAcudiente?.Trim(),
@@ -274,8 +285,11 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
                 Tipo            = string.Equals(fila.Tipo?.Trim(), "adulto", StringComparison.OrdinalIgnoreCase) ? "adulto" : "niño",
             };
 
-            // Mismas reglas de formato que crear/editar, solo sobre los campos que trae la fila.
+            // En la plantilla, la columna WhatsApp de un adulto es su propio celular
             var esNino = dto.Tipo == "niño";
+            if (!esNino) dto.Celular = string.IsNullOrWhiteSpace(fila.Whatsapp) ? null : fila.Whatsapp.Trim();
+
+            // Mismas reglas de formato que crear/editar, solo sobre los campos que trae la fila.
             var errFmt = ValidacionBeneficiario.ValidarFormato(dto, esNino);
             if (errFmt.Count > 0)
             {

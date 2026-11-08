@@ -29,6 +29,7 @@ import { PanelNomina }    from './components/PanelNomina';
 import { BRAND_COLOR } from '@/shared/constants/brand';
 import { obtenerTodasLasPaginas } from '@/shared/utils/paginas';
 import { useValorDiferido } from '@/shared/hooks/useValorDiferido';
+import { useToast } from '@/shared/context/useToast';
 
 const POR_PAGINA = 20;
 const listarEmpleados = (params) => apiClient.get('/api/talento-humano', { params });
@@ -63,6 +64,7 @@ function KpiCard({ label, value, icon, color = 'primary.main', warn }) {
 export default function TalentoHumanoPage() {
   const { puedo } = useAuth();
   const confirm = useConfirm();
+  const toast = useToast();
 
   const [empleados, setEmpleados] = useState([]);   // página visible
   const [total,     setTotal]     = useState(0);
@@ -173,6 +175,18 @@ export default function TalentoHumanoPage() {
     setEmpleadosOrg(null);
     // Si la página quedó vacía se vuelve a la anterior; si no, se recarga para completarla
     if (empleados.length === 1 && pagina > 1) setPagina(p => p - 1); else cargar();
+  };
+
+  // Desde el aviso de documento repetido del formulario: abre ese empleado para editarlo
+  const abrirExistente = async (existente) => {
+    if (!existente?.id) return;
+    try {
+      const { data } = await apiClient.get(`/api/talento-humano/${existente.id}`);
+      setEditEmpleado(data);
+      setDialogEmpleado(true);
+    } catch (err) {
+      setError(mensajeErrorApi(err, { accion: 'abrir el empleado' }));
+    }
   };
 
   const abrirPanel = async (emp) => {
@@ -389,7 +403,11 @@ export default function TalentoHumanoPage() {
         onClose={() => setDialogEmpleado(false)}
         empleado={editEmpleado}
         sedes={sedes}
-        onSaved={() => { setDialogEmpleado(false); setEmpleadosOrg(null); cargar(); }}
+        onSaved={(editando) => {
+          setDialogEmpleado(false); setEmpleadosOrg(null); cargar();
+          toast(editando ? 'Empleado actualizado correctamente.' : 'Empleado registrado correctamente.');
+        }}
+        onVerExistente={abrirExistente}
       />
 
       </>}

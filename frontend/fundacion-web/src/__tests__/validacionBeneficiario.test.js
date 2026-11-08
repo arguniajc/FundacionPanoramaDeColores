@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   edadDesde, validarCampo, validarPaso, validarFormulario, primerPasoConErrores, describirError,
-  validarFilaImportacion,
+  validarFilaImportacion, esSinDocumento,
 } from '@/domain/beneficiarios/validacionBeneficiario';
 
 // Fecha fija: 15 de junio de 2026 (hora local).
@@ -30,6 +30,7 @@ const ADULTO = {
   pesoKg: '65', tallaCm: '165', numHermanos: '0',
   // datos de acudiente no aplican a adultos
   nombreAcudiente: '', parentesco: '', whatsapp: '', viveConNino: '', direccion: '',
+  celular: '3109876543', // el adulto sí tiene celular / WhatsApp propio
 };
 
 const err = (form, campo) => validarCampo(campo, form);
@@ -121,8 +122,8 @@ describe('tipo de documento según edad', () => {
 
 describe('número de documento', () => {
   it('es obligatorio, con ejemplo según el tipo', () => {
-    expect(err({ ...NINO, numeroDocumento: '' }, 'numeroDocumento')).toBe('Es obligatorio. Ejemplo: 1107123456');
-    expect(err({ ...NINO, tipoDocumento: 'PA', numeroDocumento: '' }, 'numeroDocumento')).toBe('Es obligatorio. Ejemplo: AB123456');
+    expect(err({ ...NINO, numeroDocumento: '' }, 'numeroDocumento')).toBe('Es obligatorio. Ejemplo: 1107123456 (si no tiene, elige el tipo "Sin documento")');
+    expect(err({ ...NINO, tipoDocumento: 'PA', numeroDocumento: '' }, 'numeroDocumento')).toBe('Es obligatorio. Ejemplo: AB123456 (si no tiene, elige el tipo "Sin documento")');
   });
   it('tipos numéricos: solo dígitos, 6 a 11', () => {
     expect(err({ ...NINO, numeroDocumento: '1.107.123' }, 'numeroDocumento')).toContain('solo números');
@@ -138,6 +139,27 @@ describe('número de documento', () => {
   });
 });
 
+describe('"Sin documento"', () => {
+  it('no exige ni valida el número (niño y adulto)', () => {
+    for (const base of [NINO, ADULTO]) {
+      const f = { ...base, tipoDocumento: 'Sin documento' };
+      expect(err({ ...f, numeroDocumento: '' }, 'numeroDocumento')).toBe('');
+      expect(err({ ...f, numeroDocumento: 'x-1 2' }, 'numeroDocumento')).toBe('');
+      expect(err(f, 'tipoDocumento')).toBe('');
+      expect(validarFormulario({ ...f, numeroDocumento: '' })).toEqual({});
+    }
+  });
+  it('ya no bloquea el paso de datos personales', () => {
+    expect(validarPaso(0, { ...NINO, tipoDocumento: 'Sin documento', numeroDocumento: '' })).toEqual({});
+  });
+  it('esSinDocumento ignora mayúsculas y espacios', () => {
+    expect(esSinDocumento('Sin documento')).toBe(true);
+    expect(esSinDocumento(' SIN DOCUMENTO ')).toBe(true);
+    expect(esSinDocumento('CC')).toBe(false);
+    expect(esSinDocumento(undefined)).toBe(false);
+  });
+});
+
 describe('WhatsApp', () => {
   it('obligatorio y con formato de celular para niños', () => {
     expect(err({ ...NINO, whatsapp: '' }, 'whatsapp')).toBe('Es obligatorio. Ejemplo: 3001234567');
@@ -146,6 +168,36 @@ describe('WhatsApp', () => {
   });
   it('no aplica a adultos', () => {
     expect(err({ ...ADULTO, whatsapp: 'abc' }, 'whatsapp')).toBe('');
+  });
+});
+
+describe('Celular / WhatsApp del adulto', () => {
+  it('es obligatorio para adultos, con ejemplo y la opción "No registra"', () => {
+    expect(err({ ...ADULTO, celular: '' }, 'celular')).toBe('Es obligatorio. Ejemplo: 3001234567 (o marca "No registra")');
+    expect(err({ ...ADULTO, celular: undefined }, 'celular')).toContain('Es obligatorio');
+    expect(err({ ...ADULTO, celular: 'No registra' }, 'celular')).toBe('');
+    expect(err({ ...ADULTO, celular: '3001234567' }, 'celular')).toBe('');
+  });
+  it('debe ser un celular colombiano (10 dígitos, empieza por 3)', () => {
+    for (const malo of ['2001234567', '300123456', '30012345678', '300 123 4567', '+573001234567'])
+      expect(err({ ...ADULTO, celular: malo }, 'celular')).toBe(
+        'Debe ser un celular de 10 dígitos que empiece por 3, sin espacios. Ejemplo: 3001234567');
+  });
+  it('no aplica a niños (se contactan por el acudiente)', () => {
+    expect(err({ ...NINO, celular: '' }, 'celular')).toBe('');
+    expect(err({ ...NINO, celular: 'abc' }, 'celular')).toBe('');
+  });
+  it('va en el paso 3 ("Contacto") y bloquea el registro del adulto', () => {
+    expect(validarPaso(3, { ...ADULTO, celular: '' })).toEqual({ celular: expect.stringContaining('Es obligatorio') });
+    expect(primerPasoConErrores({ ...ADULTO, celular: '' })).toBe(3);
+    expect(describirError('celular', 'x')).toBe('Celular / WhatsApp: x');
+  });
+});
+
+describe('residencia en el paso 0', () => {
+  it('la dirección se revisa en el paso 0 (obligatoria solo para niños)', () => {
+    expect(Object.keys(validarPaso(0, { ...NINO, direccion: '' }))).toEqual(['direccion']);
+    expect(validarPaso(0, { ...ADULTO, direccion: '' })).toEqual({});
   });
 });
 
@@ -282,8 +334,17 @@ describe('validarFilaImportacion (plantilla Excel)', () => {
     expect(validarFilaImportacion({ ...FILA, primerNombre: 'Mar1a' })[0]).toMatch(/solo letras/);
   });
 
-  it('el WhatsApp no se exige ni se valida para adultos', () => {
-    expect(validarFilaImportacion({ ...FILA, tipo: 'adulto', fechaNacimiento: '1985-08-20', whatsapp: '123' })).toEqual([]);
+  it('para un adulto la columna WhatsApp es su celular: opcional, pero con formato si viene', () => {
+    const adulto = { ...FILA, tipo: 'adulto', fechaNacimiento: '1985-08-20' };
+    expect(validarFilaImportacion(adulto)).toEqual([]);
+    expect(validarFilaImportacion({ ...adulto, whatsapp: '3001234567' })).toEqual([]);
+    expect(validarFilaImportacion({ ...adulto, whatsapp: '123' })).toEqual([
+      'Celular / WhatsApp: Debe ser un celular de 10 dígitos que empiece por 3, sin espacios. Ejemplo: 3001234567',
+    ]);
+  });
+
+  it('"SIN DOCUMENTO" (como lo trae la plantilla) no revisa el número', () => {
+    expect(validarFilaImportacion({ ...FILA, tipoDocumento: 'SIN DOCUMENTO', numeroDocumento: '12.3' })).toEqual([]);
   });
 
   it('textos más largos que la columna', () => {

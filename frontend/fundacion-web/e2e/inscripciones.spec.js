@@ -127,10 +127,50 @@ test.describe('Inscripciones', () => {
 
     await dialogo.getByRole('button', { name: 'Inscribir' }).click();
 
-    await expect(dialogo.getByRole('alert').filter({ hasText: 'cupo' })).toHaveText(CUPO_LLENO);
+    await expect(dialogo.getByRole('alert').filter({ hasText: 'cupo' })).toContainText(CUPO_LLENO);
     // El diálogo sigue abierto con lo diligenciado para poder elegir otro programa
     await expect(dialogo).toBeVisible();
     await expect(dialogo.getByRole('button', { name: 'Inscribir' })).toBeEnabled();
     expect(api.llamadas('POST', '/api/inscripciones')).toHaveLength(1);
+  });
+  test('cerrar a mitad del formulario guarda un borrador que se recupera con el mismo beneficiario y programa', async ({ page, api, sesion }) => {
+    await sesion();
+    mockListaBeneficiarios(api);
+    api
+      .on('GET', '/api/inscripciones', listadoVacio)
+      .on('GET', '/api/sedes', SEDES)
+      .on('GET', '/api/sedes/programas/prog-arte/campos', []);
+    await page.goto('#/sede/inscripciones');
+
+    const abrirHastaFormulario = async () => {
+      await page.getByRole('button', { name: 'Nueva inscripción' }).click();
+      const dialogo = page.getByRole('dialog').filter({ hasText: 'Nueva Inscripción' });
+      await dialogo.getByRole('combobox', { name: 'Buscar por nombre' }).fill('valen');
+      await page.getByRole('option', { name: /Valentina Rodríguez Gómez/ }).click();
+      await dialogo.getByRole('button', { name: 'Siguiente' }).click();
+      // La tarjeta del programa se elige con el teclado
+      const tarjeta = dialogo.getByRole('radio', { name: /Arte y pintura/ });
+      await tarjeta.focus();
+      await page.keyboard.press('Enter');
+      await expect(tarjeta).toHaveAttribute('aria-checked', 'true');
+      await dialogo.getByRole('button', { name: 'Siguiente' }).click();
+      await expect(dialogo.getByText('Este programa no tiene campos adicionales.')).toBeVisible();
+      return dialogo;
+    };
+
+    let dialogo = await abrirHastaFormulario();
+    await dialogo.getByRole('textbox', { name: 'Nombre completo' }).fill('Ana Gómez');
+    // Cerrar con cambios pregunta antes de descartar
+    await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+    await page.getByRole('button', { name: 'Descartar' }).click();
+    await expect(dialogo).toBeHidden();
+
+    dialogo = await abrirHastaFormulario();
+    await expect(dialogo.getByText('Recuperamos lo que habías escrito')).toBeVisible();
+    await expect(dialogo.getByRole('textbox', { name: 'Nombre completo' })).toHaveValue('Ana Gómez');
+
+    await dialogo.getByRole('button', { name: 'Empezar de cero' }).click();
+    await expect(dialogo.getByText('Recuperamos lo que habías escrito')).toHaveCount(0);
+    await expect(dialogo.getByRole('textbox', { name: 'Nombre completo' })).toHaveValue('');
   });
 });

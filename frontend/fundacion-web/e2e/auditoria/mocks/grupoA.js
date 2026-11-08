@@ -401,7 +401,7 @@ export function registrar(api) {
     return { json: TODOS.find(b => b.id === id) ?? NINOS[0] };
   });
   api.on('GET', /^\/api\/beneficiarios\/\d+\/historial$/, HISTORIAL);
-  api.on('POST', '/api/beneficiarios/verificar-documento', { existe: false });
+  api.on('POST', '/api/beneficiarios/verificar-documento', { existe: false, id: null, nombre: null });
   api.on('GET', '/api/beneficiarios', ({ url }) => {
     const lista = filtrarBeneficiarios(url);
     const sinFiltros = !url.searchParams.get('buscar') && url.searchParams.get('tipo');
@@ -504,7 +504,9 @@ export const RUTAS_A = [
 
 // ─── Diálogos ────────────────────────────────────────────────────────────────
 
-const DRAFT_KEY = 'nuevo_beneficiario_draft';
+// Borrador del formulario: sessionStorage, una clave por tipo, con { form, paso }
+const DRAFT_KEY        = 'nuevo_beneficiario_draft_nino';
+const DRAFT_KEY_ADULTO = 'nuevo_beneficiario_draft_adulto';
 const PASOS_NUEVO = ['Datos personales', 'Tallas', 'Salud', 'Acudiente', 'Autorización'];
 
 /** Navega a `hash` solo si la página no está ya ahí. */
@@ -526,8 +528,8 @@ function nuevoBeneficiario(paso) {
   return async page => {
     await irA(page, '#/sede/beneficiarios');
     await page.evaluate(([k, v]) => {
-      if (v) localStorage.setItem(k, v); else localStorage.removeItem(k);
-    }, [DRAFT_KEY, paso > 0 ? JSON.stringify(BORRADOR_VALIDO) : null]);
+      if (v) sessionStorage.setItem(k, v); else sessionStorage.removeItem(k);
+    }, [DRAFT_KEY, paso > 0 ? JSON.stringify({ form: BORRADOR_VALIDO, paso: 0 }) : null]);
     await boton(page, '+ Nuevo beneficiario').click();
     const dlg = dialogo(page, 'Inscribir nuevo beneficiario');
     await dlg.waitFor();
@@ -657,7 +659,7 @@ export const DIALOGOS_A = [
     nombre: 'Adultos · Nuevo adulto', hash: '#/sede/adultos',
     abrir: async page => {
       await irA(page, '#/sede/adultos');
-      await page.evaluate(k => localStorage.removeItem(k), DRAFT_KEY);
+      await page.evaluate(k => sessionStorage.removeItem(k), DRAFT_KEY_ADULTO);
       await boton(page, '+ Nuevo adulto').click();
       await page.getByRole('dialog').first().waitFor();
     },

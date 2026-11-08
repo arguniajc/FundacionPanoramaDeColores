@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import {
-  Alert, Button, DialogActions, DialogContent, DialogTitle,
-  FormControl, FormHelperText, Grid, InputAdornment, InputLabel, MenuItem, Select, TextField,
+  Alert, DialogContent, DialogTitle,
+  FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField,
 } from '@mui/material';
 import Dialog from '@/shared/components/DialogResponsive';
 import { fmt, hoy } from './formato';
 import { r } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
+import { AccionesDialogo, CampoMoneda, ErrorServidor } from '@/shared/components/form/FormControles';
 import ResumenErrores from '@/shared/components/ResumenErrores';
 
 // Reglas del formulario: cada una dice qué está mal y cómo llenarlo
@@ -28,33 +31,45 @@ export function DialogReposicion({ open, cuentaCajaId, cuentas, guardando, onClo
   const cajaNombre = cuentas.find(c => c.id === cuentaCajaId)?.nombre ?? 'Caja';
 
   const [form, setForm] = useState({ cuentaOrigenId: '', fecha: hoy(), monto: '', numeroSoporte: '', observacion: '' });
+  const [inicial, setInicial] = useState(form);
+  const [error, setError] = useState('');
+  const autoFocus = useAutoFocus();
   const v = useValidacion(ESQUEMA, { ...form, hayBancos: bancos.length > 0 });
   const { reiniciar } = v;
 
   useEffect(() => {
     if (open) {
-      setForm({ cuentaOrigenId: bancos[0]?.id ?? '', fecha: hoy(), monto: '', numeroSoporte: '', observacion: '' });
+      const datos = { cuentaOrigenId: bancos[0]?.id ?? '', fecha: hoy(), monto: '', numeroSoporte: '', observacion: '' };
+      setForm(datos);
+      setInicial(datos);
+      setError('');
       reiniciar();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  const { confirmarCierre } = useCerrarConCambios({
+    hayCambios: hayCambiosEn(form, inicial), bloqueado: guardando, onCerrar: onClose,
+  });
+
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const guardar = () => {
-    if (!v.validarTodo()) return;
-    onGuardar({
+  const guardar = async () => {
+    if (guardando || !v.validarTodo()) return;
+    setError('');
+    const fallo = await onGuardar({
       cuentaCajaId,
       cuentaOrigenId: form.cuentaOrigenId,
       fecha:          form.fecha,
-      monto:          parseFloat(form.monto),
+      monto:          Number(form.monto),
       numeroSoporte:  form.numeroSoporte  || null,
       observacion:    form.observacion    || null,
     });
+    if (fallo) setError(fallo);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} maxWidth="sm" fullWidth bloqueado={guardando} alEnviar={guardar}>
       <DialogTitle>Reposición de Caja Menor</DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         <Alert severity="info" sx={{ mb: 2 }}>
@@ -85,8 +100,8 @@ export function DialogReposicion({ open, cuentaCajaId, cuentas, guardando, onClo
               {...v.props('fecha')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Monto a reponer *" type="number" size="small"
-              value={form.monto} onChange={set('monto')} {...v.props('monto')} />
+            <CampoMoneda label="Monto a reponer *" autoFocus={autoFocus}
+              value={form.monto} onChange={m => setForm(f => ({ ...f, monto: m }))} {...v.props('monto')} />
           </Grid>
           <Grid size={12}>
             <TextField fullWidth label="N° transferencia / comprobante" size="small"
@@ -99,12 +114,8 @@ export function DialogReposicion({ open, cuentaCajaId, cuentas, guardando, onClo
         </Grid>
       </DialogContent>
       <ResumenErrores {...v.resumen} accion="registrar la reposición" />
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" color="primary" disabled={guardando} onClick={guardar}>
-          {guardando ? 'Procesando…' : 'Registrar Reposición'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar textoGuardar="Registrar Reposición" />
     </Dialog>
   );
 }

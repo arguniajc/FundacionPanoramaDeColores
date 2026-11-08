@@ -1,14 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
-  Box, Button, DialogActions, DialogContent, DialogTitle,
-  FormControl, FormControlLabel, FormHelperText, Grid, InputAdornment, InputLabel,
+  Autocomplete, Box, DialogContent, DialogTitle,
+  FormControl, FormControlLabel, FormHelperText, Grid, InputLabel,
   MenuItem, Radio, RadioGroup, Select, TextField, Typography,
 } from '@mui/material';
 import Dialog from '@/shared/components/DialogResponsive';
 import { hoy } from './formato';
-import { r } from '@/shared/utils/validacion';
+import { calcularDvNit, r, vacio } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
+import { AccionesDialogo, CampoMoneda, ErrorServidor } from '@/shared/components/form/FormControles';
 import ResumenErrores from '@/shared/components/ResumenErrores';
+import { donantesRepository } from '@/infrastructure/repositories/donantesRepository';
+import { useAuth } from '@/application/auth/useAuth';
 
 const TIPOS_SOPORTE = [
   'Factura electrónica', 'Recibo de caja', 'Consignación bancaria',
@@ -41,8 +46,14 @@ const ESQUEMA = {
   conceptoRetencion: { etiqueta: 'Concepto de retención', reglas: [r.si(esEgreso, r.texto({ max: 100 }))] },
   descripcion:   { etiqueta: 'Descripción adicional', reglas: [r.texto({ max: 1000 })] },
   terceroDocumento: { etiqueta: 'NIT / Documento del tercero', reglas: [
-    r.propia(v => (!r.nit()(v) || !r.documento({ alfanumerico: true })(v) ? ''
-      : 'Escribe el NIT con guion y dígito de verificación, o el documento sin puntos ni espacios. Ejemplo: 900123456-7 o 1144123456')),
+    r.propia(v => {
+      if (vacio(v)) return '';
+      const s = String(v).trim();
+      // Con guion y un dígito es un NIT con DV: se comprueba el dígito (dice cuál debería ser)
+      if (/^\d{6,10}-\d$/.test(s)) return r.nit()(s);
+      return !r.documento({ alfanumerico: true })(s) ? ''
+        : 'Escribe el NIT con guion y dígito de verificación, o el documento sin puntos ni espacios. Ejemplo: 900123456-8 o 1144123456';
+    }),
   ] },
   retencionPracticada: { etiqueta: 'Valor retenido', reglas: [
     r.si(esEgreso, r.numero({ min: 0, unidad: 'pesos', ejemplo: '5250' })),
@@ -73,14 +84,26 @@ export function DialogMovimiento({
     conceptoRetencion: '',
   };
   const [form, setForm] = useState(EMPTY);
+  const [inicial, setInicial] = useState(EMPTY);
+  const [error, setError] = useState('');
+  const [opsTercero, setOpsTercero] = useState([]);
+  const busquedaTercero = useRef(null);
+  const { puedo } = useAuth();
+  const puedeBuscarDonantes = puedo('donantes', 'ver') || puedo('donaciones', 'ver');
+  const autoFocus = useAutoFocus();
   const v = useValidacion(ESQUEMA, form);
   const { reiniciar } = v;
+
+  // Fija el formulario y la copia con la que se detectan cambios sin guardar
+  const iniciar = datos => { setForm(datos); setInicial(datos); };
 
   useEffect(() => {
     if (!open) return;
     reiniciar();
+    setError('');
+    setOpsTercero([]);
     if (modo === 'editar' && data) {
-      setForm({
+      iniciar({
         tipo: data.tipo,
         fecha: data.fecha,
         concepto: data.concepto,
@@ -99,7 +122,7 @@ export function DialogMovimiento({
       });
     } else if (modo === 'crear' && data) {
       // Pre-llenado desde OCR o duplicado
-      setForm({
+      iniciar({
         ...EMPTY,
         tipo:             data.tipo             ?? tipoPreset ?? 'egreso',
         fecha:            data.fecha            ?? hoy(),
@@ -115,10 +138,16 @@ export function DialogMovimiento({
         tipoSoporte:      data.tipoSoporte      ?? '',
       });
     } else {
-      setForm({ ...EMPTY, tipo: tipoPreset ?? 'ingreso', cuentaId: cuentaPreset ?? cuentas[0]?.id ?? '' });
+      iniciar({ ...EMPTY, tipo: tipoPreset ?? 'ingreso', cuentaId: cuentaPreset ?? cuentas[0]?.id ?? '' });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  useEffect(() => () => clearTimeout(busquedaTercero.current), []);
+
+  const { confirmarCierre } = useCerrarConCambios({
+    hayCambios: hayCambiosEn(form, inicial), bloqueado: guardando, onCerrar: onClose,
+  });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const setTipo = e => setForm(f => ({ ...f, tipo: e.target.value, categoriaId: '', tarifaRetencion: '', retencionPracticada: '', conceptoRetencion: '' }));
@@ -130,17 +159,40 @@ export function DialogMovimiento({
     setForm(f => ({ ...f, tarifaRetencion: tarifa, retencionPracticada: ret }));
   };
 
-  const handleMontoChange = e => {
-    const monto  = e.target.value;
+  // Tercero: sugiere donantes registrados mientras se escribe el nombre (llena nombre y documento)
+  const buscarTerceros = texto => {
+    clearTimeout(busquedaTercero.current);
+    const q = texto.trim();
+    if (!puedeBuscarDonantes || q.length < 2) { setOpsTercero([]); return; }
+    busquedaTercero.current = setTimeout(async () => {
+      try {
+        const { data: lista } = await donantesRepository.listar({ buscar: q, soloActivos: true, porPagina: 10 });
+        setOpsTercero(lista);
+      } catch { setOpsTercero([]); /* opcional: sin sugerencias el tercero se escribe a mano */ }
+    }, 300);
+  };
+  const elegirTercero = op => {
+    if (!op) { setForm(f => ({ ...f, terceroNombre: '' })); return; }
+    if (typeof op === 'string') { setForm(f => ({ ...f, terceroNombre: op })); return; }
+    setForm(f => ({ ...f, terceroNombre: op.nombre, terceroDocumento: op.documento ?? f.terceroDocumento }));
+  };
+  // Documento solo con dígitos: si es un NIT, se sugiere su dígito de verificación
+  const docTercero = form.terceroDocumento.trim();
+  const dvTercero = /^\d{6,10}$/.test(docTercero) ? calcularDvNit(docTercero) : null;
+  const ayudaTercero = dvTercero !== null
+    ? `Si es un NIT, el dígito de verificación es ${dvTercero}: ${docTercero}-${dvTercero}` : undefined;
+
+  const handleMontoChange = monto => {
     const tarifa = parseFloat(form.tarifaRetencion) || 0;
     const ret    = (tarifa && monto) ? (parseFloat(monto) * tarifa / 100).toFixed(2) : form.retencionPracticada;
     setForm(f => ({ ...f, monto, retencionPracticada: ret }));
   };
 
   const catsFiltradas = categorias.filter(c => c.tipo === form.tipo);
-  const handleSubmit = () => {
-    if (!v.validarTodo()) return;
-    onGuardar({
+  const handleSubmit = async () => {
+    if (guardando || !v.validarTodo()) return;
+    setError('');
+    const fallo = await onGuardar({
       tipo: form.tipo,
       fecha: form.fecha,
       concepto: form.concepto.trim(),
@@ -157,10 +209,11 @@ export function DialogMovimiento({
       retencionPracticada: form.retencionPracticada ? parseFloat(form.retencionPracticada) : null,
       conceptoRetencion: form.conceptoRetencion || null,
     });
+    if (fallo) setError(fallo);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} maxWidth="sm" fullWidth bloqueado={guardando} alEnviar={handleSubmit}>
       <DialogTitle>
         {modo === 'crear'
           ? (form.tipo === 'ingreso' ? 'Registrar Ingreso' : 'Registrar Egreso')
@@ -192,8 +245,8 @@ export function DialogMovimiento({
               {...v.props('fecha')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Monto *" type="number" size="small"
-              value={form.monto} onChange={handleMontoChange} {...v.props('monto')} />
+            <CampoMoneda label="Monto *" value={form.monto} onChange={handleMontoChange}
+              autoFocus={autoFocus} {...v.props('monto')} />
           </Grid>
           <Grid size={12}>
             <TextField fullWidth label="Concepto *" size="small"
@@ -231,14 +284,36 @@ export function DialogMovimiento({
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Nombre del tercero" size="small"
-              value={form.terceroNombre} onChange={set('terceroNombre')}
-              {...v.props('terceroNombre')} />
+            <Autocomplete
+              freeSolo
+              options={opsTercero}
+              filterOptions={x => x}
+              getOptionLabel={o => (typeof o === 'string' ? o : o.nombre ?? '')}
+              renderOption={({ key, ...props }, o) => (
+                <Box component="li" key={key} {...props}>
+                  {o.nombre}
+                  {o.documento && <Box component="span" sx={{ ml: 1, color: 'text.secondary', fontSize: '0.8rem' }}>{o.documento}</Box>}
+                </Box>
+              )}
+              value={form.terceroNombre || null}
+              inputValue={form.terceroNombre}
+              onChange={(_, op) => elegirTercero(op)}
+              onInputChange={(_, texto, reason) => {
+                if (reason !== 'input') return;
+                setForm(f => ({ ...f, terceroNombre: texto }));
+                buscarTerceros(texto);
+              }}
+              renderInput={p => (
+                <TextField {...p} label="Nombre del tercero" size="small"
+                  {...v.props('terceroNombre', puedeBuscarDonantes ? 'Escribe para buscar entre los donantes' : undefined)} />
+              )}
+            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="NIT / Documento del tercero" size="small"
               value={form.terceroDocumento} onChange={set('terceroDocumento')}
-              {...v.props('terceroDocumento')} />
+              slotProps={{ htmlInput: { inputMode: 'tel', autoComplete: 'off' } }}
+              {...v.props('terceroDocumento', ayudaTercero)} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="N° soporte / factura" size="small"
@@ -273,9 +348,9 @@ export function DialogMovimiento({
               </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }} fullWidth label="Valor retenido" size="small" type="number"
+              <CampoMoneda label="Valor retenido" decimales={2}
                 value={form.retencionPracticada}
-                onChange={set('retencionPracticada')}
+                onChange={ret => setForm(f => ({ ...f, retencionPracticada: ret }))}
                 {...v.props('retencionPracticada', 'Se calcula automáticamente')} />
             </Grid>
             <Grid size={12}>
@@ -294,13 +369,10 @@ export function DialogMovimiento({
         </Grid>
       </DialogContent>
       <ResumenErrores {...v.resumen} accion={modo === 'crear' ? 'registrar el movimiento' : 'guardar el movimiento'} />
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={guardando}
-          color={form.tipo === 'ingreso' ? 'success' : 'error'}>
-          {guardando ? 'Guardando…' : (modo === 'crear' ? 'Registrar' : 'Guardar')}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={guardando} enviar
+        textoGuardar={modo === 'crear' ? 'Registrar' : 'Guardar'}
+        colorGuardar={form.tipo === 'ingreso' ? 'success' : 'error'} />
     </Dialog>
   );
 }

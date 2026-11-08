@@ -9,6 +9,12 @@ public interface IDonantesRepository
     Task<DonanteDto>  CrearAsync(CrearDonanteDto dto, CancellationToken ct = default);
     Task<DonanteDto?> ActualizarAsync(Guid id, CrearDonanteDto dto, CancellationToken ct = default);
 
+    /// <summary>
+    /// Primer donante (activo o no) cuyo documento normalizado (ver DonantesService.NormalizarDocumento)
+    /// es igual a <paramref name="documentoNormalizado"/>, sin contar <paramref name="excluirId"/>.
+    /// </summary>
+    Task<DonanteExistente?> BuscarDocumentoAsync(string documentoNormalizado, Guid? excluirId, CancellationToken ct = default);
+
     /// <summary>Invierte el estado activo. Devuelve el nuevo valor, o null si no existe.</summary>
     Task<bool?> ToggleAsync(Guid id, CancellationToken ct = default);
 

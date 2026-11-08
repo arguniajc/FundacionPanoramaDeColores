@@ -15,6 +15,8 @@ import {
   getCiudadesDeUbicacion, getEstadosDePais,
 } from '@/shared/utils/geodata';
 import FirmaPad from '@/shared/components/FirmaPad';
+import { CampoTelefono } from '@/shared/components/form/FormControles';
+import { esDocumentoNumerico, tecladoDocumento } from '@/shared/constants/tiposDocumento';
 import { LISTAS_POR_TIPO } from './validacionFormulario';
 import { abrirArchivo } from '@/shared/utils/archivos';
 import { validarArchivo, ACCEPT_ARCHIVO } from '@/shared/utils/archivosPermitidos';
@@ -343,10 +345,13 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
   if (campo.tipo === 'talla' || campo.tipo === 'altura') {
     return (
       <TextField fullWidth size="small"
-        label={campo.etiqueta} type="number" required={campo.obligatorio}
+        label={campo.etiqueta} type="text" required={campo.obligatorio}
         value={value ?? ''} onChange={e => onChange(e.target.value)}
         error={!!error} helperText={error || undefined}
-        slotProps={{ input: { inputProps: { min: 0, step: 1 }, endAdornment: <InputAdornment position="end">cm</InputAdornment> } }}
+        slotProps={{
+          htmlInput: { inputMode: 'decimal' },
+          input: { endAdornment: <InputAdornment position="end">cm</InputAdornment> },
+        }}
       />
     );
   }
@@ -354,10 +359,13 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
   if (campo.tipo === 'edad') {
     return (
       <TextField fullWidth size="small"
-        label={campo.etiqueta} type="number" required={campo.obligatorio}
+        label={campo.etiqueta} type="text" required={campo.obligatorio}
         value={value ?? ''} onChange={e => onChange(e.target.value)}
         error={!!error} helperText={error || 'Auto-calculada del beneficiario'}
-        slotProps={{ input: { endAdornment: <InputAdornment position="end">años</InputAdornment> } }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' },
+          input: { endAdornment: <InputAdornment position="end">años</InputAdornment> },
+        }}
       />
     );
   }
@@ -402,16 +410,17 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
           </FormControl>
           <TextField size="small" label="Número" sx={{ flex: 1 }}
             value={doc.numero} onChange={e => setDoc('numero', e.target.value)}
-            required={campo.obligatorio} />
+            required={campo.obligatorio}
+            slotProps={{ htmlInput: { inputMode: tecladoDocumento(doc.tipo) } }} />
         </Box>
       </Box>
     );
   }
 
+  // Teléfono de otra persona (acudiente, contacto…): sin autocompletar con el del usuario
   if (campo.tipo === 'telefono') return (
-    <TextField fullWidth size="small"
-      label={campo.etiqueta} type="tel" required={campo.obligatorio}
-      value={value ?? ''} onChange={e => onChange(e.target.value)}
+    <CampoTelefono label={campo.etiqueta} autoComplete="off" required={campo.obligatorio}
+      value={value ?? ''} onChange={onChange}
       error={!!error} helperText={error || undefined} />
   );
 
@@ -424,10 +433,13 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
 
   if (campo.tipo === 'peso') return (
     <TextField fullWidth size="small"
-      label={campo.etiqueta} type="number" required={campo.obligatorio}
+      label={campo.etiqueta} type="text" required={campo.obligatorio}
       value={value ?? ''} onChange={e => onChange(e.target.value)}
       error={!!error} helperText={error || undefined}
-      slotProps={{ input: { inputProps: { min: 0, step: 0.1 }, endAdornment: <InputAdornment position="end">kg</InputAdornment> } }}
+      slotProps={{
+        htmlInput: { inputMode: 'decimal' },
+        input: { endAdornment: <InputAdornment position="end">kg</InputAdornment> },
+      }}
     />
   );
 
@@ -625,8 +637,9 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
               <Grid size={{ xs: 12, sm: 8 }}>
                 <TextField fullWidth size="small" label="Número de documento *" required
                   value={d.numDoc ?? ''}
-                  onChange={e => setD('numDoc', e.target.value.replace(/\D/g, ''))}
-                  slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
+                  // Solo dígitos para TI/CC; pasaporte, CE, PPT, PEP y Otro pueden llevar letras
+                  onChange={e => setD('numDoc', esDocumentoNumerico(d.tipoDoc) ? e.target.value.replace(/\D/g, '') : e.target.value)}
+                  slotProps={{ htmlInput: { inputMode: tecladoDocumento(d.tipoDoc) } }} />
               </Grid>
               <Grid size={{ xs: 12, sm: 8 }}>
                 <TextField fullWidth size="small" label="Dirección *" required
@@ -646,10 +659,8 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
                   )} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField fullWidth size="small" label="Número de celular *" required
-                  value={d.celular ?? ''}
-                  onChange={e => setD('celular', e.target.value.replace(/\D/g, ''))}
-                  slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
+                <CampoTelefono label="Número de celular *" required autoComplete="off"
+                  value={d.celular ?? ''} onChange={t => setD('celular', t)} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControl fullWidth size="small" required>
@@ -664,7 +675,7 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
                   value={d.ocupacion ?? ''} onChange={e => setD('ocupacion', e.target.value)} />
               </Grid>
               <Grid size={12}>
-                <TextField fullWidth size="small" label="Empresa / Lugar de trabajo *" required
+                <TextField fullWidth size="small" label="Empresa / Lugar de trabajo (opcional)"
                   value={d.empresa ?? ''} onChange={e => setD('empresa', e.target.value)} />
               </Grid>
               <Grid size={12}>
@@ -686,12 +697,13 @@ function CampoInputBase({ campo, value, onChange, activo = true, onToggle, error
   return (
     <TextField fullWidth size="small"
       label={campo.etiqueta}
-      type={campo.tipo === 'number' ? 'number' : campo.tipo === 'date' ? 'date' : 'text'}
+      type={campo.tipo === 'date' ? 'date' : 'text'}
       required={campo.obligatorio}
       value={value ?? ''}
       onChange={e => onChange(e.target.value)}
       error={!!error} helperText={error || undefined}
-      slotProps={campo.tipo === 'date' ? { inputLabel: { shrink: true } } : undefined}
+      slotProps={campo.tipo === 'date' ? { inputLabel: { shrink: true } }
+        : campo.tipo === 'number' ? { htmlInput: { inputMode: 'decimal' } } : undefined}
     />
   );
 }

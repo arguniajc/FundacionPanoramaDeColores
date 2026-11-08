@@ -1,9 +1,13 @@
 ﻿import { useState, useRef } from 'react';
 import {
-  Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent,
-  DialogTitle, FormHelperText, IconButton, TextField, Typography, useMediaQuery, useTheme,
+  Box, DialogContent,
+  DialogTitle, FormHelperText, IconButton, TextField, Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import Dialog from '@/shared/components/DialogResponsive';
+import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 import CloseIcon          from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import UploadFileIcon     from '@mui/icons-material/UploadFile';
@@ -30,9 +34,11 @@ export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido
   const [subiendo, setSubiendo] = useState(false);
   const [error,    setError]    = useState('');
   const inputRef = useRef();
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const v = useValidacion(ESQUEMA, { titulo, archivo });
+  // Un archivo elegido cuenta como cambio (hayCambiosEn compara los Blob por tamaño)
+  const hayCambios = hayCambiosEn({ titulo, archivo }, { titulo: '', archivo: null });
+  const { confirmarCierre } = useCerrarConCambios({ hayCambios, bloqueado: subiendo, onCerrar });
+  const autoFocus = useAutoFocus();
 
   const handleSubir = async () => {
     if (!v.validarTodo()) return;
@@ -55,20 +61,20 @@ export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido
   };
 
   return (
-    <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 3 } } }} open onClose={onCerrar} maxWidth="sm" fullWidth fullScreen={isMobile}>
+    <Dialog slotProps={{ paper: { sx: { borderRadius: { xs: 0, sm: 3 } } } }} open onClose={confirmarCierre} alEnviar={handleSubir} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ background: HEADER_GRADIENT, color: '#fff', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><UploadFileIcon /> Subir documento</Box>
-        <IconButton onClick={onCerrar} size="small" sx={{ color: 'rgba(255,255,255,0.8)' }}><CloseIcon /></IconButton>
+        <IconButton onClick={() => confirmarCierre()} disabled={subiendo} size="small" aria-label="Cerrar" sx={{ color: 'rgba(255,255,255,0.8)' }}><CloseIcon /></IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ py: 2.5, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {error && <Alert severity="error">{error}</Alert>}
         <Typography sx={{ color: 'text.secondary' }} variant="body2">
           Beneficiario: <strong>{beneficiario.nombreMenor ?? beneficiario.nombre}</strong>
         </Typography>
-        <TextField label="Nombre del documento *" size="small" fullWidth
+        <TextField label="Nombre del documento *" size="small" fullWidth autoFocus={autoFocus}
           value={titulo} onChange={e => setTitulo(e.target.value)}
           {...v.props('titulo', 'Ejemplo: Registro civil, Certificado médico')} />
-        <Box onClick={() => inputRef.current.click()}
+        <Box onClick={() => inputRef.current.click()} role="button" tabIndex={0}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputRef.current.click(); } }}
           sx={{
             border: '2px dashed', borderColor: v.err('archivo') ? 'error.main' : archivo ? 'var(--color-primario)' : 'divider',
             borderRadius: 2, p: 2.5, textAlign: 'center', cursor: 'pointer',
@@ -85,15 +91,9 @@ export function ModalSubirArchivoBeneficiario({ beneficiario, onCerrar, onSubido
         {v.err('archivo') && <FormHelperText error sx={{ mt: -1.5 }}>{v.err('archivo')}</FormHelperText>}
       </DialogContent>
       <ResumenErrores {...v.resumen} accion="subir el documento" />
-      <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-        <Button onClick={onCerrar} variant="outlined" disabled={subiendo}>Cancelar</Button>
-        <Button variant="contained" onClick={handleSubir}
-          disabled={subiendo}
-          startIcon={subiendo ? <CircularProgress size={16} color="inherit" /> : <UploadFileIcon />}
-          sx={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, fontWeight: 700, minWidth: 140 }}>
-          {subiendo ? 'Subiendo…' : 'Subir documento'}
-        </Button>
-      </DialogActions>
+      <ErrorServidor mensaje={error} onClose={() => setError('')} titulo="No se pudo subir" />
+      <AccionesDialogo onCancelar={confirmarCierre} guardando={subiendo} enviar textoGuardar="Subir documento"
+        sxGuardar={{ bgcolor: 'var(--color-primario)', '&:hover': { bgcolor: 'var(--color-gradiente)' }, minWidth: 140 }} />
     </Dialog>
   );
 }

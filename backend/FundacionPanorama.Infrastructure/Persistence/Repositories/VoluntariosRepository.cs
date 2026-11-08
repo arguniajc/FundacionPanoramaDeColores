@@ -1,6 +1,7 @@
 using Npgsql;
 using FundacionPanorama.Application.Features.Voluntarios.DTOs;
 using FundacionPanorama.Application.Features.Voluntarios.Interfaces;
+using FundacionPanorama.Application.Shared;
 
 namespace FundacionPanorama.Infrastructure.Persistence.Repositories;
 
@@ -312,4 +313,24 @@ public class VoluntariosRepository(DbConnectionFactory factory) : IVoluntariosRe
         r.IsDBNull(7) ? null : (DateTime?)r.GetDateTime(7),
         r.GetBoolean(8)
     );
+
+    public async Task<PersonaConDocumento?> BuscarDocumentoAsync(string numeroNormalizado, Guid? excluirId, CancellationToken ct = default)
+    {
+        await using var conn = factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT id, nombre
+            FROM voluntarios
+            WHERE {string.Format(DocumentoIdentidad.SqlNormalizar, "documento")} = @doc
+              AND (@excluir::uuid IS NULL OR id <> @excluir::uuid)
+            ORDER BY activo DESC, fecha_creacion
+            LIMIT 1
+            """;
+        cmd.Parameters.AddWithValue("doc", numeroNormalizado);
+        cmd.Parameters.Add(new NpgsqlParameter("excluir", NpgsqlTypes.NpgsqlDbType.Uuid) { Value = (object?)excluirId ?? DBNull.Value });
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return null;
+        return new PersonaConDocumento(r.GetGuid(0), r.IsDBNull(1) ? "" : r.GetString(1));
+    }
 }

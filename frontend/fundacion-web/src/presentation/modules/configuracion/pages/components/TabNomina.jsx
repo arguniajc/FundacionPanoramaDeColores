@@ -2,11 +2,17 @@ import { Alert, Box, Grid, InputAdornment, TextField, Typography } from '@mui/ma
 import PaymentsIcon from '@mui/icons-material/Payments';
 import { COLOR } from './helpers';
 import { fmtCOP } from '@/presentation/modules/talento_humano/pages/components/nominaFormato';
+import { CampoMoneda } from '@/shared/components/form/FormControles';
 
 /** Salario mínimo, auxilio de transporte y aportes del empleado que usa la liquidación de nómina. */
-export function TabNomina({ form, set, v }) {
-  const pesos = { input: { startAdornment: <InputAdornment position="start">$</InputAdornment> }, htmlInput: { min: 1 } };
-  const porcentaje = { input: { endAdornment: <InputAdornment position="end">%</InputAdornment> }, htmlInput: { min: 0, max: 20, step: 0.5 } };
+export function TabNomina({ form, set, setForm, v }) {
+  // Tasas en % como texto con teclado decimal (la rueda del mouse no cambia el valor);
+  // nominaParaApi acepta coma o punto decimal.
+  const porcentaje = {
+    input: { endAdornment: <InputAdornment position="end">%</InputAdornment> },
+    htmlInput: { inputMode: 'decimal' },
+  };
+  const setValor = k => val => setForm(p => ({ ...p, [k]: val }));
   const smlmv = Number(form.nominaSmlmv) || 0;
 
   return (
@@ -28,22 +34,22 @@ export function TabNomina({ form, set, v }) {
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField fullWidth size="small" type="number" label="Salario mínimo mensual (SMLMV) *"
-            value={form.nominaSmlmv ?? ''} onChange={set('nominaSmlmv')} slotProps={pesos}
-            {...v.props('nominaSmlmv', smlmv > 0 ? `${fmtCOP(smlmv)} · el auxilio aplica hasta ${fmtCOP(2 * smlmv)} (2 SMLMV)` : 'Ejemplo: 1423500')} />
+          <CampoMoneda label="Salario mínimo mensual (SMLMV) *"
+            value={form.nominaSmlmv ?? ''} onChange={setValor('nominaSmlmv')}
+            {...v.props('nominaSmlmv', smlmv > 0 ? `${fmtCOP(smlmv)} · el auxilio aplica hasta ${fmtCOP(2 * smlmv)} (2 SMLMV)` : 'Ejemplo: 1.423.500')} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField fullWidth size="small" type="number" label="Auxilio de transporte mensual *"
-            value={form.nominaAuxilioTransporte ?? ''} onChange={set('nominaAuxilioTransporte')} slotProps={pesos}
+          <CampoMoneda label="Auxilio de transporte mensual *"
+            value={form.nominaAuxilioTransporte ?? ''} onChange={setValor('nominaAuxilioTransporte')}
             {...v.props('nominaAuxilioTransporte', 'Proporcional a los días trabajados')} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField fullWidth size="small" type="number" label="Aporte a salud del empleado *"
+          <TextField fullWidth size="small" type="text" label="Aporte a salud del empleado *"
             value={form.nominaTasaSalud ?? ''} onChange={set('nominaTasaSalud')} slotProps={porcentaje}
             {...v.props('nominaTasaSalud', 'Porcentaje que se descuenta del salario. Ejemplo: 4')} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField fullWidth size="small" type="number" label="Aporte a pensión del empleado *"
+          <TextField fullWidth size="small" type="text" label="Aporte a pensión del empleado *"
             value={form.nominaTasaPension ?? ''} onChange={set('nominaTasaPension')} slotProps={porcentaje}
             {...v.props('nominaTasaPension', 'Porcentaje que se descuenta del salario. Ejemplo: 4')} />
         </Grid>

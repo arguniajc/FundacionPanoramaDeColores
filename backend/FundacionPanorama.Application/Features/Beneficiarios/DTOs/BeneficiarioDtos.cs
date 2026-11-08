@@ -34,6 +34,8 @@ public class BeneficiarioDto
     public string?   Whatsapp           { get; set; }
     public string?   Direccion          { get; set; }
     public bool?     ViveConNino        { get; set; }
+    // ── Contacto propio (solo adultos): celular / WhatsApp o "No registra" ────
+    public string?   Celular            { get; set; }
     // ── Lugar de nacimiento ───────────────────────────────────────────────────
     public string?   PaisNacimiento          { get; set; }
     public string?   DepartamentoNacimiento  { get; set; }
@@ -75,8 +77,9 @@ public class CrearBeneficiarioDto
     public DateOnly  FechaNacimiento    { get; set; }
     [StringLength(20)]
     public string    TipoDocumento      { get; set; } = string.Empty;
-    [Required][StringLength(30)]
-    public string    NumeroDocumento    { get; set; } = string.Empty;
+    // Obligatorio salvo con TipoDocumento "Sin documento" (lo revisa ValidacionBeneficiario).
+    [StringLength(30)]
+    public string?   NumeroDocumento    { get; set; }
     [Required][StringLength(100)]
     public string    Eps                { get; set; } = string.Empty;
     // ── Tallas ────────────────────────────────────────────────────────────────
@@ -113,6 +116,9 @@ public class CrearBeneficiarioDto
     [StringLength(200)]
     public string?   Direccion          { get; set; }
     public bool?     ViveConNino        { get; set; }
+    // ── Contacto propio del adulto (obligatorio para adultos: celular o "No registra") ──
+    [StringLength(20)]
+    public string?   Celular            { get; set; }
     // ── Lugar de nacimiento ───────────────────────────────────────────────────
     [Required][StringLength(100)]
     public string    PaisNacimiento          { get; set; } = string.Empty;
@@ -181,7 +187,8 @@ public class BeneficiarioResumenDto
     public string   TipoDocumento      { get; set; } = string.Empty;
     public string?  NumeroDocumento    { get; set; }
     public string?  Genero             { get; set; }
-    public string?  Whatsapp           { get; set; } // la tabla lo muestra con enlace a WhatsApp
+    // La tabla lo muestra con enlace a WhatsApp: el del acudiente (niños) o el celular propio (adultos)
+    public string?  Whatsapp           { get; set; }
     public string   TieneAlergia       { get; set; } = "no"; // solo si/no; la descripción va en el detalle
     public bool     Activo             { get; set; }
     public string   Tipo               { get; set; } = "niño";
@@ -197,6 +204,16 @@ public class BeneficiarioResumenDto
     public static int CalcularCompletitud(BeneficiarioDto b)
         => CompletitudPerfil.Evaluar(DatosPerfil.Desde(b)).Porcentaje;
 
+    /// <summary>
+    /// Número de contacto que muestra el listado: el celular propio para adultos y el WhatsApp del
+    /// acudiente para niños. "No registra" se devuelve como null (no es un número para enlazar).
+    /// </summary>
+    public static string? WhatsappDeContacto(BeneficiarioDto b)
+    {
+        var n = b.Tipo == "adulto" ? b.Celular : b.Whatsapp;
+        return string.IsNullOrWhiteSpace(n) || n == ValidacionBeneficiario.NoRegistra ? null : n;
+    }
+
     public static BeneficiarioResumenDto Desde(BeneficiarioDto b) => new()
     {
         Id                 = b.Id,
@@ -205,7 +222,7 @@ public class BeneficiarioResumenDto
         TipoDocumento      = b.TipoDocumento,
         NumeroDocumento    = b.NumeroDocumento,
         Genero             = b.Genero,
-        Whatsapp           = b.Whatsapp,
+        Whatsapp           = WhatsappDeContacto(b),
         TieneAlergia       = b.TieneAlergia,
         Activo             = b.Activo,
         Tipo               = b.Tipo,
@@ -266,6 +283,9 @@ public sealed record StatsNinosDatos(
     List<(string Pais, int Total)> TopPaises,
     List<(string Depto, string Ciudad, int Total)> DeptoRows,
     List<(string Genero, int Total)> PorGenero);
+
+/// <summary>Beneficiario que ya tiene un número de documento (respuesta de verificar-documento).</summary>
+public sealed record DocumentoExistente(Guid Id, string Nombre);
 
 public sealed record HistorialFila(Guid Id, string Accion, string? UsuarioEmail, string? Detalle, DateTime Fecha);
 

@@ -1,10 +1,14 @@
 ﻿import { useRef, useState } from 'react';
 import {
-  Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
+  Alert, Box, Button, DialogContent, DialogTitle,
   Divider, FormControl, FormControlLabel, FormHelperText, Grid, IconButton, InputLabel,
   MenuItem, Select, Snackbar, Switch, TextField, Tooltip, Typography,
-  useMediaQuery, useTheme,
 } from '@mui/material';
+import Dialog from '@/shared/components/DialogResponsive';
+import { AccionesDialogo, CampoDocumento, ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
+import { normalizarTipoDocumento } from '@/shared/constants/tiposDocumento';
 import { alpha }        from '@mui/material/styles';
 import AddIcon          from '@mui/icons-material/Add';
 import CheckCircleIcon  from '@mui/icons-material/CheckCircle';
@@ -27,7 +31,8 @@ import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
 import { validarArchivo } from '@/shared/utils/archivosPermitidos';
 
-const TIPOS_DOC = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI', 'PEP', 'PPT', 'Otro'];
+// Tipos de documento del representante del tercero: catálogo único (persona + empresa), vía CampoDocumento.
+const TIPOS_DOC_TERCERO = ['persona', 'empresa'];
 
 // Reglas del formulario de proyecto: cada una dice qué está mal y cómo llenarlo
 const conTercero = f => f.tieneTercero;
@@ -61,11 +66,19 @@ export default function ProgramasPage() {
   const [camposPrograma, setCamposPrograma] = useState(null);
   const [formPrograma,   setFormPrograma]   = useState(null);
   const [guardandoProg,  setGuardandoProg]  = useState(false);
+  const [inicialPrograma, setInicialPrograma] = useState(null);
   const [errForm,        setErrForm]        = useState('');
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const fileRef  = useRef(null);
   const v = useValidacion(ESQUEMA, formPrograma ?? FORM_VACIO);
+  const autoFocus = useAutoFocus();
+
+  // Snapshot al abrir: cerrar con cambios pregunta "¿Descartar los cambios?"; mientras guarda no se cierra.
+  const abrirFormPrograma  = (form) => { setFormPrograma(form); setInicialPrograma(form); setErrForm(''); };
+  const cerrarFormPrograma = () => { setFormPrograma(null); setInicialPrograma(null); setErrForm(''); };
+  const hayCambiosPrograma = !!formPrograma && !!inicialPrograma && hayCambiosEn(formPrograma, inicialPrograma);
+  const { confirmarCierre: confirmarCierrePrograma } = useCerrarConCambios({
+    hayCambios: hayCambiosPrograma, bloqueado: guardandoProg, onCerrar: cerrarFormPrograma,
+  });
 
   const todosLosProgramas = sedes.flatMap(s =>
     (s.programas ?? []).map(p => ({ ...p, nombreSede: s.nombre }))
@@ -73,15 +86,15 @@ export default function ProgramasPage() {
 
   const abrirNuevoPrograma = () => {
     v.reiniciar();
-    setFormPrograma({ ...FORM_VACIO, sedeId: sedes[0]?.id ?? '' });
+    abrirFormPrograma({ ...FORM_VACIO, sedeId: sedes[0]?.id ?? '' });
   };
 
   const abrirEditarPrograma = (p) => {
     v.reiniciar();
-    setFormPrograma({
+    abrirFormPrograma({
       id: p.id, sedeId: p.sedeId,
       nombre: p.nombre, descripcion: p.descripcion ?? '',
-      cupoMaximo: p.cupoMaximo ?? '', tieneTercero: p.tieneTercero ?? false,
+      cupoMaximo: p.cupoMaximo != null ? String(p.cupoMaximo) : '', tieneTercero: p.tieneTercero ?? false,
       nombreTercero: p.nombreTercero ?? '',
       terceroRepNombre:    p.terceroRepNombre    ?? '',
       terceroRepTipoDoc:   p.terceroRepTipoDoc   ?? 'CC',
@@ -92,7 +105,7 @@ export default function ProgramasPage() {
   };
 
   const handleGuardarPrograma = async () => {
-    if (!v.validarTodo()) return;
+    if (guardandoProg || !v.validarTodo()) return;
     setGuardandoProg(true);
     setErrForm('');
     setError('');
@@ -104,13 +117,13 @@ export default function ProgramasPage() {
       tieneTercero:        formPrograma.tieneTercero,
       nombreTercero:       formPrograma.tieneTercero ? (formPrograma.nombreTercero.trim() || null) : null,
       terceroRepNombre:    formPrograma.tieneTercero ? (formPrograma.terceroRepNombre.trim()    || null) : null,
-      terceroRepTipoDoc:   formPrograma.tieneTercero ? (formPrograma.terceroRepTipoDoc          || null) : null,
+      terceroRepTipoDoc:   formPrograma.tieneTercero ? (normalizarTipoDocumento(formPrograma.terceroRepTipoDoc) || null) : null,
       terceroRepDocumento: formPrograma.tieneTercero ? (formPrograma.terceroRepDocumento.trim() || null) : null,
       terceroRepCargo:     formPrograma.tieneTercero ? (formPrograma.terceroRepCargo.trim()     || null) : null,
       terceroRepFirma:     formPrograma.tieneTercero ? (formPrograma.terceroRepFirma            || null) : null,
     };
     const ok = await guardarPrograma(dto, formPrograma.id);
-    if (ok) { setFormPrograma(null); }
+    if (ok) { cerrarFormPrograma(); }
     // El detalle (validación, conflicto, conexión…) llega en `error` desde useSedes.
     else     { setErrForm('No se pudo guardar el programa.'); }
     setGuardandoProg(false);
@@ -323,9 +336,8 @@ export default function ProgramasPage() {
       )}
 
       {formPrograma && (
-        <Dialog slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : 2 } } }} open onClose={() => setFormPrograma(null)}
-          maxWidth={formPrograma.tieneTercero ? 'sm' : 'xs'} fullWidth
-          fullScreen={isMobile}>
+        <Dialog open onClose={confirmarCierrePrograma} alEnviar={handleGuardarPrograma}
+          maxWidth="sm" fullWidth>
           <DialogTitle sx={{ fontWeight: 700 }}>
             {formPrograma.id ? 'Editar proyecto' : 'Nuevo proyecto'}
           </DialogTitle>
@@ -334,7 +346,7 @@ export default function ProgramasPage() {
               <Grid size={12}>
                 <FormControl fullWidth size="small" error={!!v.err('sedeId')}>
                   <InputLabel id="programas-page-sede-label">Sede *</InputLabel>
-                  <Select labelId="programas-page-sede-label" label="Sede *" value={formPrograma.sedeId} onBlur={() => v.tocar('sedeId')}
+                  <Select labelId="programas-page-sede-label" label="Sede *" autoFocus={autoFocus} value={formPrograma.sedeId} onBlur={() => v.tocar('sedeId')}
                     onChange={e => setFormPrograma(p => ({ ...p, sedeId: e.target.value }))}>
                     {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
                   </Select>
@@ -354,7 +366,8 @@ export default function ProgramasPage() {
                   {...v.props('descripcion')} />
               </Grid>
               <Grid size={12}>
-                <TextField fullWidth size="small" label="Cupo máximo (opcional)" type="number"
+                <TextField fullWidth size="small" label="Cupo máximo (opcional)" type="text"
+                  slotProps={{ htmlInput: { inputMode: 'numeric' } }}
                   value={formPrograma.cupoMaximo}
                   onChange={e => setFormPrograma(p => ({ ...p, cupoMaximo: e.target.value }))}
                   {...v.props('cupoMaximo')} />
@@ -400,20 +413,17 @@ export default function ProgramasPage() {
                       onChange={e => setFormPrograma(p => ({ ...p, terceroRepNombre: e.target.value }))}
                       {...v.props('terceroRepNombre')} />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 5 }}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="programas-page-tipo-de-documento-label">Tipo de documento</InputLabel>
-                      <Select labelId="programas-page-tipo-de-documento-label" label="Tipo de documento" value={formPrograma.terceroRepTipoDoc}
-                        onChange={e => setFormPrograma(p => ({ ...p, terceroRepTipoDoc: e.target.value }))}>
-                        {TIPOS_DOC.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 7 }}>
-                    <TextField fullWidth size="small" label="Número de documento"
-                      value={formPrograma.terceroRepDocumento}
-                      onChange={e => setFormPrograma(p => ({ ...p, terceroRepDocumento: e.target.value }))}
-                      {...v.props('terceroRepDocumento')} />
+                  <Grid size={12}>
+                    {/* Catálogo único de tipos: un valor viejo ('Pasaporte') se sigue mostrando y al
+                        guardar se normaliza ('PA'). Con NIT valida el DV y sugiere el correcto. */}
+                    <CampoDocumento
+                      aplicaA={TIPOS_DOC_TERCERO}
+                      labelTipo="Tipo de documento" labelNumero="Número de documento"
+                      tipoDocumento={formPrograma.terceroRepTipoDoc}
+                      documento={formPrograma.terceroRepDocumento}
+                      onChangeTipo={t => setFormPrograma(p => ({ ...p, terceroRepTipoDoc: t }))}
+                      onChangeNumero={n => setFormPrograma(p => ({ ...p, terceroRepDocumento: n }))}
+                      validacionNumero={v.props('terceroRepDocumento')} />
                   </Grid>
                   <Grid size={12}>
                     <TextField fullWidth size="small" label="Cargo"
@@ -456,19 +466,9 @@ export default function ProgramasPage() {
             </Grid>
           </DialogContent>
           <ResumenErrores {...v.resumen} accion={formPrograma.id ? 'guardar' : 'crear el proyecto'} />
-          {errForm && (
-            <Alert severity="error" onClose={() => setErrForm('')} sx={{ mx: 2, mt: 1.5, mb: 0 }}>
-              {error || errForm}
-            </Alert>
-          )}
-          <DialogActions sx={{ px: 2, py: 1.5 }}>
-            <Button onClick={() => setFormPrograma(null)} disabled={guardandoProg}>Cancelar</Button>
-            <Button variant="contained" onClick={handleGuardarPrograma}
-              disabled={guardandoProg}
-              sx={{ bgcolor: COLOR }}>
-              {guardandoProg ? 'Guardando...' : 'Guardar'}
-            </Button>
-          </DialogActions>
+          <ErrorServidor mensaje={errForm ? (error || errForm) : ''} onClose={() => setErrForm('')} />
+          <AccionesDialogo onCancelar={confirmarCierrePrograma} guardando={guardandoProg} enviar
+            textoGuardar={formPrograma.id ? 'Guardar' : 'Crear proyecto'} sxGuardar={{ bgcolor: COLOR }} />
         </Dialog>
       )}
 

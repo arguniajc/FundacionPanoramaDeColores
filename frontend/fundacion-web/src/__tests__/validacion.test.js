@@ -123,7 +123,7 @@ describe('r.nit', () => {
   const regla = r.nit();
   it('acepta NIT con y sin dígito de verificación', () => {
     expect(regla('900123456')).toBe('');
-    expect(regla('900123456-7')).toBe('');
+    expect(regla('900123456-8')).toBe('');
   });
   it('rechaza puntos, letras o largo inválido', () => {
     expect(regla('900.123.456-7')).toContain('El NIT');
@@ -152,7 +152,7 @@ describe('r.documento', () => {
 describe('r.documentoSegunTipo', () => {
   const regla = r.documentoSegunTipo('tipo');
   it('NIT usa la regla de NIT', () => {
-    expect(regla('900123456-7', { tipo: 'NIT' })).toBe('');
+    expect(regla('900123456-8', { tipo: 'NIT' })).toBe('');
     expect(regla('AB123', { tipo: 'NIT' })).toContain('El NIT');
   });
   it('RC, TI, CC y NUIP son numéricos', () => {

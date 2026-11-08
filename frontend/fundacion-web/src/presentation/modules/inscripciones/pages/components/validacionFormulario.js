@@ -18,12 +18,13 @@ export const LISTAS_POR_TIPO = {
 export const esPanelResponsable = tipo => tipo === 'datos_padre' || tipo === 'datos_madre' || tipo === 'datos_tutor';
 
 // Sub-campos obligatorios de los paneles de padre / madre / tutor.
+// "Empresa / lugar de trabajo" es opcional (no todos trabajan en una empresa).
 const SUBCAMPOS_PANEL = [
   ['nombres', 'nombres'], ['apellidos', 'apellidos'], ['fechaNac', 'fecha de nacimiento'], ['pais', 'país'],
   ['departamento', 'departamento'], ['ciudad', 'ciudad'], ['tipoDoc', 'tipo de documento'],
   ['numDoc', 'número de documento'], ['celular', 'celular'], ['direccion', 'dirección'], ['barrio', 'barrio'],
   ['eps', 'EPS'], ['escolaridad', 'nivel de escolaridad'], ['ocupacion', 'ocupación'],
-  ['empresa', 'empresa / lugar de trabajo'], ['autoidentificacion', 'autoidentificación étnica'],
+  ['autoidentificacion', 'autoidentificación étnica'],
 ];
 
 /** Sub-campos sin llenar de un panel de responsable (lista vacía = completo). */

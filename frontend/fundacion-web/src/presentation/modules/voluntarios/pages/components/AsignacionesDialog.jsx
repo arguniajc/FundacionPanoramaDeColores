@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Alert, Box, Button, CircularProgress, DialogActions, DialogContent,
   DialogTitle, FormControl, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Paper,
@@ -18,6 +18,9 @@ import { mensajeErrorApi } from '@/shared/utils/mensajeErrorApi';
 import { r, vacio } from '@/shared/utils/validacion';
 import { useValidacion } from '@/shared/hooks/useValidacion';
 import ResumenErrores from '@/shared/components/ResumenErrores';
+import { ErrorServidor } from '@/shared/components/form/FormControles';
+import { useCerrarConCambios, hayCambiosEn } from '@/shared/hooks/useCerrarConCambios';
+import { useAutoFocus } from '@/shared/hooks/useAutoFocus';
 
 // Reglas del formulario de asignación
 const ESQUEMA_ASIG = {
@@ -39,14 +42,31 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
   const [editandoId,   setEditandoId]   = useState(null);
   const [guardando,    setGuardando]    = useState(false);
   const [error,        setError]        = useState('');
+  const [exito,        setExito]        = useState('');
+  // Formulario tal como quedó al abrir / empezar a editar (para saber si hay cambios sin guardar)
+  const [inicial,      setInicial]      = useState(FORM_VACIO_ASIG);
   const programaIdParaRestaurar         = useRef(null);
   const v = useValidacion(ESQUEMA_ASIG, form);
   const { reiniciar } = v;
+  const autoFocus = useAutoFocus();
+
+  const hayCambios = open && hayCambiosEn(form, inicial);
+  const { confirmarCierre } = useCerrarConCambios({
+    hayCambios, bloqueado: guardando, onCerrar: onClose,
+    mensaje: 'La asignación que estás escribiendo no se ha guardado. Si cierras ahora, se perderá.',
+  });
+
+  // El mensaje de éxito se borra solo a los pocos segundos
+  useEffect(() => {
+    if (!exito) return undefined;
+    const t = setTimeout(() => setExito(''), 3500);
+    return () => clearTimeout(t);
+  }, [exito]);
 
   useEffect(() => {
     if (!open || !voluntario) return;
     setCargando(true);
-    setForm(FORM_VACIO_ASIG); setEditandoId(null); setError(''); reiniciar();
+    setForm(FORM_VACIO_ASIG); setInicial(FORM_VACIO_ASIG); setEditandoId(null); setError(''); setExito(''); reiniciar();
     voluntariosRepository.listarAsignaciones(voluntario.id)
       .then(({ data }) => setAsignaciones(data))
       .catch((e) => setError(mensajeErrorApi(e, { accion: 'cargar las asignaciones' })))
@@ -73,19 +93,20 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
   const iniciarEdicion = (asig) => {
     programaIdParaRestaurar.current = asig.programaId ?? '';
     setEditandoId(asig.id); setError(''); reiniciar();
-    setForm({
+    const datos = {
       sedeId:         asig.sedeId ?? '',
       programaId:     asig.programaId ?? '',
       horasSemanales: String(asig.horasSemanales || ''),
       fechaInicio:    asig.fechaInicio ? toInputDate(asig.fechaInicio) : '',
-    });
+    };
+    setForm(datos); setInicial(datos);
   };
 
-  const cancelarEdicion = () => { setEditandoId(null); setForm(FORM_VACIO_ASIG); setError(''); reiniciar(); };
+  const cancelarEdicion = () => { setEditandoId(null); setForm(FORM_VACIO_ASIG); setInicial(FORM_VACIO_ASIG); setError(''); reiniciar(); };
 
   const guardar = async () => {
-    if (!v.validarTodo()) return;
-    setGuardando(true); setError('');
+    if (guardando || !v.validarTodo()) return;
+    setGuardando(true); setError(''); setExito('');
     try {
       const payload = {
         programaId:     form.programaId || null,
@@ -101,7 +122,8 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
         const { data } = await voluntariosRepository.agregarAsignacion(voluntario.id, payload);
         setAsignaciones(prev => [data, ...prev]);
       }
-      setForm(FORM_VACIO_ASIG); reiniciar();
+      setForm(FORM_VACIO_ASIG); setInicial(FORM_VACIO_ASIG); reiniciar();
+      setExito(editandoId ? 'Asignación guardada correctamente.' : 'Asignación agregada correctamente.');
       onCambio?.(voluntario.id);
     } catch (e) {
       setError(mensajeErrorApi(e, { accion: editandoId ? 'guardar la asignación' : 'agregar la asignación' }));
@@ -116,12 +138,13 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
       await voluntariosRepository.eliminarAsignacion(asig.id);
       setAsignaciones(prev => prev.filter(a => a.id !== asig.id));
       if (editandoId === asig.id) cancelarEdicion();
+      setExito('Asignación eliminada.');
       onCambio?.(voluntario.id);
     } catch (e) { setError(mensajeErrorApi(e, { accion: 'eliminar la asignación' })); }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={confirmarCierre} alEnviar={guardar} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 800, color: COLOR }}>
         Programas — {voluntario?.nombre}
       </DialogTitle>
@@ -176,12 +199,12 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
         <Typography sx={{ fontWeight: 700, mb: 1.5, color: COLOR, fontSize: '0.85rem' }}>
           {editandoId ? 'Editando asignación' : 'Agregar asignación'}
         </Typography>
-        {error && <Alert severity="error" sx={{ mb: 1.5 }}>{error}</Alert>}
         <Grid sx={{ alignItems: 'center' }} container spacing={2}>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small" error={!!v.err('sedeId')}>
               <InputLabel id="asignaciones-dialog-sede-label">Sede</InputLabel>
               <Select labelId="asignaciones-dialog-sede-label" value={form.sedeId} label="Sede" onBlur={() => v.tocar('sedeId')}
+                autoFocus={autoFocus && !cargando && asignaciones.length === 0}
                 onChange={e => setF('sedeId', e.target.value)}>
                 <MenuItem value=""><em>Sin sede</em></MenuItem>
                 {sedes.map(s => <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>)}
@@ -199,8 +222,9 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
             </FormControl>
           </Grid>
           <Grid size={{ xs: 6, sm: 2 }}>
-            <TextField fullWidth size="small" label="Horas/sem" type="number"
-              value={form.horasSemanales} onChange={e => setF('horasSemanales', e.target.value)}
+            <TextField fullWidth size="small" label="Horas/sem" type="text"
+              value={form.horasSemanales} onChange={e => setF('horasSemanales', e.target.value.replace(/D/g, ''))}
+              slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 2 } }}
               {...v.props('horasSemanales')} />
           </Grid>
           <Grid size={{ xs: 6, sm: 2 }}>
@@ -215,9 +239,9 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
             </Grid>
           )}
           <Grid size={12} sx={{ display: 'flex', gap: 1 }}>
-            <Button variant="contained"
+            <Button variant="contained" type="submit"
               startIcon={guardando ? <CircularProgress size={16} color="inherit" /> : editandoId ? <EditIcon /> : <AddIcon />}
-              onClick={guardar} disabled={guardando}
+              disabled={guardando} aria-busy={guardando || undefined}
               sx={{ bgcolor: COLOR, fontWeight: 700, '&:hover': { bgcolor: 'primary.dark' } }}>
               {guardando ? '…' : editandoId ? 'Guardar cambios' : 'Agregar'}
             </Button>
@@ -225,8 +249,12 @@ export function AsignacionesDialog({ open, voluntario, onClose, onCambio }) {
           </Grid>
         </Grid>
       </DialogContent>
+      {exito && (
+        <Alert severity="success" role="status" onClose={() => setExito('')} sx={{ mx: 3, mt: 1.5, mb: 0 }}>{exito}</Alert>
+      )}
+      <ErrorServidor mensaje={error} onClose={() => setError('')} titulo={null} />
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose}>Cerrar</Button>
+        <Button onClick={() => confirmarCierre()} disabled={guardando}>Cerrar</Button>
       </DialogActions>
     </Dialog>
   );

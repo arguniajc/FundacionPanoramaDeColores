@@ -386,7 +386,7 @@ const PARAMETROS_NOMINA = { smlmv: 1_423_500, auxilioTransporte: 200_000, tasaSa
 const CONFIGURACION = {
   ...CONFIG_PUBLICA,
   nombreFundacion: 'Fundación Panorama de Colores — Entidad Sin Ánimo de Lucro para la Niñez y la Familia',
-  nit: '901456789-3',
+  nit: '901456789-8',
   direccion: 'Carrera 7F # 16H-10, Barrio Panorama, Comuna 1, Yumbo, Valle del Cauca, Colombia',
   telefono: '6026951234',
   nombreRepLegal: 'María Alejandra Castillo Hurtado de Mendoza',
@@ -406,7 +406,7 @@ const CONFIGURACION = {
   emailContacto: 'contacto.fundacionpanoramadecolores@gmail.com',
   sitioWeb: 'https://www.fundacionpanoramadecolores.org/quienes-somos/transparencia',
   mensajeBienvenida: 'Bienvenido al panel administrativo de la Fundación Panorama de Colores. Recuerda proteger los datos personales de los niños, niñas y sus familias conforme a la Ley 1581 de 2012.',
-  footerTexto: '© 2026 Fundación Panorama de Colores · NIT 901.456.789-3 · Carrera 7F # 16H-10, Yumbo, Valle del Cauca',
+  footerTexto: '© 2026 Fundación Panorama de Colores · NIT 901.456.789-8 · Carrera 7F # 16H-10, Yumbo, Valle del Cauca',
   webContenido: JSON.stringify(WEB_CONTENIDO),
   smtpHost: 'smtp.office365.com.correo-institucional.fundacionpanoramadecolores.org',
   smtpPuerto: 587,
@@ -547,6 +547,8 @@ export function registrar(api) {
     json: novedadesDe(Number(url.pathname.split('/')[3]) || 201),
   }));
   api.on('GET', '/api/talento-humano/stats', STATS_TH);
+  // DialogEmpleado: al salir del número de documento (ninguno repetido en la auditoría)
+  api.on('POST', '/api/talento-humano/verificar-documento', { existe: false, id: null, nombre: null });
 
   // Organigrama
   api.on('GET', '/api/organigrama', ORGANIGRAMA);

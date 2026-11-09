@@ -592,6 +592,102 @@ public class BeneficiariosRepository(DbConnectionFactory factory, ILogger<Benefi
     }
 
     // =========================================================================
+    // Tipo de documento perdido (tipo_documento_id NULL)
+    // =========================================================================
+    private const string SelectDocumentoFila = """
+        SELECT b.id,
+               TRIM(concat_ws(' ', b.primer_nombre, b.segundo_nombre, b.primer_apellido, b.segundo_apellido)),
+               b.numero_documento, b.tipo, b.fecha_nacimiento, COALESCE(b.activo, true)
+        FROM beneficiarios b
+        """;
+
+    private static async Task<List<DocumentoBeneficiarioFila>> LeerDocumentoFilasAsync(NpgsqlCommand cmd, CancellationToken ct)
+    {
+        var result = new List<DocumentoBeneficiarioFila>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+        {
+            result.Add(new DocumentoBeneficiarioFila(
+                r.GetGuid(0),
+                r.IsDBNull(1) ? "" : r.GetString(1),
+                r.IsDBNull(2) ? null : r.GetString(2),
+                r.IsDBNull(3) ? null : r.GetString(3),
+                r.IsDBNull(4) ? null : r.GetFieldValue<DateOnly>(4),
+                r.GetBoolean(5)));
+        }
+        return result;
+    }
+
+    public async Task<List<DocumentoBeneficiarioFila>> ListarSinTipoDocumentoAsync(string? tipo, CancellationToken ct)
+    {
+        // Mismo corte por edad que el listado de cada página; sin fecha, decide la columna tipo.
+        const string edad = "DATE_PART('year', AGE(b.fecha_nacimiento::date))::int";
+        string filtroTipo = tipo switch
+        {
+            "niño"   => $"AND ({edad} < 18 OR (b.fecha_nacimiento IS NULL AND COALESCE(b.tipo, 'niño') <> 'adulto'))",
+            "adulto" => $"AND ({edad} >= 18 OR (b.fecha_nacimiento IS NULL AND b.tipo = 'adulto'))",
+            _        => "",
+        };
+        await using var conn = await AbrirAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"{SelectDocumentoFila} WHERE b.tipo_documento_id IS NULL {filtroTipo} ORDER BY b.primer_nombre, b.primer_apellido";
+        return await LeerDocumentoFilasAsync(cmd, ct);
+    }
+
+    public async Task<List<DocumentoBeneficiarioFila>> ObtenerDocumentosAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct)
+    {
+        if (ids.Count == 0) return [];
+        await using var conn = await AbrirAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"{SelectDocumentoFila} WHERE b.id = ANY(@ids)";
+        cmd.Parameters.Add(new NpgsqlParameter("ids", NpgsqlDbType.Array | NpgsqlDbType.Uuid) { Value = ids.ToArray() });
+        return await LeerDocumentoFilasAsync(cmd, ct);
+    }
+
+    public async Task<List<string>> ListarCodigosTipoDocumentoAsync(CancellationToken ct)
+    {
+        await using var conn = await AbrirAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT codigo FROM cat_tipos_documento WHERE COALESCE(activo, true) ORDER BY id";
+        var result = new List<string>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct)) result.Add(r.GetString(0));
+        return result;
+    }
+
+    public async Task<int> AsignarTiposDocumentoAsync(IReadOnlyList<CorreccionTipoDocumento> correcciones, string? usuarioEmail, CancellationToken ct)
+    {
+        await using var conn = await AbrirAsync(ct);
+        await using var tx = await conn.BeginTransactionAsync(ct);
+        var total = 0;
+        foreach (var c in correcciones)
+        {
+            var tipoDocId = await ResolverTipoDocumentoIdAsync(conn, tx, c.Codigo)
+                ?? throw new InvalidOperationException($"El tipo de documento '{c.Codigo}' no está en el catálogo.");
+
+            await using var upd = conn.CreateCommand();
+            upd.Transaction = tx;
+            upd.CommandText = """
+                UPDATE beneficiarios
+                SET tipo_documento_id = @tdoc,
+                    numero_documento  = CASE WHEN @quitar THEN NULL ELSE numero_documento END
+                WHERE id = @id
+                """;
+            upd.Parameters.Add(new NpgsqlParameter("tdoc", NpgsqlDbType.Smallint) { Value = tipoDocId });
+            upd.Parameters.AddWithValue("quitar", c.QuitarNumero);
+            upd.Parameters.AddWithValue("id", c.Id);
+            if (await upd.ExecuteNonQueryAsync(ct) == 0) continue;
+            total++;
+
+            // El número no va al detalle: el audit_log no debe guardar el documento de un menor.
+            var detalle = $"Tipo de documento corregido: {c.Codigo}" + (c.QuitarNumero ? " (se quitó el número de documento)" : "");
+            await AuditoriaSql.RegistrarAsync(conn, tx, "beneficiario", c.Id.ToString(), c.Nombre, "editado", usuarioEmail, detalle);
+        }
+        await tx.CommitAsync(ct);
+        return total;
+    }
+
+    // =========================================================================
     // Crear / actualizar
     // =========================================================================
     public async Task<Guid?> CrearAsync(CrearBeneficiarioDto dto, string? usuarioEmail, CancellationToken ct)

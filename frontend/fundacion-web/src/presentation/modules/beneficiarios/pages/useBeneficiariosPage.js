@@ -238,6 +238,12 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
     { value: 'todos',   label: `Todos (${stats.total})` },
   ];
 
+  // Tras corregir tipos de documento desde el aviso: toast y listado al día (muestra el tipo nuevo)
+  const handleTiposCorregidos = (mensaje) => {
+    setToast(mensaje);
+    limpiarCache(); cargar(true);
+  };
+
   const handleImportado = () => {
     limpiarCache(); cargar(true); cargarStatsDetalle();
   };
@@ -264,7 +270,7 @@ export function useBeneficiariosPage({ tipo = 'niño' } = {}) {
     eliminar, setEliminar, eliminando, errorEliminar, setErrorEliminar,
     handleDarDeBaja, handleReactivar,
     handleGuardadoEdicion, handleBeneficiarioCreado, handleEliminarPermanente,
-    handleImportado,
+    handleImportado, handleTiposCorregidos,
     cargar, cargarStatsDetalle,
   };
 }

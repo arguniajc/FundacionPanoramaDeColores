@@ -220,6 +220,101 @@ public class BeneficiariosService(IBeneficiariosRepository repo)
         return ResultadoBeneficiario<bool>.Ok(true);
     }
 
+    // ── Tipo de documento perdido ─────────────────────────────────────────────
+    // Hasta que cat_tipos_documento tuvo PA, RAMV, PEP, "Sin documento" y "Otro", quien se guardaba con
+    // esos tipos quedaba con tipo_documento_id NULL. Esto lista esos registros y permite corregirlos.
+
+    /// <summary>Máximo de correcciones por lote (el panel manda las de una sola lista).</summary>
+    public const int MaxCorreccionesLote = 500;
+
+    /// <summary>Beneficiarios sin tipo de documento, con el tipo sugerido (o null: revisar a mano).</summary>
+    public async Task<List<SinTipoDocumentoDto>> ListarSinTipoDocumentoAsync(string? tipo, CancellationToken ct = default)
+    {
+        var hoy   = DateOnly.FromDateTime(DateTime.UtcNow);
+        var filas = await repo.ListarSinTipoDocumentoAsync(tipo is "niño" or "adulto" ? tipo : null, ct);
+        return filas
+            .Select(f =>
+            {
+                var esNino = EsNinoSegunEdad(f, hoy);
+                return new SinTipoDocumentoDto
+                {
+                    Id              = f.Id,
+                    Nombre          = f.Nombre,
+                    NumeroDocumento = string.IsNullOrWhiteSpace(f.NumeroDocumento) ? null : f.NumeroDocumento.Trim(),
+                    Tipo            = esNino ? "niño" : "adulto",
+                    FechaNacimiento = f.FechaNacimiento,
+                    Activo          = f.Activo,
+                    Sugerencia      = ValidacionBeneficiario.SugerirTipoDocumento(f.NumeroDocumento, f.FechaNacimiento, esNino, hoy),
+                };
+            })
+            .OrderBy(d => d.Nombre, StringComparer.CurrentCulture)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Asigna el tipo de documento a uno o varios beneficiarios, todo o nada (una transacción).
+    /// Valida cada código contra el catálogo y contra el número guardado (ValidacionBeneficiario):
+    /// "Sin documento" quita el número; RC/TI/CC/NUIP exigen solo dígitos; un adulto no usa RC/TI, un
+    /// menor no usa CC. Invalido con los mensajes si alguno no pasa; NoEncontrado si alguno no existe.
+    /// </summary>
+    public async Task<ResultadoBeneficiario<int>> CorregirTiposDocumentoAsync(
+        IReadOnlyList<CorregirTipoDocumentoLoteDto>? items, string? usuarioEmail, CancellationToken ct = default)
+    {
+        if (items is null || items.Count == 0)
+            return ResultadoBeneficiario<int>.Invalido("No hay correcciones para aplicar.");
+        if (items.Count > MaxCorreccionesLote)
+            return ResultadoBeneficiario<int>.Invalido($"Se pueden corregir hasta {MaxCorreccionesLote} beneficiarios a la vez.");
+        if (items.Select(i => i.Id).Distinct().Count() != items.Count)
+            return ResultadoBeneficiario<int>.Invalido("Un beneficiario aparece más de una vez en la lista.");
+
+        var filas = (await repo.ObtenerDocumentosAsync(items.Select(i => i.Id).ToList(), ct)).ToDictionary(f => f.Id);
+        if (filas.Count != items.Count) return ResultadoBeneficiario<int>.NoEncontrado();
+
+        var catalogo = await repo.ListarCodigosTipoDocumentoAsync(ct);
+        var hoy      = DateOnly.FromDateTime(DateTime.UtcNow);
+        var errores  = new List<string>();
+        var correcciones = new List<CorreccionTipoDocumento>();
+        foreach (var item in items)
+        {
+            var fila = filas[item.Id];
+            var (correccion, errs) = ValidarCorreccion(fila, item.TipoDocumento, catalogo, hoy);
+            if (correccion is not null) { correcciones.Add(correccion); continue; }
+            errores.AddRange(items.Count == 1 ? errs : errs.Select(e => $"{fila.Nombre}: {e}"));
+        }
+        if (errores.Count > 0) return ResultadoBeneficiario<int>.Invalido(errores);
+
+        return ResultadoBeneficiario<int>.Ok(await repo.AsignarTiposDocumentoAsync(correcciones, usuarioEmail, ct));
+    }
+
+    private static (CorreccionTipoDocumento? Correccion, List<string> Errores) ValidarCorreccion(
+        DocumentoBeneficiarioFila fila, string? tipoDocumento, IReadOnlyCollection<string> catalogo, DateOnly hoy)
+    {
+        var pedido = tipoDocumento?.Trim() ?? "";
+        if (pedido.Length == 0) return (null, ["Elige el tipo de documento. Ejemplo: CC."]);
+
+        var codigo = ValidacionBeneficiario.EsSinDocumento(pedido)
+            ? ValidacionBeneficiario.SinDocumento
+            : catalogo.FirstOrDefault(c => string.Equals(c, pedido, StringComparison.OrdinalIgnoreCase));
+        if (codigo is null || !catalogo.Contains(codigo, StringComparer.OrdinalIgnoreCase))
+            return (null, [$"El tipo de documento \"{pedido}\" no existe. Elige uno de la lista (CC, TI, RC, PA, Sin documento…)."]);
+
+        var sinDocumento = ValidacionBeneficiario.EsSinDocumento(codigo);
+        var tieneNumero  = !string.IsNullOrWhiteSpace(fila.NumeroDocumento);
+        if (!sinDocumento && !tieneNumero)
+            return (null, ["No tiene número de documento guardado: elige \"Sin documento\" o escribe el número desde Editar."]);
+
+        var errs = ValidacionBeneficiario.ValidarDocumento(codigo, fila.NumeroDocumento, EsNinoSegunEdad(fila, hoy)).ToList();
+        if (errs.Count > 0) return (null, errs);
+
+        return (new CorreccionTipoDocumento(fila.Id, codigo, sinDocumento && tieneNumero, fila.Nombre), []);
+    }
+
+    // Niño/adulto por la edad, como las páginas del panel; sin fecha, la columna tipo.
+    private static bool EsNinoSegunEdad(DocumentoBeneficiarioFila f, DateOnly hoy)
+        => f.FechaNacimiento is { } fn
+            ? ValidacionBeneficiario.Edad(fn, hoy) < 18
+            : !string.Equals(f.Tipo?.Trim(), "adulto", StringComparison.OrdinalIgnoreCase);
+
     // ── Importación ───────────────────────────────────────────────────────────
 
     // La forma del objeto (anónimo) es el contrato JSON de POST importar-xlsx: no cambiarla.

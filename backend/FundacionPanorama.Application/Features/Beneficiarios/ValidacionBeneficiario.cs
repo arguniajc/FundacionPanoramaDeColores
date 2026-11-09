@@ -84,6 +84,49 @@ public static class ValidacionBeneficiario
     private static readonly System.Text.RegularExpressions.Regex SoloLetras =
         new(@"^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
+    /// <summary>Años cumplidos en <paramref name="hoy"/> por quien nació en <paramref name="fechaNacimiento"/>.</summary>
+    public static int Edad(DateOnly fechaNacimiento, DateOnly hoy)
+        => hoy.Year - fechaNacimiento.Year - (hoy < fechaNacimiento.AddYears(hoy.Year - fechaNacimiento.Year) ? 1 : 0);
+
+    /// <summary>
+    /// Reglas del tipo de documento y su número (las mismas de crear/editar): un adulto no usa RC/TI,
+    /// un menor no usa CC, RC/TI/CC/NUIP llevan 6 a 11 dígitos y los demás 4 a 15 letras o números.
+    /// Con "Sin documento" el número no se revisa. No exige el número (eso lo decide quien llama).
+    /// </summary>
+    public static IEnumerable<string> ValidarDocumento(string? tipoDocumento, string? numeroDocumento, bool esNino)
+    {
+        var tipoDoc = tipoDocumento?.Trim() ?? "";
+        if (!esNino && tipoDoc is "RC" or "TI") yield return "Un adulto no usa Registro Civil ni Tarjeta de Identidad. Usa CC, CE, PPT o PA.";
+        if (esNino && tipoDoc == "CC")          yield return "Un menor de edad no tiene Cédula. Usa RC, TI o NUIP.";
+
+        // "Sin documento": el número no se revisa (se descarta al guardar)
+        var doc = EsSinDocumento(tipoDoc) ? "" : numeroDocumento?.Trim() ?? "";
+        if (doc.Length == 0) yield break;
+        if (DocsNumericos.Contains(tipoDoc))
+        {
+            if (!doc.All(char.IsAsciiDigit) || doc.Length is < 6 or > 11)
+                yield return $"El documento {tipoDoc} debe tener entre 6 y 11 dígitos, sin puntos ni espacios. Ejemplo: 1144123456.";
+        }
+        else if (doc.Length is < 4 or > 15 || !doc.All(char.IsAsciiLetterOrDigit))
+            yield return "El número de documento debe tener de 4 a 15 letras o números, sin espacios. Ejemplo: AB123456.";
+    }
+
+    /// <summary>
+    /// Tipo de documento probable para un beneficiario que lo perdió (tipo_documento_id NULL):
+    /// sin número → "Sin documento"; con letras → null (PA, PPT, RAMV, PEP…: hay que revisarlo a mano);
+    /// solo dígitos → según la edad, como el panel: RC (0 a 6 años), TI (7 a 17) o CC (18 o más).
+    /// Solo sugiere un tipo que pase <see cref="ValidarDocumento"/>; si no (p. ej. 3 dígitos), null.
+    /// </summary>
+    public static string? SugerirTipoDocumento(string? numeroDocumento, DateOnly? fechaNacimiento, bool esNino, DateOnly hoy)
+    {
+        var doc = numeroDocumento?.Trim() ?? "";
+        if (doc.Length == 0) return SinDocumento;
+        if (!doc.All(char.IsAsciiDigit) || fechaNacimiento is null) return null;
+        var edad     = Edad(fechaNacimiento.Value, hoy);
+        var sugerido = edad < 7 ? "RC" : edad < 18 ? "TI" : "CC";
+        return ValidarDocumento(sugerido, doc, esNino).Any() ? null : sugerido;
+    }
+
     private static IEnumerable<string> ValidarFormatoBeneficiario(CrearBeneficiarioDto dto, bool esNino, bool incluirDescripciones)
     {
         foreach (var (valor, etiqueta) in new[]
@@ -95,28 +138,14 @@ public static class ValidacionBeneficiario
                 yield return $"El {etiqueta} solo puede tener letras. Ejemplo: María.";
 
         var hoy  = DateOnly.FromDateTime(DateTime.UtcNow);
-        var edad = hoy.Year - dto.FechaNacimiento.Year - (hoy < dto.FechaNacimiento.AddYears(hoy.Year - dto.FechaNacimiento.Year) ? 1 : 0);
+        var edad = Edad(dto.FechaNacimiento, hoy);
         if (dto.FechaNacimiento > hoy)          yield return "La fecha de nacimiento no puede ser futura.";
         else if (edad > 110)                    yield return "La fecha de nacimiento no es válida (más de 110 años).";
         else if (esNino && edad >= 18)          yield return $"Tiene {edad} años: un niño debe ser menor de 18. Regístralo como adulto.";
         else if (!esNino && edad < 18)          yield return $"Tiene {edad} años: un adulto debe tener 18 o más. Regístralo como niño.";
 
-        var tipoDoc = dto.TipoDocumento?.Trim() ?? "";
-        if (!esNino && tipoDoc is "RC" or "TI") yield return "Un adulto no usa Registro Civil ni Tarjeta de Identidad. Usa CC, CE, PPT o PA.";
-        if (esNino && tipoDoc == "CC")          yield return "Un menor de edad no tiene Cédula. Usa RC, TI o NUIP.";
-
-        // "Sin documento": el número no se revisa (se descarta al guardar)
-        var doc = EsSinDocumento(tipoDoc) ? "" : dto.NumeroDocumento?.Trim() ?? "";
-        if (doc.Length > 0)
-        {
-            if (DocsNumericos.Contains(tipoDoc))
-            {
-                if (!doc.All(char.IsAsciiDigit) || doc.Length is < 6 or > 11)
-                    yield return $"El documento {tipoDoc} debe tener entre 6 y 11 dígitos, sin puntos ni espacios. Ejemplo: 1144123456.";
-            }
-            else if (doc.Length is < 4 or > 15 || !doc.All(char.IsAsciiLetterOrDigit))
-                yield return "El número de documento debe tener de 4 a 15 letras o números, sin espacios. Ejemplo: AB123456.";
-        }
+        foreach (var err in ValidarDocumento(dto.TipoDocumento, dto.NumeroDocumento, esNino))
+            yield return err;
 
         if (dto.NumPersonasVive is < 1 or > 20) yield return "Las personas con quienes vive deben estar entre 1 y 20.";
         if (dto.NumHermanos     is < 0 or > 20) yield return "El número de hermanos/hijos debe estar entre 0 y 20.";

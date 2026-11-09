@@ -697,4 +697,113 @@ public class BeneficiariosServiceTests
         Assert.DoesNotContain("constraint", motivo);
         Assert.DoesNotContain("beneficiarios_pkey", motivo);
     }
+
+    // ── Tipo de documento perdido ────────────────────────────────────────────
+
+    private static readonly List<string> Catalogo = ["CC", "TI", "RC", "CE", "PAS", "NIT", "NUIP", "PPT", "PA", "RAMV", "PEP", "Sin documento", "Otro"];
+
+    private static DocumentoBeneficiarioFila Fila(Guid id, string? numero, int edad, string nombre = "Ana Pérez")
+        => new(id, nombre, numero, edad < 18 ? "niño" : "adulto", Hoy.AddYears(-edad), true);
+
+    private void Existen(params DocumentoBeneficiarioFila[] filas)
+    {
+        _repo.Setup(r => r.ObtenerDocumentosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), default)).ReturnsAsync(filas.ToList());
+        _repo.Setup(r => r.ListarCodigosTipoDocumentoAsync(default)).ReturnsAsync(Catalogo);
+        _repo.Setup(r => r.AsignarTiposDocumentoAsync(It.IsAny<IReadOnlyList<CorreccionTipoDocumento>>(), It.IsAny<string?>(), default))
+             .ReturnsAsync((IReadOnlyList<CorreccionTipoDocumento> c, string? _, CancellationToken _) => c.Count);
+    }
+
+    [Fact]
+    public async Task ListarSinTipoDocumento_Calcula_Tipo_Y_Sugerencia()
+    {
+        _repo.Setup(r => r.ListarSinTipoDocumentoAsync("niño", default)).ReturnsAsync(
+        [
+            Fila(Guid.NewGuid(), null, 4, "Bruno"),
+            Fila(Guid.NewGuid(), "AB123456", 9, "Ana"),
+            Fila(Guid.NewGuid(), "1107123456", 12, "Carla"),
+            Fila(Guid.NewGuid(), "1144123456", 30, "Diego"),
+        ]);
+
+        var res = await _sut.ListarSinTipoDocumentoAsync("niño");
+
+        Assert.Equal(["Ana", "Bruno", "Carla", "Diego"], res.Select(r => r.Nombre));
+        Assert.Equal([null, "Sin documento", "TI", "CC"], res.Select(r => r.Sugerencia));
+        Assert.Equal(["niño", "niño", "niño", "adulto"], res.Select(r => r.Tipo));
+    }
+
+    [Fact]
+    public async Task ListarSinTipoDocumento_Tipo_Desconocido_No_Filtra()
+    {
+        _repo.Setup(r => r.ListarSinTipoDocumentoAsync(null, default)).ReturnsAsync([]);
+        await _sut.ListarSinTipoDocumentoAsync("cualquiera");
+        _repo.Verify(r => r.ListarSinTipoDocumentoAsync(null, default), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("PA",            "AB123456", "PA",            false)]
+    [InlineData("pa",            "AB123456", "PA",            false)]   // el código vuelve como en el catálogo
+    [InlineData("sin documento", "AB123456", "Sin documento", true)]    // quita el número
+    [InlineData("Sin documento", null,       "Sin documento", false)]
+    public async Task Corregir_Valido_Asigna_El_Codigo_Del_Catalogo(string pedido, string? numero, string codigo, bool quitar)
+    {
+        var id = Guid.NewGuid();
+        Existen(Fila(id, numero, 10));
+
+        var res = await _sut.CorregirTiposDocumentoAsync([new(id, pedido)], "u@x.com");
+
+        Assert.Equal(EstadoResultado.Ok, res.Estado);
+        Assert.Equal(1, res.Valor);
+        _repo.Verify(r => r.AsignarTiposDocumentoAsync(
+            It.Is<IReadOnlyList<CorreccionTipoDocumento>>(c => c.Single() == new CorreccionTipoDocumento(id, codigo, quitar, "Ana Pérez")),
+            "u@x.com", default), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("TI",   "AB123456", 10, "6 y 11 dígitos")]
+    [InlineData("CC",   "1144123456", 10, "no tiene Cédula")]
+    [InlineData("RC",   "1107654321", 30, "no usa Registro Civil")]
+    [InlineData("XYZ",  "1107654321", 10, "no existe")]
+    [InlineData("",     "1107654321", 10, "Elige el tipo")]
+    [InlineData("PA",   null,         10, "Sin documento")]           // sin número solo vale "Sin documento"
+    public async Task Corregir_Invalido_No_Guarda(string pedido, string? numero, int edad, string fragmento)
+    {
+        var id = Guid.NewGuid();
+        Existen(Fila(id, numero, edad));
+
+        var res = await _sut.CorregirTiposDocumentoAsync([new(id, pedido)], null);
+
+        Assert.Equal(EstadoResultado.Invalido, res.Estado);
+        Assert.Contains(res.Errores, e => e.Contains(fragmento));
+        _repo.Verify(r => r.AsignarTiposDocumentoAsync(It.IsAny<IReadOnlyList<CorreccionTipoDocumento>>(), It.IsAny<string?>(), default), Times.Never);
+    }
+
+    [Fact]
+    public async Task Corregir_Inexistente_Es_NoEncontrado()
+    {
+        Existen();
+        var res = await _sut.CorregirTiposDocumentoAsync([new(Guid.NewGuid(), "PA")], null);
+        Assert.Equal(EstadoResultado.NoEncontrado, res.Estado);
+    }
+
+    [Fact]
+    public async Task Corregir_Lote_Es_Todo_O_Nada_Y_Nombra_Al_Que_Falla()
+    {
+        var (a, b) = (Guid.NewGuid(), Guid.NewGuid());
+        Existen(Fila(a, "1107123456", 10, "Ana"), Fila(b, "AB123456", 10, "Beto"));
+
+        var res = await _sut.CorregirTiposDocumentoAsync([new(a, "TI"), new(b, "TI")], null);
+
+        Assert.Equal(EstadoResultado.Invalido, res.Estado);
+        Assert.StartsWith("Beto: ", Assert.Single(res.Errores));
+        _repo.Verify(r => r.AsignarTiposDocumentoAsync(It.IsAny<IReadOnlyList<CorreccionTipoDocumento>>(), It.IsAny<string?>(), default), Times.Never);
+    }
+
+    [Fact]
+    public async Task Corregir_Lote_Vacio_O_Repetido_Es_Invalido()
+    {
+        var id = Guid.NewGuid();
+        Assert.Equal(EstadoResultado.Invalido, (await _sut.CorregirTiposDocumentoAsync([], null)).Estado);
+        Assert.Equal(EstadoResultado.Invalido, (await _sut.CorregirTiposDocumentoAsync(null, null)).Estado);
+        Assert.Equal(EstadoResultado.Invalido, (await _sut.CorregirTiposDocumentoAsync([new(id, "PA"), new(id, "CE")], null)).Estado);
+    }
 }

@@ -87,12 +87,12 @@ const ALERTAS = [
 const SEDES = [
   { id: 1, nombre: 'Sede Principal Barrio Panorama — Comuna 1 de Yumbo', direccion: 'Carrera 7F # 16H-10, Barrio Panorama, Comuna 1', ciudad: 'Yumbo', activo: true,
     programas: [
-      { id: 11, sedeId: 1, nombre: 'Arte, Creatividad y Expresión Corporal para la Primera Infancia', descripcion: 'Talleres semanales de pintura, música y danza.', activo: true, cupoMaximo: 40 },
-      { id: 12, sedeId: 1, nombre: 'Deporte Formativo y Recreación Comunitaria', descripcion: 'Escuela de fútbol y actividades lúdicas los sábados.', activo: true, cupoMaximo: 60 },
+      { id: 11, sedeId: 1, nombre: 'Arte, Creatividad y Expresión Corporal para la Primera Infancia', descripcion: 'Talleres semanales de pintura, música y danza.', activo: true, cupoMaximo: 40, inscritosActivos: 12 },
+      { id: 12, sedeId: 1, nombre: 'Deporte Formativo y Recreación Comunitaria', descripcion: 'Escuela de fútbol y actividades lúdicas los sábados.', activo: true, cupoMaximo: 60, inscritosActivos: 51 },
     ] },
   { id: 2, nombre: 'Sede Comunitaria Las Américas — Salón Comunal', direccion: 'Calle 12 # 4-56, Salón Comunal Barrio Las Américas', ciudad: 'Yumbo', activo: true,
     programas: [
-      { id: 21, sedeId: 2, nombre: 'Conciencia Ambiental y Huertas Urbanas Escolares', descripcion: 'Huerta comunitaria y reciclaje con familias.', activo: true, cupoMaximo: 30 },
+      { id: 21, sedeId: 2, nombre: 'Conciencia Ambiental y Huertas Urbanas Escolares', descripcion: 'Huerta comunitaria y reciclaje con familias.', activo: true, cupoMaximo: 30, inscritosActivos: 30 },
     ] },
   { id: 3, nombre: 'Punto de Atención Psicosocial Santiago de Cali', direccion: 'Avenida 3 Norte # 45-120, Oficina 302', ciudad: 'Santiago de Cali', activo: true, programas: [] },
   { id: 4, nombre: 'Bodega de Donaciones en Especie — Zona Industrial Acopi', direccion: 'Calle 15 # 30-75, Bodega 8, Zona Industrial Acopi', ciudad: 'Yumbo', activo: false, programas: [] },

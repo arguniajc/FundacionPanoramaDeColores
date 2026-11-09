@@ -236,6 +236,12 @@ public class InscripcionesRepository(DbConnectionFactory factory) : IInscripcion
         return Convert.ToInt64(await cmd.ExecuteScalarAsync(ct));
     }
 
+    /// <summary>
+    /// Condición SQL de "inscripción que ocupa cupo" (activa). Es la regla del control de cupo y la
+    /// reutiliza SedesRepository para mostrar los inscritos activos de cada programa: no duplicarla.
+    /// </summary>
+    internal const string CondicionOcupaCupo = "activo = true";
+
     /// <summary>true si el programa tiene cupo y ya hay esa cantidad de inscripciones activas.</summary>
     private static async Task<bool> CupoLlenoAsync(
         NpgsqlConnection conn, NpgsqlTransaction tx, Guid programaId, int? cupoMaximo, CancellationToken ct)
@@ -243,7 +249,7 @@ public class InscripcionesRepository(DbConnectionFactory factory) : IInscripcion
         if (cupoMaximo is null) return false;
         await using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
-        cmd.CommandText = "SELECT COUNT(*) FROM inscripciones WHERE programa_id = @pid AND activo = true";
+        cmd.CommandText = $"SELECT COUNT(*) FROM inscripciones WHERE programa_id = @pid AND {CondicionOcupaCupo}";
         cmd.Parameters.AddWithValue("pid", programaId);
         return Convert.ToInt64(await cmd.ExecuteScalarAsync(ct)) >= cupoMaximo.Value;
     }

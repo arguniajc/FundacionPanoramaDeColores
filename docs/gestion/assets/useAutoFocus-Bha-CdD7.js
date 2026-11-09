@@ -1,0 +1,1 @@
+import{L as e}from"./index-BvlopLHx.js";function t(){return e(`(pointer: fine)`,{noSsr:!0})}export{t};

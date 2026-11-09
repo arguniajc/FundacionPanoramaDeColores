@@ -268,6 +268,28 @@ public class PerfilIncompletoDto
 // Cuerpo de PATCH api/beneficiarios/{id}/baja (antes anidado en BeneficiariosController).
 public record DarDeBajaDto(string? Motivo);
 
+/// <summary>
+/// Beneficiario sin tipo de documento (tipo_documento_id NULL), respuesta de GET sin-tipo-documento.
+/// Tipo = "niño" o "adulto" según la edad (igual que las páginas del panel). Sugerencia = tipo probable
+/// (ver ValidacionBeneficiario.SugerirTipoDocumento) o null si hay que revisarlo a mano.
+/// </summary>
+public class SinTipoDocumentoDto
+{
+    public Guid      Id              { get; set; }
+    public string    Nombre          { get; set; } = string.Empty;
+    public string?   NumeroDocumento { get; set; }
+    public string    Tipo            { get; set; } = "niño";
+    public DateOnly? FechaNacimiento { get; set; }
+    public bool      Activo          { get; set; }
+    public string?   Sugerencia      { get; set; }
+}
+
+// Cuerpo de PATCH api/beneficiarios/{id}/tipo-documento
+public record CorregirTipoDocumentoDto(string? TipoDocumento);
+
+// Elemento de PATCH api/beneficiarios/tipo-documento/lote
+public record CorregirTipoDocumentoLoteDto(Guid Id, string? TipoDocumento);
+
 // ── Datos internos entre servicio y repositorio (no se serializan tal cual) ───
 
 public sealed record FiltroBeneficiarios(
@@ -290,6 +312,13 @@ public sealed record DocumentoExistente(Guid Id, string Nombre);
 public sealed record HistorialFila(Guid Id, string Accion, string? UsuarioEmail, string? Detalle, DateTime Fecha);
 
 public sealed record DependenciasBeneficiario(string? Nombre, int Inscripciones, int Movimientos);
+
+/// <summary>Datos del documento de un beneficiario (para listar los sin tipo y validar la corrección).</summary>
+public sealed record DocumentoBeneficiarioFila(
+    Guid Id, string Nombre, string? NumeroDocumento, string? Tipo, DateOnly? FechaNacimiento, bool Activo);
+
+/// <summary>Corrección ya validada: código del catálogo y si hay que quitar el número ("Sin documento").</summary>
+public sealed record CorreccionTipoDocumento(Guid Id, string Codigo, bool QuitarNumero, string Nombre);
 
 public enum EstadoActualizacion { Ok, NoEncontrado, DocumentoDuplicado }
 

@@ -349,13 +349,22 @@ public class SedesRepository(DbConnectionFactory factory) : ISedesRepository
         return (bool)(await cmd.ExecuteScalarAsync(ct))!;
     }
 
+    // inscritos_activos: subconsulta agrupada unida por LEFT JOIN (una sola consulta, sin N+1),
+    // con la MISMA condición que usa el control de cupo de InscripcionesRepository.
     private const string SqlSelectPrograma = @"
         SELECT p.id, p.sede_id, s.nombre AS nombre_sede, p.nombre, p.descripcion, p.cupo_maximo,
                p.activo, p.tiene_tercero, p.nombre_tercero, p.fecha_creacion, p.fecha_modificacion,
                p.rep_autorizado, p.rep_autorizacion_fecha, p.rep_firma, p.rep_nombre, p.rep_documento, p.rep_cargo,
-               p.tercero_rep_nombre, p.tercero_rep_tipo_doc, p.tercero_rep_documento, p.tercero_rep_cargo, p.tercero_rep_firma
+               p.tercero_rep_nombre, p.tercero_rep_tipo_doc, p.tercero_rep_documento, p.tercero_rep_cargo, p.tercero_rep_firma,
+               COALESCE(ia.cantidad, 0)::int AS inscritos_activos
         FROM programas p
-        JOIN sedes s ON s.id = p.sede_id";
+        JOIN sedes s ON s.id = p.sede_id
+        LEFT JOIN (
+            SELECT programa_id, COUNT(*) AS cantidad
+            FROM inscripciones
+            WHERE " + InscripcionesRepository.CondicionOcupaCupo + @"
+            GROUP BY programa_id
+        ) ia ON ia.programa_id = p.id";
 
     private static ProgramaDto LeerPrograma(DbDataReader r) => new(
         r.GetGuid(0), r.GetGuid(1), r.GetString(2), r.GetString(3),
@@ -374,7 +383,8 @@ public class SedesRepository(DbConnectionFactory factory) : ISedesRepository
         r.IsDBNull(18) ? null : r.GetString(18),
         r.IsDBNull(19) ? null : r.GetString(19),
         r.IsDBNull(20) ? null : r.GetString(20),
-        r.IsDBNull(21) ? null : r.GetString(21)
+        r.IsDBNull(21) ? null : r.GetString(21),
+        r.GetInt32(22)
     );
 
     private static CampoDto LeerCampo(DbDataReader r)

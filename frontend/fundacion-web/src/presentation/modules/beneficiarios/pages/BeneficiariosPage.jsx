@@ -42,6 +42,7 @@ import NuevoBeneficiario    from '../components/NuevoBeneficiario';
 import { ModalEstadisticas, StatCard } from './components/ModalEstadisticas';
 import { ImportarBeneficiariosDialog } from './components/ImportarBeneficiariosDialog';
 import { PerfilesIncompletosDialog }    from './components/PerfilesIncompletosDialog';
+import { SinTipoDocumentoAviso }        from './components/SinTipoDocumentoAviso';
 import { useBeneficiariosPage } from './useBeneficiariosPage';
 
 // Fuera del componente — no se recrea en cada render
@@ -205,7 +206,7 @@ export default function BeneficiariosPage() {
     eliminar, setEliminar, eliminando, errorEliminar, setErrorEliminar,
     handleDarDeBaja, handleReactivar,
     handleGuardadoEdicion, handleBeneficiarioCreado, handleEliminarPermanente,
-    handleImportado,
+    handleImportado, handleTiposCorregidos,
   } = useBeneficiariosPage({ tipo: 'niño' });
 
   const [pendientesOpen, setPendientesOpen] = useState(false);
@@ -396,6 +397,8 @@ export default function BeneficiariosPage() {
               </Box>
             </Paper>
           </Collapse>
+
+          <SinTipoDocumentoAviso tipo="niño" onCorregido={handleTiposCorregidos} />
 
           <Tabs
             value={estado} onChange={(_, v) => setEstado(v)}

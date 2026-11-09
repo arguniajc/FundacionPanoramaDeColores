@@ -220,7 +220,7 @@ const SIN_TERCERO = {
 
 export const PROGRAMAS = [
   {
-    id: 11, sedeId: 1, activo: true, cupoMaximo: 120, ...REP_FUNDACION,
+    id: 11, sedeId: 1, activo: true, cupoMaximo: 120, inscritosActivos: 97, ...REP_FUNDACION,
     nombre: 'Programa de Fortalecimiento Psicosocial y Nutricional para la Primera Infancia',
     descripcion: 'Acompañamiento integral a niños y niñas de 0 a 5 años y sus familias: valoración nutricional mensual, complementación alimentaria, talleres de crianza amorosa y seguimiento psicosocial en el hogar.',
     tieneTercero: true,
@@ -231,24 +231,24 @@ export const PROGRAMAS = [
     terceroRepFirma: PNG_1X1,
   },
   {
-    id: 12, sedeId: 1, activo: true, cupoMaximo: 80, ...SIN_TERCERO,
+    id: 12, sedeId: 1, activo: true, cupoMaximo: 80, inscritosActivos: 34, ...SIN_TERCERO,
     repAutorizado: false, repNombre: null, repDocumento: null, repCargo: null, repFirma: null, repAutorizacionFecha: null,
     nombre: 'Escuela de Artes, Música y Expresión Corporal "Colores que Transforman"',
     descripcion: 'Formación artística extracurricular en música, danza folclórica del Pacífico, teatro y artes plásticas para niños, niñas y adolescentes de 6 a 17 años.',
   },
   {
-    id: 21, sedeId: 2, activo: true, cupoMaximo: 45, ...REP_FUNDACION, ...SIN_TERCERO,
+    id: 21, sedeId: 2, activo: true, cupoMaximo: 45, inscritosActivos: 45, ...REP_FUNDACION, ...SIN_TERCERO,
     nombre: 'Refuerzo Escolar y Acompañamiento en Lectoescritura y Pensamiento Lógico-Matemático',
     descripcion: 'Tutorías en jornada contraria para estudiantes de básica primaria con dificultades de aprendizaje.',
   },
   {
-    id: 22, sedeId: 2, activo: false, cupoMaximo: null, ...SIN_TERCERO,
+    id: 22, sedeId: 2, activo: false, cupoMaximo: null, inscritosActivos: 0, ...SIN_TERCERO,
     repAutorizado: false, repNombre: null, repDocumento: null, repCargo: null, repFirma: null, repAutorizacionFecha: null,
     nombre: 'Emprendimiento Productivo y Educación Financiera para Madres Cabeza de Hogar',
     descripcion: null,
   },
   {
-    id: 31, sedeId: 3, activo: true, cupoMaximo: 200, ...REP_FUNDACION, ...SIN_TERCERO,
+    id: 31, sedeId: 3, activo: true, cupoMaximo: 200, inscritosActivos: 58, ...REP_FUNDACION, ...SIN_TERCERO,
     nombre: 'Deporte para la Convivencia y la Prevención del Consumo de Sustancias Psicoactivas',
     descripcion: 'Escuelas deportivas de fútbol, baloncesto y atletismo con enfoque en habilidades para la vida.',
   },
@@ -394,6 +394,15 @@ function filtrarBeneficiarios(url) {
   return lista;
 }
 
+// Beneficiarios que perdieron el tipo de documento (GET /api/beneficiarios/sin-tipo-documento)
+const SIN_TIPO_DOCUMENTO = [
+  { id: 'a1b2c3d4-0000-4000-8000-000000000001', nombre: 'Valeria Alejandra Moreno Castillo de las Mercedes', numeroDocumento: 'AB12345678', tipo: 'niño',   fechaNacimiento: '2014-02-10', activo: true,  sugerencia: null },
+  { id: 'a1b2c3d4-0000-4000-8000-000000000002', nombre: 'Samuel David Ortiz Quiñónez',                     numeroDocumento: null,         tipo: 'niño',   fechaNacimiento: '2021-07-01', activo: true,  sugerencia: 'Sin documento' },
+  { id: 'a1b2c3d4-0000-4000-8000-000000000003', nombre: 'Isabella Gómez Arboleda',                         numeroDocumento: '1107998877', tipo: 'niño',   fechaNacimiento: '2012-11-23', activo: false, sugerencia: 'TI' },
+  { id: 'a1b2c3d4-0000-4000-8000-000000000004', nombre: 'José Gregorio Hernández Pérez',                   numeroDocumento: 'V24567890',  tipo: 'adulto', fechaNacimiento: '1979-05-14', activo: true,  sugerencia: null },
+  { id: 'a1b2c3d4-0000-4000-8000-000000000005', nombre: 'Luz Marina Riascos Valencia',                     numeroDocumento: '31987654',   tipo: 'adulto', fechaNacimiento: '1968-03-02', activo: true,  sugerencia: 'CC' },
+];
+
 export function registrar(api) {
   // Beneficiarios — genéricos primero, específicos después (el último registrado gana)
   api.on('GET', /^\/api\/beneficiarios\/\d+$/, ({ url }) => {
@@ -426,6 +435,12 @@ export function registrar(api) {
   });
   api.on('GET', '/api/beneficiarios/stats', ({ url }) => ({ json: statsDetalle(url.searchParams.get('tipo') ?? 'todos') }));
   api.on('GET', '/api/beneficiarios/incompletos', ({ url }) => ({ json: INCOMPLETOS(url.searchParams.get('tipo') ?? 'niño') }));
+  // Aviso "sin tipo de documento" (con filas, para auditar el aviso y su diálogo)
+  api.on('GET', '/api/beneficiarios/sin-tipo-documento', ({ url }) => ({
+    json: SIN_TIPO_DOCUMENTO.filter(f => f.tipo === (url.searchParams.get('tipo') ?? 'niño')),
+  }));
+  api.on('PATCH', /^\/api\/beneficiarios\/[^/]+\/tipo-documento$/, { actualizados: 1 });
+  api.on('PATCH', '/api/beneficiarios/tipo-documento/lote', ({ body }) => ({ json: { actualizados: body?.length ?? 0 } }));
 
   // Archivos privados → enlace firmado (data: PNG) ; log de descargas paginado
   api.on('POST', '/api/archivos/firmar', ({ body }) => ({
@@ -459,12 +474,14 @@ export function registrar(api) {
   api.on('GET', '/api/inscripciones', ({ url }) => {
     const p      = url.searchParams;
     const prog   = Number(p.get('programaId')) || null;
+    const benef  = Number(p.get('beneficiarioId')) || null;
     const estado = p.get('estado');
     const q      = (p.get('buscar') ?? '').toLowerCase();
     const filtradas = INSCRIPCIONES.filter(i =>
-      (!prog || i.programaId === prog) && (!estado || i.estado === estado) &&
+      (!prog || i.programaId === prog) && (!benef || i.beneficiarioId === benef) && (!estado || i.estado === estado) &&
       (!q || `${i.nombreBeneficiario} ${i.documentoBeneficiario ?? ''} ${i.nombrePrograma}`.toLowerCase().includes(q)));
-    const lista     = filtradas.length ? filtradas : INSCRIPCIONES;
+    // Sin coincidencias se muestra todo (listado de la página), salvo al consultar por beneficiario
+    const lista     = filtradas.length || benef ? filtradas : INSCRIPCIONES;
     const pagina    = Number(p.get('pagina')) || 1;
     const porPagina = Number(p.get('porPagina')) || 20;
     return { json: { data: lista.slice((pagina - 1) * porPagina, pagina * porPagina), total: lista.length, pagina, porPagina } };
@@ -555,7 +572,8 @@ function nuevaInscripcion(paso) {
       await dlg.getByText('Selecciona el programa').waitFor();
     }
     if (paso >= 2) {
-      await dlg.getByText(PROGRAMAS[0].nombre).first().click();
+      // PROGRAMAS[0]: la primera niña ya está inscrita ("Ya inscrito"); PROGRAMAS[2] tiene el cupo lleno
+      await dlg.getByText(PROGRAMAS[1].nombre).first().click();
       await boton(dlg, 'Siguiente').click();
       await dlg.getByText('Información de la madre').first().waitFor();
     }
@@ -632,6 +650,13 @@ export const DIALOGOS_A = [
     abrir: listaBeneficiarios('#/sede/beneficiarios', async p => {
       await boton(p, 'Perfiles con datos sin completar').click();
       await dialogo(p, 'Perfiles pendientes por completar').getByText(NINOS[0].nombreMenor).waitFor();
+    }),
+  },
+  {
+    nombre: 'Niños · Sin tipo de documento', hash: '#/sede/beneficiarios',
+    abrir: listaBeneficiarios('#/sede/beneficiarios', async p => {
+      await p.getByRole('alert').filter({ hasText: 'sin tipo de documento' }).getByRole('button', { name: 'Revisar' }).click();
+      await dialogo(p, 'Beneficiarios sin tipo de documento').getByText(SIN_TIPO_DOCUMENTO[0].nombre).waitFor();
     }),
   },
   {

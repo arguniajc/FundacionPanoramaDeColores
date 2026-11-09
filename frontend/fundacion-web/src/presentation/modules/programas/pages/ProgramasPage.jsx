@@ -22,6 +22,7 @@ import { COLOR }                from './components/helpers';
 import { chipEstado }           from './components/Chips';
 import { EditorCamposDialog }   from './components/EditorCamposDialog';
 import FirmaPad                 from '@/shared/components/FirmaPad';
+import IndicadorCupo            from '@/shared/components/IndicadorCupo';
 import {
   leerArchivoComoDataUrl,
   redimensionarImagen,
@@ -204,11 +205,7 @@ export default function ProgramasPage() {
                   </Typography>
                 )}
 
-                {p.cupoMaximo && (
-                  <Typography variant="caption">
-                    Cupo máximo: <strong>{p.cupoMaximo}</strong>
-                  </Typography>
-                )}
+                <IndicadorCupo programa={p} />
 
                 <Divider sx={{ my: 0.5 }} />
 

@@ -2,7 +2,11 @@
 namespace FundacionPanorama.Application.Features.Sedes.DTOs;
 
 public record SedeDto(Guid Id, string Nombre, string? Direccion, string? Ciudad, string? Telefono, bool Activo, DateTime FechaCreacion, DateTime FechaModificacion, List<ProgramaDto> Programas);
-public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, bool TieneTercero, string? NombreTercero, DateTime FechaCreacion, DateTime FechaModificacion, bool RepAutorizado, DateTime? RepAutorizacionFecha, string? RepFirma, string? RepNombre, string? RepDocumento, string? RepCargo, string? TerceroRepNombre, string? TerceroRepTipoDoc, string? TerceroRepDocumento, string? TerceroRepCargo, string? TerceroRepFirma);
+public record ProgramaDto(Guid Id, Guid SedeId, string NombreSede, string Nombre, string? Descripcion, int? CupoMaximo, bool Activo, bool TieneTercero, string? NombreTercero, DateTime FechaCreacion, DateTime FechaModificacion, bool RepAutorizado, DateTime? RepAutorizacionFecha, string? RepFirma, string? RepNombre, string? RepDocumento, string? RepCargo, string? TerceroRepNombre, string? TerceroRepTipoDoc, string? TerceroRepDocumento, string? TerceroRepCargo, string? TerceroRepFirma, int InscritosActivos = 0)
+{
+    /// <summary>Cupos libres: null si el programa no tiene cupo máximo; nunca negativo.</summary>
+    public int? CuposDisponibles => CupoMaximo is { } cupo ? Math.Max(0, cupo - InscritosActivos) : null;
+}
 public record CrearSedeDto(string Nombre, string? Direccion, string? Ciudad, string? Telefono);
 public record CrearProgramaDto(Guid SedeId, string Nombre, string? Descripcion, int? CupoMaximo, bool TieneTercero = false, string? NombreTercero = null, string? TerceroRepNombre = null, string? TerceroRepTipoDoc = null, string? TerceroRepDocumento = null, string? TerceroRepCargo = null, string? TerceroRepFirma = null);
 public record CampoDto(Guid Id, Guid ProgramaId, string Etiqueta, string Tipo, bool Obligatorio, string[]? Opciones, int Orden, bool Activo, string? Seccion, int Columnas, DateTime FechaCreacion, DateTime FechaModificacion);

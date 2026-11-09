@@ -112,4 +112,51 @@ public class InscripcionesIntegracionTests(PostgresFixture pg)
         }
         Assert.Equal(6, await ActivasAsync(db, prog));
     }
+
+    [SkippableFact]
+    public async Task Inscritos_activos_de_sedes_y_programas_coinciden_con_la_regla_del_cupo()
+    {
+        var db = await pg.CrearBaseAsync();
+        var repo = new InscripcionesRepository(db);
+        var sedes = new SedesRepository(db);
+        var sede = await db.EscalarGuidAsync("INSERT INTO sedes (nombre) VALUES ('Sede cupos') RETURNING id");
+        var conCupo = await db.CrearProgramaAsync("Programa con cupo 5", 5);
+        var sinCupo = await db.CrearProgramaAsync("Programa sin cupo", null);
+        var vacio   = await db.CrearProgramaAsync("Programa vacío", 2);
+        await db.EjecutarAsync("UPDATE programas SET sede_id = @s", ("s", sede));
+
+        // 4 inscripciones en el programa con cupo: 2 activas, 1 suspendida y 1 de baja
+        var ids = new List<Guid>();
+        for (var i = 0; i < 4; i++)
+        {
+            var b = await db.CrearBeneficiarioMinimoAsync("Niño", $"C{i}", $"CUP-{i}");
+            var ins = await repo.CrearAsync(Dto(b, conCupo));
+            Assert.Equal(ErrorCrearInscripcion.Ninguno, ins.Error);
+            ids.Add(ins.Inscripcion!.Id);
+        }
+        await repo.CambiarEstadoAsync(ids[2], "suspendida");
+        await repo.CambiarEstadoAsync(ids[3], "baja");
+        var otro = await db.CrearBeneficiarioMinimoAsync("Otra", "S", "CUP-S");
+        await repo.CrearAsync(Dto(otro, sinCupo));
+
+        var lista = (await sedes.ListarAsync(false, default)).Single(s => s.Id == sede).Programas;
+        var detalle = (await sedes.ObtenerAsync(sede, default))!.Programas;
+        var porSede = await sedes.ListarProgramasAsync(sede, default);
+        foreach (var programas in new[] { lista, detalle, porSede })
+        {
+            var p1 = programas.Single(p => p.Id == conCupo);
+            Assert.Equal(await ActivasAsync(db, conCupo), p1.InscritosActivos);
+            Assert.Equal(2, p1.InscritosActivos);
+            Assert.Equal(3, p1.CuposDisponibles); // suspendida y baja liberan su cupo
+
+            var p2 = programas.Single(p => p.Id == sinCupo);
+            Assert.Equal(1, p2.InscritosActivos);
+            Assert.Null(p2.CuposDisponibles);
+
+            var p3 = programas.Single(p => p.Id == vacio);
+            Assert.Equal(0, p3.InscritosActivos);
+            Assert.Equal(2, p3.CuposDisponibles);
+        }
+        Assert.Equal(2, (await sedes.ObtenerProgramaAsync(conCupo, default))!.InscritosActivos);
+    }
 }

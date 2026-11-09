@@ -8,7 +8,7 @@ import {
   DialogContent, DialogTitle,
   Grid, Step, StepLabel, Stepper, TextField, Typography,
 } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import CheckIcon from '@mui/icons-material/Check';
 import Dialog from '@/shared/components/DialogResponsive';
 import { AccionesDialogo, ErrorServidor } from '@/shared/components/form/FormControles';
@@ -19,6 +19,9 @@ import { sedesRepository }         from '@/infrastructure/repositories/sedesRepo
 import { inscripcionesRepository } from '@/infrastructure/repositories/inscripcionesRepository';
 import { mensajeErrorApi }         from '@/shared/utils/mensajeErrorApi';
 import ResumenErrores              from '@/shared/components/ResumenErrores';
+import IndicadorCupo               from '@/shared/components/IndicadorCupo';
+import { colorEstado }             from '@/shared/theme/paleta';
+import { estadoCupo }              from '@/shared/utils/cupos';
 import { CampoInput, FirmaAutorizacion, SeccionHeader } from './campos';
 import { COLOR, agruparPorSeccion, calcEdad } from './camposUtils';
 import {
@@ -38,30 +41,69 @@ const ETIQUETAS_PASO = {
 
 const PASOS = ['Beneficiario', 'Programa', 'Formulario'];
 
-/** Tarjeta de programa seleccionable (role="radio": Tab llega a ella, Enter o Espacio la elige). */
-function TarjetaPrograma({ programa: p, seleccionada, onElegir }) {
+/** Por qué no se puede elegir un programa (null si se puede). */
+function motivoBloqueo(programa, inscritoActivo) {
+  if (inscritoActivo) return {
+    etiqueta: 'Ya inscrito',
+    explicacion: 'Este beneficiario ya tiene una inscripción activa en este programa.',
+  };
+  if (estadoCupo(programa).lleno) return {
+    etiqueta: 'Cupo lleno',
+    explicacion: 'No admite más inscripciones activas. Da de baja una inscripción o aumenta el cupo del programa.',
+  };
+  return null;
+}
+
+/**
+ * Tarjeta de programa seleccionable (role="radio": Tab llega a ella, Enter o Espacio la elige).
+ * Si el cupo está lleno o el beneficiario ya está inscrito queda aria-disabled, con la explicación
+ * enlazada por aria-describedby; sigue siendo enfocable para que el lector de pantalla la anuncie.
+ */
+function TarjetaPrograma({ programa: p, seleccionada, onElegir, bloqueo }) {
+  const deshabilitada = !!bloqueo;
+  const idExplicacion = `programa-${p.id}-bloqueo`;
+  const elegir = () => { if (!deshabilitada) onElegir(); };
   const elegirConTeclado = e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onElegir(); }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegir(); }
   };
   return (
     <Box role="radio" aria-checked={seleccionada} tabIndex={0}
-      onClick={onElegir} onKeyDown={elegirConTeclado}
+      aria-disabled={deshabilitada || undefined}
+      aria-describedby={deshabilitada ? idExplicacion : undefined}
+      onClick={elegir} onKeyDown={elegirConTeclado}
       sx={{
         border: '2px solid', borderColor: seleccionada ? COLOR : 'divider',
-        borderRadius: 2, p: 1.5, cursor: 'pointer', height: '100%',
-        bgcolor: (t) => (seleccionada ? alpha(t.palette.primary.main, 0.08) : t.palette.background.paper),
+        borderRadius: 2, p: 1.5, cursor: deshabilitada ? 'not-allowed' : 'pointer', height: '100%',
+        bgcolor: (t) => (deshabilitada ? t.palette.action.disabledBackground
+          : seleccionada ? alpha(t.palette.primary.main, 0.08) : t.palette.background.paper),
         transition: 'all 0.15s',
-        '&:hover': { borderColor: COLOR, bgcolor: (t) => alpha(t.palette.primary.main, 0.08) },
+        '&:hover': deshabilitada ? {} : { borderColor: COLOR, bgcolor: (t) => alpha(t.palette.primary.main, 0.08) },
         '&:focus-visible': { outline: '3px solid', outlineColor: 'primary.main', outlineOffset: 2 },
       }}>
       {seleccionada && <CheckIcon aria-hidden sx={{ float: 'right', color: COLOR, fontSize: 20 }} />}
-      <Typography sx={{ fontWeight: 700, color: COLOR }}>{p.nombre}</Typography>
+      {deshabilitada && <ChipEstado etiqueta={bloqueo.etiqueta} tono={bloqueo.etiqueta === 'Cupo lleno' ? 'error' : 'info'} />}
+      <Typography sx={{ fontWeight: 700, color: deshabilitada ? 'text.secondary' : COLOR }}>{p.nombre}</Typography>
       <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">{p.nombreSede}</Typography>
-      {p.cupoMaximo > 0 && (
-        <Typography sx={{ color: 'text.secondary', display: 'block' }} variant="caption">
-          Cupo máximo: {p.cupoMaximo}
+      <IndicadorCupo programa={p} avisarLleno={false} sx={{ mt: 0.75 }} />
+      {deshabilitada && (
+        <Typography id={idExplicacion} variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
+          {bloqueo.explicacion}
         </Typography>
       )}
+    </Box>
+  );
+}
+
+/** Etiqueta pequeña con los colores semánticos de la paleta. */
+function ChipEstado({ etiqueta, tono }) {
+  const theme = useTheme();
+  const { fondo, texto } = colorEstado(tono, theme.palette.mode);
+  return (
+    <Box component="span" sx={{
+      float: 'right', ml: 1, px: 1, py: 0.25, borderRadius: 1, bgcolor: fondo, color: texto,
+      fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap',
+    }}>
+      {etiqueta}
     </Box>
   );
 }
@@ -74,6 +116,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
   const [selBenef,       setSelBenef]       = useState(null);
   const [programas,      setProgramas]      = useState([]);
   const [selPrograma,    setSelPrograma]    = useState(null);
+  const [programasInscrito, setProgramasInscrito] = useState(() => new Set()); // ids con inscripción activa del beneficiario
   const [campos,         setCampos]         = useState([]);
   const [cargandoCampos, setCargandoCampos] = useState(false);
   const [datos,          setDatos]          = useState({});
@@ -116,14 +159,38 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     return () => clearTimeout(t);
   }, [busqueda]);
 
-  useEffect(() => {
+  // Programas activos con su ocupación (inscritosActivos); se recarga si el servidor avisa cupo lleno
+  const cargarProgramas = () =>
     sedesRepository.listar({ soloActivas: true }).then(({ data }) => {
       const progs = data.flatMap(s =>
         (s.programas ?? []).filter(p => p.activo).map(p => ({ ...p, nombreSede: s.nombre }))
       );
       setProgramas(progs);
     }).catch(err => setErrorCarga(mensajeErrorApi(err, { accion: 'cargar los programas' })));
-  }, []);
+
+  useEffect(() => { cargarProgramas(); }, []);
+
+  // Programas donde el beneficiario elegido ya está inscrito activo (ayuda visual: el servidor
+  // igual lo valida al guardar, así que un fallo aquí no bloquea nada)
+  useEffect(() => {
+    setProgramasInscrito(new Set());
+    if (!selBenef) return;
+    let vigente = true;
+    inscripcionesRepository.listar({ beneficiarioId: selBenef.id, estado: 'activa', pagina: 1, porPagina: 100 })
+      .then(({ data }) => {
+        if (!vigente) return;
+        const lista = Array.isArray(data) ? data : (data?.data ?? []);
+        setProgramasInscrito(new Set(lista
+          .filter(i => i.beneficiarioId === selBenef.id && (i.activo ?? i.estado === 'activa'))
+          .map(i => i.programaId)));
+      })
+      .catch(() => {});
+    return () => { vigente = false; };
+  }, [selBenef]);
+
+  // Con los datos más recientes del programa (la lista se recarga si el servidor avisa cupo lleno)
+  const bloqueoDe = p => motivoBloqueo(programas.find(x => x.id === p.id) ?? p, programasInscrito.has(p.id));
+  const bloqueoSeleccionado = selPrograma ? bloqueoDe(selPrograma) : null;
 
   // Carga los campos del programa, arma los valores iniciales y recupera el borrador si lo hay
   useEffect(() => {
@@ -234,9 +301,14 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
     if (paso === 0) return selBenef ? {} : {
       beneficiario: 'Busca y selecciona el beneficiario: escribe al menos 2 letras del nombre y elígelo de la lista. Ejemplo: Ana',
     };
-    if (paso === 1) return selPrograma ? {} : {
-      programa: 'Selecciona el programa haciendo clic en su tarjeta.',
-    };
+    if (paso === 1) {
+      if (!selPrograma) return { programa: 'Selecciona el programa haciendo clic en su tarjeta.' };
+      // Elegido antes de cambiar de beneficiario o de recargar los cupos
+      if (bloqueoSeleccionado) return {
+        programa: `${selPrograma.nombre}: ${bloqueoSeleccionado.etiqueta.toLowerCase()}. ${bloqueoSeleccionado.explicacion} Elige otro programa.`,
+      };
+      return {};
+    }
     const errores = { ...erroresCamposDinamicos(campos, datos, panelActivo), ...erroresFirma(datos) };
     // Al menos un responsable activo, completo y mayor de edad
     const panelesTutor = campos.filter(c => esPanelResponsable(c.tipo));
@@ -290,6 +362,8 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
       borrarBorrador(selBenef.id, selPrograma.id);
       onCreada(result.data); // la página muestra "<beneficiario> inscrito en <programa>"
     } catch (err) {
+      // 409: cupo lleno o ya inscrito; se actualizan los cupos para que al volver se vea el estado real
+      if (err?.response?.status === 409) cargarProgramas();
       setError(mensajeErrorApi(err, {
         accion: 'guardar la inscripción',
         conflicto: 'El beneficiario ya está inscrito en este programa.',
@@ -373,7 +447,7 @@ export function NuevaInscripcionDialog({ onCerrar, onCreada }) {
                 {programas.map(p => (
                   <Grid key={p.id} size={{ xs: 12, sm: 6 }}>
                     <TarjetaPrograma programa={p} seleccionada={selPrograma?.id === p.id}
-                      onElegir={() => setSelPrograma(p)} />
+                      bloqueo={bloqueoDe(p)} onElegir={() => setSelPrograma(p)} />
                   </Grid>
                 ))}
               </Grid>

@@ -439,4 +439,43 @@ public class ValidacionBeneficiarioTests
         dto.NumeroDocumento = null;
         Assert.Equal([ValidacionBeneficiario.MsgDocumentoObligatorio], Validar(dto));
     }
+
+    // ── Sugerencia de tipo de documento (registros con tipo_documento_id NULL) ─
+
+    private static readonly DateOnly HoyFijo = new(2026, 11, 8);
+
+    [Theory]
+    [InlineData(null,       5,  true,  "Sin documento")]
+    [InlineData("  ",       30, false, "Sin documento")]
+    [InlineData("AB123456", 10, true,  null)]          // letras: PA/PPT/RAMV/PEP → revisar a mano
+    [InlineData("1107654321", 0, true, "RC")]
+    [InlineData("1107654321", 6, true, "RC")]
+    [InlineData("1107123456", 7, true, "TI")]
+    [InlineData("1107123456", 17, true, "TI")]
+    [InlineData("1144123456", 18, false, "CC")]
+    [InlineData("123",       10, true,  null)]          // muy corto para TI: no se sugiere algo que no pasaría
+    public void SugerirTipoDocumento_Segun_Numero_Y_Edad(string? numero, int edad, bool esNino, string? esperado)
+        => Assert.Equal(esperado, ValidacionBeneficiario.SugerirTipoDocumento(numero, HoyFijo.AddYears(-edad), esNino, HoyFijo));
+
+    [Fact]
+    public void SugerirTipoDocumento_Edad_Cumplida_Hoy_Cuenta()
+    {
+        // Cumple 7 mañana: aún es RC; cumplió 7 hoy: TI
+        Assert.Equal("RC", ValidacionBeneficiario.SugerirTipoDocumento("1107654321", HoyFijo.AddYears(-7).AddDays(1), true, HoyFijo));
+        Assert.Equal("TI", ValidacionBeneficiario.SugerirTipoDocumento("1107654321", HoyFijo.AddYears(-7), true, HoyFijo));
+    }
+
+    [Fact]
+    public void SugerirTipoDocumento_Sin_Fecha_Con_Digitos_No_Sugiere()
+        => Assert.Null(ValidacionBeneficiario.SugerirTipoDocumento("1107654321", null, true, HoyFijo));
+
+    [Theory]
+    [InlineData("PA",  "AB123456",   true,  true)]
+    [InlineData("TI",  "AB123456",   true,  false)]   // numérico con letras
+    [InlineData("CC",  "1144123456", true,  false)]   // menor con cédula
+    [InlineData("RC",  "1107654321", false, false)]   // adulto con registro civil
+    [InlineData("Sin documento", "lo que sea", true, true)]
+    [InlineData("CE",  "12",         false, false)]   // alfanumérico muy corto
+    public void ValidarDocumento_Reglas(string tipo, string numero, bool esNino, bool valido)
+        => Assert.Equal(valido, !ValidacionBeneficiario.ValidarDocumento(tipo, numero, esNino).Any());
 }

@@ -44,6 +44,7 @@ import NuevoBeneficiario    from '@/presentation/modules/beneficiarios/component
 import { ModalEstadisticas, StatCard } from '@/presentation/modules/beneficiarios/pages/components/ModalEstadisticas';
 import { ImportarBeneficiariosDialog } from '@/presentation/modules/beneficiarios/pages/components/ImportarBeneficiariosDialog';
 import { PerfilesIncompletosDialog }    from '@/presentation/modules/beneficiarios/pages/components/PerfilesIncompletosDialog';
+import { SinTipoDocumentoAviso }        from '@/presentation/modules/beneficiarios/pages/components/SinTipoDocumentoAviso';
 import { useBeneficiariosPage } from '@/presentation/modules/beneficiarios/pages/useBeneficiariosPage';
 
 const HOVER_SX_ADULTOS = (t) => ({
@@ -195,7 +196,7 @@ export default function AdultosPage() {
     eliminar, setEliminar, eliminando, errorEliminar, setErrorEliminar,
     handleDarDeBaja, handleReactivar,
     handleGuardadoEdicion, handleBeneficiarioCreado, handleEliminarPermanente,
-    handleImportado,
+    handleImportado, handleTiposCorregidos,
   } = useBeneficiariosPage({ tipo: 'adulto' });
 
   const [pendientesOpen, setPendientesOpen] = useState(false);
@@ -384,6 +385,8 @@ export default function AdultosPage() {
               </Box>
             </Paper>
           </Collapse>
+
+          <SinTipoDocumentoAviso tipo="adulto" onCorregido={handleTiposCorregidos} />
 
           <Tabs
             value={estado} onChange={(_, v) => setEstado(v)}

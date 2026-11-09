@@ -93,6 +93,46 @@ public class BeneficiariosController : BaseController
         => Ok(await _svc.ListarIncompletosAsync(tipo, ct));
 
     // =========================================================================
+    // GET api/beneficiarios/sin-tipo-documento?tipo=niño|adulto
+    // Beneficiarios que perdieron el tipo de documento (tipo_documento_id NULL) con el tipo sugerido.
+    // =========================================================================
+    [HttpGet("sin-tipo-documento")]
+    [RequierePermiso("beneficiarios", "editar")]
+    public async Task<IActionResult> SinTipoDocumento([FromQuery] string? tipo = null, CancellationToken ct = default)
+        => Ok(await _svc.ListarSinTipoDocumentoAsync(tipo, ct));
+
+    // =========================================================================
+    // PATCH api/beneficiarios/{id}/tipo-documento   { "tipoDocumento": "PA" }
+    // =========================================================================
+    [HttpPatch("{id:guid}/tipo-documento")]
+    [RequierePermiso("beneficiarios", "editar")]
+    public async Task<IActionResult> CorregirTipoDocumento(Guid id, [FromBody] CorregirTipoDocumentoDto? dto, CancellationToken ct = default)
+    {
+        var res = await _svc.CorregirTiposDocumentoAsync([new CorregirTipoDocumentoLoteDto(id, dto?.TipoDocumento)], EmailUsuario, ct);
+        return ResultadoCorreccion(res, "No se encontró el beneficiario.");
+    }
+
+    // =========================================================================
+    // PATCH api/beneficiarios/tipo-documento/lote   [{ "id": "...", "tipoDocumento": "TI" }, …]
+    // Todo o nada: si una corrección no es válida no se aplica ninguna.
+    // =========================================================================
+    [HttpPatch("tipo-documento/lote")]
+    [RequierePermiso("beneficiarios", "editar")]
+    public async Task<IActionResult> CorregirTipoDocumentoLote([FromBody] List<CorregirTipoDocumentoLoteDto>? items, CancellationToken ct = default)
+    {
+        var res = await _svc.CorregirTiposDocumentoAsync(items, EmailUsuario, ct);
+        return ResultadoCorreccion(res, "Uno o más beneficiarios ya no existen. Recarga la lista.");
+    }
+
+    private IActionResult ResultadoCorreccion(ResultadoBeneficiario<int> res, string mensajeNoEncontrado)
+        => res.Estado switch
+        {
+            EstadoResultado.Invalido     => BadRequest(new { mensaje = res.Mensaje ?? string.Join(" ", res.Errores), errores = res.Errores }),
+            EstadoResultado.NoEncontrado => NotFound(new { mensaje = mensajeNoEncontrado }),
+            _ => Ok(new { actualizados = res.Valor }),
+        };
+
+    // =========================================================================
     // GET api/beneficiarios/stats-ninos
     // =========================================================================
     [HttpGet("stats-ninos")]

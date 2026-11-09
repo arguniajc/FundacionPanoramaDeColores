@@ -3,8 +3,9 @@ import { test, expect, listadoVacio, mockListaBeneficiarios } from './support/fi
 const SEDES = [{
   id: 'sede-1', nombre: 'Sede Yumbo',
   programas: [
-    { id: 'prog-arte', nombre: 'Arte y pintura', activo: true },
-    { id: 'prog-viejo', nombre: 'Programa cerrado', activo: false },
+    // inscritosActivos: lo envía /api/sedes con la misma regla del control de cupo
+    { id: 'prog-arte', nombre: 'Arte y pintura', activo: true, cupoMaximo: 40, inscritosActivos: 12 },
+    { id: 'prog-viejo', nombre: 'Programa cerrado', activo: false, cupoMaximo: null, inscritosActivos: 0 },
   ],
 }];
 // Mensaje real de InscripcionesController cuando el programa está lleno
@@ -172,5 +173,67 @@ test.describe('Inscripciones', () => {
     await dialogo.getByRole('button', { name: 'Empezar de cero' }).click();
     await expect(dialogo.getByText('Recuperamos lo que habías escrito')).toHaveCount(0);
     await expect(dialogo.getByRole('textbox', { name: 'Nombre completo' })).toHaveValue('');
+  });
+
+  test('muestra los cupos antes de inscribir y un programa lleno o ya inscrito no se puede elegir', async ({ page, api, sesion }) => {
+    await sesion();
+    mockListaBeneficiarios(api);
+    const sedes = [{
+      id: 'sede-1', nombre: 'Sede Yumbo',
+      programas: [
+        { id: 'prog-arte',   nombre: 'Arte y pintura',     activo: true, cupoMaximo: 40,   inscritosActivos: 12 },
+        { id: 'prog-danza',  nombre: 'Danza folclórica',   activo: true, cupoMaximo: 20,   inscritosActivos: 20 },
+        { id: 'prog-futbol', nombre: 'Escuela de fútbol',  activo: true, cupoMaximo: 10,   inscritosActivos: 9 },
+        { id: 'prog-musica', nombre: 'Música',             activo: true, cupoMaximo: null, inscritosActivos: 7 },
+      ],
+    }];
+    api
+      // La beneficiaria 101 ya tiene una inscripción activa en Música
+      .on('GET', '/api/inscripciones', ({ url }) => (url.searchParams.get('beneficiarioId') === '101'
+        ? { json: { data: [{ id: 'ins-9', beneficiarioId: 101, programaId: 'prog-musica', estado: 'activa', activo: true }], total: 1, pagina: 1, porPagina: 100 } }
+        : listadoVacio({ url })))
+      .on('GET', '/api/sedes', sedes)
+      .on('GET', '/api/sedes/programas/prog-arte/campos', []);
+    await page.goto('#/sede/inscripciones');
+    await page.getByRole('button', { name: 'Nueva inscripción' }).click();
+    const dialogo = page.getByRole('dialog').filter({ hasText: 'Nueva Inscripción' });
+    await dialogo.getByRole('combobox', { name: 'Buscar por nombre' }).fill('valen');
+    await page.getByRole('option', { name: /Valentina Rodríguez Gómez/ }).click();
+    await dialogo.getByRole('button', { name: 'Siguiente' }).click();
+
+    const tarjeta = nombre => dialogo.getByRole('radio', { name: new RegExp(nombre) });
+    // Ocupación visible en cada tarjeta
+    await expect(tarjeta('Arte y pintura')).toContainText('12 de 40 cupos');
+    await expect(tarjeta('Escuela de fútbol')).toContainText('9 de 10 cupos · quedan 1');
+    await expect(tarjeta('Música')).toContainText('Sin límite de cupos');
+
+    // Lleno: deshabilitado, con "Cupo lleno" y la explicación enlazada
+    const llena = tarjeta('Danza folclórica');
+    await expect(llena).toBeDisabled();
+    await expect(llena).toContainText('20 de 20 cupos');
+    await expect(llena).toContainText('Cupo lleno');
+    await expect(llena).toHaveAccessibleDescription(/No admite más inscripciones activas/);
+    // force: Playwright no hace clic en lo que está aria-disabled; se comprueba que la página tampoco lo elige
+    await llena.click({ force: true });
+    await expect(llena).toHaveAttribute('aria-checked', 'false');
+    await llena.focus();
+    await page.keyboard.press('Enter');
+    await expect(llena).toHaveAttribute('aria-checked', 'false');
+    await dialogo.getByRole('button', { name: 'Siguiente' }).click();
+    await expect(dialogo.getByText('Selecciona el programa haciendo clic en su tarjeta.').first()).toBeVisible();
+
+    // Ya inscrito activo: también deshabilitado
+    const inscrita = tarjeta('Música');
+    await expect(inscrita).toBeDisabled();
+    await expect(inscrita).toContainText('Ya inscrito');
+    await expect(inscrita).toHaveAccessibleDescription(/ya tiene una inscripción activa/);
+
+    // Los demás se eligen con normalidad
+    await expect(tarjeta('Arte y pintura')).toBeEnabled();
+    await tarjeta('Arte y pintura').click();
+    await expect(tarjeta('Arte y pintura')).toHaveAttribute('aria-checked', 'true');
+    await dialogo.getByRole('button', { name: 'Siguiente' }).click();
+    await expect(dialogo.getByText('Este programa no tiene campos adicionales.')).toBeVisible();
+    expect(api.llamadas('POST', '/api/inscripciones')).toHaveLength(0);
   });
 });

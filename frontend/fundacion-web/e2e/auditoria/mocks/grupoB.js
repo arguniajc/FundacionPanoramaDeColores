@@ -20,23 +20,23 @@ const SEDES = [
     id: 'sede-001', nombre: 'Sede Principal Barrio Panorama — Yumbo', ciudad: 'Yumbo',
     departamento: 'Valle del Cauca', direccion: 'Calle 5 # 10-20, Barrio Panorama', activo: true,
     programas: [
-      { id: 'prog-001', nombre: 'Refuerzo escolar y acompañamiento en lectoescritura', activo: true },
-      { id: 'prog-002', nombre: 'Escuela de fútbol formativo para niñas y niños', activo: true },
+      { id: 'prog-001', nombre: 'Refuerzo escolar y acompañamiento en lectoescritura', activo: true, cupoMaximo: 35, inscritosActivos: 22 },
+      { id: 'prog-002', nombre: 'Escuela de fútbol formativo para niñas y niños', activo: true, cupoMaximo: 40, inscritosActivos: 40 },
     ],
   },
   {
     id: 'sede-002', nombre: 'Sede Comunitaria Ladera de Siloé — Cali', ciudad: 'Santiago de Cali',
     departamento: 'Valle del Cauca', direccion: 'Carrera 52 # 1-45, Comuna 20', activo: true,
     programas: [
-      { id: 'prog-003', nombre: 'Taller de artes plásticas, pintura y expresión corporal', activo: true },
-      { id: 'prog-004', nombre: 'Nutrición, complemento alimentario y seguimiento de peso y talla', activo: true },
+      { id: 'prog-003', nombre: 'Taller de artes plásticas, pintura y expresión corporal', activo: true, cupoMaximo: 25, inscritosActivos: 21 },
+      { id: 'prog-004', nombre: 'Nutrición, complemento alimentario y seguimiento de peso y talla', activo: true, cupoMaximo: null, inscritosActivos: 64 },
     ],
   },
   {
     id: 'sede-003', nombre: 'Sede Rural Vereda Mulaló — Corregimiento de Yumbo', ciudad: 'Yumbo',
     departamento: 'Valle del Cauca', direccion: 'Vía Mulaló kilómetro 7, vereda El Pedregal', activo: true,
     programas: [
-      { id: 'prog-005', nombre: 'Huerta escolar comunitaria y educación ambiental', activo: true },
+      { id: 'prog-005', nombre: 'Huerta escolar comunitaria y educación ambiental', activo: true, cupoMaximo: 20, inscritosActivos: 6 },
     ],
   },
 ];

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FundacionPanorama.Application.Features.Beneficiarios;
 using FundacionPanorama.Application.Features.Beneficiarios.DTOs;
+using FundacionPanorama.Infrastructure.Persistence;
 using FundacionPanorama.Infrastructure.Persistence.Repositories;
 using FundacionPanorama.IntegrationTests.Infraestructura;
 
@@ -199,5 +200,109 @@ public class BeneficiariosIntegracionTests(PostgresFixture pg)
             .Select(x => $"{x.Perfil}: resumen={x.Resumen}% sql={x.Sql}%")
             .ToList();
         Assert.True(diferencias.Count == 0, "Completitud distinta:\n" + string.Join("\n", diferencias));
+    }
+
+    // ── Tipo de documento perdido (tipo_documento_id NULL) ────────────────────
+
+    // Simula un registro guardado antes de que el catálogo tuviera PA/RAMV/PEP/"Sin documento"/"Otro".
+    static Task PerderTipo(DbConnectionFactory db, Guid id)
+        => db.EjecutarAsync("UPDATE beneficiarios SET tipo_documento_id = NULL WHERE id = @id", ("id", id));
+
+    static Task<string?> CodigoTipo(DbConnectionFactory db, Guid id)
+        => db.EscalarAsync<string?>("""
+            SELECT COALESCE(ctd.codigo, '(null)') FROM beneficiarios b
+            LEFT JOIN cat_tipos_documento ctd ON ctd.id = b.tipo_documento_id WHERE b.id = @id
+            """, ("id", id));
+
+    [SkippableFact]
+    public async Task Sin_tipo_documento_lista_solo_los_null_con_su_sugerencia()
+    {
+        var db = await pg.CrearBaseAsync();
+        var repo = new BeneficiariosRepository(db);
+        var svc = new BeneficiariosService(repo);
+
+        var conTipo    = (await repo.CrearAsync(Completo("1107000001"), null, Ct))!.Value;
+        var pasaporte  = (await repo.CrearAsync(Completo("AB123456", d => { d.PrimerNombre = "Pasaporte"; d.TipoDocumento = "PA"; }), null, Ct))!.Value;
+        var sinNumero  = (await repo.CrearAsync(Completo("", d => { d.PrimerNombre = "Sinnumero"; d.TipoDocumento = "Sin documento"; d.NumeroDocumento = null; }), null, Ct))!.Value;
+        var digitos    = (await repo.CrearAsync(Completo("1107000002", d => d.PrimerNombre = "Digitos"), null, Ct))!.Value;
+        var adulto     = (await repo.CrearAsync(Adulto("16000003", d => d.PrimerNombre = "Adulta"), null, Ct))!.Value;
+        foreach (var id in new[] { pasaporte, sinNumero, digitos, adulto }) await PerderTipo(db, id);
+
+        var todos = await svc.ListarSinTipoDocumentoAsync(null, Ct);
+        Assert.DoesNotContain(todos, t => t.Id == conTipo);
+        Assert.Equal(4, todos.Count);
+        var porId = todos.ToDictionary(t => t.Id);
+        Assert.Null(porId[pasaporte].Sugerencia);                       // letras: a mano
+        Assert.Equal("AB123456", porId[pasaporte].NumeroDocumento);
+        Assert.Equal("Sin documento", porId[sinNumero].Sugerencia);
+        Assert.Equal("TI", porId[digitos].Sugerencia);                  // nació en 2016
+        Assert.Equal("CC", porId[adulto].Sugerencia);
+        Assert.Equal("adulto", porId[adulto].Tipo);
+        Assert.Equal("Digitos Isabel Prueba Integración", porId[digitos].Nombre);
+
+        // Filtro por página (edad)
+        Assert.Equal([adulto], (await svc.ListarSinTipoDocumentoAsync("adulto", Ct)).Select(t => t.Id));
+        Assert.Equal(3, (await svc.ListarSinTipoDocumentoAsync("niño", Ct)).Count);
+    }
+
+    [SkippableFact]
+    public async Task Corregir_tipo_documento_asigna_el_id_del_catalogo_y_audita()
+    {
+        var db = await pg.CrearBaseAsync();
+        var repo = new BeneficiariosRepository(db);
+        var svc = new BeneficiariosService(repo);
+
+        var pasaporte = (await repo.CrearAsync(Completo("AB123456", d => d.TipoDocumento = "PA"), null, Ct))!.Value;
+        var otro      = (await repo.CrearAsync(Completo("XY987654", d => d.TipoDocumento = "PA"), null, Ct))!.Value;
+        await PerderTipo(db, pasaporte);
+        await PerderTipo(db, otro);
+
+        // PA: conserva el número y queda con el id de 'PA'
+        var res = await svc.CorregirTiposDocumentoAsync([new(pasaporte, "PA")], "editor@x.com", Ct);
+        Assert.Equal(EstadoResultado.Ok, res.Estado);
+        Assert.Equal("PA", await CodigoTipo(db, pasaporte));
+        Assert.Equal("AB123456", (await repo.ObtenerAsync(pasaporte, Ct))!.NumeroDocumento);
+        Assert.Equal(1L, await db.EscalarAsync<long>(
+            "SELECT COUNT(*) FROM audit_log WHERE entidad_id = @id AND accion = 'editado' AND detalle LIKE 'Tipo de documento corregido: PA%'",
+            ("id", pasaporte.ToString())));
+
+        // "Sin documento": queda con ese id y sin número
+        res = await svc.CorregirTiposDocumentoAsync([new(otro, "Sin documento")], null, Ct);
+        Assert.Equal(EstadoResultado.Ok, res.Estado);
+        Assert.Equal("Sin documento", await CodigoTipo(db, otro));
+        var ficha = (await repo.ObtenerAsync(otro, Ct))!;
+        Assert.Null(ficha.NumeroDocumento);
+        Assert.Equal("Sin documento", ficha.TipoDocumento);
+        Assert.Empty(await svc.ListarSinTipoDocumentoAsync(null, Ct));
+    }
+
+    [SkippableFact]
+    public async Task Corregir_tipo_documento_rechaza_combinaciones_invalidas_y_el_lote_es_todo_o_nada()
+    {
+        var db = await pg.CrearBaseAsync();
+        var repo = new BeneficiariosRepository(db);
+        var svc = new BeneficiariosService(repo);
+
+        var letras  = (await repo.CrearAsync(Completo("AB123456", d => d.TipoDocumento = "PA"), null, Ct))!.Value;
+        var digitos = (await repo.CrearAsync(Completo("1107000009"), null, Ct))!.Value;
+        await PerderTipo(db, letras);
+        await PerderTipo(db, digitos);
+
+        // TI con letras → inválido; código inexistente → inválido; id inexistente → no encontrado
+        Assert.Equal(EstadoResultado.Invalido, (await svc.CorregirTiposDocumentoAsync([new(letras, "TI")], null, Ct)).Estado);
+        Assert.Equal(EstadoResultado.Invalido, (await svc.CorregirTiposDocumentoAsync([new(letras, "ZZ")], null, Ct)).Estado);
+        Assert.Equal(EstadoResultado.NoEncontrado, (await svc.CorregirTiposDocumentoAsync([new(Guid.NewGuid(), "PA")], null, Ct)).Estado);
+
+        // Lote con una inválida: no se aplica ninguna
+        var lote = await svc.CorregirTiposDocumentoAsync([new(digitos, "TI"), new(letras, "TI")], null, Ct);
+        Assert.Equal(EstadoResultado.Invalido, lote.Estado);
+        Assert.Equal("(null)", await CodigoTipo(db, digitos));
+
+        // Lote válido: ambas en una transacción
+        lote = await svc.CorregirTiposDocumentoAsync([new(digitos, "TI"), new(letras, "PA")], null, Ct);
+        Assert.Equal(EstadoResultado.Ok, lote.Estado);
+        Assert.Equal(2, lote.Valor);
+        Assert.Equal("TI", await CodigoTipo(db, digitos));
+        Assert.Equal("PA", await CodigoTipo(db, letras));
     }
 }

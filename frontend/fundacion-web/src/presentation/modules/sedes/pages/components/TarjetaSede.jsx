@@ -12,6 +12,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import SchoolIcon     from '@mui/icons-material/School';
 import ToggleOffIcon  from '@mui/icons-material/ToggleOff';
 import ToggleOnIcon   from '@mui/icons-material/ToggleOn';
+import IndicadorCupo  from '@/shared/components/IndicadorCupo';
 
 export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarPrograma, onEliminarPrograma, onTogglePrograma, onNuevoPrograma }) {
   const [expandida, setExpandida] = useState(false);
@@ -94,7 +95,7 @@ export function TarjetaSede({ sede, onEditar, onEliminar, onToggle, onEditarProg
                         <Typography sx={{ fontWeight: 600 }} variant="body2">{prog.nombre}</Typography>
                         {prog.descripcion && <Typography sx={{ color: 'text.secondary' }} variant="caption">{prog.descripcion}</Typography>}
                       </TableCell>
-                      <TableCell><Typography variant="body2">{prog.cupoMaximo ?? '—'}</Typography></TableCell>
+                      <TableCell><IndicadorCupo programa={prog} /></TableCell>
                       <TableCell>
                         <Chip label={prog.activo ? 'Activo' : 'Inactivo'} size="small"
                           color={prog.activo ? 'success' : 'default'} />

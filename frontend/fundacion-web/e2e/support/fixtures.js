@@ -142,6 +142,8 @@ export function mockListaBeneficiarios(api) {
     return { json: { data, total: data.length, pagina: Number(url.searchParams.get('pagina')), porPagina: 100 } };
   });
   api.on('GET', '/api/beneficiarios/stats', STATS_BENEFICIARIOS);
+  // Aviso "sin tipo de documento": por defecto no hay ninguno (el aviso no se muestra)
+  api.on('GET', '/api/beneficiarios/sin-tipo-documento', []);
 }
 
 export const test = base.extend({
